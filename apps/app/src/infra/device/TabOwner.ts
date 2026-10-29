@@ -3,9 +3,17 @@
 // OPFS handles. Other tabs of the device park. "Hier verwenden" asks the owner over a
 // BroadcastChannel to reload into the parked state, then waits for the lock.
 
+import * as Effect from "effect/Effect";
+import * as Schema from "effect/Schema";
 import { use, useState } from "react";
 
 export * as TabOwner from "./TabOwner.ts";
+
+/** Another tab owns the device, so this one may not open its storage. */
+export class InUse extends Schema.TaggedError<InUse, { readonly brand: unique symbol }>()(
+  "TabOwner.InUse",
+  { device: Schema.String },
+) {}
 
 export type Ownership = "owner" | "parked";
 
@@ -54,6 +62,16 @@ export const claim = (device: string) => {
   return claimed;
 };
 
+/**
+ * Succeeds once this tab owns the device, for the code that opens its storage: a second worker on
+ * the same OPFS directory waits forever instead of failing (ADR 0014).
+ */
+export const own = (device: string) =>
+  Effect.flatMap(
+    Effect.promise(() => claim(device)),
+    (ownership) => (ownership === "owner" ? Effect.void : Effect.fail(new InUse({ device }))),
+  );
+
 /** "Hier verwenden": the owner reloads into the parked state. Resolves once this tab owns the device. */
 export const takeOver = (device: string) => {
   sessionStorage.removeItem(parkedKey(device));
@@ -61,6 +79,7 @@ export const takeOver = (device: string) => {
   return new Promise<void>((resolve) => {
     void navigator.locks.request(lockName(device), () => {
       releaseWhenAsked(device);
+      claims.set(device, Promise.resolve("owner"));
       resolve();
 
       return holdUntilTheDocumentDies();

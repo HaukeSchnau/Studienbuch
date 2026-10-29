@@ -1,22 +1,77 @@
 import * as SqliteClient from "@effect/sql-sqlite-wasm/SqliteClient";
+import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
 
-import { VirtualDevice } from "../device/VirtualDevice.ts";
+import { TabOwner } from "../device/TabOwner.ts";
+import { Databases } from "./Databases.ts";
 
-/**
- * This device's database as `SqlClient`: Effect's wasm client with our worker, in the device's own
- * OPFS directory (ADR 0013). Open it only in the tab that owns the device (`DeviceGate`): a second
- * worker on the same directory waits forever instead of failing (ADR 0014).
- */
-export const layer = SqliteClient.layer({
-  worker: Effect.acquireRelease(
-    Effect.sync(
-      () =>
-        new Worker(new URL("./opfs.worker", window.location.href), {
-          name: `${VirtualDevice.directory}/studienbuch.db`,
-        }),
+// A browser: Effect's wasm client with our worker, each database in its own OPFS directory under
+// `studienbuch/<device>/` (ADR 0013). The browser has no SQLCipher; what keeps an account's rows
+// is the browser profile, and a public computer keeps them in memory only (encryption.md, local
+// storage).
+
+const root = "studienbuch";
+
+const closed = (worker: Worker) =>
+  Effect.callback<void>((resume) => {
+    const onMessage = ({ data }: MessageEvent<unknown>) => {
+      if (Array.isArray(data) && data[0] === "closed") resume(Effect.void);
+    };
+
+    worker.addEventListener("message", onMessage);
+
+    return Effect.sync(() => worker.removeEventListener("message", onMessage));
+  });
+
+const workerName = (location: Databases.Location) =>
+  location.memory ? ":memory:" : `${root}/${location.device}/${location.name}/db.sqlite`;
+
+export const layer: Databases.Open = (location) =>
+  Layer.unwrap(
+    // Before the worker starts: one on a directory another tab holds waits forever (ADR 0014).
+    Effect.as(
+      TabOwner.own(location.device),
+      SqliteClient.layer({
+        worker: Effect.acquireRelease(
+          Effect.sync(
+            () =>
+              new Worker(new URL("./opfs.worker", window.location.href), {
+                name: workerName(location),
+              }),
+          ),
+          // Effect's client has asked the worker to close. Once it closed its OPFS handles, the
+          // database's directory can be deleted (opfs.worker.ts).
+          (worker) =>
+            closed(worker).pipe(
+              Effect.timeout(Duration.seconds(2)),
+              Effect.ignore,
+              Effect.andThen(Effect.sync(() => worker.terminate())),
+            ),
+        ),
+        installReactivityHooks: true,
+      }),
     ),
-    (worker) => Effect.sync(() => worker.terminate()),
-  ),
-  installReactivityHooks: true,
-});
+  );
+
+const notFound = (cause: unknown) =>
+  cause instanceof DOMException && cause.name === "NotFoundError";
+
+export const remove: Databases.Remove = (location) =>
+  location.memory
+    ? Effect.void
+    : Effect.tryPromise({
+        try: async () => {
+          const opfs = await navigator.storage.getDirectory();
+          const studienbuch = await opfs.getDirectoryHandle(root);
+          const device = await studienbuch.getDirectoryHandle(location.device);
+
+          await device.removeEntry(location.name, { recursive: true });
+        },
+        catch: (cause) => new Databases.RemoveFailed({ cause }),
+      }).pipe(
+        Effect.catchIf(
+          (error) => notFound(error.cause),
+          () => Effect.void,
+        ),
+      );

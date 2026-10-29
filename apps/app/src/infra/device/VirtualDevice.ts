@@ -1,7 +1,7 @@
 import * as Option from "effect/Option";
 import { Platform } from "react-native";
 
-// In a browser, `?device=a` and `?device=b` are two devices side by side, each with its own database
+// In a browser, `?device=a` and `?device=b` are two devices side by side, each with its own storage
 // and owner tab (AGENTS.md, glossary; ADR 0014). A tab plays the device it was opened as. A phone is
 // always just itself.
 
@@ -17,5 +17,5 @@ export const name: Option.Option<string> =
       )
     : Option.none();
 
-/** Where the device keeps its storage in the browser, and what its lock is called. */
-export const directory = `device-${Option.getOrElse(name, () => "browser")}`;
+/** The device this tab plays, as `Device.Options.name` takes it. */
+export const current = Option.getOrElse(name, () => (Platform.OS === "web" ? "browser" : "phone"));

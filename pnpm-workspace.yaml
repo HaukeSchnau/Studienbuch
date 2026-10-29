@@ -89,6 +89,13 @@ catalog:
   "@types/pg": 8.23.1
   # SMTP for `MAIL_URL`. It ships its own types.
   nodemailer: 10.2.1
+  # The network state that the engine's connection supervisor follows on iOS and Android, at the
+  # version Expo 58.0.20 names in `bundledNativeModules.json`.
+  expo-network: 58.0.4
+  # Browser tests (`*.browser.test.ts`): Vitest's Playwright provider at Vite+'s Vitest version, and
+  # the Playwright whose browsers nixpkgs builds (`playwright-driver.browsers`).
+  "@vitest/browser-playwright": 5.0.5
+  playwright: 1.64.1
 
 overrides:
   vite@*: "catalog:"

@@ -15,7 +15,7 @@ import { VirtualDevice } from "./VirtualDevice.ts";
  * the device waits here until someone presses "Hier verwenden". Suspends while the browser decides.
  */
 export function DeviceGate({ children }: { readonly children: ReactNode }) {
-  const { state, takeOver } = TabOwner.useOwnership(VirtualDevice.directory);
+  const { state, takeOver } = TabOwner.useOwnership(VirtualDevice.current);
 
   if (state === "owner") return children;
 

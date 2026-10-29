@@ -6,5 +6,5 @@
     "customConditions": ["react-native"],
     "types": ["expo/types"]
   },
-  "include": ["src", "index.ts", "app.config.ts", ".expo/types/**/*.ts"]
+  "include": ["src", "modules", "index.ts", "app.config.ts", "precache.mts", ".expo/types/**/*.ts"]
 }

@@ -9,18 +9,20 @@ import { Keychain } from "./Keychain.ts";
 // database, and never restored onto another device.
 const options = { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY };
 
-/** `Keychain.Store` on expo-secure-store. */
+const attempt = <A>(operation: "get" | "set" | "remove", run: () => Promise<A>) =>
+  Effect.tryPromise({
+    try: run,
+    catch: (cause) => new Keychain.Unavailable({ operation, cause }),
+  });
+
+/** `Keychain.Store` on expo-secure-store, for iOS and Android. */
 export const layer = Layer.succeed(Keychain.Store)({
   get: (name) =>
-    Effect.tryPromise({
-      try: () => SecureStore.getItemAsync(name, options),
-      catch: (cause) => new Keychain.Unavailable({ operation: "get", cause }),
-    }).pipe(Effect.map(Option.fromNullishOr)),
-  set: (name, value) =>
-    Effect.tryPromise({
-      try: () => SecureStore.setItemAsync(name, value, options),
-      catch: (cause) => new Keychain.Unavailable({ operation: "set", cause }),
-    }),
+    attempt("get", () => SecureStore.getItemAsync(name, options)).pipe(
+      Effect.map(Option.fromNullishOr),
+    ),
+  set: (name, value) => attempt("set", () => SecureStore.setItemAsync(name, value, options)),
+  remove: (name) => attempt("remove", () => SecureStore.deleteItemAsync(name, options)),
 });
 
 export * as SecureStoreKeychain from "./SecureStoreKeychain.ts";

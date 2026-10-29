@@ -1,0 +1,746 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "id": "f9b9bb68-241d-4342-94a2-72e40f0e7aa3",
+  "prevIds": ["00000000-0000-0000-0000-000000000000"],
+  "ddl": [
+    {
+      "name": "base_row",
+      "entityType": "tables"
+    },
+    {
+      "name": "pending_row",
+      "entityType": "tables"
+    },
+    {
+      "name": "sync_meta",
+      "entityType": "tables"
+    },
+    {
+      "name": "sync_outbox",
+      "entityType": "tables"
+    },
+    {
+      "name": "sync_rejected_command",
+      "entityType": "tables"
+    },
+    {
+      "name": "sync_settled_command",
+      "entityType": "tables"
+    },
+    {
+      "name": "sync_space",
+      "entityType": "tables"
+    },
+    {
+      "table": "base_row",
+      "name": "space",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "base_row",
+      "name": "tbl",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "base_row",
+      "name": "id",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "base_row",
+      "name": "version",
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "base_row",
+      "name": "data",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "pending_row",
+      "name": "space",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "pending_row",
+      "name": "tbl",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "pending_row",
+      "name": "id",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "pending_row",
+      "name": "data",
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_meta",
+      "name": "id",
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_meta",
+      "name": "client_id",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_meta",
+      "name": "sync_epoch",
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_meta",
+      "name": "last_mutation_id",
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_meta",
+      "name": "settled_mutation_id",
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_outbox",
+      "name": "mutation_id",
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_outbox",
+      "name": "name",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_outbox",
+      "name": "version",
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_outbox",
+      "name": "args",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_outbox",
+      "name": "at",
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_outbox",
+      "name": "mode",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_rejected_command",
+      "name": "client_id",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_rejected_command",
+      "name": "mutation_id",
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_rejected_command",
+      "name": "name",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_rejected_command",
+      "name": "version",
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_rejected_command",
+      "name": "args",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_rejected_command",
+      "name": "at",
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_rejected_command",
+      "name": "reason",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_settled_command",
+      "name": "mutation_id",
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_settled_command",
+      "name": "name",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_settled_command",
+      "name": "version",
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_settled_command",
+      "name": "args",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_settled_command",
+      "name": "at",
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_settled_command",
+      "name": "mode",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_settled_command",
+      "name": "settled_at",
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_space",
+      "name": "id",
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_space",
+      "name": "kind",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_space",
+      "name": "role",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_space",
+      "name": "version",
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_space",
+      "name": "key_epoch",
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_space",
+      "name": "synced_at",
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "base_row",
+      "name": "base_row_SchoolClass_schoolYearId",
+      "columns": [
+        {
+          "value": "space",
+          "isExpression": true
+        },
+        {
+          "value": "data ->> '$.\"schoolYearId\"'",
+          "isExpression": true
+        },
+        {
+          "value": "id",
+          "isExpression": true
+        }
+      ],
+      "isUnique": false,
+      "where": "tbl = 'SchoolClass'",
+      "origin": "manual",
+      "entityType": "indexes"
+    },
+    {
+      "table": "base_row",
+      "name": "base_row_CourseOffering_termId",
+      "columns": [
+        {
+          "value": "space",
+          "isExpression": true
+        },
+        {
+          "value": "data ->> '$.\"termId\"'",
+          "isExpression": true
+        },
+        {
+          "value": "id",
+          "isExpression": true
+        }
+      ],
+      "isUnique": false,
+      "where": "tbl = 'CourseOffering'",
+      "origin": "manual",
+      "entityType": "indexes"
+    },
+    {
+      "table": "base_row",
+      "name": "base_row_Homework_dueOn",
+      "columns": [
+        {
+          "value": "space",
+          "isExpression": true
+        },
+        {
+          "value": "data ->> '$.\"dueOn\"'",
+          "isExpression": true
+        },
+        {
+          "value": "id",
+          "isExpression": true
+        }
+      ],
+      "isUnique": false,
+      "where": "tbl = 'Homework'",
+      "origin": "manual",
+      "entityType": "indexes"
+    },
+    {
+      "table": "base_row",
+      "name": "base_row_Homework_courseId",
+      "columns": [
+        {
+          "value": "space",
+          "isExpression": true
+        },
+        {
+          "value": "data ->> '$.\"courseId\"'",
+          "isExpression": true
+        },
+        {
+          "value": "id",
+          "isExpression": true
+        }
+      ],
+      "isUnique": false,
+      "where": "tbl = 'Homework'",
+      "origin": "manual",
+      "entityType": "indexes"
+    },
+    {
+      "table": "pending_row",
+      "name": "pending_row_SchoolClass_schoolYearId",
+      "columns": [
+        {
+          "value": "space",
+          "isExpression": true
+        },
+        {
+          "value": "data ->> '$.\"schoolYearId\"'",
+          "isExpression": true
+        },
+        {
+          "value": "id",
+          "isExpression": true
+        }
+      ],
+      "isUnique": false,
+      "where": "tbl = 'SchoolClass'",
+      "origin": "manual",
+      "entityType": "indexes"
+    },
+    {
+      "table": "pending_row",
+      "name": "pending_row_CourseOffering_termId",
+      "columns": [
+        {
+          "value": "space",
+          "isExpression": true
+        },
+        {
+          "value": "data ->> '$.\"termId\"'",
+          "isExpression": true
+        },
+        {
+          "value": "id",
+          "isExpression": true
+        }
+      ],
+      "isUnique": false,
+      "where": "tbl = 'CourseOffering'",
+      "origin": "manual",
+      "entityType": "indexes"
+    },
+    {
+      "table": "pending_row",
+      "name": "pending_row_Homework_dueOn",
+      "columns": [
+        {
+          "value": "space",
+          "isExpression": true
+        },
+        {
+          "value": "data ->> '$.\"dueOn\"'",
+          "isExpression": true
+        },
+        {
+          "value": "id",
+          "isExpression": true
+        }
+      ],
+      "isUnique": false,
+      "where": "tbl = 'Homework'",
+      "origin": "manual",
+      "entityType": "indexes"
+    },
+    {
+      "table": "pending_row",
+      "name": "pending_row_Homework_courseId",
+      "columns": [
+        {
+          "value": "space",
+          "isExpression": true
+        },
+        {
+          "value": "data ->> '$.\"courseId\"'",
+          "isExpression": true
+        },
+        {
+          "value": "id",
+          "isExpression": true
+        }
+      ],
+      "isUnique": false,
+      "where": "tbl = 'Homework'",
+      "origin": "manual",
+      "entityType": "indexes"
+    },
+    {
+      "table": "base_row",
+      "name": "base_row_pk",
+      "columns": ["space", "tbl", "id"],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "table": "pending_row",
+      "name": "pending_row_pk",
+      "columns": ["space", "tbl", "id"],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "table": "sync_rejected_command",
+      "name": "sync_rejected_command_pk",
+      "columns": ["client_id", "mutation_id"],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "table": "sync_meta",
+      "name": "sync_meta_pk",
+      "columns": ["id"],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "table": "sync_outbox",
+      "name": "sync_outbox_pk",
+      "columns": ["mutation_id"],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "table": "sync_settled_command",
+      "name": "sync_settled_command_pk",
+      "columns": ["mutation_id"],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "table": "sync_space",
+      "name": "sync_space_pk",
+      "columns": ["id"],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "name": "Course",
+      "definition": "select space, id, data ->> '$.\"name\"' as \"name\", data ->> '$.\"subjectId\"' as \"subjectId\" from sync_row_view where tbl = 'Course'",
+      "isExisting": false,
+      "error": null,
+      "entityType": "views"
+    },
+    {
+      "name": "CourseOffering",
+      "definition": "select space, id, data ->> '$.\"courseId\"' as \"courseId\", data ->> '$.\"termId\"' as \"termId\", data -> '$.\"gradeLevels\"' as \"gradeLevels\", data -> '$.\"classIds\"' as \"classIds\", data ->> '$.\"groupKey\"' as \"groupKey\" from sync_row_view where tbl = 'CourseOffering'",
+      "isExisting": false,
+      "error": null,
+      "entityType": "views"
+    },
+    {
+      "name": "Enrollment",
+      "definition": "select space, id, data ->> '$.\"termId\"' as \"termId\", data ->> '$.\"gradeLevel\"' as \"gradeLevel\", data ->> '$.\"classId\"' as \"classId\", data -> '$.\"courseIds\"' as \"courseIds\" from sync_row_view where tbl = 'Enrollment'",
+      "isExisting": false,
+      "error": null,
+      "entityType": "views"
+    },
+    {
+      "name": "Homework",
+      "definition": "select space, id, data ->> '$.\"courseId\"' as \"courseId\", data ->> '$.\"title\"' as \"title\", data ->> '$.\"description\"' as \"description\", data ->> '$.\"dueOn\"' as \"dueOn\", data ->> '$.\"doneOn\"' as \"doneOn\" from sync_row_view where tbl = 'Homework'",
+      "isExisting": false,
+      "error": null,
+      "entityType": "views"
+    },
+    {
+      "name": "Notebook",
+      "definition": "select space, id, data ->> '$.\"schoolId\"' as \"schoolId\" from sync_row_view where tbl = 'Notebook'",
+      "isExisting": false,
+      "error": null,
+      "entityType": "views"
+    },
+    {
+      "name": "NotebookProfile",
+      "definition": "select space, id, data ->> '$.\"displayName\"' as \"displayName\" from sync_row_view where tbl = 'NotebookProfile'",
+      "isExisting": false,
+      "error": null,
+      "entityType": "views"
+    },
+    {
+      "name": "School",
+      "definition": "select space, id, data ->> '$.\"name\"' as \"name\", data ->> '$.\"timeZone\"' as \"timeZone\" from sync_row_view where tbl = 'School'",
+      "isExisting": false,
+      "error": null,
+      "entityType": "views"
+    },
+    {
+      "name": "SchoolClass",
+      "definition": "select space, id, data ->> '$.\"schoolYearId\"' as \"schoolYearId\", data ->> '$.\"name\"' as \"name\", data ->> '$.\"gradeLevel\"' as \"gradeLevel\" from sync_row_view where tbl = 'SchoolClass'",
+      "isExisting": false,
+      "error": null,
+      "entityType": "views"
+    },
+    {
+      "name": "SchoolYear",
+      "definition": "select space, id, data ->> '$.\"name\"' as \"name\", data -> '$.\"dates\"' as \"dates\" from sync_row_view where tbl = 'SchoolYear'",
+      "isExisting": false,
+      "error": null,
+      "entityType": "views"
+    },
+    {
+      "name": "Subject",
+      "definition": "select space, id, data ->> '$.\"name\"' as \"name\", data ->> '$.\"shortName\"' as \"shortName\" from sync_row_view where tbl = 'Subject'",
+      "isExisting": false,
+      "error": null,
+      "entityType": "views"
+    },
+    {
+      "name": "Term",
+      "definition": "select space, id, data ->> '$.\"schoolYearId\"' as \"schoolYearId\", data ->> '$.\"name\"' as \"name\", data -> '$.\"dates\"' as \"dates\" from sync_row_view where tbl = 'Term'",
+      "isExisting": false,
+      "error": null,
+      "entityType": "views"
+    },
+    {
+      "name": "sync_row_view",
+      "definition": "select space, tbl, id, data from pending_row where data is not null\n      union all\n      select space, tbl, id, data from base_row as base\n      where not exists (\n        select 1 from pending_row as pending\n        where pending.space = base.space and pending.tbl = base.tbl and pending.id = base.id\n      )",
+      "isExisting": false,
+      "error": null,
+      "entityType": "views"
+    }
+  ],
+  "renames": []
+}

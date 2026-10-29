@@ -3,7 +3,10 @@ declare module "@effect/wa-sqlite/src/examples/AccessHandlePoolVFS.js" {
   import type * as WaSqlite from "@effect/wa-sqlite";
 
   export const AccessHandlePoolVFS: {
-    create(directory: string, module: Parameters<typeof WaSqlite.Factory>[0]): Promise<SQLiteVFS>;
+    create(
+      directory: string,
+      module: Parameters<typeof WaSqlite.Factory>[0],
+    ): Promise<Omit<SQLiteVFS, "close"> & { close(): Promise<void> }>;
   };
 }
 
