@@ -12,7 +12,9 @@
     "./vectors": "./src/vectors.ts"
   },
   "dependencies": {
+    "@noble/ciphers": "catalog:",
     "@noble/curves": "catalog:",
+    "@noble/hashes": "catalog:",
     "@noble/post-quantum": "catalog:",
     "effect": "catalog:"
   },
