@@ -1,0 +1,1 @@
+ALTER TABLE `sync_meta` ADD `replay_due` integer DEFAULT 0 NOT NULL;

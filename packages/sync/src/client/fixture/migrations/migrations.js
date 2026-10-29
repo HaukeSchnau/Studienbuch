@@ -2,10 +2,12 @@
 
 import m0000 from "./20261029054754_device/migration.sql";
 import m0001 from "./20261029055817_settled/migration.sql";
+import m0002 from "./20261029064743_replay_due/migration.sql";
 
 export default {
   migrations: {
     "20261029054754_device": m0000,
     "20261029055817_settled": m0001,
+    "20261029064743_replay_due": m0002,
   },
 };

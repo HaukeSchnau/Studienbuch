@@ -28,6 +28,14 @@ export class Disconnected extends Schema.TaggedError<
   { readonly brand: unique symbol }
 >()("SyncClient.Disconnected", {}) {}
 
+/**
+ * The server needs a newer app. `minimum` names the versions when the server said so in an error;
+ * a socket closed with 4426 says only that this app is too old.
+ */
+export interface UpdateRequired {
+  readonly minimum: Option.Option<{ readonly protocol: number; readonly schema: number }>;
+}
+
 /** The two calls of one connection. */
 export interface Remote {
   readonly push: (
@@ -62,10 +70,7 @@ export interface Device {
     change: Partial<{
       readonly pushing: boolean;
       readonly pulling: boolean;
-      readonly updateRequired: Option.Option<{
-        readonly protocol: number;
-        readonly schema: number;
-      }>;
+      readonly updateRequired: Option.Option<UpdateRequired>;
     }>,
   ) => Effect.Effect<void>;
   /** Runs `effect` in one transaction, then invalidates the tables it reports. */
@@ -106,7 +111,10 @@ export const make = (device: Device) => {
     );
 
   const updateRequired = (minimum: { readonly protocol: number; readonly schema: number }) =>
-    Effect.as(device.report({ updateRequired: Option.some(minimum) }), "update-required" as const);
+    Effect.as(
+      device.report({ updateRequired: Option.some({ minimum: Option.some(minimum) }) }),
+      "update-required" as const,
+    );
 
   /** Gives the outbox a new client id, numbered again from 1, inside the caller's transaction. */
   const renumberTo = Effect.fnUntraced(function* (to: string) {
@@ -144,6 +152,7 @@ export const make = (device: Device) => {
         const gapless = yield* Outbox.restore(changed.lastMutationId, changed.syncEpoch);
         const renumbered = gapless ? Option.none() : Option.some(yield* renumberTo(to));
         const replayed = yield* Rebase.replay(definition, actor);
+        yield* Outbox.setReplayDue(false);
 
         return {
           renumbered,
@@ -242,9 +251,10 @@ export const make = (device: Device) => {
 
   /**
    * Applies one page in one transaction: the spaces and base rows, and on the last page the
-   * settled commands and a replay of the rest, when any page changed something.
+   * settled commands and a replay of the rest, when this page or one before changed something.
+   * `replay_due` carries that across pages, and across a pull that a drop or a crash cut short.
    */
-  const apply = Effect.fnUntraced(function* (response: Protocol.PullResponse, dirty: boolean) {
+  const apply = Effect.fnUntraced(function* (response: Protocol.PullResponse) {
     const now = yield* Clock.currentTimeMillis;
     const to = yield* Ids.random;
 
@@ -268,18 +278,18 @@ export const make = (device: Device) => {
         const refused = Option.exists(settled, (each) => each.refused.length > 0);
 
         const changed =
-          dirty ||
+          meta.replayDue ||
           tables.size > 0 ||
           Option.isSome(renumbered) ||
           Option.exists(settled, (each) => each.applied.length > 0) ||
           refused;
 
         const replayed = changed && !response.more ? yield* Rebase.replay(definition, actor) : [];
+        yield* Outbox.setReplayDue(changed && response.more);
 
         return {
           settled,
           renumbered,
-          dirty: changed && response.more,
           tables: [
             ...tables,
             ...replayed,
@@ -294,8 +304,20 @@ export const make = (device: Device) => {
     if (Option.isSome(result.renumbered)) yield* device.renumbered(result.renumbered.value);
 
     if (Option.isSome(result.settled)) yield* device.settled(result.settled.value);
+  });
 
-    return result.dirty;
+  /** Replays the outbox when a page changed base rows and no replay followed, as after a cut. */
+  const replayIfDue = Effect.gen(function* () {
+    if (!(yield* Outbox.meta).replayDue) return;
+
+    yield* device.commit(
+      Effect.gen(function* () {
+        const tables = yield* Rebase.replay(definition, actor);
+        yield* Outbox.setReplayDue(false);
+
+        return { tables };
+      }),
+    );
   });
 
   const cursors = Effect.gen(function* () {
@@ -307,8 +329,6 @@ export const make = (device: Device) => {
   });
 
   const pull = Effect.fnUntraced(function* (remote: Remote) {
-    let dirty = false;
-
     for (;;) {
       const meta = yield* Outbox.meta;
       const before = yield* cursors;
@@ -326,6 +346,9 @@ export const make = (device: Device) => {
 
       if (Result.isFailure(result)) {
         const error = result.failure;
+
+        // Pages before the cut changed base rows: the screens get a replay on them now.
+        yield* replayIfDue;
 
         switch (error._tag) {
           case "SyncClient.Disconnected":
@@ -347,15 +370,19 @@ export const make = (device: Device) => {
         }
       }
 
-      dirty = yield* apply(result.success, dirty);
+      yield* apply(result.success);
 
       if (!result.success.more) return "done";
 
       // Another page that moves no cursor would be asked for forever.
+      const moved = new Map(before.map((cursor) => [cursor.space, cursor.version]));
       const after = yield* cursors;
 
-      if (after.every((cursor, index) => cursor.version === before[index]?.version)) {
-        if (after.length === before.length) return "retry";
+      if (
+        after.length === before.length &&
+        after.every((cursor) => moved.get(cursor.space) === cursor.version)
+      ) {
+        return "retry";
       }
     }
   });
@@ -393,5 +420,5 @@ export const make = (device: Device) => {
     return "retry";
   });
 
-  return { round } as const;
+  return { round, replayIfDue } as const;
 };

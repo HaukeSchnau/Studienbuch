@@ -11,18 +11,28 @@ import * as Reactivity from "effect/reactivity/Reactivity";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import type * as Scope from "effect/Scope";
+import * as Queue from "effect/Queue";
 import * as Stream from "effect/Stream";
+import * as TestClock from "effect/testing/TestClock";
+import { Protocol } from "../protocol/Protocol.ts";
 import { Refusal } from "../protocol/Refusal.ts";
+import { Link } from "../simulation/Link.ts";
+import { Network } from "../simulation/Network.ts";
 import { DeviceDatabase } from "./DeviceDatabase.ts";
 import { Devices } from "./fixture/Devices.ts";
 import { Notes } from "./fixture/Notes.ts";
 import { NotesDevice } from "./fixture/NotesDevice.ts";
 import { Outbox } from "./Outbox.ts";
+import { Ports } from "./Ports.ts";
+import { Supervisor } from "./Supervisor.ts";
 import { SyncClient } from "./SyncClient.ts";
 import { SyncQuery } from "./SyncQuery.ts";
+import { WebSocketTransport } from "./WebSocketTransport.ts";
 
 const engine = SyncClient.layer(Notes.schema).pipe(
-  Layer.provideMerge(Layer.mergeAll(Devices.session, Devices.secrets, Devices.crypto)),
+  Layer.provideMerge(
+    Layer.mergeAll(Devices.session, Devices.secrets, Devices.crypto, Devices.disconnected),
+  ),
 );
 
 type Services = SyncClient.Service | SqlClient.SqlClient | Reactivity.Reactivity | Scope.Scope;
@@ -324,6 +334,158 @@ describe("SyncClient refusals", () => {
         expect(yield* SyncClient.refusals.run(), driver).toEqual([refused]);
         expect(yield* Outbox.pending, driver).toEqual([]);
       }),
+    ),
+  );
+});
+
+describe("SyncClient online", () => {
+  const ChooseArgs = Schema.Struct({ course: Schema.String });
+  const decodeChoose = Schema.decodeUnknownEffect(ChooseArgs);
+
+  /** A server that applies every push and returns the applied choices and the school's courses. */
+  const server = Effect.gen(function* () {
+    const pushed: Array<number> = [];
+    const choices = new Map<number, string>();
+    const pulled = yield* Queue.unbounded<void>();
+
+    const handlers = Protocol.Rpcs.toLayer({
+      "Sync.push": (request) =>
+        Effect.gen(function* () {
+          for (const command of request.commands) {
+            pushed.push(command.mutationId);
+
+            if (command._tag === "Mutate") {
+              choices.set(
+                command.mutationId,
+                (yield* Effect.orDie(decodeChoose(command.args))).course,
+              );
+            }
+          }
+
+          return {
+            lastMutationId: Math.max(0, ...choices.keys()),
+            outcomes: request.commands.map((command) =>
+              Protocol.Applied.make({ mutationId: command.mutationId }),
+            ),
+          };
+        }),
+      "Sync.pull": () =>
+        Effect.gen(function* () {
+          yield* Queue.offer(pulled, undefined);
+
+          return {
+            syncEpoch: "epoch-1",
+            spaces: [
+              {
+                id: "nb-lena",
+                kind: "notebook",
+                role: "owner",
+                version: choices.size,
+                keyEpoch: null,
+              },
+              { id: "igs", kind: "school", role: "reader", version: 1, keyEpoch: null },
+            ],
+            patches: [
+              {
+                space: "igs",
+                reset: true,
+                to: 1,
+                ops: [
+                  {
+                    tbl: "Course",
+                    id: "ma",
+                    version: 1,
+                    row: Protocol.Readable.make({ data: { name: "Mathe" } }),
+                  },
+                ],
+              },
+              {
+                space: "nb-lena",
+                reset: true,
+                to: choices.size,
+                ops: [...choices.values()].map((course) => ({
+                  tbl: "Choice",
+                  id: course,
+                  version: choices.size,
+                  row: Protocol.Readable.make({ data: { course } }),
+                })),
+              },
+            ],
+            removed: [],
+            lastMutationId: Math.max(0, ...choices.keys()),
+            refusals: [],
+            more: false,
+          };
+        }),
+      "Sync.events": () => Stream.never,
+    });
+
+    const transport = Ports.Transport.of({
+      connect: Effect.gen(function* () {
+        const link = yield* Link.make(() => Effect.void);
+        yield* Network.serveSocket(Protocol.Rpcs, link.server).pipe(
+          Effect.provide(handlers),
+          Effect.forkScoped,
+        );
+
+        return yield* WebSocketTransport.fromSocket(link.device);
+      }),
+    });
+
+    return { pushed, pulled, transport };
+  });
+
+  it.effect("a write leaves for the server by itself and settles", () =>
+    Effect.forEach(
+      Devices.drivers,
+      (driver) =>
+        Effect.gen(function* () {
+          const { pushed, pulled, transport } = yield* server;
+
+          const online = SyncClient.layer(Notes.schema).pipe(
+            Layer.provideMerge(
+              Layer.mergeAll(
+                Devices.session,
+                Devices.secrets,
+                Devices.crypto,
+                Layer.succeed(Ports.Lifecycle, {
+                  changes: Stream.make({ foreground: true, online: true }),
+                }),
+                Layer.succeed(Ports.Transport, transport),
+              ),
+            ),
+            Layer.provideMerge(Devices.database(driver)),
+          );
+
+          yield* Effect.gen(function* () {
+            const sync = yield* SyncClient.Service;
+
+            const idle = sync.status.changes.pipe(
+              Stream.filter((status) => !status.pulling && !status.pushing),
+              Stream.runHead,
+            );
+
+            // The first round after connecting pulls the spaces and the school.
+            yield* TestClock.adjust(Supervisor.debounce);
+            yield* Queue.take(pulled);
+            yield* idle;
+
+            const { confirmed } = yield* sync.mutate(Notes.choose, {
+              notebook: "nb-lena",
+              school: "igs",
+              course: "ma",
+            });
+
+            yield* TestClock.adjust(Supervisor.debounce);
+            yield* confirmed;
+
+            expect(pushed, driver).toEqual([1]);
+            expect(yield* Outbox.pending, driver).toEqual([]);
+            expect(yield* overlay, driver).toEqual([]);
+            expect((yield* sync.status.get).connection, driver).toBe("online");
+          }).pipe(Effect.provide(online));
+        }).pipe(Effect.scoped),
+      { discard: true },
     ),
   );
 });
