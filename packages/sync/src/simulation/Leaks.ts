@@ -17,14 +17,22 @@ export const prefix = "stu-plaintext-";
 
 export const marker = (n: number) => `${prefix}${n.toString(36)}`;
 
+/**
+ * What a forged command's markers start with. A forged frame carries them on purpose, but the
+ * server must store and log nothing of a command it can't read.
+ */
+export const forgedPrefix = "stu-forged-";
+
+export const forgedMarker = (n: number) => `${forgedPrefix}${n.toString(36)}`;
+
 const utf8 = new TextEncoder();
 
 /**
  * The base64 characters that depend only on the prefix's bytes, when they start `offset` bytes
  * into what is encoded. The characters at either end also depend on the neighbouring bytes.
  */
-const stableBase64 = (encode: (bytes: Uint8Array) => string, offset: number) => {
-  const bytes = utf8.encode(prefix);
+const stableBase64 = (text: string, encode: (bytes: Uint8Array) => string, offset: number) => {
+  const bytes = utf8.encode(text);
   const padded = new Uint8Array(offset + bytes.length);
   padded.set(bytes, offset);
   const first = Math.ceil((offset * 8) / 6);
@@ -33,18 +41,24 @@ const stableBase64 = (encode: (bytes: Uint8Array) => string, offset: number) => 
   return encode(padded).slice(first, end);
 };
 
-/** Every form the prefix takes in text. */
-export const forms: ReadonlyArray<string> = [
-  prefix,
-  Hex.encode(prefix),
-  Hex.encode(prefix).toUpperCase(),
+const formsOf = (text: string) => [
+  text,
+  Hex.encode(text),
+  Hex.encode(text).toUpperCase(),
   ...[0, 1, 2].flatMap((offset) => [
-    stableBase64(Base64.encode, offset),
-    stableBase64(Base64Url.encode, offset),
+    stableBase64(text, Base64.encode, offset),
+    stableBase64(text, Base64Url.encode, offset),
   ]),
 ];
 
-export const inText = (text: string) => forms.some((form) => text.includes(form));
+/** Every form an encrypted field's marker takes in text. */
+export const forms: ReadonlyArray<string> = formsOf(prefix);
+
+/** The forms of both kinds of marker, for what the server stores and logs. */
+export const stored: ReadonlyArray<string> = [...forms, ...formsOf(forgedPrefix)];
+
+export const inText = (text: string, among: ReadonlyArray<string> = forms) =>
+  among.some((form) => text.includes(form));
 
 /** Bytes as one character per byte, so the prefix's ASCII and text that bytes hold both show. */
 const asText = (bytes: Uint8Array) => {
@@ -55,7 +69,8 @@ const asText = (bytes: Uint8Array) => {
   return text;
 };
 
-export const inBytes = (bytes: Uint8Array) => inText(asText(bytes));
+export const inBytes = (bytes: Uint8Array, among: ReadonlyArray<string> = forms) =>
+  inText(asText(bytes), among);
 
 export interface Leak {
   /** Where, such as `postgres sync_row` or `frame up from device a`. */
@@ -65,8 +80,12 @@ export interface Leak {
 }
 
 /** The leak in `text`, if any, with `place` and an excerpt for the report. */
-export const find = (place: string, text: string): ReadonlyArray<Leak> => {
-  for (const form of forms) {
+export const find = (
+  place: string,
+  text: string,
+  among: ReadonlyArray<string> = forms,
+): ReadonlyArray<Leak> => {
+  for (const form of among) {
     const at = text.indexOf(form);
 
     if (at !== -1) return [{ place, excerpt: text.slice(Math.max(0, at - 40), at + 80) }];
@@ -82,14 +101,14 @@ const hexRuns = /\\\\x((?:[0-9a-fA-F]{2})+)/gu;
 
 /** The leak in a row's JSON, or in the bytes of one of its `bytea` values. */
 const findInRow = (place: string, row: string): ReadonlyArray<Leak> => {
-  const inText = find(place, row);
+  const inText = find(place, row, stored);
 
   if (inText.length > 0) return inText;
 
   for (const [, hex = ""] of row.matchAll(hexRuns)) {
     const bytes = Result.getOrUndefined(Hex.decode(hex));
 
-    if (bytes !== undefined && inBytes(bytes))
+    if (bytes !== undefined && inBytes(bytes, stored))
       return [{ place, excerpt: `bytes \\x${hex.slice(0, 80)}` }];
   }
 
@@ -98,7 +117,7 @@ const findInRow = (place: string, row: string): ReadonlyArray<Leak> => {
 
 /**
  * Every row of every table outside Postgres's own schemas, as `row_to_json` writes it: text and
- * JSON as they are, and bytes as hex, which it also decodes.
+ * JSON as they are, and bytes as hex, which it also decodes. Both kinds of marker count.
  */
 export const postgres = Effect.gen(function* () {
   const sql = yield* SqlClient.SqlClient;

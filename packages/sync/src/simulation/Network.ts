@@ -7,14 +7,13 @@ import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as NetAddress from "effect/net/NetAddress";
 import type * as Rpc from "effect/rpc/Rpc";
-import * as RpcClient from "effect/rpc/RpcClient";
 import type * as RpcGroup from "effect/rpc/RpcGroup";
 import * as RpcServer from "effect/rpc/RpcServer";
-import * as Schedule from "effect/Schedule";
 import type * as Scope from "effect/Scope";
-import * as Socket from "effect/socket/Socket";
+import type * as Socket from "effect/socket/Socket";
 import * as SocketServer from "effect/socket/SocketServer";
 import type { Ports } from "../client/Ports.ts";
+import { WebSocketTransport } from "../client/WebSocketTransport.ts";
 import { Protocol } from "../protocol/Protocol.ts";
 import type { Ports as ServerPorts } from "../server/Ports.ts";
 import { Link } from "./Link.ts";
@@ -38,23 +37,6 @@ export interface Device {
   readonly id: string;
   readonly session: ServerPorts.ResolvedSession;
 }
-
-/**
- * The device's end of a socket as the engine sees it. Its own reconnects are off and pings match
- * the engine's, because the engine's supervisor owns retries (m1-plan, choice 4).
- */
-const connected = Effect.fnUntraced(function* (
-  socket: Socket.Socket,
-  closed: Effect.Effect<number>,
-) {
-  const protocol = yield* RpcClient.makeProtocolSocket({
-    retryPolicy: Schedule.recurs(0),
-    pingInterval: "5 seconds",
-    pingTimeout: "10 seconds",
-  }).pipe(Effect.provideService(Socket.Socket, socket), Effect.provide(Protocol.serialization));
-
-  return { protocol, closed } satisfies Ports.Connected;
-});
 
 export const make = Effect.fnUntraced(function* (
   serve: Serve,
@@ -97,7 +79,7 @@ export const make = Effect.fnUntraced(function* (
         yield* accept(device, ready);
         const link = yield* Deferred.await(ready);
 
-        return yield* connected(link.device, link.closed);
+        return yield* WebSocketTransport.fromSocket(link.device);
       }),
     }),
 
