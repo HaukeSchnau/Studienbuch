@@ -2,9 +2,9 @@ import * as Rpc from "effect/rpc/Rpc";
 import * as RpcGroup from "effect/rpc/RpcGroup";
 import * as Schema from "effect/Schema";
 
-// Shortcuts for the Sync Lab and E2E runs: a fresh school, and the caller's admission to it. Every
-// server has them, and only development and preview servers answer, to a signed-in account. Ids
-// are plain strings, so the console's bundle stays free of the domain.
+// Shortcuts for the Sync Lab and E2E runs: a fresh school, and the caller's admission to it or to the
+// demo school. Every server has them, and only development and preview servers answer, to a
+// signed-in account. Ids are plain strings, so the console's bundle stays free of the domain.
 
 export * as Dev from "./Dev.ts";
 
@@ -39,6 +39,12 @@ export class UnknownSchool extends Schema.TaggedError<
   { readonly brand: unique symbol }
 >()("Dev.UnknownSchool", { school: Schema.String }) {}
 
+/** The caller signed in as a demo persona, which gets into the demo school only. */
+export class DemoAccount extends Schema.TaggedError<
+  DemoAccount,
+  { readonly brand: unique symbol }
+>()("Dev.DemoAccount", { school: Schema.String }) {}
+
 export const Rpcs = RpcGroup.make(
   /** A new school on each call, so runs never share one. */
   Rpc.make("Dev.createSchool", {
@@ -52,6 +58,15 @@ export const Rpcs = RpcGroup.make(
   Rpc.make("Dev.admit", {
     payload: { school: Schema.String },
     success: Admission,
-    error: Schema.Union([Unavailable, SignedOut, UnknownSchool]),
+    error: Schema.Union([Unavailable, SignedOut, UnknownSchool, DemoAccount]),
+  }),
+  /**
+   * "Der Demo-Schule beitreten": admits the caller to the demo school as `Dev.admit` does, with a
+   * notebook of its own and the demo courses, one of Kunst and Musik. `UnknownSchool` until the
+   * demo school is seeded.
+   */
+  Rpc.make("Dev.admitToDemoSchool", {
+    success: Admission,
+    error: Schema.Union([Unavailable, SignedOut, UnknownSchool, DemoAccount]),
   }),
 );

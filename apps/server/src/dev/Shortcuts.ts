@@ -11,6 +11,8 @@ import * as Effect from "effect/Effect";
 import type * as Headers from "effect/http/Headers";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import * as Result from "effect/Result";
+import { DemoSchool } from "../demo/DemoSchool.ts";
 import { Deployment } from "../infra/config/Deployment.ts";
 import { Access } from "../school/Access.ts";
 import { Schools } from "../school/Schools.ts";
@@ -28,14 +30,16 @@ const subjects = {
   en: { name: "Englisch", shortName: "EN" },
 };
 
-/** A school of its own under a random id, with today's term and one course of each subject. */
+/**
+ * A school of its own under a random id, with this school year's two terms and one course of each
+ * subject offered in both. The answer names today's term.
+ */
 export const createSchool = Effect.gen(function* () {
   const crypto = yield* Crypto.Crypto;
   const bytes = yield* Effect.orDie(crypto.randomBytes(6));
   const suffix = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
   const id = School.Id.make(`dev-${suffix}`);
   const year = yield* Schools.yearAround(yield* Schools.today(timeZone));
-  const term = year.current;
 
   const courses = Object.entries(subjects).map(([subjectId, subject]) => ({
     id: Course.Id.make(`${subjectId}-1`),
@@ -46,41 +50,51 @@ export const createSchool = Effect.gen(function* () {
     id,
     school: { name: `Schule ${suffix}`, timeZone },
     schoolYears: { [year.id]: year.row },
-    terms: { [term.id]: term.row },
+    terms: Object.fromEntries(year.terms.map((term) => [term.id, term.row])),
     subjects,
     classes: {},
     courses: Object.fromEntries(courses.map((course) => [course.id, course.row])),
     offerings: Object.fromEntries(
-      courses.map((course) => [
-        CourseOffering.idFor(course.id, term.id),
-        { courseId: course.id, termId: term.id, gradeLevels: [gradeLevel], classIds: [] },
-      ]),
+      year.terms.flatMap((term) =>
+        courses.map((course) => [
+          CourseOffering.idFor(course.id, term.id),
+          { courseId: course.id, termId: term.id, gradeLevels: [gradeLevel], classIds: [] },
+        ]),
+      ),
     ),
   });
 
-  return new Dev.School({ id, termId: term.id, courseIds: courses.map((course) => course.id) });
+  return new Dev.School({
+    id,
+    termId: year.current.id,
+    courseIds: courses.map((course) => course.id),
+  });
 });
 
-/** Admits the account with every course the school offers today to {@link gradeLevel}. */
-export const admit = Effect.fn("Shortcuts.admit")(function* (account: string, school: string) {
+/** Admits the account with the courses the school offers today to the grade level. */
+export const admit = Effect.fn("Shortcuts.admit")(function* (
+  account: string,
+  school: string,
+  grade: School.GradeLevel,
+) {
   const id = School.Id.makeOption(school);
 
   if (Option.isNone(id)) return yield* new Dev.UnknownSchool({ school });
 
-  const admitted = yield* Access.admit(
-    account,
-    id.value,
-    yield* Schools.offered(id.value, gradeLevel),
-  ).pipe(
-    Effect.asSome,
-    Effect.catchTags({ "Access.UnknownSchool": () => Effect.succeedNone }),
-    // The choice is what the school offers, which `enrollment.set` accepts.
-    Effect.orDie,
+  const admitted = yield* Effect.result(
+    Access.admit(account, id.value, yield* Schools.offered(id.value, grade)),
   );
 
-  if (Option.isNone(admitted)) return yield* new Dev.UnknownSchool({ school });
+  if (Result.isSuccess(admitted)) return new Dev.Admission({ notebook: admitted.success.notebook });
 
-  return new Dev.Admission({ notebook: admitted.value.notebook });
+  const refusal = admitted.failure;
+
+  if (refusal._tag === "Access.UnknownSchool") return yield* new Dev.UnknownSchool({ school });
+
+  if (refusal._tag === "Access.DemoAccount") return yield* new Dev.DemoAccount({ school });
+
+  // The choice is what the school offers, which `enrollment.set` accepts.
+  return yield* Effect.die(refusal);
 });
 
 export const handlers = Dev.Rpcs.toLayer(
@@ -90,9 +104,7 @@ export const handlers = Dev.Rpcs.toLayer(
 
     /** The calling account, on a development or preview server only. */
     const caller = Effect.fn("Shortcuts.caller")(function* (headers: Headers.Headers) {
-      if (environment !== "development" && environment !== "preview") {
-        return yield* new Dev.Unavailable();
-      }
+      if (!Deployment.isDevelopmentOrPreview(environment)) return yield* new Dev.Unavailable();
 
       const session = yield* sessions.resolve(headers);
 
@@ -104,7 +116,11 @@ export const handlers = Dev.Rpcs.toLayer(
     return Dev.Rpcs.of({
       "Dev.createSchool": (_, { headers }) => Effect.andThen(caller(headers), createSchool),
       "Dev.admit": ({ school }, { headers }) =>
-        Effect.flatMap(caller(headers), (account) => admit(account, school)),
+        Effect.flatMap(caller(headers), (account) => admit(account, school, gradeLevel)),
+      "Dev.admitToDemoSchool": (_, { headers }) =>
+        Effect.flatMap(caller(headers), (account) =>
+          admit(account, DemoSchool.id, DemoSchool.gradeLevel),
+        ),
     });
   }),
 ).pipe(Layer.provide(SyncServer.writers(Studienbuch.schema)));

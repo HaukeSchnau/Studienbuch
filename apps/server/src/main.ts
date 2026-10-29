@@ -21,6 +21,8 @@ import { Connection } from "@stu/sync";
 import { SyncEpoch, SyncServer, Tables as SyncTables } from "@stu/sync/server";
 import packageJson from "../package.json" with { type: "json" };
 import { Auth } from "./auth/Auth.ts";
+import { DemoAccounts } from "./demo/DemoAccounts.ts";
+import { Seed } from "./demo/Seed.ts";
 import { Deployment } from "./infra/config/Deployment.ts";
 import { SecretFiles } from "./infra/config/SecretFiles.ts";
 import { Database } from "./infra/database/Database.ts";
@@ -31,6 +33,7 @@ import { Telemetry } from "./infra/telemetry/Telemetry.ts";
 import { Health } from "./routes/Health.ts";
 import { DevServers } from "./routes/DevServers.ts";
 import { Rpc } from "./routes/Rpc.ts";
+import { AccessCommand } from "./school/AccessCommand.ts";
 import { WebBuilds } from "./routes/WebBuilds.ts";
 import { WellKnown } from "./routes/WellKnown.ts";
 import { Notebooks } from "./sync/Notebooks.ts";
@@ -92,6 +95,7 @@ const prepare = Effect.gen(function* () {
   yield* Effect.logInfo(
     applied.length === 0 ? "The schema is at head" : `Applied ${applied.join(", ")}`,
   );
+  yield* Seed.whenEnabled.pipe(Effect.provide(DemoAccounts.seeding));
 }).pipe(Effect.provide(runtime));
 
 class InvariantBroken extends Schema.TaggedError<
@@ -146,6 +150,8 @@ const cli = Command.make("studienbuch-server", {}, () => serve).pipe(
         Command.make("status", {}, () => status).pipe(
           Command.withDescription("Prints what /api/health/ready reports"),
         ),
+        AccessCommand.command.pipe(Command.provide(runtime)),
+        Seed.command.pipe(Command.provide(Layer.merge(runtime, DemoAccounts.seeding))),
       ]),
     ),
     Command.make("verify", {}, () => verify).pipe(

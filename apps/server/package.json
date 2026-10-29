@@ -17,6 +17,7 @@
     "@stu/core": "workspace:*",
     "@stu/sync": "workspace:*",
     "better-auth": "catalog:",
+    "better-call": "catalog:",
     "drizzle-orm": "catalog:",
     "effect": "catalog:",
     "nodemailer": "catalog:",
