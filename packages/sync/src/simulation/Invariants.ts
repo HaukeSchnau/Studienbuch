@@ -238,10 +238,14 @@ export const converged = (
 
 const decodeReason = Schema.decodeUnknownEffect(Schema.fromJsonString(Refusal.Reason));
 
-/** A refusal's tag, which the device and the server must agree on. */
-const tagOf = (reason: string) => Effect.map(decodeReason(reason), ({ _tag }) => _tag);
+/**
+ * A refusal's reason in canonical JSON, tag and fields, which the device and the server must agree
+ * on. Postgres writes `jsonb` with spaces, the device without.
+ */
+const reasonOf = (text: string) =>
+  Effect.flatMap(decodeReason(text), (reason) => Effect.fromResult(CanonicalJson.encode(reason)));
 
-/** A device's state at quiescence: its counters, its waiting commands and its refusals' tags. */
+/** A device's state at quiescence: its counters, its waiting commands and its refusals' reasons. */
 export const settledState = Effect.gen(function* () {
   const sql = yield* SqlClient.SqlClient;
   const meta = yield* Outbox.meta;
@@ -253,7 +257,7 @@ export const settledState = Effect.gen(function* () {
   `;
 
   const refused = yield* Effect.forEach(rows, (row) =>
-    Effect.map(tagOf(row.reason), (tag) => `${row.mutation_id} ${tag}`),
+    Effect.map(reasonOf(row.reason), (reason) => `${row.mutation_id} ${reason}`),
   );
 
   return { meta, waiting, refused };
@@ -265,11 +269,11 @@ export const settledState = Effect.gen(function* () {
 
 export interface Processed {
   readonly mutationId: number;
-  /** The refusal's tag, or `undefined` for an applied command. */
+  /** The refusal's reason in canonical JSON, or `undefined` for an applied command. */
   readonly refused: string | undefined;
 }
 
-/** The server's record of one client: each command it processed, and the tag of each refusal. */
+/** The server's record of one client: each command it processed, and each refusal's reason. */
 export const serverLog = Effect.fn("Invariants.serverLog")(function* (clientId: string) {
   const sql = yield* SqlClient.SqlClient;
 
@@ -281,9 +285,9 @@ export const serverLog = Effect.fn("Invariants.serverLog")(function* (clientId: 
   return yield* Effect.forEach(rows, (row) =>
     row.reason === null
       ? Effect.succeed<Processed>({ mutationId: row.mutation_id, refused: undefined })
-      : Effect.map(tagOf(row.reason), (tag): Processed => ({
+      : Effect.map(reasonOf(row.reason), (reason): Processed => ({
           mutationId: row.mutation_id,
-          refused: tag,
+          refused: reason,
         })),
   );
 }, Effect.orDie);

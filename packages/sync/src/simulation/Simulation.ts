@@ -1,8 +1,7 @@
 /**
- * The deterministic simulation: a workload of steps on a fresh world, invariants after every step,
- * then every device healed and synced until nothing moves, and the invariants of quiescence. The
- * same workload gives the same trace. Workloads are schemas, so `Arbitrary` generates them, shrinks
- * a failing one to the shortest that still fails, and replays it.
+ * The seeded simulation: steps on a fresh world, invariants after each, then rest and its own
+ * invariants. A workload behaves the same on every run, but its frames still differ in the devices'
+ * span ids (`Math.random`) and the database's system identifier in the restore epoch.
  */
 import * as Cause from "effect/Cause";
 import * as Duration from "effect/Duration";
@@ -84,9 +83,11 @@ export const CrashDuringChoose = Schema.TaggedStruct("CrashDuringChoose", {
 
 export const Offline = Schema.TaggedStruct("Offline", { device: Device, offline: Schema.Boolean });
 
+const oneShots = ["dropNextResponse", "duplicateNextPush", "reorderNext"] as const;
+
 export const Fault = Schema.TaggedStruct("Fault", {
   device: Device,
-  fault: Schema.Literals(["dropNextResponse", "duplicateNextPush", "reorderNext"]),
+  fault: Schema.Literals(oneShots),
 });
 
 export const Latency = Schema.TaggedStruct("Latency", {
@@ -123,12 +124,9 @@ export const Wait = Schema.TaggedStruct("Wait", {
   millis: Schema.Int.check(Schema.isBetween({ minimum: 0, maximum: 300_000 })),
 });
 
-/** One thing that happens. */
-export const Step = Schema.Union([
-  Add,
-  Rename,
-  Toggle,
-  Remove,
+const noteSteps = [Add, Rename, Toggle, Remove] as const;
+
+const readableSteps = [
   Choose,
   Sync,
   CrashDuringSync,
@@ -143,27 +141,59 @@ export const Step = Schema.Union([
   Offer,
   Dismiss,
   Wait,
-]);
+] as const;
+
+/** One thing that happens. */
+export const Step = Schema.Union([...noteSteps, ...readableSteps]);
 
 export type Step = typeof Step.Type;
 
-export const Workload = Schema.Struct({
-  /** Seeds `Random` for everything in the run: ids, client ids, the restore epoch. */
-  seed: Schema.Int,
-  steps: Schema.Array(Step).check(Schema.isMaxLength(40)),
-});
+const workload = (steps: Schema.Codec<Step, unknown>) =>
+  Schema.Struct({
+    /** Seeds `Random` for everything in the run: ids, client ids, the restore epoch's id. */
+    seed: Schema.Int,
+    steps: Schema.Array(steps).check(Schema.isMinLength(15), Schema.isMaxLength(40)),
+  });
+
+export const Workload = workload(Step);
 
 export type Workload = typeof Workload.Type;
+
+/**
+ * What random workloads draw from. Until the engine seals, a note step would only fill a workload
+ * with steps that do nothing, so they stay out.
+ */
+export const Generated = workload(sealing ? Step : Schema.Union(readableSteps));
 
 export interface Violation extends Invariants.Violation {
   /** The step after which it showed, counting from 0, or `settled` at quiescence. */
   readonly step: number | "settled";
 }
 
+/** The faults that fire once, and forges, which the result counts. */
+export const Counted = Schema.Literals([...oneShots, "forge"]);
+
+export type Counted = typeof Counted.Type;
+
+const isCounted = Schema.is(Counted);
+
+/** Counts of faults armed and fired, all zero. */
+export const noFaults = (): Record<Counted, { armed: number; fired: number }> => ({
+  dropNextResponse: { armed: 0, fired: 0 },
+  duplicateNextPush: { armed: 0, fired: 0 },
+  reorderNext: { armed: 0, fired: 0 },
+  forge: { armed: 0, fired: 0 },
+});
+
 export interface Result {
-  /** One line per step with what it did, the same on every run of the workload. */
+  /**
+   * One line per step with what it did, and one per fault that fired. Every run of the workload
+   * behaves the same, so its trace is the same.
+   */
   readonly trace: ReadonlyArray<string>;
   readonly violations: ReadonlyArray<Violation>;
+  /** How many times a step armed each kind of fault while none was armed, and how often it fired. */
+  readonly faults: Readonly<Record<Counted, { readonly armed: number; readonly fired: number }>>;
 }
 
 const encodeStep = Schema.encodeEffect(Schema.fromJsonString(Step));
@@ -242,6 +272,36 @@ export const run = (workload: Workload) =>
     let framesChecked = 0;
     let linesChecked = 0;
     const marker = () => Leaks.marker(markers++);
+
+    const faults = noFaults();
+
+    /** Arms a fault on `on` and counts it, unless one of its kind was armed already. */
+    const arm = Effect.fn("Simulation.arm")(function* (
+      on: World.Device,
+      kind: Counted,
+      arming: Effect.Effect<void>,
+    ) {
+      const before = yield* SubscriptionRef.get(on.faults.settings);
+      const armed = kind === "forge" ? Option.isSome(before.forge) : before[kind];
+
+      yield* arming;
+
+      if (armed) return "armed already";
+      faults[kind].armed += 1;
+
+      return "armed";
+    });
+
+    /** Counts and traces the faults that fired since the last call. */
+    const traceFired = Effect.gen(function* () {
+      for (const each of world.devices.values()) {
+        for (const event of yield* each.fired) {
+          if (!isCounted(event.fault)) continue;
+          faults[event.fault].fired += 1;
+          trace.push(`  ${each.id} fired ${event.fault}: ${event.detail}`);
+        }
+      }
+    });
 
     const device = (id: World.DeviceId) => {
       const found = world.devices.get(id);
@@ -335,9 +395,9 @@ export const run = (workload: Workload) =>
         }
 
         case "Fault": {
-          yield* (yield* device(step.device)).faults.arm(step.fault);
+          const on = yield* device(step.device);
 
-          return "armed";
+          return yield* arm(on, step.fault, on.faults.arm(step.fault));
         }
 
         case "Latency": {
@@ -356,34 +416,30 @@ export const run = (workload: Workload) =>
           const on = yield* device(step.device);
 
           // Arguments the server must refuse: a course the school never offers.
-          yield* on.faults.forge(
-            Faults.Forge.RewriteArgs({
-              mutator: Planner.choose.name,
-              args: { notebook: on.notebook, school: World.school, courses: [World.unknownCourse] },
-            }),
-          );
+          const forge = Faults.Forge.RewriteArgs({
+            mutator: Planner.choose.name,
+            args: { notebook: on.notebook, school: World.school, courses: [World.unknownCourse] },
+          });
 
-          return "armed";
+          return yield* arm(on, "forge", on.faults.forge(forge));
         }
 
         case "ForgeUnreadable": {
           const on = yield* device(step.device);
           const leaked = Leaks.forgedMarker(markers++);
 
-          yield* on.faults.forge(
-            step.unknownMutator
-              ? Faults.Forge.RewriteArgs({
-                  mutator: Planner.choose.name,
-                  name: "note.leak",
-                  args: { title: leaked },
-                })
-              : Faults.Forge.RewriteArgs({
-                  mutator: Planner.choose.name,
-                  args: { notebook: on.notebook, school: World.school, courses: leaked },
-                }),
-          );
+          const forge = step.unknownMutator
+            ? Faults.Forge.RewriteArgs({
+                mutator: Planner.choose.name,
+                name: "note.leak",
+                args: { title: leaked },
+              })
+            : Faults.Forge.RewriteArgs({
+                mutator: Planner.choose.name,
+                args: { notebook: on.notebook, school: World.school, courses: leaked },
+              });
 
-          return "armed";
+          return yield* arm(on, "forge", on.faults.forge(forge));
         }
 
         case "Offer": {
@@ -465,14 +521,14 @@ export const run = (workload: Workload) =>
       return found;
     });
 
-    /** Heals every device's network and syncs each a few times, so the world can come to rest. */
+    /**
+     * Brings every device back online at full speed and lets them work, so the world can come to
+     * rest. A one-shot fault or a forge still armed fires on the device's next answer or push.
+     */
     const settle = Effect.gen(function* () {
       for (const each of world.devices.values()) {
-        // A forge is what a modified app sends, not a network fault, so it stays armed.
-        yield* SubscriptionRef.update(each.faults.settings, ({ forge }) => ({
-          ...Faults.initial,
-          forge,
-        }));
+        yield* each.faults.setOffline(false);
+        yield* each.faults.setLatency(Duration.zero);
       }
 
       const devices = [...world.devices.values()];
@@ -491,6 +547,8 @@ export const run = (workload: Workload) =>
           }
         }
       }
+
+      yield* traceFired;
 
       for (const each of devices)
         trace.push(`settled ${each.id} ${yield* syncing(each, Duration.zero)}`);
@@ -530,10 +588,11 @@ export const run = (workload: Workload) =>
     for (const [index, step] of workload.steps.entries()) {
       const done = yield* apply(step);
       trace.push(`${index} ${yield* Effect.orDie(encodeStep(step))} ${done}`);
+      yield* traceFired;
 
       for (const violation of yield* check) violations.push({ ...violation, step: index });
 
-      if (violations.length > 0) return { trace, violations } satisfies Result;
+      if (violations.length > 0) return { trace, violations, faults } satisfies Result;
     }
 
     yield* settle;
@@ -542,7 +601,7 @@ export const run = (workload: Workload) =>
       violations.push({ ...violation, step: "settled" });
     }
 
-    return { trace, violations } satisfies Result;
+    return { trace, violations, faults } satisfies Result;
   }).pipe(
     Effect.scoped,
     Random.withSeed(workload.seed),

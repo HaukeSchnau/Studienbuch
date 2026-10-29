@@ -12,6 +12,7 @@ import * as Exit from "effect/Exit";
 import * as Fiber from "effect/Fiber";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import * as PubSub from "effect/PubSub";
 import * as Random from "effect/Random";
 import * as Reactivity from "effect/reactivity/Reactivity";
 import * as Redacted from "effect/Redacted";
@@ -65,6 +66,8 @@ export interface Device {
   readonly account: Account;
   readonly notebook: string;
   readonly faults: Faults.Faults;
+  /** The faults that fired since the last call, oldest first. */
+  readonly fired: Effect.Effect<ReadonlyArray<Faults.Event>>;
   /** Runs an effect on the device's database. */
   readonly sql: <A, E>(effect: Effect.Effect<A, E, SqlClient.SqlClient>) => Effect.Effect<A, E>;
   /** The ids of the notes the device shows, in id order. */
@@ -189,6 +192,7 @@ const makeDevice = Effect.fnUntraced(function* (id: DeviceId, network: Network.N
   const notebook = accounts[account];
   const platform = yield* Layer.build(devicePlatform);
   const faults = yield* Faults.make;
+  const events = yield* faults.subscribe;
 
   const sql = <A, E>(effect: Effect.Effect<A, E, SqlClient.SqlClient>) =>
     Effect.provide(effect, platform);
@@ -248,6 +252,7 @@ const makeDevice = Effect.fnUntraced(function* (id: DeviceId, network: Network.N
     account,
     notebook,
     faults,
+    fired: PubSub.takeUpTo(events, Number.MAX_SAFE_INTEGER),
     sql,
     notes: Effect.gen(function* () {
       const db = yield* DeviceDatabase.make;

@@ -76,18 +76,28 @@ const explain = (result: Arbitrary.CheckResult<Simulation.Workload, never>) =>
 
 const random = Effect.gen(function* () {
   const { runs, seed } = yield* settings;
+  // What every workload armed and fired, so a generator that stops reaching faults fails.
+  const faults = Simulation.noFaults();
 
   const result = yield* Arbitrary.checkEffect<
     Simulation.Workload,
     never,
     SqlClient.SqlClient | Listener.Service
   >(
-    Arbitrary.schema(Simulation.Workload),
-    (workload) => Effect.map(Simulation.run(workload), ({ violations }) => violations.length === 0),
+    Arbitrary.schema(Simulation.Generated),
+    (workload) =>
+      Effect.map(Simulation.run(workload), (result) => {
+        for (const kind of Simulation.Counted.literals) {
+          faults[kind].armed += result.faults[kind].armed;
+          faults[kind].fired += result.faults[kind].fired;
+        }
+
+        return result.violations.length === 0;
+      }),
     { runs, seed },
   );
 
-  return yield* explain(result);
+  return { failure: yield* explain(result), faults };
 });
 
 describe("Simulation", () => {
@@ -109,7 +119,16 @@ describe("Simulation", () => {
 
     it.effect("random workloads keep every invariant", () =>
       Effect.gen(function* () {
-        expect(yield* random).toBeUndefined();
+        const { failure, faults } = yield* random;
+
+        expect(failure).toBeUndefined();
+        // A healed device answers again, so every armed drop fires. The others need a push or a
+        // second answer close behind, which most workloads give them.
+        expect(faults.dropNextResponse.fired).toBe(faults.dropNextResponse.armed);
+
+        for (const kind of Simulation.Counted.literals) {
+          expect(faults[kind].fired, kind).toBeGreaterThan(0);
+        }
       }),
     );
   });
