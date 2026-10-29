@@ -2,7 +2,12 @@
 # below and counting up past ports in use, so worktrees side by side never collide. The server is the
 # one origin: it proxies `/` and `/console` to Vite and `/app` to Metro, as a release serves their
 # builds. It takes the same variables as a release (ADR 0004).
-{ pkgs, config, ... }:
+{
+  pkgs,
+  lib,
+  config,
+  ...
+}:
 let
   toolchain = import ./nix/toolchain.nix { inherit pkgs; };
   root = config.devenv.root;
@@ -11,6 +16,12 @@ let
   origin = name: "http://127.0.0.1:${port name}";
   # Garage listens on 127.0.0.1 only, so a fixed key for this bucket is fine.
   bucket = "studienbuch";
+  # devenv's Garage module binds RPC to every interface, with its default secret. This copy of its
+  # config binds it to 127.0.0.1 like the S3 and admin APIs. Delete it once the module does that.
+  garageConfig = pkgs.runCommand "garage.toml" { } ''
+    sed 's/^rpc_bind_addr = "\[::\]:/rpc_bind_addr = "127.0.0.1:/' ${config.env.GARAGE_CONFIG_FILE} > $out
+    grep -q '^rpc_bind_addr = "127.0.0.1:' $out
+  '';
   key = {
     id = "GK57d1e2b00c40000000000001";
     secret = "57d1e2b00c400000000000000000000000000000000000000000000000000001";
@@ -40,6 +51,10 @@ in
       $GARAGE bucket allow --read --write --owner ${bucket} --key ${key.id}
     '';
   };
+  processes.garage.exec = lib.mkForce ''
+    mkdir -p "$DEVENV_STATE/garage/meta" "$DEVENV_STATE/garage/data"
+    exec ${config.services.garage.package}/bin/garage -c ${garageConfig} server
+  '';
 
   env = {
     STUDIENBUCH_ENVIRONMENT = "development";
