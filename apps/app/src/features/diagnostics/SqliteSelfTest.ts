@@ -54,7 +54,7 @@ const signedIn = Effect.gen(function* () {
 });
 
 /** How many tables, views and indexes an account's database got, once it is deleted again. */
-export const accountDatabase = Atom.make(
+export const accountDatabase = Atom.runtime(Layers.app).atom(
   Effect.gen(function* () {
     const count = yield* Effect.scoped(
       Effect.flatMap(Layer.build(Layers.account(accountId)), (context) =>
@@ -65,8 +65,5 @@ export const accountDatabase = Atom.make(
     yield* Layers.forget(accountId);
 
     return count;
-  }).pipe(
-    Effect.timed,
-    Effect.provide(Layers.device({ name: VirtualDevice.current, publicComputer: false })),
-  ),
+  }).pipe(Effect.timed),
 );

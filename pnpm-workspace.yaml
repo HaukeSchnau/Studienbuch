@@ -105,6 +105,10 @@ catalog:
   # Ed25519 public keys from a seed without exporting the private key. The version
   # @noble/post-quantum pins.
   "@noble/curves": 2.4.0
+  # Passkeys in the app: the browser's WebAuthn through SimpleWebAuthn, and iOS and Android
+  # through react-native-passkeys, the one library that maps PRF on iOS (stack.md).
+  "@simplewebauthn/browser": 14.0.0
+  react-native-passkeys: 0.4.2
 
 overrides:
   vite@*: "catalog:"

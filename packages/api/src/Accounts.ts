@@ -11,3 +11,9 @@ export const path = "/api/auth";
  * server keeps it in a signed cookie for Better Auth, and devices keep no cookies.
  */
 export const challengeHeader = "passkey-challenge";
+
+/** The shortest password the server accepts, and the sign-up screen counts toward. */
+export const minPasswordLength = 10;
+
+/** How long the mailed code confirms an address. The mail and the app both say so. */
+export const codeMinutes = 15;
