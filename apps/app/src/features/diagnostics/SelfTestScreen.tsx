@@ -137,15 +137,26 @@ export function SelfTestScreen() {
               accent={accentOf.pending}
             />
           ),
-          onError: (error) => (
-            <StatusRow
-              label="Kontodatenbank"
-              title="Nicht angelegt"
-              detail={error._tag}
-              status="failed"
-              accent={accentOf.failed}
-            />
-          ),
+          onError: (error) =>
+            // An account's database is named after its server, so a build without one has no
+            // account to sign in. The server row reports what's missing.
+            error._tag === "ServerOrigin.NoServer" ? (
+              <StatusRow
+                label="Kontodatenbank"
+                title="Übersprungen"
+                detail="Ohne Server-Adresse meldet sich niemand an"
+                status="missing"
+                accent={accentOf.pending}
+              />
+            ) : (
+              <StatusRow
+                label="Kontodatenbank"
+                title="Nicht angelegt"
+                detail={error._tag}
+                status="failed"
+                accent={accentOf.failed}
+              />
+            ),
           onDefect: (defect) => (
             <StatusRow
               label="Kontodatenbank"
