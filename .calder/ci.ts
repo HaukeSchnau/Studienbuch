@@ -1,11 +1,21 @@
-import { Task, cmd } from "@calder-ci/core";
-import { Pnpm, Project } from "@calder-ci/std";
+import { Flake, Nix } from "@calder-ci/core";
+import { Project } from "@calder-ci/std";
 import { flake } from "./flake.ts";
 
-const shell = flake.devShells.ci;
-const install = Pnpm.install({ shell });
+// WP-14 measurement: each release derivation as its own step, for x86_64, which srv-2 hands to its
+// x86_64 builder. A one-line edit in each app makes all three units build fresh.
+const x86 = (output: string, name: string) =>
+  Nix.build(Flake.attr(`${output}.x86_64-linux.${name}`), { name });
 
-const fmt = Task.make("fmt", { shell, setup: install, run: cmd`vp fmt --check` });
-const lint = Task.make("lint", { shell, setup: install, run: cmd`vp lint` });
-
-export default Project.standard({ flake, checks: [fmt, lint] });
+export default Project.standard({
+  flake,
+  checks: [
+    x86("packages", "deps"),
+    x86("packages", "serverBuild"),
+    x86("packages", "webBuild"),
+    x86("packages", "appWebBuild"),
+    x86("packages", "bundle"),
+    x86("checks", "closureGuard"),
+    x86("checks", "serverSmoke"),
+  ],
+});

@@ -145,3 +145,5 @@ Command.run(cli, { version: packageJson.version }).pipe(
   Effect.provide(SecretFiles.layer.pipe(Layer.provideMerge(NodeServices.layer))),
   NodeRuntime.runMain({ teardown }),
 );
+
+// WP-14 measurement 1793235366

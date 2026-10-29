@@ -4,3 +4,5 @@
 import "./src/infra/crypto/runtime.ts";
 // oxlint-disable-next-line import/no-unassigned-import -- Expo Router's entry registers the app
 import "expo-router/entry";
+
+// WP-14 measurement 1793235366

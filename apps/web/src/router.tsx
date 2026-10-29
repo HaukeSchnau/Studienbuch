@@ -12,3 +12,5 @@ declare module "@tanstack/react-router" {
     router: ReturnType<typeof getRouter>;
   }
 }
+
+// WP-14 measurement 1793235366
