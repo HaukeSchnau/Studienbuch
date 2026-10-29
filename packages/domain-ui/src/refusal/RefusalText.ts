@@ -2,7 +2,7 @@
  * What a device says when the server refused one of its changes: the card's title, and one sentence
  * per refusal tag (m1-screens.md, "Refusal sentences"). A tag from a newer server gets `fallback`.
  */
-import type { Enrollment, Homework } from "@stu/core";
+import type { Studienbuch } from "@stu/core";
 
 export * as RefusalText from "./RefusalText.ts";
 
@@ -10,7 +10,7 @@ export const title = "Nicht übernommen";
 
 export const fallback = "Der Server hat die Änderung abgelehnt.";
 
-// Every refusal of a core mutator needs its sentence before it compiles.
+// A refusal a core mutator can fail with doesn't compile until it has its sentence.
 const core = {
   "Homework.CourseNotChosen":
     "Dieser Kurs ist nicht mehr in deiner Kurswahl. Vielleicht hast du ihn auf einem anderen Gerät abgewählt.",
@@ -19,12 +19,10 @@ const core = {
   "Enrollment.ClassRequired": "Wähl zuerst deine Klasse, dann deine Kurse.",
   "Enrollment.CourseNotOffered": "Dieser Kurs wird in diesem Halbjahr nicht angeboten.",
   "Enrollment.TwoInOneGroup": "Von diesen Kursen kannst du nur einen wählen.",
-} as const satisfies Record<Homework.Refusal["_tag"] | Enrollment.Refusal["_tag"], string>;
+} as const satisfies Record<Studienbuch.RefusalTag, string>;
 
-// Refusals whose types live in @stu/sync, which this package may not import, and core's
-// `Enrollment.WrongSchool`, which arrives with the Notebook's school.
+// Refusals whose types live in @stu/sync, which this package may not import.
 const other = {
-  "Enrollment.WrongSchool": "Dieser Kurs gehört zu einer anderen Schule.",
   "Sync.NotMember": "Diese Änderung gehört in ein Notizbuch, in dem du nicht Mitglied bist.",
   "Sync.NotAllowed": "Hier darfst du nichts ändern.",
   "Sync.Locked": "Dieser Eintrag ist bestätigt und lässt sich nicht mehr ändern.",

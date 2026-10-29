@@ -40,6 +40,32 @@ describe("SubjectColor", () => {
     expect(SubjectColor.ofCourse("11bi3")).toBe(subject("Biologie"));
   });
 
+  it.each(["Ethik", "Evangelische Religion", "Katholische Religion", "Religion (kath.)"])(
+    "gives %s the values subjects' colour",
+    (name) => {
+      expect(subject(name)).toBe(subject("Werte und Normen"));
+    },
+  );
+
+  it.each(["RK", "Sozialwissenschaften", "Gesellschaftslehre", "Technik", "Astronomie"])(
+    "keeps the unknown %s off the colours of subjects that have their own",
+    (name) => {
+      const own = [
+        "Mathematik",
+        "Deutsch",
+        "Englisch",
+        "Sport",
+        "Biologie",
+        "Chemie",
+        "Physik",
+        "Geschichte",
+      ].map((known) => subject(known));
+
+      expect(own).not.toContain(subject(name));
+      expect(own).not.toContain(SubjectColor.ofCourse(name));
+    },
+  );
+
   it("gives an unknown subject the same palette slot every time", () => {
     const slot = subject("Astronomie");
 
