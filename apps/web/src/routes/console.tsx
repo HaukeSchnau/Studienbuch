@@ -1,5 +1,6 @@
 import { ClientOnly, createFileRoute } from "@tanstack/react-router";
 
+import { CapturedMail } from "#/features/mail/CapturedMail.tsx";
 import { Wordmark } from "#/domain-ui/Wordmark.tsx";
 import consoleCss from "#/features/system/console.css?url";
 import { ServerRevision } from "#/features/system/ServerRevision.tsx";
@@ -35,6 +36,7 @@ function ConsolePage() {
       <main className="console-main">
         <h1>Konsole</h1>
         <ServerRevision />
+        <CapturedMail />
       </main>
     </div>
   );

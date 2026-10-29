@@ -8,7 +8,8 @@
   "exports": {
     ".": "./src/Api.ts",
     "./System": "./src/System.ts",
-    "./Accounts": "./src/Accounts.ts"
+    "./Accounts": "./src/Accounts.ts",
+    "./Mail": "./src/Mail.ts"
   },
   "dependencies": {
     "effect": "catalog:"

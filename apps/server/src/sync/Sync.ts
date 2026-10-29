@@ -15,7 +15,7 @@ export * as Sync from "./Sync.ts";
 /** Only development and preview servers show the Sync Lab what they hold. */
 const inspection = Layer.unwrap(
   Effect.map(Deployment.Current, ({ environment }) =>
-    SyncServer.inspection(environment === "development" || environment === "preview"),
+    SyncServer.inspection(Deployment.isDevelopmentOrPreview(environment)),
   ),
 );
 
