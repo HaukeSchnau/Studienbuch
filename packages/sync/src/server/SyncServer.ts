@@ -10,8 +10,11 @@ import { SyncWriter } from "./SyncWriter.ts";
 
 export * as SyncServer from "./SyncServer.ts";
 
-/** `Spaces` and `SyncWriter` for server code, over the checked definition. */
-export const layer = (definition: Sync.Definition) =>
+/** `Spaces` and `SyncWriter` alone, for server code that writes rows but serves no device. */
+export const writers = (definition: Sync.Definition) =>
   Layer.mergeAll(Spaces.layer, SyncWriter.layer).pipe(
     Layer.provideMerge(SyncSchema.layer(definition)),
   );
+
+/** The engine for server code: `Spaces` and `SyncWriter` over the checked definition. */
+export const layer = writers;

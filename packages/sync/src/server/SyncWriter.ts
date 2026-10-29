@@ -8,7 +8,6 @@ import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Result from "effect/Result";
-import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import type { Sync } from "../definition/Sync.ts";
 import { CanonicalJson } from "../transaction/CanonicalJson.ts";
@@ -73,7 +72,7 @@ export const make = Effect.gen(function* () {
       .withTransaction(
         Effect.gen(function* () {
           const [locked] = yield* sql<{ readonly version: number }>`
-          select version::float8 as version from space where id = ${space} for update
+          select version::float8 as version from space where id = ${space} for no key update
         `;
 
           if (locked === undefined) return yield* Effect.die(`The space ${space} doesn't exist`);
@@ -109,12 +108,13 @@ export const make = Effect.gen(function* () {
       );
 
   const canonical = <T extends Sync.Any>(table: T, space: string, entry: Tx.Entry<Sync.Row<T>>) =>
-    Schema.encodeEffect(table.codec)(entry.row).pipe(
-      Effect.mapError(
-        (error) =>
-          new Tx.InvalidRow({ table: table.name, space, id: entry.id, message: error.message }),
-      ),
-      Effect.flatMap((json) => Effect.fromResult(CanonicalJson.encode(json))),
+    Tx.canonical(table, entry.row).pipe(
+      Effect.catchTags({
+        SchemaError: (error) =>
+          Effect.fail(
+            new Tx.InvalidRow({ table: table.name, space, id: entry.id, message: error.message }),
+          ),
+      }),
     );
 
   const reconcile = <T extends Sync.Any>(

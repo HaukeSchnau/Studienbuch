@@ -533,6 +533,9 @@ importers:
       '@stu/api':
         specifier: workspace:*
         version: link:../../packages/api
+      '@stu/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@stu/sync':
         specifier: workspace:*
         version: link:../../packages/sync

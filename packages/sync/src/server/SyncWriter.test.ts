@@ -86,8 +86,12 @@ describe.skipIf(Postgres18.socket === null)("SyncWriter on PostgreSQL 18", () =>
           const writer = yield* SyncWriter.Service;
           yield* spaces.create("school-reconcile", Fixture.School);
 
+          // An optional field given as `undefined` is stored absent, so it compares as unchanged.
           const lessons = (rooms: Record<string, string>) =>
-            Object.entries(rooms).map(([id, room]) => ({ id, row: { room, day: id.slice(0, 3) } }));
+            Object.entries(rooms).map(([id, room]) => ({
+              id,
+              row: { room, day: id.slice(0, 3), note: undefined },
+            }));
 
           const first = yield* writer.reconcile(
             "school-reconcile",
@@ -101,14 +105,21 @@ describe.skipIf(Postgres18.socket === null)("SyncWriter on PostgreSQL 18", () =>
             lessons({ "mon-1": "A1", "tue-1": "B2" }),
           );
 
+          const thrice = yield* writer.reconcile(
+            "school-reconcile",
+            Fixture.Lesson,
+            lessons({ "mon-1": "A1", "tue-1": "B2" }),
+          );
+
           const moved = yield* writer.reconcile(
             "school-reconcile",
             Fixture.Lesson,
             lessons({ "mon-1": "C3" }),
           );
 
-          expect([first, again, moved]).toEqual([
+          expect([first, again, thrice, moved]).toEqual([
             { written: 2, removed: 0 },
+            { written: 0, removed: 0 },
             { written: 0, removed: 0 },
             { written: 1, removed: 0 },
           ]);
@@ -237,20 +248,58 @@ describe.skipIf(Postgres18.socket === null)("SyncWriter on PostgreSQL 18", () =>
       }),
     );
 
-    it.effect("after leaving a school, a new enrollment write grants nothing for it", () =>
-      Effect.gen(function* () {
-        const spaces = yield* Spaces.Service;
-        const { lena } = yield* school("leaving", ["ma"]);
-        yield* enroll("leaving-lena", ["ma"]);
-        yield* spaces.removeMember("leaving-school", lena);
-        const left = yield* memberships(lena);
-        yield* enroll("leaving-lena", ["ma"]);
+    it.effect(
+      "leaving a school or a notebook ends what it granted, and coming back or a new course grants again",
+      () =>
+        Effect.gen(function* () {
+          const spaces = yield* Spaces.Service;
+          const { lena } = yield* school("leaving", ["ma"]);
+          // Physics has no space yet.
+          yield* enroll("leaving-lena", ["ma", "ph"]);
+          const enrolled = yield* memberships(lena);
+          yield* spaces.create("leaving-ph", Fixture.Course, {
+            parent: "leaving-school",
+            key: "ph",
+          });
+          const opened = yield* memberships(lena);
+          yield* spaces.removeMember("leaving-school", lena);
+          const left = yield* memberships(lena);
+          yield* enroll("leaving-lena", ["ma", "ph"]);
+          const rewritten = yield* memberships(lena);
+          yield* spaces.addMember("leaving-school", lena, "reader");
+          const back = yield* memberships(lena);
+          yield* spaces.removeMember("leaving-lena", lena);
 
-        expect([left, yield* memberships(lena)]).toEqual([
-          [["leaving-lena", null]],
-          [["leaving-lena", null]],
-        ]);
-      }),
+          expect({
+            enrolled,
+            opened,
+            left,
+            rewritten,
+            back,
+            without: yield* memberships(lena),
+          }).toEqual({
+            enrolled: [
+              ["leaving-lena", null],
+              ["leaving-ma", "leaving-lena"],
+              ["leaving-school", null],
+            ],
+            opened: [
+              ["leaving-lena", null],
+              ["leaving-ma", "leaving-lena"],
+              ["leaving-ph", "leaving-lena"],
+              ["leaving-school", null],
+            ],
+            left: [["leaving-lena", null]],
+            rewritten: [["leaving-lena", null]],
+            back: [
+              ["leaving-lena", null],
+              ["leaving-ma", "leaving-lena"],
+              ["leaving-ph", "leaving-lena"],
+              ["leaving-school", null],
+            ],
+            without: [["leaving-school", null]],
+          });
+        }),
     );
 
     it.effect(

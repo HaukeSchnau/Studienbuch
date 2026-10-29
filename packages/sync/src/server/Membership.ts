@@ -12,7 +12,8 @@ export * as Membership from "./Membership.ts";
 /**
  * Applies the rules over `written` tables for `space`'s rows, and returns the accounts whose
  * memberships changed. Rows name spaces by key within `space`'s parent, so a notebook reaches only
- * its own school's courses, and only members who read the parent receive them.
+ * its own school's courses, and only members who read the parent receive them. Their parent
+ * memberships stay locked until commit, so leaving the parent waits for the grant, or the reverse.
  */
 export const apply = Effect.fn("Membership.apply")(function* (
   definition: Sync.Definition,
@@ -38,6 +39,7 @@ export const apply = Effect.fn("Membership.apply")(function* (
           select m.account_id as account from space_member m
           join space_member p on p.account_id = m.account_id and p.space_id = ${parent}
           where m.space_id = ${space}
+          for share of m, p
         `;
 
   /** The spaces of `kind` under the granting space's parent whose keys the rows named. */

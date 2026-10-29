@@ -187,6 +187,17 @@ const parseJson = Schema.decodeEffect(Schema.fromJsonString(Schema.Unknown));
 
 const isId = Schema.is(Ids.Id);
 
+/**
+ * A row's JSON as its table's codec encodes it. The codec writes a field given as `undefined` as
+ * `null`, so such fields are dropped first, and a row's text never depends on which call wrote it.
+ */
+export const encodeRow = <T extends Sync.Any>(table: T, row: Sync.Row<T>) =>
+  Schema.encodeEffect(table.codec)(withoutUndefined(row));
+
+/** A row's canonical JSON text, as both engines store it and the server compares it. */
+export const canonical = <T extends Sync.Any>(table: T, row: Sync.Row<T>) =>
+  Effect.flatMap(encodeRow(table, row), (json) => Effect.fromResult(CanonicalJson.encode(json)));
+
 export const make = (store: Store): Interface => {
   const writable = new Set(store.writes);
 
@@ -223,19 +234,15 @@ export const make = (store: Store): Interface => {
       Effect.mapError(invalid(table, space, id)),
     );
 
-  // The JSON codec writes a field given as `undefined` as `null`, so a row's text would depend on
-  // which operation wrote it. Every write drops such fields first, as a patch always has.
   const encode = <T extends Sync.Any>(table: T, space: string, id: string, row: Sync.Row<T>) =>
-    Schema.encodeEffect(table.codec)(withoutUndefined(row)).pipe(
-      Effect.mapError(invalid(table, space, id)),
-    );
+    encodeRow(table, row).pipe(Effect.mapError(invalid(table, space, id)));
 
   const read = <T extends Sync.Any>(table: T, space: string, id: string, text: string) =>
     Effect.flatMap(parse(table, space, id, text), (json) => decode(table, space, id, json));
 
   const write = <T extends Sync.Any>(table: T, space: string, id: string, row: Sync.Row<T>) =>
-    encode(table, space, id, row).pipe(
-      Effect.flatMap((json) => Effect.fromResult(CanonicalJson.encode(json))),
+    canonical(table, row).pipe(
+      Effect.catchTags({ SchemaError: (error) => Effect.fail(invalid(table, space, id)(error)) }),
       Effect.flatMap((text) => store.write(space, table.name, id, text)),
     );
 

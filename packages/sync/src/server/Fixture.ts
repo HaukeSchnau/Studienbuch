@@ -41,7 +41,7 @@ export const Enrollment = Sync.table("Enrollment", {
 
 export const Lesson = Sync.table("Lesson", {
   class: "readable",
-  fields: { room: Schema.String, day: Schema.String },
+  fields: { room: Schema.String, day: Schema.String, note: Schema.optional(Schema.String) },
   indexes: ["day"],
 });
 

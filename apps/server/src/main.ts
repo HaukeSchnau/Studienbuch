@@ -32,6 +32,7 @@ import { DevServers } from "./routes/DevServers.ts";
 import { Rpc } from "./routes/Rpc.ts";
 import { WebBuilds } from "./routes/WebBuilds.ts";
 import { WellKnown } from "./routes/WellKnown.ts";
+import { Notebooks } from "./sync/Notebooks.ts";
 
 // This file runs as `src/main.ts` in the workspace and as `server/main.mjs` in the release bundle,
 // which keeps `migrations/`, `web/` and `app/` beside `server/` (hosting.md, section 2).
@@ -101,6 +102,12 @@ const verify = Effect.gen(function* () {
 
   if ((yield* db.$count(SyncTables.syncEpoch)) !== 1) {
     return yield* new InvariantBroken({ invariant: "sync_epoch holds exactly one row" });
+  }
+
+  if ((yield* Notebooks.mismatched).length > 0) {
+    return yield* new InvariantBroken({
+      invariant: "each notebook's space and row name one school",
+    });
   }
 
   yield* Effect.logInfo("The schema is at head and the invariants hold");
