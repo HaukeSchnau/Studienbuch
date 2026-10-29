@@ -47,6 +47,9 @@ export function HeroScreen({ title, subtitle, refresh, children }: HeroScreenPro
         style={styles.screen}
         contentContainerStyle={styles.grow}
         contentInsetAdjustmentBehavior="automatic"
+        // Forms stay reachable above the keyboard, and a tap on a button doesn't only close it.
+        automaticallyAdjustKeyboardInsets
+        keyboardShouldPersistTaps="handled"
         onScroll={onScroll}
         scrollEventThrottle={16}
         refreshControl={

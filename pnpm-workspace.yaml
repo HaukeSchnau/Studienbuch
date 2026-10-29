@@ -99,6 +99,10 @@ catalog:
   # Metro's Babel transformer, which apps/app/metro.transformer.js wraps, at the version Expo 58.0.20
   # depends on.
   "@expo/metro-config": 58.0.18
+  # Passkeys in the app: the browser's WebAuthn through SimpleWebAuthn, and iOS and Android
+  # through react-native-passkeys, the one library that maps PRF on iOS (stack.md).
+  "@simplewebauthn/browser": 14.0.0
+  react-native-passkeys: 0.4.2
 
 overrides:
   vite@*: "catalog:"

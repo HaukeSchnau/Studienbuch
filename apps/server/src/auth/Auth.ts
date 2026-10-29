@@ -76,6 +76,7 @@ export const options = (settings: Settings, callbacks: Callbacks) =>
       enabled: true,
       requireEmailVerification: true,
       disableSignUp: !settings.signUp,
+      minPasswordLength: Accounts.minPasswordLength,
     },
     emailVerification: {
       sendOnSignUp: true,
@@ -132,7 +133,7 @@ export const options = (settings: Settings, callbacks: Callbacks) =>
         overrideDefaultEmailVerification: true,
         disableSignUp: true,
         otpLength: 6,
-        expiresIn: 15 * 60,
+        expiresIn: Accounts.codeMinutes * 60,
         allowedAttempts: 5,
         storeOTP: "hashed",
         sendVerificationOTP: ({ email, otp, type }) =>
@@ -176,7 +177,7 @@ const codeMail = (to: string, code: string): Mail.Message => ({
     "",
     `dein Code für Studienbuch ist ${code}.`,
     "",
-    "Gib ihn in der App ein, um deine E-Mail-Adresse zu bestätigen. Er gilt 15 Minuten.",
+    `Gib ihn in der App ein, um deine E-Mail-Adresse zu bestätigen. Er gilt ${Accounts.codeMinutes} Minuten.`,
     "",
     "Wenn du gerade kein Konto anlegst, kannst du diese Mail ignorieren.",
   ].join("\n"),
