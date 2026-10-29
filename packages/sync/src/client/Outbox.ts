@@ -1,11 +1,11 @@
 /**
  * The device's commands, in its own tables: the counters in `sync_meta`, the commands the server
- * hasn't settled in `sync_outbox`, and the refused ones in `sync_rejected_command`. Every function
- * runs on the caller's connection, so inside the caller's transaction.
+ * hasn't settled in `sync_outbox`, the applied ones of the last 7 days in `sync_settled_command`
+ * and the refused ones in `sync_rejected_command`. Every function runs inside the caller's
+ * transaction.
  */
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
-import * as Random from "effect/Random";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import type { Sync } from "../definition/Sync.ts";
@@ -87,20 +87,6 @@ const command = (row: typeof CommandRow.Type): Command => ({
   mode: row.mode,
 });
 
-/** A new client id, a UUIDv4 from `Random`, so a seeded run names its devices the same way. */
-export const newClientId = Effect.gen(function* () {
-  const bytes: Array<number> = [];
-
-  for (let index = 0; index < 16; index++) bytes.push(yield* Random.nextIntBetween(0, 255));
-
-  // RFC 9562: version 4 in the high nibble of byte 6, variant 0b10 in the high bits of byte 8.
-  bytes[6] = ((bytes[6] ?? 0) & 0x0f) | 0x40;
-  bytes[8] = ((bytes[8] ?? 0) & 0x3f) | 0x80;
-  const hex = bytes.map((byte) => byte.toString(16).padStart(2, "0")).join("");
-
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-});
-
 /** Creates the device's state on its first start. A later start keeps what is there. */
 export const start = Effect.fnUntraced(function* (clientId: string) {
   const sql = yield* SqlClient.SqlClient;
@@ -133,10 +119,20 @@ export const meta = Effect.gen(function* () {
   } satisfies Meta;
 });
 
+const insert = Effect.fnUntraced(function* (command: Command) {
+  const sql = yield* SqlClient.SqlClient;
+  const args = yield* Effect.fromResult(CanonicalJson.encode(command.args));
+
+  yield* sql`
+    insert into sync_outbox (mutation_id, name, version, args, at, mode)
+    values (${command.mutationId}, ${command.name}, ${command.version}, ${args}, ${command.at},
+      ${command.mode})
+  `;
+});
+
 /** Queues a command under the next mutation id, and returns that id with the client's. */
 export const append = Effect.fnUntraced(function* (entry: Omit<Command, "mutationId">) {
   const sql = yield* SqlClient.SqlClient;
-  const args = yield* Effect.fromResult(CanonicalJson.encode(entry.args));
 
   const [next] = yield* sql<{ readonly client_id: string; readonly last_mutation_id: number }>`
     update sync_meta set last_mutation_id = last_mutation_id + 1 where id = 1
@@ -144,14 +140,9 @@ export const append = Effect.fnUntraced(function* (entry: Omit<Command, "mutatio
   `;
 
   if (next === undefined) return yield* Effect.die("The device's meta row is missing");
-  const mutationId = next.last_mutation_id;
+  yield* insert({ ...entry, mutationId: next.last_mutation_id });
 
-  yield* sql`
-    insert into sync_outbox (mutation_id, name, version, args, at, mode)
-    values (${mutationId}, ${entry.name}, ${entry.version}, ${args}, ${entry.at}, ${entry.mode})
-  `;
-
-  return { clientId: next.client_id, mutationId };
+  return { clientId: next.client_id, mutationId: next.last_mutation_id };
 });
 
 /** The commands waiting for the server, oldest first. */
@@ -160,6 +151,20 @@ export const pending = Effect.gen(function* () {
 
   const rows = yield* decodeCommands(
     yield* sql`select mutation_id, name, version, args, at, mode from sync_outbox order by mutation_id`,
+  );
+
+  return rows.map(command);
+});
+
+/** At most `limit` waiting commands after `mutationId`, oldest first: the next push. */
+export const after = Effect.fnUntraced(function* (mutationId: number, limit: number) {
+  const sql = yield* SqlClient.SqlClient;
+
+  const rows = yield* decodeCommands(
+    yield* sql`
+      select mutation_id, name, version, args, at, mode from sync_outbox
+      where mutation_id > ${mutationId} order by mutation_id limit ${limit}
+    `,
   );
 
   return rows.map(command);
@@ -213,4 +218,171 @@ export const take = Effect.fnUntraced(function* (clientId: string, mutationId: n
   );
 
   return Option.fromNullishOr(row);
+});
+
+/** How long the device keeps an applied command, for a restore of the server's database. */
+export const keepSettledFor = 7 * 24 * 60 * 60 * 1000;
+
+export interface Refused {
+  readonly mutationId: number;
+  readonly reason: Refusal.Reason;
+}
+
+/** The commands of `clientId` that settling took out of the outbox. */
+export interface Settled {
+  readonly clientId: string;
+  readonly applied: ReadonlyArray<number>;
+  readonly refused: ReadonlyArray<Refused>;
+}
+
+/**
+ * Takes every command up to `lastMutationId` out of the outbox: the refused ones into
+ * `sync_rejected_command` with their reasons, the others into `sync_settled_command`, and forgets
+ * settled commands older than {@link keepSettledFor}.
+ */
+export const settle = Effect.fnUntraced(function* (
+  lastMutationId: number,
+  refusals: ReadonlyArray<Refused>,
+  now: number,
+) {
+  const sql = yield* SqlClient.SqlClient;
+  const { clientId, settledMutationId } = yield* meta;
+
+  if (lastMutationId <= settledMutationId) {
+    return { clientId, applied: [], refused: [] } satisfies Settled;
+  }
+
+  const ids = yield* sql<{ readonly mutation_id: number }>`
+    select mutation_id from sync_outbox where mutation_id <= ${lastMutationId}
+    order by mutation_id
+  `;
+
+  const reasons = new Map(refusals.map((refusal) => [refusal.mutationId, refusal.reason]));
+
+  const refused = ids.flatMap(({ mutation_id }): Array<Refused> => {
+    const reason = reasons.get(mutation_id);
+
+    return reason === undefined ? [] : [{ mutationId: mutation_id, reason }];
+  });
+
+  for (const { mutationId, reason } of refused) {
+    const text = yield* Effect.orDie(Effect.fromResult(CanonicalJson.encode(reason)));
+
+    yield* sql`
+      insert into sync_rejected_command (client_id, mutation_id, name, version, args, at, reason)
+      select ${clientId}, mutation_id, name, version, args, at, ${text} from sync_outbox
+      where mutation_id = ${mutationId}
+    `;
+    yield* sql`delete from sync_outbox where mutation_id = ${mutationId}`;
+  }
+
+  yield* sql`
+    insert into sync_settled_command (mutation_id, name, version, args, at, mode, settled_at)
+    select mutation_id, name, version, args, at, mode, ${now} from sync_outbox
+    where mutation_id <= ${lastMutationId}
+  `;
+  yield* sql`delete from sync_outbox where mutation_id <= ${lastMutationId}`;
+  yield* sql`delete from sync_settled_command where settled_at < ${now - keepSettledFor}`;
+  yield* sql`update sync_meta set settled_mutation_id = ${lastMutationId} where id = 1`;
+
+  return {
+    clientId,
+    applied: ids
+      .map(({ mutation_id }) => mutation_id)
+      .filter((mutationId) => !reasons.has(mutationId)),
+    refused,
+  } satisfies Settled;
+});
+
+/**
+ * After a restore of the server's database, the settled commands it lost go back into the outbox.
+ * Returns whether the device then holds every command after `lastMutationId` up to its last. A
+ * hole, as a refused command leaves, means the outbox needs a new client id before any push.
+ */
+export const restore = Effect.fnUntraced(function* (lastMutationId: number, syncEpoch: string) {
+  const sql = yield* SqlClient.SqlClient;
+
+  yield* sql`
+    insert into sync_outbox (mutation_id, name, version, args, at, mode)
+    select mutation_id, name, version, args, at, mode from sync_settled_command
+    where mutation_id > ${lastMutationId}
+  `;
+  yield* sql`delete from sync_settled_command where mutation_id > ${lastMutationId}`;
+  yield* sql`
+    update sync_meta set sync_epoch = ${syncEpoch},
+      settled_mutation_id = min(settled_mutation_id, ${lastMutationId})
+    where id = 1
+  `;
+
+  const [run] = yield* sql<{
+    readonly low: number | null;
+    readonly held: number;
+    readonly last: number;
+  }>`
+    select (select min(mutation_id) from sync_outbox where mutation_id > ${lastMutationId}) as low,
+      (select count(*) from sync_outbox where mutation_id > ${lastMutationId}) as held,
+      last_mutation_id as last
+    from sync_meta where id = 1
+  `;
+
+  if (run === undefined) return yield* Effect.die("The device's meta row is missing");
+
+  return (
+    run.last >= lastMutationId &&
+    run.held === run.last - lastMutationId &&
+    (run.held === 0 || run.low === lastMutationId + 1)
+  );
+});
+
+/**
+ * Gives the outbox to a new client id, numbered from 1 in the same order, and forgets the settled
+ * commands of the old one. Returns each waiting command's new mutation id by its old one.
+ */
+export const renumber = Effect.fnUntraced(function* (clientId: string) {
+  const sql = yield* SqlClient.SqlClient;
+  const commands = yield* pending;
+
+  yield* sql`delete from sync_outbox`;
+  yield* sql`delete from sync_settled_command`;
+
+  for (const [index, each] of commands.entries()) {
+    // The arguments were stored canonical, so they encode again.
+    yield* insert({ ...each, mutationId: index + 1 }).pipe(
+      Effect.catchTags({ "CanonicalJson.Unrepresentable": Effect.die }),
+    );
+  }
+
+  yield* sql`
+    update sync_meta set client_id = ${clientId}, last_mutation_id = ${commands.length},
+      settled_mutation_id = 0
+    where id = 1
+  `;
+
+  return new Map(commands.map((each, index) => [each.mutationId, index + 1]));
+});
+
+export const setSyncEpoch = Effect.fnUntraced(function* (syncEpoch: string) {
+  const sql = yield* SqlClient.SqlClient;
+
+  yield* sql`update sync_meta set sync_epoch = ${syncEpoch} where id = 1`;
+});
+
+/** Forgets every command, for a device another device removed. */
+export const clear = Effect.gen(function* () {
+  const sql = yield* SqlClient.SqlClient;
+
+  yield* sql`delete from sync_outbox`;
+  yield* sql`delete from sync_settled_command`;
+  yield* sql`delete from sync_rejected_command`;
+});
+
+/** Starts the device over under a new client id, as on its first start. */
+export const reset = Effect.fnUntraced(function* (clientId: string) {
+  const sql = yield* SqlClient.SqlClient;
+
+  yield* sql`
+    update sync_meta set client_id = ${clientId}, sync_epoch = null, last_mutation_id = 0,
+      settled_mutation_id = 0
+    where id = 1
+  `;
 });

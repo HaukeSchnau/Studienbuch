@@ -21,7 +21,9 @@ import { Outbox } from "./Outbox.ts";
 import { SyncClient } from "./SyncClient.ts";
 import { SyncQuery } from "./SyncQuery.ts";
 
-const engine = SyncClient.layer(Notes.schema).pipe(Layer.provideMerge(Devices.session));
+const engine = SyncClient.layer(Notes.schema).pipe(
+  Layer.provideMerge(Layer.mergeAll(Devices.session, Devices.secrets, Devices.crypto)),
+);
 
 type Services = SyncClient.Service | SqlClient.SqlClient | Reactivity.Reactivity | Scope.Scope;
 

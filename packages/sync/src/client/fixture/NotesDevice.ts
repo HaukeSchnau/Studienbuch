@@ -12,6 +12,7 @@ export const {
   sync_meta,
   sync_space,
   sync_outbox,
+  sync_settled_command,
   sync_rejected_command,
   base_row,
   pending_row,
