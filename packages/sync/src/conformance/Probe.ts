@@ -15,6 +15,7 @@ import type { Engines } from "./Engines.ts";
 export * as Probe from "./Probe.ts";
 
 export const table = Sync.table("Probe", {
+  class: "readable",
   fields: {
     text: Schema.String,
     // The probe stores non-finite numbers on purpose, to compare how the engines keep them.
@@ -47,6 +48,8 @@ export type Step =
     }
   | { readonly op: "remove" | "get"; readonly id: string }
   | { readonly op: "list"; readonly where?: { readonly index: Index; readonly equals: unknown } }
+  /** The account the transaction runs for. */
+  | { readonly op: "actor" }
   /**
    * A row as the server delivered it, written straight into storage: the device's `base_row`, the
    * server's `sync_row`. It may carry fields this table doesn't declare.
@@ -125,6 +128,8 @@ const step = (engine: Engines.Engine, space: string, step: Step) => {
           ),
         ),
       );
+    case "actor":
+      return run(Effect.map(Tx.Service, (tx) => tx.actor));
     case "seed":
       return seed(engine, space, step.id, step.json).pipe(
         Effect.as<Outcome>({ ok: null }),

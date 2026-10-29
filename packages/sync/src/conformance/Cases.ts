@@ -253,6 +253,19 @@ export const all: ReadonlyArray<Case> = [
     ],
   },
   {
+    name: "ids are 1 to 64 characters, so every client can store a pulled row",
+    steps: [
+      { op: "put", id: "x".repeat(64), row: row() },
+      { op: "put", id: "x".repeat(65), row: row() },
+      { op: "insert", id: "", row: row() },
+      { op: "list" },
+    ],
+  },
+  {
+    name: "a mutator reads the account it runs for",
+    steps: [{ op: "actor" }],
+  },
+  {
     name: "a sequence of patches",
     steps: [
       { op: "put", id: "a", row: row() },

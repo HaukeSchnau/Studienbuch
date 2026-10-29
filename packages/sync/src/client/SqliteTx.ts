@@ -6,7 +6,7 @@
  * Run it inside the transaction that also writes the outbox:
  *
  * ```ts
- * sql.withTransaction(mutator.run(args).pipe(Effect.provide(SqliteTx.layer)))
+ * sql.withTransaction(mutator.run(args).pipe(Effect.provide(SqliteTx.layer(runner))))
  * ```
  */
 import * as Effect from "effect/Effect";
@@ -18,10 +18,14 @@ import { Tx } from "../transaction/Tx.ts";
 
 export * as SqliteTx from "./SqliteTx.ts";
 
-export const make = Effect.gen(function* () {
+/** The device's `Tx` for a command of the signed-in account. */
+export const make = Effect.fnUntraced(function* (runner: Tx.Runner) {
   const sql = yield* SqlClient.SqlClient;
 
   return Tx.make({
+    ...runner,
+    location: "client",
+
     read: (space, table, id) =>
       sql<{ readonly data: string }>`
         select data from sync_row_view where space = ${space} and tbl = ${table} and id = ${id}
@@ -43,7 +47,7 @@ export const make = Effect.gen(function* () {
   });
 });
 
-export const layer = Layer.effect(Tx.Service, make);
+export const layer = (runner: Tx.Runner) => Layer.effect(Tx.Service, make(runner));
 
 /**
  * `->` compares the field's JSON text, which is exact because rows are stored canonical. `->>`

@@ -19,12 +19,16 @@ import { inject } from "vitest";
 import { DeviceDatabase } from "../client/DeviceDatabase.ts";
 import { SqliteTx } from "../client/SqliteTx.ts";
 import { PostgresTx } from "../server/PostgresTx.ts";
+import { Probe } from "./Probe.ts";
 import type { Tx } from "../transaction/Tx.ts";
 import ProbeMigrations from "./migrations/migrations.js";
 
 export * as Engines from "./Engines.ts";
 
 export type Name = "sqlite-wasm" | "sqlite-node" | "pglite" | "postgres-18";
+
+/** The account every engine's transactions run for. */
+export const actor = "account-probe";
 
 export interface Engine {
   readonly name: Name;
@@ -63,7 +67,8 @@ const engine = Effect.fnUntraced(function* (
           }),
         ),
   ).pipe(Effect.orDie);
-  const txLayer = side === "device" ? SqliteTx.layer : PostgresTx.layer;
+  const runner = { actor, writes: [Probe.table] };
+  const txLayer = side === "device" ? SqliteTx.layer(runner) : PostgresTx.layer(runner);
 
   return {
     name,
