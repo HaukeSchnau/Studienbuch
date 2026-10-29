@@ -10,6 +10,7 @@ import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import type * as SqlError from "effect/sql/SqlError";
 import type { Sync } from "../definition/Sync.ts";
+import { Ids } from "../protocol/Ids.ts";
 import { CanonicalJson } from "./CanonicalJson.ts";
 
 export * as Tx from "./Tx.ts";
@@ -43,12 +44,31 @@ export class InvalidRow extends Schema.TaggedError<InvalidRow, { readonly brand:
   },
 ) {}
 
-export type Error =
-  | RowExists
-  | RowMissing
-  | InvalidRow
-  | CanonicalJson.Unrepresentable
-  | SqlError.SqlError;
+/** A space or row id outside `Ids.Id`, which every client's pull would refuse. */
+export class InvalidId extends Schema.TaggedError<InvalidId, { readonly brand: unique symbol }>()(
+  "Tx.InvalidId",
+  {
+    table: Schema.String,
+    space: Schema.String,
+    id: Schema.String,
+  },
+) {}
+
+/**
+ * Why a `Tx` call failed. Every one but `SqlError` can be a command's refusal reason, so they are
+ * schemas. A `SqlError` means the database failed, and the command is retried.
+ */
+export type Error = Refused | SqlError.SqlError;
+
+export const Refused = Schema.Union([
+  RowExists,
+  RowMissing,
+  InvalidRow,
+  InvalidId,
+  CanonicalJson.Unrepresentable,
+]);
+
+export type Refused = typeof Refused.Type;
 
 export interface Entry<A> {
   readonly id: string;
@@ -71,8 +91,8 @@ export interface Interface {
    */
   readonly actor: string;
   /**
-   * For the rare step only one side takes, such as scheduling a notification on the server. Rows
-   * written must not depend on it, or the device would show what the server never stores.
+   * Where the mutator runs. Its reads and writes must not depend on it, or the device would show
+   * rows the server never stores.
    */
   readonly location: Location;
   readonly get: <T extends Sync.Any>(
@@ -127,9 +147,19 @@ export interface StoreFilter {
   readonly json: string;
 }
 
-/** What an engine implements for one transaction. Rows go in and out as canonical JSON text. */
-export interface Store {
+/** Who a transaction runs for, and the tables it may write. */
+export interface Runner {
   readonly actor: string;
+  /** A mutator's `writes`, or the table `SyncWriter` reconciles. A write elsewhere is a defect. */
+  readonly writes: ReadonlyArray<Sync.Any>;
+}
+
+/** What an engine implements for one transaction. Rows go in and out as canonical JSON text. */
+export interface Store extends Runner {
+  /**
+   * On the server, touching an encrypted table is a defect: the server holds only envelopes and
+   * ciphertext of those rows, and never runs their mutators.
+   */
   readonly location: Location;
   readonly read: (
     space: string,
@@ -155,7 +185,28 @@ export interface Store {
 
 const parseJson = Schema.decodeEffect(Schema.fromJsonString(Schema.Unknown));
 
+const isId = Schema.is(Ids.Id);
+
 export const make = (store: Store): Interface => {
+  const writable = new Set(store.writes);
+
+  /** Dies before the server reads or writes a table whose rows it must never hold in plaintext. */
+  const readable = (table: Sync.Any) =>
+    store.location === "server" && table.class === "encrypted"
+      ? Effect.die(`The server's Tx touched the encrypted table ${table.name}`)
+      : Effect.void;
+
+  /** The checks before any write: a declared table, then ids every client can store. */
+  const writing = (table: Sync.Any, space: string, id: string) =>
+    Effect.andThen(
+      readable(table),
+      writable.has(table)
+        ? isId(space) && isId(id)
+          ? Effect.void
+          : Effect.fail(new InvalidId({ table: table.name, space, id }))
+        : Effect.die(`A write to ${table.name}, which the command doesn't declare`),
+    );
+
   const invalid = (table: Sync.Any, space: string, id: string) => (error: Schema.SchemaError) =>
     new InvalidRow({ table: table.name, space, id, message: error.message });
 
@@ -190,6 +241,7 @@ export const make = (store: Store): Interface => {
     location: store.location,
 
     get: Effect.fnUntraced(function* <T extends Sync.Any>(table: T, space: string, id: string) {
+      yield* readable(table);
       const stored = yield* store.read(space, table.name, id);
 
       return Option.isNone(stored)
@@ -202,6 +254,7 @@ export const make = (store: Store): Interface => {
       space: string,
       where?: Where<T>,
     ) {
+      yield* readable(table);
       const filter = where === undefined ? undefined : yield* indexFilter(table, where);
 
       if (filter?.value === null) return [];
@@ -218,13 +271,15 @@ export const make = (store: Store): Interface => {
       id: string,
       row: Sync.Row<T>,
     ) {
+      yield* writing(table, space, id);
       const stored = yield* store.read(space, table.name, id);
 
       if (Option.isSome(stored)) return yield* new RowExists({ table: table.name, space, id });
       yield* write(table, space, id, row);
     }),
 
-    put: write,
+    put: (table, space, id, row) =>
+      Effect.andThen(writing(table, space, id), write(table, space, id, row)),
 
     patch: Effect.fnUntraced(function* <T extends Sync.Any>(
       table: T,
@@ -232,6 +287,7 @@ export const make = (store: Store): Interface => {
       id: string,
       fields: Partial<Sync.Row<T>>,
     ) {
+      yield* writing(table, space, id);
       const stored = yield* store.read(space, table.name, id);
 
       if (Option.isNone(stored)) return yield* new RowMissing({ table: table.name, space, id });
@@ -247,6 +303,7 @@ export const make = (store: Store): Interface => {
     }),
 
     remove: Effect.fnUntraced(function* (table: Sync.Any, space: string, id: string) {
+      yield* writing(table, space, id);
       const stored = yield* store.read(space, table.name, id);
 
       if (Option.isSome(stored)) yield* store.write(space, table.name, id, null);

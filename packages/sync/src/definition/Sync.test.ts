@@ -2,6 +2,8 @@ import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
+import { CanonicalJson } from "../transaction/CanonicalJson.ts";
+import { Tx } from "../transaction/Tx.ts";
 import { Sync } from "./Sync.ts";
 
 const Notebook = Sync.spaceKind("notebook", { encryption: "sealed", roles: ["owner"] });
@@ -76,8 +78,11 @@ describe("Sync.validate", () => {
     expect(failure({})).toBeNull();
   });
 
-  it("derives the mode from the class of the tables a mutator writes", () => {
+  it("derives the mode from the class of the tables a mutator writes, and finds it only there", () => {
+    const { Mutate, Seal } = Sync.schema(valid).byName.mutators;
+
     expect([createHomework.mode, setEnrollment.mode]).toEqual(["Seal", "Mutate"]);
+    expect([Mutate.has("homework.create"), Seal.has("homework.create")]).toEqual([false, true]);
   });
 
   it.each([
@@ -201,6 +206,54 @@ describe("Sync.validate", () => {
       expected: { reason: "encryption", subject: "table Homework in notebook" },
     },
     {
+      name: "a name longer than the wire allows",
+      parts: {
+        tables: [
+          Homework,
+          Enrollment,
+          Sync.table("L".repeat(65), { class: "readable", fields: {} }),
+        ],
+      },
+      expected: { reason: "out-of-bounds", subject: `name ${"L".repeat(65)}` },
+    },
+    {
+      name: "a mutator version below 1",
+      parts: {
+        mutators: [
+          Sync.mutator("homework.undo", {
+            version: 0,
+            args: Args,
+            writes: [Homework],
+            spaces: (args) => [args.notebook],
+            run: () => Effect.void,
+          }),
+        ],
+      },
+      expected: { reason: "out-of-bounds", subject: "mutator homework.undo, version 0" },
+    },
+    {
+      name: "encrypted tables of one space kind that different roles write",
+      parts: {
+        spaceKinds: [
+          Sync.spaceKind("notebook", { encryption: "sealed", roles: ["owner", "parent"] }),
+          School,
+          Course,
+        ],
+        tables: [
+          Homework,
+          Enrollment,
+          Sync.table("Signature", {
+            class: "encrypted",
+            fields: {},
+            writableBy: { notebook: ["owner", "parent"] },
+          }),
+        ],
+        mutators: [],
+        membership: [],
+      },
+      expected: { reason: "encryption", subject: "roles writing encrypted tables in notebook" },
+    },
+    {
       name: "a membership rule over an encrypted table",
       parts: {
         membership: [
@@ -212,6 +265,69 @@ describe("Sync.validate", () => {
   ])("refuses $name", ({ parts, expected }) => {
     expect(failure(parts)).toEqual(expected);
   });
+});
+
+describe("Sync.invoke", () => {
+  it.effect("binds arguments of the mutator's own version and names any other", () =>
+    Effect.gen(function* () {
+      const args = { notebook: "n", id: "h" };
+      const bound = yield* Sync.invoke(createHomework, 1, args);
+      const newer = yield* Effect.flip(Sync.invoke(createHomework, 2, args));
+      const older = yield* Effect.flip(Sync.invoke(createHomework, 0, args));
+
+      expect([bound.spaces, newer._tag, older._tag]).toEqual([
+        ["n"],
+        "Sync.NewerVersion",
+        "Sync.OlderVersion",
+      ]);
+    }),
+  );
+});
+
+/** A server `Tx` over rows held in memory, enough to read a space's rows. */
+const memoryTx = (rows: ReadonlyArray<{ readonly id: string; readonly row: unknown }>) =>
+  Tx.make({
+    actor: "server",
+    location: "server",
+    writes: [],
+    read: () => Effect.succeedNone,
+    list: () =>
+      Effect.succeed(
+        rows.map(({ id, row }) => ({
+          id,
+          data: Result.getOrElse(CanonicalJson.encode(row), () => ""),
+        })),
+      ),
+    write: () => Effect.void,
+  });
+
+describe("Sync.grants", () => {
+  it.effect(
+    "keeps only existing spaces of the rule's kind, so a notebook's id grants nothing",
+    () =>
+      Effect.gen(function* () {
+        const kinds = new Map([
+          ["course-ma", "course"],
+          ["course-de", "course"],
+          ["notebook-tom", "notebook"],
+        ]);
+
+        const existing = (kind: string, spaces: ReadonlyArray<string>) =>
+          Effect.succeed(spaces.filter((space) => kinds.get(space) === kind));
+
+        const granted = yield* Sync.grants(courses, "notebook-lena", existing).pipe(
+          Effect.provideService(
+            Tx.Service,
+            memoryTx([
+              { id: "e1", row: { courseIds: ["course-ma", "notebook-tom"] } },
+              { id: "e2", row: { courseIds: ["course-ma", "course-de", "course-gone"] } },
+            ]),
+          ),
+        );
+
+        expect(granted).toEqual(["course-ma", "course-de"]);
+      }),
+  );
 });
 
 describe("Sync.schema", () => {

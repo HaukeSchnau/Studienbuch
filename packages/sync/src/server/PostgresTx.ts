@@ -6,7 +6,7 @@
  * Provide a fresh layer per transaction, because the bumped versions belong to it:
  *
  * ```ts
- * sql.withTransaction(mutator.run(args).pipe(Effect.provide(PostgresTx.layer(accountId))))
+ * sql.withTransaction(mutator.run(args).pipe(Effect.provide(PostgresTx.layer(runner))))
  * ```
  */
 import * as Effect from "effect/Effect";
@@ -39,7 +39,7 @@ export const schema = [
 ];
 
 /** The server's `Tx` for a command of the connection's account, or for the server's own writes. */
-export const make = Effect.fnUntraced(function* (actor: string) {
+export const make = Effect.fnUntraced(function* (runner: Tx.Runner) {
   const sql = yield* SqlClient.SqlClient;
   const versions = new Map<string, string>();
 
@@ -63,7 +63,7 @@ export const make = Effect.fnUntraced(function* (actor: string) {
   };
 
   return Tx.make({
-    actor,
+    ...runner,
     location: "server",
 
     read: (space, table, id) =>
@@ -99,4 +99,4 @@ export const make = Effect.fnUntraced(function* (actor: string) {
   });
 });
 
-export const layer = (actor: string) => Layer.effect(Tx.Service, make(actor));
+export const layer = (runner: Tx.Runner) => Layer.effect(Tx.Service, make(runner));

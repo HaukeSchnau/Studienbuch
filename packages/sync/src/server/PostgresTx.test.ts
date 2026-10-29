@@ -28,7 +28,7 @@ const push = (space: string, ids: ReadonlyArray<string>, beforeCommit = Effect.v
 
         for (const id of ids) yield* tx.put(Note, space, id, { text: id });
         yield* beforeCommit;
-      }).pipe(Effect.provide(PostgresTx.layer("account"))),
+      }).pipe(Effect.provide(PostgresTx.layer({ actor: "account", writes: [Note] }))),
     ),
   );
 

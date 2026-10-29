@@ -1,3 +1,5 @@
+export { Evolution } from "./definition/Evolution.ts";
+
 export { Sync } from "./definition/Sync.ts";
 
 export { Command } from "./protocol/Command.ts";

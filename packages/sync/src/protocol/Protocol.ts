@@ -1,19 +1,43 @@
 /**
  * The sync RPCs, on one WebSocket per device (`Connection`) with JSON frames. The server deploys
  * before clients, so messages change additively: older clients ignore new fields, a new member of
- * a union the server sends reaches only clients whose contract version knows it, and a removed or
- * renamed field needs a new RPC name.
+ * a union the server sends reaches only clients whose `contract.protocol` knows it (`since`), and
+ * a removed or renamed field needs a new RPC name.
  */
-import { SealedRow } from "@stu/e2ee";
+import type { SpaceKey } from "@stu/e2ee";
 import * as Rpc from "effect/rpc/Rpc";
 import * as RpcGroup from "effect/rpc/RpcGroup";
+import * as RpcSerialization from "effect/rpc/RpcSerialization";
 import * as Schema from "effect/Schema";
-import { Sync } from "../definition/Sync.ts";
 import { Command } from "./Command.ts";
 import { Ids } from "./Ids.ts";
 import { Refusal } from "./Refusal.ts";
 
 export * as Protocol from "./Protocol.ts";
+
+/**
+ * The protocol's version, raised with every change to a message. `wire.v<version>.schema.json`
+ * records each version's messages, and `since` says which version first sent each server tag.
+ */
+export const version = 1;
+
+/** JSON frames, one message per WebSocket frame. Client and server provide this layer. */
+export const serialization = RpcSerialization.layerJson;
+
+/** What a client tells the server with every push, pull and subscription. */
+export const Contract = Schema.Struct({
+  /** The `version` above that the client was built with. The server sends only what it knows. */
+  protocol: Schema.Int.check(Schema.isGreaterThanOrEqualTo(1)),
+  /**
+   * The version of core's definition, raised by hand in a release the server may later require,
+   * such as the first to read a replacement table.
+   */
+  schema: Schema.Int.check(Schema.isGreaterThanOrEqualTo(1)),
+  /** Changes with every allowed change to the definition, so logs tell builds apart. */
+  hash: Schema.String,
+});
+
+export type Contract = typeof Contract.Type;
 
 // What fails a whole push or pull
 
@@ -33,13 +57,15 @@ export class EpochChanged extends Schema.TaggedError<
 >()("Sync.EpochChanged", { syncEpoch: Ids.SyncEpoch, lastMutationId: Ids.LastMutationId }) {}
 
 /**
- * The client's contract version is below `minimum`. The device keeps working on its own data
- * and keeps its outbox until the app updates.
+ * The client's protocol or schema version is below the server's minimum. The device keeps
+ * working on its own data and keeps its outbox until the app updates.
  */
 export class UpdateRequired extends Schema.TaggedError<
   UpdateRequired,
   { readonly brand: unique symbol }
->()("Sync.UpdateRequired", { minimum: Schema.Int }) {}
+>()("Sync.UpdateRequired", {
+  minimum: Schema.Struct({ protocol: Schema.Int, schema: Schema.Int }),
+}) {}
 
 /**
  * The server doesn't know this client for this account: it was unseen for a year, or another
@@ -62,7 +88,7 @@ const client = {
   clientId: Ids.Id,
   /** The restore epoch from the device's last pull, `null` before its first. */
   syncEpoch: Schema.NullOr(Ids.SyncEpoch),
-  contract: Sync.Contract,
+  contract: Contract,
 };
 
 // Push
@@ -78,7 +104,10 @@ export type PushRequest = typeof PushRequest.Type;
 /** The command's effect is on the server. */
 export const Applied = Schema.TaggedStruct("Applied", { mutationId: Ids.MutationId });
 
-/** The command is processed without effect. The pull delivers the reason again, durably. */
+/**
+ * The command is processed without effect. The pull delivers the reason again, durably. A
+ * database failure is never a reason: it answers `Retry`.
+ */
 export const Rejected = Schema.TaggedStruct("Rejected", {
   mutationId: Ids.MutationId,
   reason: Refusal.Reason,
@@ -91,8 +120,8 @@ export const Rejected = Schema.TaggedStruct("Rejected", {
 export const Retry = Schema.TaggedStruct("Retry", { mutationId: Ids.MutationId });
 
 /**
- * Not processed: a sealed write's base or key epoch is no longer current. The device pulls,
- * replays and seals the command again.
+ * Not processed: a sealed write's base or key epoch is no longer current, or the command opens an
+ * epoch the space already has. The device pulls, replays and seals the command again.
  */
 export const Stale = Schema.TaggedStruct("Stale", { mutationId: Ids.MutationId });
 
@@ -146,9 +175,13 @@ export const Space = Schema.Struct({
 /** A readable row's JSON as the server stores it, fields this app version doesn't know included. */
 export const Readable = Schema.TaggedStruct("Readable", { data: Schema.Json });
 
-/** An encrypted row. Its table name travels inside the ciphertext. */
+/**
+ * An encrypted row. Its table name travels inside the ciphertext. The device stores the envelope
+ * as received, fields of a newer format included, and decodes it as `SealedRow.Envelope` only to
+ * open the row.
+ */
 export const Sealed = Schema.TaggedStruct("Sealed", {
-  envelope: SealedRow.Envelope,
+  envelope: Schema.Json,
   ct: Schema.Uint8Array,
 });
 
@@ -158,8 +191,14 @@ export const Deleted = Schema.TaggedStruct("Deleted", {});
 /** In a sealed space, the `Readable` rows of this table are its key boxes (`SpaceKey.KeyBox`). */
 export const keyBoxTable = "_key";
 
+/** A key box's row id: one box per key epoch and recipient, which a later box replaces. */
+export const keyBoxId = (box: SpaceKey.KeyBox) => `${box.keyEpoch}:${box.recipient}`;
+
 /** In a sealed space, the `Readable` rows of this table are its history links (`SpaceKey.HistoryLink`). */
 export const historyLinkTable = "_keychain";
+
+/** A history link's row id: one link per key epoch. */
+export const historyLinkId = (link: SpaceKey.HistoryLink) => `${link.keyEpoch}`;
 
 export const Op = Schema.Struct({
   /** The table, empty for an encrypted row, whose table only the device sees. */
@@ -215,15 +254,73 @@ export const Poke = Schema.TaggedStruct("Poke", { spaces: Schema.Array(Cursor) }
 /** The account's memberships changed. The device pulls to see its new spaces. */
 export const AccountChanged = Schema.TaggedStruct("AccountChanged", {});
 
-export const Event = Schema.Union([Poke, AccountChanged]);
+const KnownEvent = Schema.Union([Poke, AccountChanged]);
+
+const knownEvents = new Set<string>(
+  KnownEvent.members.map((member) => member.fields._tag.schema.literal),
+);
+
+/**
+ * An event this build doesn't know. `since` keeps new events from older clients, so this catches
+ * only a server that sent one anyway. The device treats it as a poke and pulls.
+ */
+export const LaterEvent = Schema.StructWithRest(
+  Schema.Struct({
+    _tag: Schema.String.check(Schema.makeFilter((tag: string) => !knownEvents.has(tag))),
+  }),
+  [Schema.Record(Schema.String, Schema.Json)],
+);
+
+export const Event = Schema.Union([Poke, AccountChanged, LaterEvent]);
 
 export type Event = typeof Event.Type;
+
+/** Every tag of a union the server sends. */
+export type ServerTag =
+  | Outcome["_tag"]
+  | Op["row"]["_tag"]
+  | (typeof KnownEvent.Type)["_tag"]
+  | (typeof PushError.Type)["_tag"]
+  | (typeof PullError.Type)["_tag"]
+  | Refusal.Engine["_tag"];
+
+/**
+ * The protocol version that first sent each tag the server sends. An old client fails to decode
+ * a member it doesn't know, so the server sends a tag only to clients whose `contract.protocol`
+ * is at least this. A new member without an entry here doesn't compile.
+ */
+export const since = {
+  Applied: 1,
+  Rejected: 1,
+  Retry: 1,
+  Stale: 1,
+  Readable: 1,
+  Sealed: 1,
+  Deleted: 1,
+  Poke: 1,
+  AccountChanged: 1,
+  "Sync.OutOfOrder": 1,
+  "Sync.EpochChanged": 1,
+  "Sync.UpdateRequired": 1,
+  "Sync.ClientUnknown": 1,
+  "Sync.DeviceRevoked": 1,
+  "Sync.NotMember": 1,
+  "Sync.NotAllowed": 1,
+  "Sync.Locked": 1,
+  "Sync.BadEnvelope": 1,
+  "Sync.TooLarge": 1,
+  "Sync.UnknownMutator": 1,
+  "Sync.InvalidArgs": 1,
+} as const satisfies { readonly [tag in ServerTag]: number };
+
+/** Whether a client with this contract can decode a message tagged `tag`. */
+export const knows = (contract: Contract, tag: ServerTag) => since[tag] <= contract.protocol;
 
 export const Rpcs = RpcGroup.make(
   Rpc.make("Sync.push", { payload: PushRequest, success: PushResponse, error: PushError }),
   Rpc.make("Sync.pull", { payload: PullRequest, success: PullResponse, error: PullError }),
   Rpc.make("Sync.events", {
-    payload: { contract: Sync.Contract },
+    payload: { contract: Contract },
     success: Event,
     stream: true,
   }),

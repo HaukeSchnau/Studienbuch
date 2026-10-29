@@ -1,10 +1,13 @@
 import { expect, layer } from "@effect/vitest";
 import * as Arbitrary from "effect/Arbitrary";
 import * as Arr from "effect/Array";
+import * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
+import * as Exit from "effect/Exit";
 import * as Predicate from "effect/Predicate";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
+import { Sync } from "../definition/Sync.ts";
 import { CanonicalJson } from "../transaction/CanonicalJson.ts";
 import { Tx } from "../transaction/Tx.ts";
 import { Cases } from "./Cases.ts";
@@ -180,6 +183,34 @@ layer(Engines.layer)("Tx conformance", (it) => {
         const location = yield* engine.transaction(Effect.map(Tx.Service, (tx) => tx.location));
 
         expect(location, engine.name).toBe(engine.side === "device" ? "client" : "server");
+      }
+    }),
+  );
+
+  it.effect("a Tx writes only its command's tables, and the server's never an encrypted one", () =>
+    Effect.gen(function* () {
+      const Undeclared = Sync.table("Undeclared", { class: "readable", fields: {} });
+      const Secret = Sync.table("Secret", { class: "encrypted", fields: {} });
+
+      const dies = <A, E>(effect: Effect.Effect<A, E, Tx.Service>, engine: Engines.Engine) =>
+        Effect.map(
+          Effect.exit(engine.transaction(effect)),
+          (exit) => Exit.isFailure(exit) && Cause.hasDies(exit.cause),
+        );
+
+      for (const engine of yield* Engines.Service) {
+        const outcomes = [
+          yield* dies(
+            Effect.flatMap(Tx.Service, (tx) => tx.put(Undeclared, "guard", "a", {})),
+            engine,
+          ),
+          yield* dies(
+            Effect.flatMap(Tx.Service, (tx) => tx.get(Secret, "guard", "a")),
+            engine,
+          ),
+        ];
+
+        expect(outcomes, engine.name).toEqual([true, engine.side === "server"]);
       }
     }),
   );

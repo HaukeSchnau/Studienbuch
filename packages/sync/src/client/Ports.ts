@@ -1,13 +1,15 @@
 /**
  * What the device engine needs from the app on each platform. Besides these it takes Effect's
- * `SqlClient` (one per device database), `HttpClient` and `Socket.WebSocketConstructor`, and
- * `CryptoSuite` from `@stu/e2ee`. The Sync Lab provides one set per virtual device.
+ * `SqlClient` (one per device database) and `CryptoSuite` from `@stu/e2ee`. The Sync Lab provides
+ * one set per virtual device.
  */
 import * as Context from "effect/Context";
 import type * as Effect from "effect/Effect";
 import type * as Option from "effect/Option";
 import type * as Redacted from "effect/Redacted";
+import type * as RpcClient from "effect/rpc/RpcClient";
 import * as Schema from "effect/Schema";
+import type * as Scope from "effect/Scope";
 import type * as Stream from "effect/Stream";
 
 export * as Ports from "./Ports.ts";
@@ -57,6 +59,40 @@ export class Session extends Context.Service<
     readonly ended: Effect.Effect<void>;
   }
 >()("@stu/sync/client/Session") {}
+
+/** Opening a connection failed. */
+export class ConnectFailed extends Schema.TaggedError<
+  ConnectFailed,
+  { readonly brand: unique symbol }
+>()("Transport.ConnectFailed", {
+  reason: Schema.Literals([
+    // The ticket route answered 401. The engine calls `Session.ended` and waits for a token.
+    "session-ended",
+    // The server or the network didn't answer. The supervisor backs off and tries again.
+    "unreachable",
+  ]),
+}) {}
+
+export interface Connected {
+  /** Carries `Protocol.Rpcs` with `Protocol.serialization`. */
+  readonly protocol: RpcClient.Protocol["Service"];
+  /**
+   * Completes with the close code when the connection ends. A `Connection.CloseCode` stops the
+   * reconnects. 4403 never wipes the device by itself: it wipes only when a pull answers
+   * `Sync.DeviceRevoked`.
+   */
+  readonly closed: Effect.Effect<number>;
+}
+
+/**
+ * Opens one connection, which its scope closes. The engine's own layer fetches a ticket and opens
+ * the WebSocket through `Server`, `Session`, `HttpClient` and `Socket.WebSocketConstructor`. The
+ * simulation and the Sync Lab provide theirs, with faults injected.
+ */
+export class Transport extends Context.Service<
+  Transport,
+  { readonly connect: Effect.Effect<Connected, ConnectFailed, Scope.Scope> }
+>()("@stu/sync/client/Transport") {}
 
 /** Where the server is: `EXPO_PUBLIC_API_URL` on native, the page's own origin on the web. */
 export class Server extends Context.Service<Server, { readonly origin: URL }>()(

@@ -37,7 +37,10 @@ export const CloseCode = {
    * reconnecting and asks for sign-in.
    */
   sessionEnded: 4401,
-  /** Another device removed this one (`Sync.DeviceRevoked`). The device wipes its data and keys. */
+  /**
+   * Another device removed this one. The device connects once more and pulls, and wipes its data
+   * and keys only when that pull answers `Sync.DeviceRevoked`, so a close alone never wipes it.
+   */
   deviceRevoked: 4403,
   /** The client's contract is too old (`Sync.UpdateRequired`). The device waits for an update. */
   updateRequired: 4426,

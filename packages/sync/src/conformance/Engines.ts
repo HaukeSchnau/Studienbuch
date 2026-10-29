@@ -19,6 +19,7 @@ import { inject } from "vitest";
 import { DeviceDatabase } from "../client/DeviceDatabase.ts";
 import { SqliteTx } from "../client/SqliteTx.ts";
 import { PostgresTx } from "../server/PostgresTx.ts";
+import { Probe } from "./Probe.ts";
 import type { Tx } from "../transaction/Tx.ts";
 import ProbeMigrations from "./migrations/migrations.js";
 
@@ -66,7 +67,8 @@ const engine = Effect.fnUntraced(function* (
           }),
         ),
   ).pipe(Effect.orDie);
-  const txLayer = side === "device" ? SqliteTx.layer(actor) : PostgresTx.layer(actor);
+  const runner = { actor, writes: [Probe.table] };
+  const txLayer = side === "device" ? SqliteTx.layer(runner) : PostgresTx.layer(runner);
 
   return {
     name,

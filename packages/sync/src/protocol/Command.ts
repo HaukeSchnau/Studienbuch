@@ -51,6 +51,7 @@ export type Base = typeof Base.Type;
 
 export const SealedWrite = Schema.Struct({
   space: Ids.Id,
+  /** Random, such as a UUIDv4: a UUIDv7 would tell the server when the row was created. */
   id: Ids.Id,
   base: Base,
   envelope: SealedRow.Envelope,
@@ -60,15 +61,17 @@ export const SealedWrite = Schema.Struct({
 
 export type SealedWrite = typeof SealedWrite.Type;
 
+/**
+ * No mutator name: the server never runs it, and a name would tell the server and its command
+ * log which rows are grades or absences, which the empty table name of a sealed row hides.
+ */
 export const Seal = Schema.TaggedStruct("Seal", {
   mutationId: Ids.MutationId,
-  /** The mutator, for the command log. The server never runs it. */
-  name: Ids.Name,
   at: Schema.DateTimeUtc,
   writes: Schema.Array(SealedWrite),
   /**
    * Key boxes and history links of an epoch the command opens, such as a notebook's epoch 0 with
-   * its first write.
+   * its first write. Opening an epoch the space already has is `Stale`, not a refusal.
    */
   boxes: Schema.Array(SpaceKey.KeyBox),
   links: Schema.Array(SpaceKey.HistoryLink),

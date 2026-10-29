@@ -41,7 +41,7 @@ export class TooLarge extends Schema.TaggedError<TooLarge, { readonly brand: uni
   { space: Ids.Id, id: Ids.Id },
 ) {}
 
-/** No mutator of that name exists on the server, or it was retired. */
+/** No `Mutate` mutator of that name exists on the server, or it was retired. */
 export class UnknownMutator extends Schema.TaggedError<
   UnknownMutator,
   { readonly brand: unique symbol }

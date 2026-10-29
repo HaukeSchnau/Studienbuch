@@ -28,6 +28,8 @@ import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils.js";
 import * as Effect from "effect/Effect";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
+import { Ids } from "../protocol/Ids.ts";
+import { Protocol } from "../protocol/Protocol.ts";
 import { CanonicalJson } from "../transaction/CanonicalJson.ts";
 import { Tx } from "../transaction/Tx.ts";
 
@@ -224,21 +226,46 @@ export interface Invocation {
   readonly run: Effect.Effect<void, { readonly _tag: string } | Tx.Error, Tx.Service>;
 }
 
+/** A command from a newer app than this build. The server answers `Retry`: a deploy race. */
+export class NewerVersion extends Schema.TaggedError<
+  NewerVersion,
+  { readonly brand: unique symbol }
+>()("Sync.NewerVersion", { mutator: Schema.String, version: Schema.Int }) {}
+
+/**
+ * A command of an older mutator version. Upgrade chains arrive with the first version 2 mutator,
+ * and until then the server refuses one as `Sync.InvalidArgs`.
+ */
+export class OlderVersion extends Schema.TaggedError<
+  OlderVersion,
+  { readonly brand: unique symbol }
+>()("Sync.OlderVersion", { mutator: Schema.String, version: Schema.Int }) {}
+
 /**
  * Decodes a command's arguments as stored in the outbox or sent in `Mutate`, and binds them to its
  * mutator, for the replay on the device and the server's run.
  */
 export const invoke = (
   mutator: AnyMutator,
+  version: number,
   args: Schema.Json,
-): Effect.Effect<Invocation, Schema.SchemaError> =>
-  Effect.map(Schema.decodeEffect(mutator.args)(args), (decoded) => {
+): Effect.Effect<Invocation, Schema.SchemaError | NewerVersion | OlderVersion> => {
+  if (version > mutator.version) {
+    return Effect.fail(new NewerVersion({ mutator: mutator.name, version }));
+  }
+
+  if (version < mutator.version) {
+    return Effect.fail(new OlderVersion({ mutator: mutator.name, version }));
+  }
+
+  return Effect.map(Schema.decodeEffect(mutator.args)(args), (decoded) => {
     // The mutator's own codec decoded them, so they are the arguments its functions take.
     // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- see above
     const bound = decoded as never;
 
     return { spaces: mutator.spaces(bound), run: mutator.run(bound) };
   });
+};
 
 export const mutator = <
   const Name extends string,
@@ -304,36 +331,27 @@ export interface AnyMembershipRule {
   readonly spaces: (rows: never) => ReadonlyArray<string>;
 }
 
-/** The spaces a rule grants the members of `space`, from that space's current rows. */
-export const grants = (
+/**
+ * The spaces a rule grants the members of `space`, from that space's current rows. It keeps only
+ * ids that `existing` reports as spaces of the rule's kind, so an enrollment that names a notebook
+ * grants nothing.
+ */
+export const grants = <E, R>(
   rule: AnyMembershipRule,
   space: string,
-): Effect.Effect<ReadonlyArray<string>, Tx.Error, Tx.Service> =>
+  existing: (
+    kind: string,
+    spaces: ReadonlyArray<string>,
+  ) => Effect.Effect<ReadonlyArray<string>, E, R>,
+): Effect.Effect<ReadonlyArray<string>, Tx.Error | E, Tx.Service | R> =>
   Effect.flatMap(Tx.Service, (tx) => tx.list(rule.from, space)).pipe(
     // `tx.list` decoded the rows with the rule's own table.
     // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- see above
-    Effect.map((rows) => rule.spaces(rows as never)),
+    Effect.map((rows) => [...new Set(rule.spaces(rows as never))]),
+    Effect.flatMap((spaces) => existing(rule.kind.name, spaces)),
   );
 
 // The schema
-
-/** What a client built on a definition tells the server with every push and pull. */
-export const Contract = Schema.Struct({
-  /**
-   * Raised by hand in a release that understands a message older clients don't, or that the
-   * server may later require, such as the first to read a replacement table. The server sends
-   * new messages only from that version on, and answers clients below its minimum with
-   * `UpdateRequired`.
-   */
-  version: Schema.Int.check(Schema.isGreaterThanOrEqualTo(1)),
-  /**
-   * Changes with every change the evolution rules allow: a name, a class, a field, an index, a
-   * write rule or a mutator version. Logs and the Sync Lab show it, to tell builds apart.
-   */
-  hash: Schema.String,
-});
-
-export type Contract = typeof Contract.Type;
 
 export interface Definition {
   readonly spaceKinds: ReadonlyArray<SpaceKind>;
@@ -343,13 +361,14 @@ export interface Definition {
   readonly byName: {
     readonly spaceKinds: ReadonlyMap<string, SpaceKind>;
     readonly tables: ReadonlyMap<string, Any>;
-    readonly mutators: ReadonlyMap<string, AnyMutator>;
+    /** By mode first, so a `Mutate` command never finds a mutator whose result is sealed. */
+    readonly mutators: { readonly [mode in Mode]: ReadonlyMap<string, AnyMutator> };
   };
-  readonly contract: Contract;
+  readonly contract: Protocol.Contract;
 }
 
 export const schema = (options: {
-  /** The contract's version. */
+  /** The definition's version, which the contract carries as `schema`. */
   readonly version: number;
   readonly spaceKinds: ReadonlyArray<SpaceKind>;
   readonly tables: ReadonlyArray<Any>;
@@ -366,9 +385,16 @@ export const schema = (options: {
     byName: {
       spaceKinds: byName(parts.spaceKinds),
       tables: byName(parts.tables),
-      mutators: byName(parts.mutators),
+      mutators: {
+        Mutate: byName(parts.mutators.filter((mutator) => mutator.mode === "Mutate")),
+        Seal: byName(parts.mutators.filter((mutator) => mutator.mode === "Seal")),
+      },
     },
-    contract: { version: parts.version, hash: hash(describe(parts)) },
+    contract: {
+      protocol: Protocol.version,
+      schema: parts.version,
+      hash: hash(describe(parts)),
+    },
   };
 };
 
@@ -435,9 +461,11 @@ export class InvalidDefinition extends Schema.TaggedError<
     // A role writing in a space kind only the server writes, or a mutator writing a table no
     // role may write.
     "not-writable",
-    // An encrypted table in a space kind without keys, or a membership rule the server can't
-    // read.
+    // An encrypted table in a space kind without keys, encrypted tables of one kind that
+    // different roles write, or a membership rule the server can't read.
     "encryption",
+    // A name outside `Ids.Name`, or a mutator version below 1.
+    "out-of-bounds",
   ]),
   /** Where, such as `table Homework` or `mutator homework.create`. */
   subject: Schema.String,
@@ -450,18 +478,34 @@ export const validate = (definition: Definition): Result.Result<Definition, Inva
   return first.done === true ? Result.succeed(definition) : Result.fail(first.value);
 };
 
+const fitsName = Schema.is(Ids.Name);
+
+const isName = (name: string): boolean => fitsName(name);
+
 function* problems(definition: Definition): Generator<InvalidDefinition> {
-  const { spaceKinds, tables, mutators } = definition.byName;
+  const { spaceKinds, tables } = definition.byName;
 
   const problem = (reason: InvalidDefinition["reason"], subject: string) =>
     new InvalidDefinition({ reason, subject });
 
+  const mutators = new Set(definition.mutators.map((mutator) => mutator.name));
+
   for (const [what, items, named] of [
-    ["space kind", definition.spaceKinds, spaceKinds],
-    ["table", definition.tables, tables],
-    ["mutator", definition.mutators, mutators],
+    ["space kind", definition.spaceKinds.length, spaceKinds.size],
+    ["table", definition.tables.length, tables.size],
+    ["mutator", definition.mutators.length, mutators.size],
   ] as const) {
-    if (items.length !== named.size) yield problem("duplicate", `${what} names`);
+    if (items !== named) yield problem("duplicate", `${what} names`);
+  }
+
+  const names = [
+    ...definition.spaceKinds.flatMap((kind) => [kind.name, ...kind.roles]),
+    ...definition.tables.map((table) => table.name),
+    ...mutators,
+  ];
+
+  for (const name of names) {
+    if (!isName(name)) yield problem("out-of-bounds", `name ${name}`);
   }
 
   for (const table of definition.tables) {
@@ -493,8 +537,28 @@ function* problems(definition: Definition): Generator<InvalidDefinition> {
     }
   }
 
+  for (const kind of definition.spaceKinds) {
+    // The server sees no table name in a sealed write, so it can check only one set of roles.
+    const roleSets = new Set(
+      definition.tables
+        .filter((table) => table.class === "encrypted")
+        .flatMap((table) => {
+          const roles = table.writableBy[kind.name];
+
+          return roles === undefined ? [] : [[...roles].sort().join(" ")];
+        }),
+    );
+
+    if (roleSets.size > 1)
+      yield problem("encryption", `roles writing encrypted tables in ${kind.name}`);
+  }
+
   for (const mutator of definition.mutators) {
     const subject = `mutator ${mutator.name}`;
+
+    if (!Number.isSafeInteger(mutator.version) || mutator.version < 1) {
+      yield problem("out-of-bounds", `${subject}, version ${mutator.version}`);
+    }
 
     for (const table of mutator.writes) {
       if (tables.get(table.name) !== table)
