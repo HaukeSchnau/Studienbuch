@@ -17,6 +17,7 @@ import * as NodeFSP from "node:fs/promises";
 import { DeviceDatabase } from "../client/DeviceDatabase.ts";
 import { SqliteTx } from "../client/SqliteTx.ts";
 import { PostgresTx } from "../server/PostgresTx.ts";
+import { ServerDatabase } from "../server/ServerDatabase.ts";
 import { Postgres18 } from "../testing/Postgres18.ts";
 import { Probe } from "./Probe.ts";
 import ProbeMigrations from "./migrations/migrations.js";
@@ -44,13 +45,7 @@ const engine = Effect.fnUntraced(function* (
     Effect.provide(effect, context);
 
   yield* sql(
-    side === "device"
-      ? DeviceDatabase.migrate(ProbeMigrations.migrations)
-      : Effect.flatMap(SqlClient.SqlClient, (client) =>
-          Effect.forEach(PostgresTx.schema, (statement) => client.unsafe(statement), {
-            discard: true,
-          }),
-        ),
+    side === "device" ? DeviceDatabase.migrate(ProbeMigrations.migrations) : ServerDatabase.create,
   ).pipe(Effect.orDie);
   const txLayer = side === "device" ? SqliteTx.layer(Probe.runner) : PostgresTx.layer(Probe.runner);
 

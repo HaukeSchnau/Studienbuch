@@ -1,12 +1,4 @@
-import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
-
-/**
- * One row with a random id written when the database is created. A backup restore rewrites it, so
- * devices notice the rewind (sync.md, "Backup restores and the epoch").
- */
-export const syncEpoch = pgTable("sync_epoch", {
-  id: uuid("id").primaryKey(),
-});
+import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 /** When each scheduled job last ran, for readiness. */
 export const jobRun = pgTable("job_run", {

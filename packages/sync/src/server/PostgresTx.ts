@@ -1,7 +1,7 @@
 /**
  * The server's `Tx` on Postgres. The first write to a space in a transaction bumps the space's
  * version under its row lock, and every row the transaction writes there carries that version, so
- * version order equals commit order (sync.md, section 1). Deletes leave a tombstone.
+ * version order equals commit order (ADR 0019). Deletes leave a tombstone.
  *
  * Provide a fresh layer per transaction, because the bumped versions belong to it:
  *
@@ -17,45 +17,36 @@ import { Tx } from "../transaction/Tx.ts";
 
 export * as PostgresTx from "./PostgresTx.ts";
 
-/**
- * Ids sort in C collation, which is UTF-8 byte order like SQLite's. A database created with an ICU
- * or glibc locale would otherwise put `_c` before `B` and list rows in another order than the
- * device.
- */
-export const schema = [
-  `create table if not exists space (
-    id text collate "C" primary key,
-    version bigint not null
-  )`,
-  `create table if not exists sync_row (
-    space_id text collate "C" not null,
-    tbl text collate "C" not null,
-    id text collate "C" not null,
-    version bigint not null,
-    data jsonb,
-    primary key (space_id, tbl, id)
-  )`,
-  `create index if not exists sync_row_space_version on sync_row (space_id, version)`,
-];
+export interface Runner extends Tx.Runner {
+  /**
+   * The spaces a command declared. A write to another space is a defect, like a write to an
+   * undeclared table. Without it, the transaction may write any space that exists.
+   */
+  readonly spaces?: ReadonlyArray<string>;
+}
 
 /** The server's `Tx` for a command of the connection's account, or for the server's own writes. */
-export const make = Effect.fnUntraced(function* (runner: Tx.Runner) {
+export const make = Effect.fnUntraced(function* (runner: Runner) {
   const sql = yield* SqlClient.SqlClient;
-  const versions = new Map<string, string>();
+  const versions = new Map<string, number>();
+  const declared = runner.spaces === undefined ? undefined : new Set(runner.spaces);
 
   const version = (space: string) => {
     const known = versions.get(space);
 
     if (known !== undefined) return Effect.succeed(known);
 
-    return sql<{ readonly version: string }>`
-      insert into space (id, version) values (${space}, 1)
-      on conflict (id) do update set version = space.version + 1
-      returning version::text
+    if (declared !== undefined && !declared.has(space)) {
+      return Effect.die(`A write to space ${space}, which the command doesn't declare`);
+    }
+
+    return sql<{ readonly version: number }>`
+      update space set version = version + 1 where id = ${space}
+      returning version::float8 as version
     `.pipe(
       Effect.flatMap(([row]) =>
         row === undefined
-          ? Effect.die("the version bump returned no row")
+          ? Effect.die(`A write to space ${space}, which doesn't exist`)
           : Effect.succeed(row.version),
       ),
       Effect.tap((bumped) => Effect.sync(() => versions.set(space, bumped))),
@@ -63,7 +54,8 @@ export const make = Effect.fnUntraced(function* (runner: Tx.Runner) {
   };
 
   return Tx.make({
-    ...runner,
+    actor: runner.actor,
+    writes: runner.writes,
     location: "server",
 
     read: (space, table, id) =>
@@ -91,12 +83,13 @@ export const make = Effect.fnUntraced(function* (runner: Tx.Runner) {
         version(space),
         (bumped) => sql`
           insert into sync_row (space_id, tbl, id, version, data)
-          values (${space}, ${table}, ${id}, ${bumped}::bigint, ${data}::jsonb)
-          on conflict (space_id, tbl, id)
-          do update set version = excluded.version, data = excluded.data
+          values (${space}, ${table}, ${id}, ${bumped}, ${data}::jsonb)
+          on conflict (space_id, tbl, id) do update
+          set version = excluded.version, data = excluded.data,
+            written_by_client = null, written_by_mutation = null
         `,
       ).pipe(Effect.asVoid),
   });
 });
 
-export const layer = (runner: Tx.Runner) => Layer.effect(Tx.Service, make(runner));
+export const layer = (runner: Runner) => Layer.effect(Tx.Service, make(runner));

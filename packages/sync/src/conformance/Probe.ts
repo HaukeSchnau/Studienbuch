@@ -216,6 +216,16 @@ export const run = Effect.fn("Probe.run")(function* (
   space: string,
   steps: ReadonlyArray<Step>,
 ) {
+  // The server writes only into spaces that exist.
+  if (engine.side === "server") {
+    yield* engine.sql(
+      Effect.flatMap(
+        SqlClient.SqlClient,
+        (sql) => sql`insert into space (id, kind) values (${space}, 'probe')`,
+      ),
+    );
+  }
+
   const outcomes = yield* Effect.forEach(steps, (each) => step(engine, space, each));
 
   return { outcomes, stored: yield* stored(engine, space) } satisfies Trace;

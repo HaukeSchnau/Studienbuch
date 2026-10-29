@@ -6,6 +6,3 @@ CREATE TABLE "job_run" (
 CREATE TABLE "sync_epoch" (
 	"id" uuid PRIMARY KEY
 );
---> statement-breakpoint
--- Written once here; a restore rewrites it (sync.md, "Backup restores and the epoch").
-INSERT INTO "sync_epoch" ("id") VALUES (gen_random_uuid());

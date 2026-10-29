@@ -17,13 +17,13 @@ import * as Schema from "effect/Schema";
 // oxlint-disable-next-line effecttsgo/node-builtin-import -- see above
 import * as NodeHttp from "node:http";
 import * as NodeURL from "node:url";
+import { SyncEpoch, Tables as SyncTables } from "@stu/sync/server";
 import packageJson from "../package.json" with { type: "json" };
 import { Auth } from "./auth/Auth.ts";
 import { Deployment } from "./infra/config/Deployment.ts";
 import { SecretFiles } from "./infra/config/SecretFiles.ts";
 import { Database } from "./infra/database/Database.ts";
 import { Migrations } from "./infra/database/Migrations.ts";
-import { Schema as Tables } from "./infra/database/Schema.ts";
 import { Jobs } from "./infra/jobs/Jobs.ts";
 import { Mail } from "./infra/mail/Mail.ts";
 import { Telemetry } from "./infra/telemetry/Telemetry.ts";
@@ -82,6 +82,7 @@ const serve = Effect.gen(function* () {
 
 const prepare = Effect.gen(function* () {
   const applied = yield* Migrations.apply(yield* Migrations.Release);
+  yield* SyncEpoch.initialize;
   yield* Effect.logInfo(
     applied.length === 0 ? "The schema is at head" : `Applied ${applied.join(", ")}`,
   );
@@ -98,7 +99,7 @@ const verify = Effect.gen(function* () {
   yield* Migrations.verify(yield* Migrations.Release);
   const db = yield* Database.Drizzle;
 
-  if ((yield* db.$count(Tables.syncEpoch)) !== 1) {
+  if ((yield* db.$count(SyncTables.syncEpoch)) !== 1) {
     return yield* new InvariantBroken({ invariant: "sync_epoch holds exactly one row" });
   }
 
