@@ -37,6 +37,7 @@ const demoKeys: Capability = {
   home: "persona sign-in and the seed",
   files: [
     "apps/server/src/demo/DemoKeys.ts",
+    "apps/server/src/demo/DemoNotebooks.ts",
     "apps/server/src/demo/PersonaSignIn.ts",
     "apps/server/src/demo/Seed.ts",
   ],

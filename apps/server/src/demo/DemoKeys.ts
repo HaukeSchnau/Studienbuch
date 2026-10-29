@@ -61,9 +61,12 @@ export const rootKey = Effect.fn("DemoKeys.rootKey")(function* (account: string)
   return Redacted.make(key);
 });
 
-/** Generation 0 of the demo account's key chain, signed, as a first device publishes it. */
-export const firstRecord = Effect.fn("DemoKeys.firstRecord")(function* (account: string) {
+/**
+ * What the demo account's root key derives at generation 0, and its signed record, as a first
+ * device publishes it.
+ */
+export const chain = Effect.fn("DemoKeys.chain")(function* (account: string) {
   const keys = yield* AccountKey.derive(yield* rootKey(account), account, 0);
 
-  return yield* AccountKey.record(keys, "first");
+  return { keys, record: yield* AccountKey.record(keys, "first") };
 });

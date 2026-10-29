@@ -1,22 +1,22 @@
 /**
  * The demo seed: the demo school for the current school year, and Lena and Tom with their first key
- * records, admitted with their courses for today's term. `prepare` runs it when
+ * records, admitted with their courses for today's term and their notebooks' encrypted content. `prepare` runs it when
  * `STUDIENBUCH_DEMO_SCHOOL=seed`, and `console demo seed` on request. A second run writes nothing.
  */
 import { Demo } from "@stu/api/Demo";
-import { Studienbuch } from "@stu/core";
 import { CryptoSuite } from "@stu/e2ee";
-import { SyncServer } from "@stu/sync/server";
 import * as Command from "effect/cli/Command";
 import * as Config from "effect/Config";
 import * as Console from "effect/Console";
 import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import { KeyStore } from "../keys/KeyStore.ts";
 import { Access } from "../school/Access.ts";
 import { Schools } from "../school/Schools.ts";
 import { DemoAccounts } from "./DemoAccounts.ts";
 import { DemoKeys } from "./DemoKeys.ts";
+import { DemoNotebooks } from "./DemoNotebooks.ts";
 import { DemoSchool } from "./DemoSchool.ts";
 
 export * as Seed from "./Seed.ts";
@@ -31,7 +31,8 @@ export const run = Effect.gen(function* () {
   yield* DemoKeys.seed;
 
   return yield* Effect.gen(function* () {
-    const school = yield* DemoSchool.data(yield* Schools.today(DemoSchool.timeZone));
+    const today = yield* Schools.today(DemoSchool.timeZone);
+    const school = yield* DemoSchool.data(today);
     const term = school.year.current.id;
     yield* Schools.publish(school.data);
 
@@ -40,17 +41,18 @@ export const run = Effect.gen(function* () {
       const choice = DemoSchool.choice(DemoSchool.personas[persona], term);
       yield* DemoAccounts.ensure(persona, password);
       // Publishing the same record again stores nothing, so a second seed writes no key.
-      yield* KeyStore.publishFirst(account, yield* DemoKeys.firstRecord(account), Option.none());
+      yield* KeyStore.publishFirst(account, (yield* DemoKeys.chain(account)).record, Option.none());
       yield* Access.admit(account, DemoSchool.id, Option.some(choice), notebook);
       // A term that began since the last seed gets the persona's courses again.
       yield* Access.enroll(notebook, choice);
+      yield* DemoNotebooks.seal(persona, today);
     }
 
     return { school: DemoSchool.id, term };
   }).pipe(
     // The seed's own rows, which `enrollment.set` accepts.
     Effect.orDie,
-    Effect.provide([SyncServer.writers(Studienbuch.schema), CryptoSuite.layer]),
+    Effect.provide(DemoNotebooks.layer.pipe(Layer.provideMerge(CryptoSuite.layer))),
   );
 }).pipe(Effect.withSpan("Seed.run"));
 
