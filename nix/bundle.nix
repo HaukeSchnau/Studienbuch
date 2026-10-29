@@ -117,27 +117,45 @@ let
         '') ([ "." ] ++ packageDirs)}
       '';
 
-  pnpmDeps = pkgs.fetchPnpmDeps {
-    pname = "studienbuch";
-    version = "0";
-    src = depsSource;
-    inherit pnpm;
-    fetcherVersion = 5;
-    # The fetcher downloads every platform's native packages, but the release is only built on
-    # x86_64-linux (flake.nix). Developers' installs never read this copy of the workspace settings.
-    prePnpmInstall = ''
-      export pnpm_config_force_ignores_platform=false
-      cat >> pnpm-workspace.yaml <<'YAML'
-      supportedArchitectures:
-        os: [linux]
-        cpu: [x64]
-        libc: [glibc]
-      YAML
-    '';
-    # A changed pnpm-lock.yaml fails this fetch with a hash mismatch. Replace the hash with the one
-    # after `got:`.
-    hash = "sha256-cz9h5oOT8HzrkbAe8Dpg7hklO1GnIGXMe2SZpR0mxUk=";
-  };
+  fetcherVersion = 5;
+  # The pnpm store is a fixed-output fetch, so its hash has to be written down. pnpm-deps.json pins
+  # it for one lockfile, pnpm and fetcher, and `vp run nix:update-hash` refreshes it. Nix would
+  # otherwise reuse the old store for a new lockfile, or fail with a bare hash mismatch.
+  pinned = lib.importJSON ./pnpm-deps.json;
+  pnpmDepsKey = builtins.hashString "sha256" (
+    lib.concatStringsSep "\n" [
+      (builtins.hashFile "sha256" (root + "/pnpm-lock.yaml"))
+      pnpm.version
+      (toString fetcherVersion)
+    ]
+  );
+
+  pnpmDeps =
+    if pinned.key != pnpmDepsKey then
+      pkgs.runCommand "studienbuch-pnpm-deps-stale" { } ''
+        echo "nix/pnpm-deps.json pins the pnpm store of another pnpm-lock.yaml or pnpm." >&2
+        echo "Run \`vp run nix:update-hash\` and commit nix/pnpm-deps.json." >&2
+        exit 1
+      ''
+    else
+      pkgs.fetchPnpmDeps {
+        pname = "studienbuch";
+        version = "0";
+        src = depsSource;
+        inherit pnpm fetcherVersion;
+        inherit (pinned) hash;
+        # The fetcher downloads every platform's native packages, but the release is only built on
+        # x86_64-linux (flake.nix). Developers' installs never read this copy of the settings.
+        prePnpmInstall = ''
+          export pnpm_config_force_ignores_platform=false
+          cat >> pnpm-workspace.yaml <<'YAML'
+          supportedArchitectures:
+            os: [linux]
+            cpu: [x64]
+            libc: [glibc]
+          YAML
+        '';
+      };
 
   # Every workspace package's node_modules, installed offline from `pnpmDeps`.
   deps = stdenvNoCC.mkDerivation {
@@ -162,7 +180,7 @@ let
         fi
       done
     '';
-    passthru = { inherit pnpmDeps; };
+    passthru = { inherit pnpmDeps pnpmDepsKey; };
   };
 
   # Runs a package's own build script with the installed workspace beside its sources.
