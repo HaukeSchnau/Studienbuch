@@ -19,7 +19,7 @@ export * as Protocol from "./Protocol.ts";
  * The protocol's version, raised with every change to a message. `wire.v<version>.schema.json`
  * records each version's messages, and `since` says which version first sent each server tag.
  */
-export const version = 1;
+export const version = 2;
 
 /** JSON frames, one message per WebSocket frame. Client and server provide this layer. */
 export const serialization = RpcSerialization.layerJson;
@@ -96,7 +96,8 @@ const client = {
 
 /**
  * The commands from the first one the server hasn't confirmed, in mutation id order. The server
- * applies each in its own transaction and stops at the first `Retry` or `Stale`.
+ * applies each in its own transaction and stops at the first outcome that isn't `Applied` or
+ * `Rejected`.
  */
 export const PushRequest = Schema.Struct({ ...client, commands: Schema.Array(Command.Any) });
 
@@ -126,7 +127,24 @@ export const Retry = Schema.TaggedStruct("Retry", { mutationId: Ids.MutationId }
  */
 export const Stale = Schema.TaggedStruct("Stale", { mutationId: Ids.MutationId });
 
-export const Outcome = Schema.Union([Applied, Rejected, Retry, Stale]);
+/**
+ * Not processed: a box or link of the command needs the account's key record, and it has none
+ * yet, as before its first device publishes generation 0 or after a restore. The device keeps the
+ * command, stops sending these bytes, and seals it again once the account has a record.
+ */
+export const NoKeyRecord = Schema.TaggedStruct("NoKeyRecord", { mutationId: Ids.MutationId });
+
+/**
+ * Not processed: a box or link was signed at another generation than the account's newest,
+ * `generation`, or a box to the account itself was sealed to an older one. The device fetches its
+ * seal of `generation`, then seals the command again with those keys.
+ */
+export const KeysBehind = Schema.TaggedStruct("KeysBehind", {
+  mutationId: Ids.MutationId,
+  generation: Schema.Int.check(Schema.isBetween({ minimum: 0, maximum: 0xffff_ffff })),
+});
+
+export const Outcome = Schema.Union([Applied, Rejected, Retry, Stale, NoKeyRecord, KeysBehind]);
 
 export type Outcome = typeof Outcome.Type;
 
@@ -295,6 +313,8 @@ export const since = {
   Rejected: 1,
   Retry: 1,
   Stale: 1,
+  NoKeyRecord: 2,
+  KeysBehind: 2,
   Readable: 1,
   Sealed: 1,
   Deleted: 1,

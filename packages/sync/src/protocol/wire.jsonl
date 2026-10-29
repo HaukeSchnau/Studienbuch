@@ -40,3 +40,5 @@
 {"frame":"Sync.events","text":"{\"_tag\":\"Ack\",\"requestId\":2}"}
 {"frame":"","text":"{\"_tag\":\"Ping\"}"}
 {"frame":"","text":"{\"_tag\":\"Pong\"}"}
+{"message":"Sync.push success","json":{"lastMutationId":0,"outcomes":[{"_tag":"NoKeyRecord","mutationId":1}]}}
+{"message":"Sync.push success","json":{"lastMutationId":3,"outcomes":[{"_tag":"Applied","mutationId":3},{"_tag":"KeysBehind","mutationId":4,"generation":1}]}}

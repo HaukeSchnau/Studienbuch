@@ -1,0 +1,1379 @@
+{
+  "Connection.Ticket": {
+    "definitions": {},
+    "dialect": "draft-2020-12",
+    "schema": {
+      "additionalProperties": true,
+      "properties": {
+        "ticket": {
+          "type": "string"
+        }
+      },
+      "required": ["ticket"],
+      "type": "object"
+    }
+  },
+  "Refusal.Engine": {
+    "definitions": {
+      "Sync.BadEnvelopeEncoded": {
+        "additionalProperties": true,
+        "properties": {
+          "_tag": {
+            "enum": ["Sync.BadEnvelope"],
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "space": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": ["_tag", "space", "id"],
+        "type": "object"
+      },
+      "Sync.InvalidArgsEncoded": {
+        "additionalProperties": true,
+        "properties": {
+          "_tag": {
+            "enum": ["Sync.InvalidArgs"],
+            "type": "string"
+          },
+          "mutator": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "version": {
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          }
+        },
+        "required": ["_tag", "mutator", "version"],
+        "type": "object"
+      },
+      "Sync.LockedEncoded": {
+        "additionalProperties": true,
+        "properties": {
+          "_tag": {
+            "enum": ["Sync.Locked"],
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "space": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": ["_tag", "space", "id"],
+        "type": "object"
+      },
+      "Sync.NotAllowedEncoded": {
+        "additionalProperties": true,
+        "properties": {
+          "_tag": {
+            "enum": ["Sync.NotAllowed"],
+            "type": "string"
+          },
+          "space": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": ["_tag", "space"],
+        "type": "object"
+      },
+      "Sync.NotMemberEncoded": {
+        "additionalProperties": true,
+        "properties": {
+          "_tag": {
+            "enum": ["Sync.NotMember"],
+            "type": "string"
+          },
+          "space": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": ["_tag", "space"],
+        "type": "object"
+      },
+      "Sync.TooLargeEncoded": {
+        "additionalProperties": true,
+        "properties": {
+          "_tag": {
+            "enum": ["Sync.TooLarge"],
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "space": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": ["_tag", "space", "id"],
+        "type": "object"
+      },
+      "Sync.UnknownMutatorEncoded": {
+        "additionalProperties": true,
+        "properties": {
+          "_tag": {
+            "enum": ["Sync.UnknownMutator"],
+            "type": "string"
+          },
+          "mutator": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": ["_tag", "mutator"],
+        "type": "object"
+      }
+    },
+    "dialect": "draft-2020-12",
+    "schema": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Sync.NotMemberEncoded"
+        },
+        {
+          "$ref": "#/$defs/Sync.NotAllowedEncoded"
+        },
+        {
+          "$ref": "#/$defs/Sync.LockedEncoded"
+        },
+        {
+          "$ref": "#/$defs/Sync.BadEnvelopeEncoded"
+        },
+        {
+          "$ref": "#/$defs/Sync.TooLargeEncoded"
+        },
+        {
+          "$ref": "#/$defs/Sync.UnknownMutatorEncoded"
+        },
+        {
+          "$ref": "#/$defs/Sync.InvalidArgsEncoded"
+        }
+      ]
+    }
+  },
+  "Refusal.Tx": {
+    "definitions": {
+      "CanonicalJson.UnrepresentableEncoded": {
+        "additionalProperties": true,
+        "properties": {
+          "_tag": {
+            "enum": ["CanonicalJson.Unrepresentable"],
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "reason": {
+            "enum": [
+              "nul",
+              "lone-surrogate",
+              "non-finite",
+              "unsafe-integer",
+              "too-deep",
+              "not-json"
+            ],
+            "type": "string"
+          }
+        },
+        "required": ["_tag", "path", "reason"],
+        "type": "object"
+      },
+      "Tx.InvalidIdEncoded": {
+        "additionalProperties": true,
+        "properties": {
+          "_tag": {
+            "enum": ["Tx.InvalidId"],
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "space": {
+            "type": "string"
+          },
+          "table": {
+            "type": "string"
+          }
+        },
+        "required": ["_tag", "table", "space", "id"],
+        "type": "object"
+      },
+      "Tx.InvalidRowEncoded": {
+        "additionalProperties": true,
+        "properties": {
+          "_tag": {
+            "enum": ["Tx.InvalidRow"],
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "space": {
+            "type": "string"
+          },
+          "table": {
+            "type": "string"
+          }
+        },
+        "required": ["_tag", "table", "space", "id", "message"],
+        "type": "object"
+      },
+      "Tx.RowExistsEncoded": {
+        "additionalProperties": true,
+        "properties": {
+          "_tag": {
+            "enum": ["Tx.RowExists"],
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "space": {
+            "type": "string"
+          },
+          "table": {
+            "type": "string"
+          }
+        },
+        "required": ["_tag", "table", "space", "id"],
+        "type": "object"
+      },
+      "Tx.RowMissingEncoded": {
+        "additionalProperties": true,
+        "properties": {
+          "_tag": {
+            "enum": ["Tx.RowMissing"],
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "space": {
+            "type": "string"
+          },
+          "table": {
+            "type": "string"
+          }
+        },
+        "required": ["_tag", "table", "space", "id"],
+        "type": "object"
+      }
+    },
+    "dialect": "draft-2020-12",
+    "schema": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Tx.RowExistsEncoded"
+        },
+        {
+          "$ref": "#/$defs/Tx.RowMissingEncoded"
+        },
+        {
+          "$ref": "#/$defs/Tx.InvalidRowEncoded"
+        },
+        {
+          "$ref": "#/$defs/Tx.InvalidIdEncoded"
+        },
+        {
+          "$ref": "#/$defs/CanonicalJson.UnrepresentableEncoded"
+        }
+      ]
+    }
+  },
+  "Sync.events chunk": {
+    "definitions": {},
+    "dialect": "draft-2020-12",
+    "schema": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "properties": {
+            "_tag": {
+              "enum": ["Poke"],
+              "type": "string"
+            },
+            "spaces": {
+              "items": {
+                "additionalProperties": true,
+                "properties": {
+                  "space": {
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "version": {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer"
+                  }
+                },
+                "required": ["space", "version"],
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "required": ["_tag", "spaces"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "_tag": {
+              "enum": ["AccountChanged"],
+              "type": "string"
+            }
+          },
+          "required": ["_tag"],
+          "type": "object"
+        },
+        {
+          "allOf": [
+            {
+              "additionalProperties": {},
+              "type": "object"
+            }
+          ],
+          "properties": {
+            "_tag": {
+              "type": "string"
+            }
+          },
+          "required": ["_tag"],
+          "type": "object"
+        }
+      ]
+    }
+  },
+  "Sync.events payload": {
+    "definitions": {},
+    "dialect": "draft-2020-12",
+    "schema": {
+      "additionalProperties": true,
+      "properties": {
+        "contract": {
+          "additionalProperties": true,
+          "properties": {
+            "hash": {
+              "type": "string"
+            },
+            "protocol": {
+              "maximum": 9007199254740991,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "schema": {
+              "maximum": 9007199254740991,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          "required": ["protocol", "schema", "hash"],
+          "type": "object"
+        }
+      },
+      "required": ["contract"],
+      "type": "object"
+    }
+  },
+  "Sync.pull error": {
+    "definitions": {
+      "Sync.ClientUnknownEncoded": {
+        "additionalProperties": true,
+        "properties": {
+          "_tag": {
+            "enum": ["Sync.ClientUnknown"],
+            "type": "string"
+          }
+        },
+        "required": ["_tag"],
+        "type": "object"
+      },
+      "Sync.DeviceRevokedEncoded": {
+        "additionalProperties": true,
+        "properties": {
+          "_tag": {
+            "enum": ["Sync.DeviceRevoked"],
+            "type": "string"
+          }
+        },
+        "required": ["_tag"],
+        "type": "object"
+      },
+      "Sync.EpochChangedEncoded": {
+        "additionalProperties": true,
+        "properties": {
+          "_tag": {
+            "enum": ["Sync.EpochChanged"],
+            "type": "string"
+          },
+          "lastMutationId": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "syncEpoch": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": ["_tag", "syncEpoch", "lastMutationId"],
+        "type": "object"
+      },
+      "Sync.UpdateRequiredEncoded": {
+        "additionalProperties": true,
+        "properties": {
+          "_tag": {
+            "enum": ["Sync.UpdateRequired"],
+            "type": "string"
+          },
+          "minimum": {
+            "additionalProperties": true,
+            "properties": {
+              "protocol": {
+                "maximum": 9007199254740991,
+                "minimum": -9007199254740991,
+                "type": "integer"
+              },
+              "schema": {
+                "maximum": 9007199254740991,
+                "minimum": -9007199254740991,
+                "type": "integer"
+              }
+            },
+            "required": ["protocol", "schema"],
+            "type": "object"
+          }
+        },
+        "required": ["_tag", "minimum"],
+        "type": "object"
+      }
+    },
+    "dialect": "draft-2020-12",
+    "schema": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Sync.EpochChangedEncoded"
+        },
+        {
+          "$ref": "#/$defs/Sync.UpdateRequiredEncoded"
+        },
+        {
+          "$ref": "#/$defs/Sync.ClientUnknownEncoded"
+        },
+        {
+          "$ref": "#/$defs/Sync.DeviceRevokedEncoded"
+        }
+      ]
+    }
+  },
+  "Sync.pull payload": {
+    "definitions": {},
+    "dialect": "draft-2020-12",
+    "schema": {
+      "additionalProperties": true,
+      "properties": {
+        "clientId": {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string"
+        },
+        "contract": {
+          "additionalProperties": true,
+          "properties": {
+            "hash": {
+              "type": "string"
+            },
+            "protocol": {
+              "maximum": 9007199254740991,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "schema": {
+              "maximum": 9007199254740991,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          "required": ["protocol", "schema", "hash"],
+          "type": "object"
+        },
+        "cursors": {
+          "items": {
+            "additionalProperties": true,
+            "properties": {
+              "space": {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              "version": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": ["space", "version"],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "limit": {
+          "maximum": 9007199254740991,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "settledMutationId": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "syncEpoch": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": ["clientId", "syncEpoch", "contract", "cursors", "settledMutationId", "limit"],
+      "type": "object"
+    }
+  },
+  "Sync.pull success": {
+    "definitions": {},
+    "dialect": "draft-2020-12",
+    "schema": {
+      "additionalProperties": true,
+      "properties": {
+        "lastMutationId": {
+          "anyOf": [
+            {
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "more": {
+          "type": "boolean"
+        },
+        "patches": {
+          "items": {
+            "additionalProperties": true,
+            "properties": {
+              "ops": {
+                "items": {
+                  "additionalProperties": true,
+                  "properties": {
+                    "id": {
+                      "maxLength": 64,
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "row": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": true,
+                          "properties": {
+                            "_tag": {
+                              "enum": ["Readable"],
+                              "type": "string"
+                            },
+                            "data": {}
+                          },
+                          "required": ["_tag", "data"],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": true,
+                          "properties": {
+                            "_tag": {
+                              "enum": ["Sealed"],
+                              "type": "string"
+                            },
+                            "ct": {
+                              "contentEncoding": "base64",
+                              "format": "byte",
+                              "type": "string"
+                            },
+                            "envelope": {}
+                          },
+                          "required": ["_tag", "envelope", "ct"],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": true,
+                          "properties": {
+                            "_tag": {
+                              "enum": ["Deleted"],
+                              "type": "string"
+                            }
+                          },
+                          "required": ["_tag"],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "tbl": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["tbl", "id", "version", "row"],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "reset": {
+                "type": "boolean"
+              },
+              "space": {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              "to": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": ["space", "reset", "to", "ops"],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "refusals": {
+          "items": {
+            "additionalProperties": true,
+            "properties": {
+              "mutationId": {
+                "maximum": 9007199254740991,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "reason": {
+                "allOf": [
+                  {
+                    "additionalProperties": {},
+                    "type": "object"
+                  }
+                ],
+                "properties": {
+                  "_tag": {
+                    "type": "string"
+                  }
+                },
+                "required": ["_tag"],
+                "type": "object"
+              }
+            },
+            "required": ["mutationId", "reason"],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "removed": {
+          "items": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "spaces": {
+          "items": {
+            "additionalProperties": true,
+            "properties": {
+              "id": {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              "keyEpoch": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "kind": {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              "role": {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              "version": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": ["id", "kind", "role", "version", "keyEpoch"],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "syncEpoch": {
+          "maxLength": 128,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "syncEpoch",
+        "spaces",
+        "patches",
+        "removed",
+        "lastMutationId",
+        "refusals",
+        "more"
+      ],
+      "type": "object"
+    }
+  },
+  "Sync.push error": {
+    "definitions": {
+      "Sync.ClientUnknownEncoded": {
+        "additionalProperties": true,
+        "properties": {
+          "_tag": {
+            "enum": ["Sync.ClientUnknown"],
+            "type": "string"
+          }
+        },
+        "required": ["_tag"],
+        "type": "object"
+      },
+      "Sync.DeviceRevokedEncoded": {
+        "additionalProperties": true,
+        "properties": {
+          "_tag": {
+            "enum": ["Sync.DeviceRevoked"],
+            "type": "string"
+          }
+        },
+        "required": ["_tag"],
+        "type": "object"
+      },
+      "Sync.EpochChangedEncoded": {
+        "additionalProperties": true,
+        "properties": {
+          "_tag": {
+            "enum": ["Sync.EpochChanged"],
+            "type": "string"
+          },
+          "lastMutationId": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "syncEpoch": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": ["_tag", "syncEpoch", "lastMutationId"],
+        "type": "object"
+      },
+      "Sync.OutOfOrderEncoded": {
+        "additionalProperties": true,
+        "properties": {
+          "_tag": {
+            "enum": ["Sync.OutOfOrder"],
+            "type": "string"
+          },
+          "expected": {
+            "maximum": 9007199254740991,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": ["_tag", "expected"],
+        "type": "object"
+      },
+      "Sync.UpdateRequiredEncoded": {
+        "additionalProperties": true,
+        "properties": {
+          "_tag": {
+            "enum": ["Sync.UpdateRequired"],
+            "type": "string"
+          },
+          "minimum": {
+            "additionalProperties": true,
+            "properties": {
+              "protocol": {
+                "maximum": 9007199254740991,
+                "minimum": -9007199254740991,
+                "type": "integer"
+              },
+              "schema": {
+                "maximum": 9007199254740991,
+                "minimum": -9007199254740991,
+                "type": "integer"
+              }
+            },
+            "required": ["protocol", "schema"],
+            "type": "object"
+          }
+        },
+        "required": ["_tag", "minimum"],
+        "type": "object"
+      }
+    },
+    "dialect": "draft-2020-12",
+    "schema": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Sync.OutOfOrderEncoded"
+        },
+        {
+          "$ref": "#/$defs/Sync.EpochChangedEncoded"
+        },
+        {
+          "$ref": "#/$defs/Sync.UpdateRequiredEncoded"
+        },
+        {
+          "$ref": "#/$defs/Sync.ClientUnknownEncoded"
+        },
+        {
+          "$ref": "#/$defs/Sync.DeviceRevokedEncoded"
+        }
+      ]
+    }
+  },
+  "Sync.push payload": {
+    "definitions": {
+      "SealedRow.EnvelopeEncoded": {
+        "additionalProperties": true,
+        "properties": {
+          "author": {
+            "type": "string"
+          },
+          "format": {
+            "maximum": 255,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "keyEpoch": {
+            "maximum": 4294967295,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "suite": {
+            "maximum": 255,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": ["format", "suite", "keyEpoch", "author"],
+        "type": "object"
+      },
+      "SpaceKey.HistoryLinkEncoded": {
+        "additionalProperties": true,
+        "properties": {
+          "author": {
+            "type": "string"
+          },
+          "authorGeneration": {
+            "maximum": 4294967295,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "ct": {
+            "contentEncoding": "base64",
+            "format": "byte",
+            "type": "string"
+          },
+          "format": {
+            "maximum": 255,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "keyEpoch": {
+            "maximum": 4294967295,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "signature": {
+            "contentEncoding": "base64",
+            "format": "byte",
+            "type": "string"
+          },
+          "space": {
+            "type": "string"
+          },
+          "suite": {
+            "maximum": 255,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "format",
+          "suite",
+          "space",
+          "keyEpoch",
+          "author",
+          "authorGeneration",
+          "ct",
+          "signature"
+        ],
+        "type": "object"
+      },
+      "SpaceKey.KeyBoxEncoded": {
+        "additionalProperties": true,
+        "properties": {
+          "author": {
+            "type": "string"
+          },
+          "authorGeneration": {
+            "maximum": 4294967295,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "ct": {
+            "contentEncoding": "base64",
+            "format": "byte",
+            "type": "string"
+          },
+          "enc": {
+            "contentEncoding": "base64",
+            "format": "byte",
+            "type": "string"
+          },
+          "format": {
+            "maximum": 255,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "keyEpoch": {
+            "maximum": 4294967295,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "recipient": {
+            "type": "string"
+          },
+          "recipientGeneration": {
+            "maximum": 4294967295,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "signature": {
+            "contentEncoding": "base64",
+            "format": "byte",
+            "type": "string"
+          },
+          "space": {
+            "type": "string"
+          },
+          "suite": {
+            "maximum": 255,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "format",
+          "suite",
+          "space",
+          "keyEpoch",
+          "recipient",
+          "recipientGeneration",
+          "author",
+          "authorGeneration",
+          "enc",
+          "ct",
+          "signature"
+        ],
+        "type": "object"
+      }
+    },
+    "dialect": "draft-2020-12",
+    "schema": {
+      "additionalProperties": true,
+      "properties": {
+        "clientId": {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string"
+        },
+        "commands": {
+          "items": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "properties": {
+                  "_tag": {
+                    "enum": ["Mutate"],
+                    "type": "string"
+                  },
+                  "args": {},
+                  "at": {
+                    "type": "string"
+                  },
+                  "mutationId": {
+                    "maximum": 9007199254740991,
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "name": {
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "version": {
+                    "maximum": 9007199254740991,
+                    "minimum": 1,
+                    "type": "integer"
+                  }
+                },
+                "required": ["_tag", "mutationId", "name", "version", "args", "at"],
+                "type": "object"
+              },
+              {
+                "additionalProperties": true,
+                "properties": {
+                  "_tag": {
+                    "enum": ["Seal"],
+                    "type": "string"
+                  },
+                  "at": {
+                    "type": "string"
+                  },
+                  "boxes": {
+                    "items": {
+                      "$ref": "#/$defs/SpaceKey.KeyBoxEncoded"
+                    },
+                    "type": "array"
+                  },
+                  "links": {
+                    "items": {
+                      "$ref": "#/$defs/SpaceKey.HistoryLinkEncoded"
+                    },
+                    "type": "array"
+                  },
+                  "mutationId": {
+                    "maximum": 9007199254740991,
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "writes": {
+                    "items": {
+                      "additionalProperties": true,
+                      "properties": {
+                        "base": {
+                          "anyOf": [
+                            {
+                              "additionalProperties": true,
+                              "properties": {
+                                "_tag": {
+                                  "enum": ["AtVersion"],
+                                  "type": "string"
+                                },
+                                "version": {
+                                  "maximum": 9007199254740991,
+                                  "minimum": 0,
+                                  "type": "integer"
+                                }
+                              },
+                              "required": ["_tag", "version"],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": true,
+                              "properties": {
+                                "_tag": {
+                                  "enum": ["Absent"],
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["_tag"],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": true,
+                              "properties": {
+                                "_tag": {
+                                  "enum": ["AfterMutation"],
+                                  "type": "string"
+                                },
+                                "mutationId": {
+                                  "maximum": 9007199254740991,
+                                  "minimum": 1,
+                                  "type": "integer"
+                                }
+                              },
+                              "required": ["_tag", "mutationId"],
+                              "type": "object"
+                            }
+                          ]
+                        },
+                        "ct": {
+                          "anyOf": [
+                            {
+                              "contentEncoding": "base64",
+                              "format": "byte",
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "envelope": {
+                          "$ref": "#/$defs/SealedRow.EnvelopeEncoded"
+                        },
+                        "id": {
+                          "maxLength": 64,
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "space": {
+                          "maxLength": 64,
+                          "minLength": 1,
+                          "type": "string"
+                        }
+                      },
+                      "required": ["space", "id", "base", "envelope", "ct"],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": ["_tag", "mutationId", "at", "writes", "boxes", "links"],
+                "type": "object"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "contract": {
+          "additionalProperties": true,
+          "properties": {
+            "hash": {
+              "type": "string"
+            },
+            "protocol": {
+              "maximum": 9007199254740991,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "schema": {
+              "maximum": 9007199254740991,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          "required": ["protocol", "schema", "hash"],
+          "type": "object"
+        },
+        "syncEpoch": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": ["clientId", "syncEpoch", "contract", "commands"],
+      "type": "object"
+    }
+  },
+  "Sync.push success": {
+    "definitions": {},
+    "dialect": "draft-2020-12",
+    "schema": {
+      "additionalProperties": true,
+      "properties": {
+        "lastMutationId": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "outcomes": {
+          "items": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "properties": {
+                  "_tag": {
+                    "enum": ["Applied"],
+                    "type": "string"
+                  },
+                  "mutationId": {
+                    "maximum": 9007199254740991,
+                    "minimum": 1,
+                    "type": "integer"
+                  }
+                },
+                "required": ["_tag", "mutationId"],
+                "type": "object"
+              },
+              {
+                "additionalProperties": true,
+                "properties": {
+                  "_tag": {
+                    "enum": ["Rejected"],
+                    "type": "string"
+                  },
+                  "mutationId": {
+                    "maximum": 9007199254740991,
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "reason": {
+                    "allOf": [
+                      {
+                        "additionalProperties": {},
+                        "type": "object"
+                      }
+                    ],
+                    "properties": {
+                      "_tag": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["_tag"],
+                    "type": "object"
+                  }
+                },
+                "required": ["_tag", "mutationId", "reason"],
+                "type": "object"
+              },
+              {
+                "additionalProperties": true,
+                "properties": {
+                  "_tag": {
+                    "enum": ["Retry"],
+                    "type": "string"
+                  },
+                  "mutationId": {
+                    "maximum": 9007199254740991,
+                    "minimum": 1,
+                    "type": "integer"
+                  }
+                },
+                "required": ["_tag", "mutationId"],
+                "type": "object"
+              },
+              {
+                "additionalProperties": true,
+                "properties": {
+                  "_tag": {
+                    "enum": ["Stale"],
+                    "type": "string"
+                  },
+                  "mutationId": {
+                    "maximum": 9007199254740991,
+                    "minimum": 1,
+                    "type": "integer"
+                  }
+                },
+                "required": ["_tag", "mutationId"],
+                "type": "object"
+              },
+              {
+                "additionalProperties": true,
+                "properties": {
+                  "_tag": {
+                    "enum": ["NoKeyRecord"],
+                    "type": "string"
+                  },
+                  "mutationId": {
+                    "maximum": 9007199254740991,
+                    "minimum": 1,
+                    "type": "integer"
+                  }
+                },
+                "required": ["_tag", "mutationId"],
+                "type": "object"
+              },
+              {
+                "additionalProperties": true,
+                "properties": {
+                  "_tag": {
+                    "enum": ["KeysBehind"],
+                    "type": "string"
+                  },
+                  "generation": {
+                    "maximum": 4294967295,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "mutationId": {
+                    "maximum": 9007199254740991,
+                    "minimum": 1,
+                    "type": "integer"
+                  }
+                },
+                "required": ["_tag", "mutationId", "generation"],
+                "type": "object"
+              }
+            ]
+          },
+          "type": "array"
+        }
+      },
+      "required": ["lastMutationId", "outcomes"],
+      "type": "object"
+    }
+  }
+}
