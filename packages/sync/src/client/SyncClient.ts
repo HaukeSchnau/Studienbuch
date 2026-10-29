@@ -9,9 +9,10 @@
  * const { confirmed } = yield* sync.mutate(Homework.create, { notebook, id, courseId, title, dueOn })
  * ```
  */
-import { CryptoSuite } from "@stu/e2ee";
+import { CryptoSuite, SealedRow } from "@stu/e2ee";
 import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";
+import * as DateTime from "effect/DateTime";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -25,6 +26,8 @@ import * as PubSub from "effect/PubSub";
 import * as Stream from "effect/Stream";
 import * as SubscriptionRef from "effect/SubscriptionRef";
 import { Sync } from "../definition/Sync.ts";
+import { Bounds } from "../protocol/Bounds.ts";
+import { Command } from "../protocol/Command.ts";
 import { Ids } from "../protocol/Ids.ts";
 import { Protocol } from "../protocol/Protocol.ts";
 import { Refusal } from "../protocol/Refusal.ts";
@@ -57,14 +60,17 @@ export interface Mutation {
 
 /**
  * Why a command never entered the outbox: the mutator's own refusal, a `Tx` error, a space the
- * device doesn't know or a role that may not write there, or arguments its codec refuses.
+ * device doesn't know or a role that may not write there, arguments its codec refuses, or a bound
+ * of `Bounds` the server would refuse it for.
  */
 export type MutateError<E> =
   | E
   | Tx.Error
   | Refusal.NotMember
   | Refusal.NotAllowed
-  | Refusal.InvalidArgs;
+  | Refusal.InvalidArgs
+  | Refusal.TooLarge
+  | Refusal.BadEnvelope;
 
 export interface Status {
   /** Whether the engine has a connection to the server. */
@@ -170,6 +176,18 @@ export const spaces: SyncQuery.SyncQuery<
 
 const isId = Schema.is(Ids.Id);
 
+/** The refusals `Bounds.refusalOf` names. */
+const isBound = Schema.is(
+  Schema.Union([Refusal.InvalidArgs, Refusal.TooLarge, Refusal.BadEnvelope]),
+);
+
+/** Fails with the server's refusal for a command past a bound of `Bounds`. */
+const withinBounds = (command: Command.Any) =>
+  Option.match(Bounds.refusalOf(command), {
+    onNone: () => Effect.void,
+    onSome: (refusal) => (isBound(refusal) ? Effect.fail(refusal) : Effect.die(refusal)),
+  });
+
 const encodeRevoked = Schema.encodeEffect(Protocol.DeviceRevoked);
 
 const SpaceRow = Schema.Struct({ id: Schema.String, kind: Schema.String, role: Schema.String });
@@ -194,6 +212,15 @@ export const make = Effect.fnUntraced(function* (definition: Sync.Definition) {
   const sql = yield* SqlClient.SqlClient;
   const reactivity = yield* Reactivity.Reactivity;
   const actor = (yield* Ports.Session).accountId;
+  const absent = Command.Absent.make({});
+
+  const envelope = new SealedRow.Envelope({
+    format: SealedRow.format,
+    suite: CryptoSuite.id,
+    keyEpoch: 0,
+    author: actor,
+  });
+
   /** Tells the supervisor that a command waits. */
   const writes = yield* PubSub.sliding<void>(1);
   const offline = yield* SubscriptionRef.make(false);
@@ -243,6 +270,16 @@ export const make = Effect.fnUntraced(function* (definition: Sync.Definition) {
       return yield* new Refusal.InvalidArgs({ mutator: mutator.name, version });
     }
 
+    const at = yield* Clock.currentTimeMillis;
+    const entry = { name: mutator.name, version, args, at, mode: mutator.mode };
+    const next = (yield* Outbox.meta).lastMutationId + 1;
+
+    // The server checks a command's bounds before anything else. A readable command's bounds
+    // cover its arguments. A sealed command's cover the rows its run writes, so they wait for it.
+    if (entry.mode === "Mutate") {
+      yield* withinBounds(Outbox.asMutate({ ...entry, mutationId: next }));
+    }
+
     const spaces = yield* knownSpaces(invocation.spaces);
 
     for (const space of invocation.spaces) {
@@ -265,13 +302,20 @@ export const make = Effect.fnUntraced(function* (definition: Sync.Definition) {
       if (!roles.includes(space.role)) return yield* new Refusal.NotAllowed({ space: row.space });
     }
 
-    const { clientId, mutationId } = yield* Outbox.append({
-      name: mutator.name,
-      version,
-      args,
-      at: yield* Clock.currentTimeMillis,
-      mode: mutator.mode,
-    });
+    // Envelopes and ciphertext come with the push. The bounds look only at rows and their ids.
+    if (entry.mode === "Seal") {
+      yield* withinBounds(
+        Command.Seal.make({
+          mutationId: next,
+          at: DateTime.makeUnsafe(at),
+          writes: rows.map(({ space, id }) => ({ space, id, base: absent, envelope, ct: null })),
+          boxes: [],
+          links: [],
+        }),
+      );
+    }
+
+    const { clientId, mutationId } = yield* Outbox.append(entry);
 
     const deferred = yield* Deferred.make<void, Rejected>();
     waiters.set(waiterKey(clientId, mutationId), { mutationId, deferred });

@@ -5,7 +5,6 @@
  * one at a time.
  */
 import * as Clock from "effect/Clock";
-import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Result from "effect/Result";
@@ -13,7 +12,6 @@ import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import type * as SqlError from "effect/sql/SqlError";
 import type { Sync } from "../definition/Sync.ts";
-import { Command } from "../protocol/Command.ts";
 import { Ids } from "../protocol/Ids.ts";
 import type { Protocol } from "../protocol/Protocol.ts";
 import { DeviceSchema } from "./DeviceSchema.ts";
@@ -164,15 +162,6 @@ export const make = (device: Device) => {
     if (Option.isSome(renumbered)) yield* device.renumbered(renumbered.value);
   });
 
-  const asMutate = (command: Outbox.Command) =>
-    Command.Mutate.make({
-      mutationId: command.mutationId,
-      name: command.name,
-      version: command.version,
-      args: command.args,
-      at: DateTime.makeUnsafe(command.at),
-    });
-
   /**
    * Sends the outbox from `fence.pushedUpTo` on, a batch at a time. After any failure the next
    * round starts again at the first command the device hasn't settled, and sends nothing newer
@@ -192,7 +181,7 @@ export const make = (device: Device) => {
           clientId: meta.clientId,
           syncEpoch: meta.syncEpoch,
           contract: definition.contract,
-          commands: sendable.map(asMutate),
+          commands: sendable.map(Outbox.asMutate),
         }),
       );
 

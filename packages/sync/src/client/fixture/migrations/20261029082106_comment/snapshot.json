@@ -1,0 +1,568 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "id": "333f1c0b-b3ad-4313-ab10-aa3515da766b",
+  "prevIds": ["a2fa824a-2910-4d81-a532-9ce6d10baf16"],
+  "ddl": [
+    {
+      "name": "base_row",
+      "entityType": "tables"
+    },
+    {
+      "name": "pending_row",
+      "entityType": "tables"
+    },
+    {
+      "name": "sync_meta",
+      "entityType": "tables"
+    },
+    {
+      "name": "sync_outbox",
+      "entityType": "tables"
+    },
+    {
+      "name": "sync_rejected_command",
+      "entityType": "tables"
+    },
+    {
+      "name": "sync_settled_command",
+      "entityType": "tables"
+    },
+    {
+      "name": "sync_space",
+      "entityType": "tables"
+    },
+    {
+      "table": "base_row",
+      "name": "space",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "base_row",
+      "name": "tbl",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "base_row",
+      "name": "id",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "base_row",
+      "name": "version",
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "base_row",
+      "name": "data",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "pending_row",
+      "name": "space",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "pending_row",
+      "name": "tbl",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "pending_row",
+      "name": "id",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "pending_row",
+      "name": "data",
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_meta",
+      "name": "id",
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_meta",
+      "name": "client_id",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_meta",
+      "name": "sync_epoch",
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_meta",
+      "name": "last_mutation_id",
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_meta",
+      "name": "settled_mutation_id",
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_meta",
+      "name": "replay_due",
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "0",
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_outbox",
+      "name": "mutation_id",
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_outbox",
+      "name": "name",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_outbox",
+      "name": "version",
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_outbox",
+      "name": "args",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_outbox",
+      "name": "at",
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_outbox",
+      "name": "mode",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_rejected_command",
+      "name": "client_id",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_rejected_command",
+      "name": "mutation_id",
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_rejected_command",
+      "name": "name",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_rejected_command",
+      "name": "version",
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_rejected_command",
+      "name": "args",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_rejected_command",
+      "name": "at",
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_rejected_command",
+      "name": "reason",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_settled_command",
+      "name": "mutation_id",
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_settled_command",
+      "name": "name",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_settled_command",
+      "name": "version",
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_settled_command",
+      "name": "args",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_settled_command",
+      "name": "at",
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_settled_command",
+      "name": "mode",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_settled_command",
+      "name": "settled_at",
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_space",
+      "name": "id",
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_space",
+      "name": "kind",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_space",
+      "name": "role",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_space",
+      "name": "version",
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_space",
+      "name": "key_epoch",
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_space",
+      "name": "synced_at",
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "base_row",
+      "name": "base_row_Note_title",
+      "columns": [
+        {
+          "value": "space",
+          "isExpression": true
+        },
+        {
+          "value": "data ->> '$.\"title\"'",
+          "isExpression": true
+        },
+        {
+          "value": "id",
+          "isExpression": true
+        }
+      ],
+      "isUnique": false,
+      "where": "tbl = 'Note'",
+      "origin": "manual",
+      "entityType": "indexes"
+    },
+    {
+      "table": "pending_row",
+      "name": "pending_row_Note_title",
+      "columns": [
+        {
+          "value": "space",
+          "isExpression": true
+        },
+        {
+          "value": "data ->> '$.\"title\"'",
+          "isExpression": true
+        },
+        {
+          "value": "id",
+          "isExpression": true
+        }
+      ],
+      "isUnique": false,
+      "where": "tbl = 'Note'",
+      "origin": "manual",
+      "entityType": "indexes"
+    },
+    {
+      "table": "base_row",
+      "name": "base_row_pk",
+      "columns": ["space", "tbl", "id"],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "table": "pending_row",
+      "name": "pending_row_pk",
+      "columns": ["space", "tbl", "id"],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "table": "sync_rejected_command",
+      "name": "sync_rejected_command_pk",
+      "columns": ["client_id", "mutation_id"],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "table": "sync_meta",
+      "name": "sync_meta_pk",
+      "columns": ["id"],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "table": "sync_outbox",
+      "name": "sync_outbox_pk",
+      "columns": ["mutation_id"],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "table": "sync_settled_command",
+      "name": "sync_settled_command_pk",
+      "columns": ["mutation_id"],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "table": "sync_space",
+      "name": "sync_space_pk",
+      "columns": ["id"],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "name": "Choice",
+      "definition": "select space, id, data ->> '$.\"course\"' as \"course\", data ->> '$.\"comment\"' as \"comment\" from sync_row_view where tbl = 'Choice'",
+      "isExisting": false,
+      "error": null,
+      "entityType": "views"
+    },
+    {
+      "name": "Course",
+      "definition": "select space, id, data ->> '$.\"name\"' as \"name\" from sync_row_view where tbl = 'Course'",
+      "isExisting": false,
+      "error": null,
+      "entityType": "views"
+    },
+    {
+      "name": "Note",
+      "definition": "select space, id, data ->> '$.\"title\"' as \"title\", data ->> '$.\"done\"' as \"done\" from sync_row_view where tbl = 'Note'",
+      "isExisting": false,
+      "error": null,
+      "entityType": "views"
+    },
+    {
+      "name": "sync_row_view",
+      "definition": "select space, tbl, id, data from pending_row where data is not null\n      union all\n      select space, tbl, id, data from base_row as base\n      where not exists (\n        select 1 from pending_row as pending\n        where pending.space = base.space and pending.tbl = base.tbl and pending.id = base.id\n      )",
+      "isExisting": false,
+      "error": null,
+      "entityType": "views"
+    }
+  ],
+  "renames": []
+}
