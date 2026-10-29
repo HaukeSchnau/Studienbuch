@@ -41,6 +41,7 @@ const pairs = (palette: Tokens.Palette, scheme: Tokens.Scheme) =>
     ["white on hero", white, palette.hero, scheme === "light" ? large : body],
     ["white on panel", white, palette.panel, large],
     ["panelTitle on panelCard", palette.panelTitle, palette.panelCard, body],
+    ["panelDue on panelCard", palette.panelDue, palette.panelCard, body],
     ["danger on dangerTint", palette.danger, palette.dangerTint, body],
     ["warning on warningTint", palette.warning, palette.warningTint, body],
   ] as const;
