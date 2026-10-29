@@ -1,0 +1,705 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "d45a88c1-793a-4a06-9e24-ca96acbe1c2d",
+  "prevIds": ["16df4abd-93b4-4902-8869-355ef06a2a4d"],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": ["table", "public", "account_key"],
+      "writes": [
+        "s|tbl|public.account_key",
+        "n|tbl|public.account_key",
+        "e|tbl|public.account_key",
+        "n|rel|public.account_key",
+        "n|type|public.account_key",
+        "n|rel|public.account_key_pkey"
+      ],
+      "reads": ["n|sch|public"]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": ["table", "public", "key_wrapper"],
+      "writes": [
+        "s|tbl|public.key_wrapper",
+        "n|tbl|public.key_wrapper",
+        "e|tbl|public.key_wrapper",
+        "n|rel|public.key_wrapper",
+        "n|type|public.key_wrapper",
+        "n|rel|public.key_wrapper_pkey"
+      ],
+      "reads": ["n|sch|public"]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": ["table", "public", "key_wrapper_seal"],
+      "writes": [
+        "s|tbl|public.key_wrapper_seal",
+        "n|tbl|public.key_wrapper_seal",
+        "e|tbl|public.key_wrapper_seal",
+        "n|rel|public.key_wrapper_seal",
+        "n|type|public.key_wrapper_seal",
+        "n|rel|public.key_wrapper_seal_pkey"
+      ],
+      "reads": ["n|sch|public"]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": ["table", "public", "recovery_event"],
+      "writes": [
+        "s|tbl|public.recovery_event",
+        "n|tbl|public.recovery_event",
+        "e|tbl|public.recovery_event",
+        "n|rel|public.recovery_event",
+        "n|type|public.recovery_event",
+        "n|rel|public.recovery_event_pkey"
+      ],
+      "reads": ["n|sch|public"]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": ["index", "public", "key_wrapper", "key_wrapper_account"],
+      "writes": [
+        "s|idx|public.key_wrapper_account",
+        "n|idx|public.key_wrapper_account",
+        "e|idx|public.key_wrapper_account",
+        "n|rel|public.key_wrapper_account"
+      ],
+      "reads": [
+        "n|tbl|public.key_wrapper",
+        "n|sch|public",
+        "n|col|public.key_wrapper.account_id",
+        "n|col|public.key_wrapper.kind",
+        "n|col|public.key_wrapper.credential_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": ["index", "public", "recovery_event", "recovery_event_account"],
+      "writes": [
+        "s|idx|public.recovery_event_account",
+        "n|idx|public.recovery_event_account",
+        "e|idx|public.recovery_event_account",
+        "n|rel|public.recovery_event_account"
+      ],
+      "reads": [
+        "n|tbl|public.recovery_event",
+        "n|sch|public",
+        "n|col|public.recovery_event.account_id",
+        "n|col|public.recovery_event.at"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "account_key"],
+      "writes": [
+        "s|fk|public.account_key.account_key_account_id_auth_user_id_fkey",
+        "n|fk|public.account_key.account_key_account_id_auth_user_id_fkey",
+        "e|fk|public.account_key.account_key_account_id_auth_user_id_fkey",
+        "n|con|public.account_key.account_key_account_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.account_key",
+        "n|sch|public",
+        "n|tbl|public.auth_user",
+        "n|sch|public",
+        "n|col|public.account_key.account_id",
+        "n|col|public.auth_user.id",
+        "e|uniqueness|public.auth_user.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "key_wrapper"],
+      "writes": [
+        "s|fk|public.key_wrapper.key_wrapper_account_id_auth_user_id_fkey",
+        "n|fk|public.key_wrapper.key_wrapper_account_id_auth_user_id_fkey",
+        "e|fk|public.key_wrapper.key_wrapper_account_id_auth_user_id_fkey",
+        "n|con|public.key_wrapper.key_wrapper_account_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.key_wrapper",
+        "n|sch|public",
+        "n|tbl|public.auth_user",
+        "n|sch|public",
+        "n|col|public.key_wrapper.account_id",
+        "n|col|public.auth_user.id",
+        "e|uniqueness|public.auth_user.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "key_wrapper_seal"],
+      "writes": [
+        "s|fk|public.key_wrapper_seal.key_wrapper_seal_wrapper_id_key_wrapper_id_fkey",
+        "n|fk|public.key_wrapper_seal.key_wrapper_seal_wrapper_id_key_wrapper_id_fkey",
+        "e|fk|public.key_wrapper_seal.key_wrapper_seal_wrapper_id_key_wrapper_id_fkey",
+        "n|con|public.key_wrapper_seal.key_wrapper_seal_wrapper_id_key_wrapper_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.key_wrapper_seal",
+        "n|sch|public",
+        "n|tbl|public.key_wrapper",
+        "n|sch|public",
+        "n|col|public.key_wrapper_seal.wrapper_id",
+        "n|col|public.key_wrapper.id",
+        "e|uniqueness|public.key_wrapper.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "recovery_event"],
+      "writes": [
+        "s|fk|public.recovery_event.recovery_event_account_id_auth_user_id_fkey",
+        "n|fk|public.recovery_event.recovery_event_account_id_auth_user_id_fkey",
+        "e|fk|public.recovery_event.recovery_event_account_id_auth_user_id_fkey",
+        "n|con|public.recovery_event.recovery_event_account_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.recovery_event",
+        "n|sch|public",
+        "n|tbl|public.auth_user",
+        "n|sch|public",
+        "n|col|public.recovery_event.account_id",
+        "n|col|public.auth_user.id",
+        "e|uniqueness|public.auth_user.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "account_key",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "key_wrapper",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "key_wrapper_seal",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "recovery_event",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "account_key",
+        "name": "account_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "account_key",
+        "name": "generation",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "account_key",
+        "name": "record",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "account_key",
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "key_wrapper",
+        "name": "id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "key_wrapper",
+        "name": "account_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "key_wrapper",
+        "name": "kind",
+        "type": "smallint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "key_wrapper",
+        "name": "credential_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "key_wrapper",
+        "name": "statement",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "key_wrapper",
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "key_wrapper_seal",
+        "name": "wrapper_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "key_wrapper_seal",
+        "name": "generation",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "key_wrapper_seal",
+        "name": "seal",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "key_wrapper_seal",
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_event",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "gen_random_uuid()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_event",
+        "name": "account_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_event",
+        "name": "kind",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_event",
+        "name": "method",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_event",
+        "name": "credential_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_event",
+        "name": "at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "key_wrapper",
+        "name": "key_wrapper_account",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "account_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "kind",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "credential_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_event",
+        "name": "recovery_event_account",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "account_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "at",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "account_key",
+        "name": "account_key_account_id_auth_user_id_fkey",
+        "nameExplicit": false,
+        "columns": ["account_id"],
+        "schemaTo": "public",
+        "tableTo": "auth_user",
+        "columnsTo": ["id"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "key_wrapper",
+        "name": "key_wrapper_account_id_auth_user_id_fkey",
+        "nameExplicit": false,
+        "columns": ["account_id"],
+        "schemaTo": "public",
+        "tableTo": "auth_user",
+        "columnsTo": ["id"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "key_wrapper_seal",
+        "name": "key_wrapper_seal_wrapper_id_key_wrapper_id_fkey",
+        "nameExplicit": false,
+        "columns": ["wrapper_id"],
+        "schemaTo": "public",
+        "tableTo": "key_wrapper",
+        "columnsTo": ["id"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_event",
+        "name": "recovery_event_account_id_auth_user_id_fkey",
+        "nameExplicit": false,
+        "columns": ["account_id"],
+        "schemaTo": "public",
+        "tableTo": "auth_user",
+        "columnsTo": ["id"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "account_key",
+        "name": "account_key_pkey",
+        "columns": ["account_id", "generation"],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "key_wrapper_seal",
+        "name": "key_wrapper_seal_pkey",
+        "columns": ["wrapper_id", "generation"],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "key_wrapper",
+        "name": "key_wrapper_pkey",
+        "columns": ["id"],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_event",
+        "name": "recovery_event_pkey",
+        "columns": ["id"],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    }
+  ]
+}
