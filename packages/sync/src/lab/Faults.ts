@@ -5,12 +5,13 @@
  * as on one WebSocket, and every fault but `latency` and `offline` fires once.
  *
  * ```ts
- * const faults = yield* Faults.make
+ * const faults = yield* Faults.make.pipe(Effect.provideService(Faults.Allowed, { environment }))
  * const transport = faults.transport(engineTransport)
  * yield* faults.arm("dropNextResponse")
  * ```
  */
 import * as Clock from "effect/Clock";
+import * as Context from "effect/Context";
 import * as Data from "effect/Data";
 import * as Deferred from "effect/Deferred";
 import * as Duration from "effect/Duration";
@@ -32,17 +33,27 @@ import { Protocol } from "../protocol/Protocol.ts";
 export * as Faults from "./Faults.ts";
 
 /**
- * A command the device never made, the way a modified app sends it, which the server must refuse.
- * `SealInto` sends the next `Seal`'s writes to `space`, such as another student's notebook.
- * `RewriteArgs` gives the next `Mutate` of `mutator` the arguments `args`, and the mutator name
- * `name` when given, such as one the server doesn't know.
+ * The server's own answer (`System.info`) that it is a development or preview server, which
+ * faults require. One web build serves every server, so the Sync Lab asks at run time.
+ */
+export class Allowed extends Context.Service<
+  Allowed,
+  { readonly environment: "development" | "preview" }
+>()("@stu/sync/lab/Faults.Allowed") {}
+
+/**
+ * A command the device never made, as a modified app sends it, which the server must refuse.
+ * `SealInto` sends a `Seal`'s writes to `space`; `RewriteArgs` gives a `Mutate` of `mutator` other
+ * `args`, and the name `name` when given. It forges the next such command, or with `mutationId`
+ * that one only, and the commands waiting before it go out as they are.
  */
 export type Forge = Data.TaggedEnum<{
-  SealInto: { readonly space: string };
+  SealInto: { readonly space: string; readonly mutationId?: number | undefined };
   RewriteArgs: {
     readonly mutator: string;
     readonly args: Schema.Json;
     readonly name?: string | undefined;
+    readonly mutationId?: number | undefined;
   };
 }>;
 
@@ -105,6 +116,7 @@ const decodePush = Schema.decodeUnknownEffect(PushJson);
 const encodePush = Schema.encodeEffect(PushJson);
 
 export const make = Effect.gen(function* () {
+  yield* Allowed;
   const settings = yield* SubscriptionRef.make(initial);
   const events = yield* PubSub.unbounded<Event>();
   const drops = new Set<Effect.Effect<void>>();
@@ -132,10 +144,12 @@ export const make = Effect.gen(function* () {
     const push = yield* decodePush(request.payload).pipe(Effect.orDie);
 
     const target = (forge: Forge) =>
-      push.commands.findIndex((command) =>
-        forge._tag === "SealInto"
-          ? command._tag === "Seal" && command.writes.length > 0
-          : command._tag === "Mutate" && command.name === forge.mutator,
+      push.commands.findIndex(
+        (command) =>
+          (forge.mutationId === undefined || command.mutationId === forge.mutationId) &&
+          (forge._tag === "SealInto"
+            ? command._tag === "Seal" && command.writes.length > 0
+            : command._tag === "Mutate" && command.name === forge.mutator),
       );
 
     const forge = yield* takeForge((candidate) => target(candidate) !== -1);
