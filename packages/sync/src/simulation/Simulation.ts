@@ -498,6 +498,11 @@ export const run = (workload: Workload) =>
       const outcome = yield* Fiber.join(work);
       const after = yield* last;
 
+      // A write that committed past a named statement without meeting it means its SQL changed.
+      if (after > before && Option.isNone(reached) && at instanceof RegExp) {
+        return yield* Effect.die(`The write committed without a statement matching ${at}`);
+      }
+
       if (after > before) return `committed #${after}, then crashed`;
 
       return Option.isSome(reached)
