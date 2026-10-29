@@ -11,6 +11,8 @@ export const {
   sync_outbox,
   sync_settled_command,
   sync_rejected_command,
+  sync_space_key,
+  sync_sealed_row,
   base_row,
   pending_row,
   sync_row_view,

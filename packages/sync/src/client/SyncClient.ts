@@ -19,6 +19,7 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Reactivity from "effect/reactivity/Reactivity";
+import * as Redacted from "effect/Redacted";
 import * as Schema from "effect/Schema";
 import * as Semaphore from "effect/Semaphore";
 import * as SqlClient from "effect/sql/SqlClient";
@@ -38,6 +39,8 @@ import { Outbox } from "./Outbox.ts";
 import { Ports } from "./Ports.ts";
 import { Rebase } from "./Rebase.ts";
 import { Replication } from "./Replication.ts";
+import { Keyring } from "./Keyring.ts";
+import { Sealing } from "./Sealing.ts";
 import { SqliteTx } from "./SqliteTx.ts";
 import { Supervisor } from "./Supervisor.ts";
 import type { SyncQuery } from "./SyncQuery.ts";
@@ -61,8 +64,8 @@ export interface Mutation {
 
 /**
  * Why a command never entered the outbox: the mutator's own refusal, a `Tx` error, a space the
- * device doesn't know or a role that may not write there, arguments its codec refuses, or a bound
- * of `Bounds` the server would refuse it for.
+ * device doesn't know or a role that may not write there, arguments its codec refuses, a bound of
+ * `Bounds` the server would refuse it for, or a sealed row larger than the server stores.
  */
 export type MutateError<E> =
   | E
@@ -123,6 +126,14 @@ export interface Interface {
    * stays disconnected and keeps working on its own data.
    */
   readonly setOffline: (offline: boolean) => Effect.Effect<void>;
+  /**
+   * Keeps the account's root key of `generation`, as after unlocking with a passkey or the
+   * Notfallkarte, or a demo sign-in, and opens the boxes and rows that waited for it.
+   */
+  readonly unlock: (
+    rootKey: Uint8Array,
+    generation: number,
+  ) => Effect.Effect<void, Ports.SecretsUnavailable | SqlError.SqlError>;
   /**
    * One round of push and pull over a connection. The connection supervisor runs it after each
    * connect and after pokes; a second round waits for the first.
@@ -208,6 +219,11 @@ const knownSpaces = Effect.fnUntraced(function* (spaces: ReadonlyArray<string>) 
 export interface Options {
   /** `Supervisor.Options.pullEvery`, by default `Supervisor.pullEvery`. */
   readonly pullEvery?: Duration.Duration;
+  /**
+   * Fetches the device's own seal, which a pulled box of the account's newer generation asks for.
+   * Without it, such a box waits until `unlock` brings that generation's root key.
+   */
+  readonly ownSeal?: Effect.Effect<Option.Option<Keyring.OwnSeal>>;
 }
 
 export const make = Effect.fnUntraced(function* (
@@ -218,7 +234,6 @@ export const make = Effect.fnUntraced(function* (
   const sql = yield* SqlClient.SqlClient;
   const reactivity = yield* Reactivity.Reactivity;
   const actor = (yield* Ports.Session).accountId;
-  const absent = Command.Absent.make({});
 
   const envelope = new SealedRow.Envelope({
     format: SealedRow.format,
@@ -232,6 +247,16 @@ export const make = Effect.fnUntraced(function* (
   const offline = yield* SubscriptionRef.make(false);
   const secrets = yield* Ports.DeviceSecrets;
   const suite = yield* CryptoSuite.Service;
+  const keyring = yield* Keyring.make(actor);
+
+  const withSuite = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+    Effect.provideService(effect, CryptoSuite.Service, suite);
+
+  const opener: Rebase.Opener = {
+    openBox: (space, data) => withSuite(keyring.openBox(space, data)),
+    openRow: (space, id, envelope, ct) => withSuite(keyring.openRow(space, id, envelope, ct)),
+  };
+
   const transport = yield* Ports.Transport;
   const lifecycle = yield* Ports.Lifecycle;
   const session = yield* Ports.Session;
@@ -308,20 +333,29 @@ export const make = Effect.fnUntraced(function* (
       if (!roles.includes(space.role)) return yield* new Refusal.NotAllowed({ space: row.space });
     }
 
-    // Envelopes and ciphertext come with the push. The bounds look only at rows and their ids.
-    if (entry.mode === "Seal") {
+    // A sealed command keeps its rows as drafts for the push, which seals them. The server checks
+    // the bounds on their number and ids first and the size of each sealed row later.
+    const writes = entry.mode === "Seal" ? yield* Sealing.drafts(rows, Outbox.lastWriter) : null;
+
+    if (writes !== null) {
       yield* withinBounds(
         Command.Seal.make({
           mutationId: next,
           at: DateTime.makeUnsafe(at),
-          writes: rows.map(({ space, id }) => ({ space, id, base: absent, envelope, ct: null })),
+          writes: writes.map(({ space, id, base }) => ({ space, id, base, envelope, ct: null })),
           boxes: [],
           links: [],
         }),
       );
+
+      const large = writes.find(Sealing.tooLarge);
+
+      if (large !== undefined) {
+        return yield* new Refusal.TooLarge({ space: large.space, id: large.id });
+      }
     }
 
-    const { clientId, mutationId } = yield* Outbox.append(entry);
+    const { clientId, mutationId } = yield* Outbox.append({ ...entry, writes, failure: null });
 
     const deferred = yield* Deferred.make<void, Rejected>();
     waiters.set(waiterKey(clientId, mutationId), { mutationId, deferred });
@@ -413,6 +447,7 @@ export const make = Effect.fnUntraced(function* (
       ),
     );
 
+    yield* keyring.forget;
     const clientId = yield* Effect.provideService(Ids.random, CryptoSuite.Service, suite);
 
     yield* commit(
@@ -438,6 +473,65 @@ export const make = Effect.fnUntraced(function* (
     yield* SubscriptionRef.update(status, (current) => ({ ...current, revoked: true }));
   });
 
+  const unlock = Effect.fn("SyncClient.unlock")(function* (
+    rootKey: Uint8Array,
+    generation: number,
+  ) {
+    yield* withSuite(keyring.unlock(rootKey, generation)).pipe(
+      Effect.provideService(SqlClient.SqlClient, sql),
+    );
+
+    yield* commit(
+      Effect.gen(function* () {
+        const tables = new Set<string>();
+        const known = yield* sql<{ readonly id: string }>`select id from sync_space`;
+
+        for (const { id } of known) {
+          for (const table of yield* Rebase.reopen(opener, id)) tables.add(table);
+        }
+
+        return { tables: [...tables, ...(yield* Rebase.replay(definition, actor))] };
+      }),
+    );
+
+    // Sealed commands that waited for a key can go out now.
+    yield* PubSub.publish(writes, undefined);
+  });
+
+  /**
+   * Picks up a renewed root key once a box from the account's newer generation waits: fetches the
+   * device's own seal and unlocks with its key. A box that doesn't open yet stays, and opens then.
+   */
+  const renew = Effect.gen(function* () {
+    const own = yield* withSuite(keyring.account);
+
+    if (Option.isNone(own) || options.ownSeal === undefined) return;
+
+    const newer = yield* sql`
+      select 1 from base_row
+      where tbl = ${Protocol.keyBoxTable} and data ->> '$.author' = ${actor}
+        and data ->> '$.authorGeneration' > ${own.value.keys.generation}
+      limit 1
+    `;
+
+    if (newer.length === 0) return;
+    const fetched = yield* options.ownSeal;
+
+    if (Option.isNone(fetched)) return;
+    const keys = yield* withSuite(keyring.renewed(fetched.value));
+
+    if (Option.isSome(keys) && keys.value.generation > own.value.keys.generation) {
+      yield* unlock(Redacted.value(keys.value.rootKey), keys.value.generation);
+    }
+  }).pipe(
+    Effect.provideService(SqlClient.SqlClient, sql),
+    // A keychain that can't take the key now leaves the box waiting for the next pull.
+    Effect.catchTags({
+      "DeviceSecrets.SecretsUnavailable": () =>
+        Effect.logWarning("The renewed root key couldn't be kept"),
+    }),
+  );
+
   const replication = Replication.make({
     definition,
     actor,
@@ -446,6 +540,9 @@ export const make = Effect.fnUntraced(function* (
     settled,
     renumbered,
     wipe,
+    opener,
+    keyring,
+    renew,
   });
 
   // A crash between two pages of a pull left the overlay on older rows.
@@ -551,6 +648,7 @@ export const make = Effect.fnUntraced(function* (
     redo,
     dismiss,
     replicate,
+    unlock,
     setOffline: (latched) => SubscriptionRef.set(offline, latched),
     status: { get: SubscriptionRef.get(status), changes: SubscriptionRef.changes(status) },
   });

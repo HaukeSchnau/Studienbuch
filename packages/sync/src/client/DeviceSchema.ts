@@ -7,13 +7,15 @@
  * ```ts
  * // The schema file drizzle-kit reads. Each entity is a named export, the engine's tables included.
  * export const { sync_meta, sync_space, sync_outbox, sync_settled_command, sync_rejected_command,
- *   base_row, pending_row, sync_row_view, Homework } = DeviceSchema.make([Homework.Row]);
+ *   sync_space_key, sync_sealed_row, base_row, pending_row, sync_row_view, Homework } =
+ *   DeviceSchema.make([Homework.Row]);
  * // A typed read:
  * db.select().from(Homework).where(eq(Homework.courseId, courseId)).orderBy(Homework.dueOn)
  * ```
  */
 import { sql } from "drizzle-orm";
 import {
+  blob,
   customType,
   index,
   integer,
@@ -203,7 +205,8 @@ export const keys = {
 /**
  * The device's own state, one row: the client id the server knows it by, the restore epoch of its
  * last pull, the last mutation id it gave a command and the last one it settled. `replay_due` is 1
- * after a page changed base rows the overlay hasn't been replayed on yet.
+ * after a page changed base rows the overlay hasn't been replayed on yet. `key_generation` is the
+ * generation of the account's root key that `DeviceSecrets` holds as `root-key`.
  */
 const sync_meta = sqliteTable("sync_meta", {
   id: integer().primaryKey(),
@@ -212,6 +215,7 @@ const sync_meta = sqliteTable("sync_meta", {
   last_mutation_id: integer().notNull(),
   settled_mutation_id: integer().notNull(),
   replay_due: integer().notNull().default(0),
+  key_generation: integer().notNull().default(0),
 });
 
 /**
@@ -238,7 +242,40 @@ const sync_outbox = sqliteTable("sync_outbox", {
   args: text().notNull(),
   at: integer().notNull(),
   mode: text({ enum: ["Mutate", "Seal"] }).notNull(),
+  /** A `Seal` command's rows as its last run left them, in plaintext, which the push seals. */
+  writes: text(),
+  /** The refusal of a `Seal` command's last run. The push sends it without rows. */
+  failure: text(),
 });
+
+/** The keys of encrypted spaces this device opened, one per space and key epoch. */
+const sync_space_key = sqliteTable(
+  "sync_space_key",
+  {
+    space: text().notNull(),
+    key_epoch: integer().notNull(),
+    key: blob({ mode: "buffer" }).notNull(),
+  },
+  (row) => [primaryKey({ columns: [row.space, row.key_epoch] })],
+);
+
+/**
+ * Every encrypted row the device holds. An opened one names its table, so its base row can be
+ * found again. A parked one keeps its envelope and ciphertext until its key arrives or an update
+ * knows its format.
+ */
+const sync_sealed_row = sqliteTable(
+  "sync_sealed_row",
+  {
+    space: text().notNull(),
+    id: text().notNull(),
+    version: integer().notNull(),
+    tbl: text(),
+    envelope: text(),
+    ct: blob({ mode: "buffer" }),
+  },
+  (row) => [primaryKey({ columns: [row.space, row.id] })],
+);
 
 /**
  * Commands the server applied, kept for 7 days after `settled_at`, so that after a restore of the
@@ -325,6 +362,8 @@ export const make = <const Tables extends ReadonlyArray<Sync.Any>>(tables: Table
     sync_outbox,
     sync_settled_command,
     sync_rejected_command,
+    sync_space_key,
+    sync_sealed_row,
     base_row,
     pending_row,
     sync_row_view,

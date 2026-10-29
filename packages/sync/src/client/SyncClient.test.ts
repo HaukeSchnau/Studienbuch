@@ -1,4 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
+import { TestCrypto } from "@stu/e2ee/testing";
 import { eq } from "drizzle-orm";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
@@ -15,6 +16,7 @@ import * as Queue from "effect/Queue";
 import * as Stream from "effect/Stream";
 import * as TestClock from "effect/testing/TestClock";
 import { Bounds } from "../protocol/Bounds.ts";
+import { Command } from "../protocol/Command.ts";
 import { Protocol } from "../protocol/Protocol.ts";
 import { Refusal } from "../protocol/Refusal.ts";
 import { Link } from "../simulation/Link.ts";
@@ -33,7 +35,12 @@ import { WebSocketTransport } from "./WebSocketTransport.ts";
 
 const engine = SyncClient.layer(Notes.schema).pipe(
   Layer.provideMerge(
-    Layer.mergeAll(Devices.session, Devices.secrets, Devices.crypto, Devices.disconnected),
+    Layer.mergeAll(
+      Devices.session,
+      Devices.secrets,
+      TestCrypto.layer("device"),
+      Devices.disconnected,
+    ),
   ),
 );
 
@@ -94,6 +101,17 @@ describe("SyncClient.mutate", () => {
             args: { notebook: "nb-lena", id: "n1", title: "Vokabeln" },
             at: 0,
             mode: "Seal",
+            // The row as this run left it, which only the push seals.
+            writes: [
+              {
+                space: "nb-lena",
+                table: "Note",
+                id: "n1",
+                data: '{"title":"Vokabeln"}',
+                base: Command.Absent.make({}),
+              },
+            ],
+            failure: null,
           },
         ]);
         expect((yield* (yield* SyncClient.Service).status.get).waiting, driver).toBe(1);
@@ -493,7 +511,7 @@ describe("SyncClient online", () => {
               Layer.mergeAll(
                 Devices.session,
                 Devices.secrets,
-                Devices.crypto,
+                TestCrypto.layer("device"),
                 Layer.succeed(Ports.Lifecycle, {
                   changes: Stream.make({ foreground: true, online: true }),
                 }),

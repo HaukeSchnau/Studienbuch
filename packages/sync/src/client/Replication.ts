@@ -12,11 +12,14 @@ import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import type * as SqlError from "effect/sql/SqlError";
 import type { Sync } from "../definition/Sync.ts";
+import type { Command } from "../protocol/Command.ts";
 import { Ids } from "../protocol/Ids.ts";
 import type { Protocol } from "../protocol/Protocol.ts";
 import { DeviceSchema } from "./DeviceSchema.ts";
+import type { Keyring } from "./Keyring.ts";
 import { Outbox } from "./Outbox.ts";
 import { Rebase } from "./Rebase.ts";
+import { Sealing } from "./Sealing.ts";
 
 export * as Replication from "./Replication.ts";
 
@@ -81,6 +84,11 @@ export interface Device {
   readonly renumbered: (renumbered: Renumbered) => Effect.Effect<void>;
   /** Wipes the device: data, outbox and keys. */
   readonly wipe: Effect.Effect<void, SqlError.SqlError>;
+  /** Opens key boxes and sealed rows as pages arrive. */
+  readonly opener: Rebase.Opener;
+  readonly keyring: Keyring.Keyring;
+  /** After a pull: picks up a renewed root key that a box of the account asks for. */
+  readonly renew: Effect.Effect<void, SqlError.SqlError>;
 }
 
 export interface Renumbered {
@@ -125,11 +133,14 @@ export const make = (device: Device) => {
   const renumber = Effect.gen(function* () {
     const to = yield* Ids.random;
 
+    // The drafts of sealed commands name earlier commands by their old ids, so they run again.
     const { renumbered } = yield* device.commit(
-      Effect.map(renumberTo(to), (renumbered) => ({
-        renumbered,
-        tables: [DeviceSchema.keys.outbox],
-      })),
+      Effect.gen(function* () {
+        const renumbered = yield* renumberTo(to);
+        const replayed = yield* Rebase.replay(definition, actor);
+
+        return { renumbered, tables: [...replayed, DeviceSchema.keys.outbox] };
+      }),
     );
 
     yield* device.renumbered(renumbered);
@@ -168,20 +179,39 @@ export const make = (device: Device) => {
    * than what the server confirms.
    */
   const push = Effect.fnUntraced(function* (remote: Remote, fence: { pushedUpTo: number }) {
+    // Spaces whose epoch 0 a command of this push opens: later ones there need no box.
+    const opening = new Set<string>();
+
     for (;;) {
       const meta = yield* Outbox.meta;
       const waiting = yield* Outbox.after(fence.pushedUpTo, pushBatch);
-      const firstSeal = waiting.findIndex((command) => command.mode === "Seal");
-      const sendable = firstSeal === -1 ? waiting : waiting.slice(0, firstSeal);
 
-      if (sendable.length === 0) return waiting.length === 0 ? "done" : "retry";
+      if (waiting.length === 0) return "done";
+
+      // A sealed command seals only now, under the space's current key epoch. One that can't yet,
+      // on a locked device or without its space's key, holds back every command after it.
+      const commands: Array<Command.Any> = [];
+
+      for (const command of waiting) {
+        if (command.mode === "Mutate") {
+          commands.push(Outbox.asMutate(command));
+          continue;
+        }
+
+        const sealed = yield* Sealing.seal(command, actor, device.keyring, opening);
+
+        if (sealed === "locked" || sealed === "key-missing") break;
+        commands.push(sealed);
+      }
+
+      if (commands.length === 0) return "retry";
 
       const result = yield* Effect.result(
         remote.push({
           clientId: meta.clientId,
           syncEpoch: meta.syncEpoch,
           contract: definition.contract,
-          commands: sendable.map(Outbox.asMutate),
+          commands,
         }),
       );
 
@@ -251,7 +281,7 @@ export const make = (device: Device) => {
       Effect.gen(function* () {
         const meta = yield* Outbox.meta;
         yield* Outbox.setSyncEpoch(response.syncEpoch);
-        const tables = yield* Rebase.applyPull(response, now);
+        const tables = yield* Rebase.applyPull(response, now, device.opener);
         const last = response.lastMutationId;
 
         // Only the last page carries a last mutation id. One above the device's own means the
@@ -361,7 +391,11 @@ export const make = (device: Device) => {
 
       yield* apply(result.success);
 
-      if (!result.success.more) return "done";
+      if (!result.success.more) {
+        yield* device.renew;
+
+        return "done";
+      }
 
       // Another page that moves no cursor would be asked for forever.
       const moved = new Map(before.map((cursor) => [cursor.space, cursor.version]));

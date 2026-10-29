@@ -4,15 +4,23 @@
  * server's rows plus a replay of the outbox. Every function runs inside the caller's transaction
  * and returns the tables whose rows it changed, which the caller invalidates after the commit.
  */
+import type { SpaceKey } from "@stu/e2ee";
+import * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
-import type * as Schema from "effect/Schema";
+import * as Option from "effect/Option";
+import * as Result from "effect/Result";
+import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
+import type * as SqlError from "effect/sql/SqlError";
 import { Sync } from "../definition/Sync.ts";
-import type { Protocol } from "../protocol/Protocol.ts";
+import { Protocol } from "../protocol/Protocol.ts";
+import { Refusal } from "../protocol/Refusal.ts";
 import { CanonicalJson } from "../transaction/CanonicalJson.ts";
 import { Tx } from "../transaction/Tx.ts";
+import { Keyring } from "./Keyring.ts";
 import { Outbox } from "./Outbox.ts";
+import { Sealing } from "./Sealing.ts";
 import { SqliteTx } from "./SqliteTx.ts";
 
 export * as Rebase from "./Rebase.ts";
@@ -35,13 +43,135 @@ const tablesOf = Effect.fnUntraced(function* (spaces: ReadonlyArray<string>) {
 const batch = (rows: ReadonlyArray<Schema.Json>) =>
   Effect.orDie(Effect.fromResult(CanonicalJson.encode(rows)));
 
+/** What applying a pull needs from the keyring to take sealed rows. */
+export interface Opener {
+  /** The epoch keys a key box carries for this device's account, or none. */
+  readonly openBox: (
+    space: string,
+    data: Schema.Json,
+  ) => Effect.Effect<ReadonlyArray<SpaceKey.EpochKey>, SqlError.SqlError, SqlClient.SqlClient>;
+  /** A sealed row's table and JSON, or `None` to park it. */
+  readonly openRow: (
+    space: string,
+    id: string,
+    envelope: Schema.Json,
+    ct: Uint8Array,
+  ) => Effect.Effect<Option.Option<Keyring.Opened>, SqlError.SqlError, SqlClient.SqlClient>;
+}
+
+/** Removes the base row of a sealed row, whose table only the device knows. */
+const forgetSealed = Effect.fnUntraced(function* (space: string, id: string) {
+  const sql = yield* SqlClient.SqlClient;
+
+  const [old] = yield* sql<{ readonly tbl: string | null }>`
+    delete from sync_sealed_row where space = ${space} and id = ${id} returning tbl
+  `;
+
+  if (old?.tbl === null || old?.tbl === undefined) return Option.none<string>();
+  yield* sql`delete from base_row where space = ${space} and tbl = ${old.tbl} and id = ${id}`;
+
+  return Option.some(old.tbl);
+});
+
+/** Stores a sealed row opened into its base row, or parked as envelope and ciphertext. */
+const placeSealed = Effect.fnUntraced(function* (
+  opener: Opener,
+  row: {
+    readonly space: string;
+    readonly id: string;
+    readonly version: number;
+    readonly envelope: Schema.Json;
+    readonly ct: Uint8Array;
+  },
+) {
+  const sql = yield* SqlClient.SqlClient;
+  const opened = yield* opener.openRow(row.space, row.id, row.envelope, row.ct);
+
+  const json = Option.flatMap(opened, (each) =>
+    Result.getSuccess(CanonicalJson.normalize(each.json)),
+  );
+
+  if (Option.isSome(opened) && Option.isSome(json)) {
+    const table = opened.value.table;
+
+    yield* sql`
+      insert into base_row (space, tbl, id, version, data)
+      values (${row.space}, ${table}, ${row.id}, ${row.version}, ${json.value})
+      on conflict (space, tbl, id) do update set version = excluded.version, data = excluded.data
+    `;
+    yield* sql`
+      insert into sync_sealed_row (space, id, version, tbl, envelope, ct)
+      values (${row.space}, ${row.id}, ${row.version}, ${table}, null, null)
+      on conflict (space, id) do update set version = excluded.version, tbl = excluded.tbl,
+        envelope = null, ct = null
+    `;
+
+    return Option.some(table);
+  }
+
+  const envelope = yield* Effect.orDie(Effect.fromResult(CanonicalJson.encode(row.envelope)));
+
+  yield* sql`
+    insert into sync_sealed_row (space, id, version, tbl, envelope, ct)
+    values (${row.space}, ${row.id}, ${row.version}, null, ${envelope}, ${row.ct})
+    on conflict (space, id) do update set version = excluded.version, tbl = null,
+      envelope = excluded.envelope, ct = excluded.ct
+  `;
+
+  return Option.none<string>();
+});
+
+const ParkedRow = Schema.Struct({
+  id: Schema.String,
+  version: Schema.Int,
+  envelope: Schema.fromJsonString(Schema.Json),
+  ct: Schema.Uint8Array,
+});
+
+const decodeParked = Schema.decodeUnknownEffect(Schema.Array(ParkedRow));
+
+/** Opens what the keys of `space` now open: its boxes for this account, then its parked rows. */
+export const reopen = Effect.fnUntraced(function* (opener: Opener, space: string) {
+  const sql = yield* SqlClient.SqlClient;
+  const tables = new Set<string>();
+
+  const boxes = yield* sql<{ readonly data: string }>`
+    select data from base_row where space = ${space} and tbl = ${Protocol.keyBoxTable}
+  `;
+
+  for (const box of boxes) {
+    const data = yield* Effect.orDie(decodeJson(box.data));
+    yield* Keyring.storeKeys(space, yield* opener.openBox(space, data));
+  }
+
+  const parked = yield* Effect.orDie(
+    decodeParked(
+      yield* sql`
+        select id, version, envelope, ct from sync_sealed_row where space = ${space} and tbl is null
+      `,
+    ),
+  );
+
+  for (const row of parked) {
+    const table = yield* placeSealed(opener, { space, ...row, ct: new Uint8Array(row.ct) });
+
+    if (Option.isSome(table)) tables.add(table.value);
+  }
+
+  return tables;
+});
+
+const decodeJson = Schema.decodeUnknownEffect(Schema.fromJsonString(Schema.Json));
+
 /**
  * Writes a pull's spaces and patches into the base rows. The device keeps exactly the spaces the
- * response lists, and drops the rows of any other. A patch holds each row once.
+ * response lists, and drops the rows of any other. A patch holds each row once. Key boxes go in
+ * before sealed rows, so a row and the key it needs can arrive in one pull.
  */
 export const applyPull = Effect.fnUntraced(function* (
   response: Protocol.PullResponse,
   now: number,
+  opener: Opener,
 ) {
   const sql = yield* SqlClient.SqlClient;
   const tables = new Set<string>();
@@ -58,6 +188,8 @@ export const applyPull = Effect.fnUntraced(function* (
   if (dropped.length > 0) {
     for (const table of yield* tablesOf(dropped)) tables.add(table);
     yield* sql`delete from base_row where ${sql.in("space", dropped)}`;
+    yield* sql`delete from sync_sealed_row where ${sql.in("space", dropped)}`;
+    yield* sql`delete from sync_space_key where ${sql.in("space", dropped)}`;
     yield* sql`delete from sync_space where ${sql.in("id", dropped)}`;
   }
 
@@ -80,6 +212,9 @@ export const applyPull = Effect.fnUntraced(function* (
       key_epoch = excluded.key_epoch
   `;
 
+  const rekeyed = new Set<string>();
+  const sealed: Array<{ readonly space: string; readonly op: Protocol.Op }> = [];
+
   for (const patch of response.patches) {
     if (!listed.has(patch.space)) {
       return yield* Effect.die(`A pull patched ${patch.space}, which it doesn't list`);
@@ -88,13 +223,22 @@ export const applyPull = Effect.fnUntraced(function* (
     if (patch.reset) {
       for (const table of yield* tablesOf([patch.space])) tables.add(table);
       yield* sql`delete from base_row where space = ${patch.space}`;
+      yield* sql`delete from sync_sealed_row where space = ${patch.space}`;
     }
 
     const upserts: Array<Schema.Json> = [];
     const deletes: Array<Schema.Json> = [];
 
     for (const op of patch.ops) {
+      // An encrypted row's table travels inside its ciphertext.
+      if (op.tbl === "") {
+        sealed.push({ space: patch.space, op });
+        continue;
+      }
+
       tables.add(op.tbl);
+
+      if (op.tbl === Protocol.keyBoxTable) rekeyed.add(patch.space);
 
       if (op.row._tag === "Readable") {
         const data = yield* Effect.orDie(Effect.fromResult(CanonicalJson.encode(op.row.data)));
@@ -102,7 +246,7 @@ export const applyPull = Effect.fnUntraced(function* (
       } else if (op.row._tag === "Deleted") {
         deletes.push({ tbl: op.tbl, id: op.id });
       } else {
-        return yield* Effect.die("A sealed row arrived, which needs the keyring");
+        return yield* Effect.die(`A sealed row in ${patch.space} names the table ${op.tbl}`);
       }
     }
 
@@ -128,6 +272,29 @@ export const applyPull = Effect.fnUntraced(function* (
     yield* sql`update sync_space set version = ${patch.to} where id = ${patch.space}`;
   }
 
+  // New boxes may open parked rows from earlier pulls, and the sealed rows of this one.
+  for (const space of rekeyed) {
+    for (const table of yield* reopen(opener, space)) tables.add(table);
+  }
+
+  for (const { space, op } of sealed) {
+    const old = yield* forgetSealed(space, op.id);
+
+    if (Option.isSome(old)) tables.add(old.value);
+
+    if (op.row._tag === "Sealed") {
+      const table = yield* placeSealed(opener, {
+        space,
+        id: op.id,
+        version: op.version,
+        envelope: op.row.envelope,
+        ct: op.row.ct,
+      });
+
+      if (Option.isSome(table)) tables.add(table.value);
+    }
+  }
+
   // A space is synced once the device holds it at the version the server listed.
   yield* sql`
     update sync_space set synced_at = ${now}
@@ -142,14 +309,60 @@ export const applyPull = Effect.fnUntraced(function* (
 });
 
 /**
- * Clears the overlay and runs every waiting command again on the base rows, each in a savepoint
- * of its own, so a command that fails now loses only its own effect and stays queued: the server
- * decides. Returns the tables the old overlay and the replay touched.
+ * The refusal a sealed command's replay ended with, encoded as the server would send it. Anything
+ * the mutator's or `Tx`'s codecs don't know counts as arguments this build can't run.
+ */
+const refusalOf = Effect.fnUntraced(function* (
+  mutator: Sync.AnyMutator,
+  version: number,
+  cause: Cause.Cause<{ readonly _tag: string }>,
+) {
+  const invalid = Effect.orDie(
+    encodeEngine(new Refusal.InvalidArgs({ mutator: mutator.name, version })),
+  );
+
+  const error = Cause.findErrorOption(cause);
+
+  if (Option.isNone(error)) return yield* invalid;
+
+  return yield* encoderOf(mutator)(error.value).pipe(
+    Effect.flatMap(decodeReason),
+    Effect.catchTags({ SchemaError: () => invalid }),
+  );
+});
+
+const encodeEngine = Schema.encodeEffect(Refusal.Engine);
+
+// A mutator's own refusals and `Tx`'s, compiled once per mutator.
+const encoders = new WeakMap<
+  Sync.AnyMutator,
+  (error: { readonly _tag: string }) => Effect.Effect<unknown, Schema.SchemaError>
+>();
+
+const encoderOf = (mutator: Sync.AnyMutator) => {
+  const known = encoders.get(mutator);
+
+  if (known !== undefined) return known;
+  const encoder = Schema.encodeUnknownEffect(Schema.Union([mutator.error, Tx.Refused]));
+  encoders.set(mutator, encoder);
+
+  return encoder;
+};
+
+const decodeReason = Schema.decodeUnknownEffect(Refusal.Reason);
+
+/**
+ * Clears the overlay and runs every waiting command again, one savepoint each, so one that fails
+ * loses only its own effect and stays queued. A sealed one keeps its rows as drafts for the push,
+ * or its refusal, which is the verdict the server can't give. Returns the tables touched.
  */
 export const replay = Effect.fnUntraced(function* (definition: Sync.Definition, actor: string) {
   const sql = yield* SqlClient.SqlClient;
   const old = yield* sql<{ readonly tbl: string }>`select distinct tbl from pending_row`;
   const tables = new Set(old.map((row) => row.tbl));
+  /** The command of this replay that last wrote each sealed row, by space and id. */
+  const writers = new Map<string, number>();
+  const rowKey = (space: string, id: string) => JSON.stringify([space, id]);
 
   yield* sql`delete from pending_row`;
 
@@ -178,11 +391,26 @@ export const replay = Effect.fnUntraced(function* (definition: Sync.Definition, 
 
     if (Exit.isSuccess(exit)) {
       for (const row of exit.value) tables.add(row.table);
+
+      if (command.mode === "Seal") {
+        const drafts = yield* Sealing.drafts(exit.value, (space, id) =>
+          Effect.succeed(Option.fromNullishOr(writers.get(rowKey(space, id)))),
+        );
+
+        yield* Outbox.materialize(command.mutationId, drafts, null);
+
+        for (const draft of drafts) writers.set(rowKey(draft.space, draft.id), command.mutationId);
+      }
     } else {
-      yield* Effect.logWarning("A waiting command fails on the newer rows and waits", {
+      yield* Effect.logWarning("A waiting command fails on the newer rows", {
         mutationId: command.mutationId,
         mutator: command.name,
       });
+
+      if (command.mode === "Seal") {
+        const reason = yield* refusalOf(mutator, command.version, exit.cause);
+        yield* Outbox.materialize(command.mutationId, [], reason);
+      }
     }
   }
 
@@ -205,5 +433,7 @@ export const clear = Effect.gen(function* () {
 
   yield* sql`delete from pending_row`;
   yield* sql`delete from base_row`;
+  yield* sql`delete from sync_sealed_row`;
+  yield* sql`delete from sync_space_key`;
   yield* sql`delete from sync_space`;
 });

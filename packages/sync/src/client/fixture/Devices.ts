@@ -68,8 +68,10 @@ export const secrets = Layer.sync(Ports.DeviceSecrets, () => {
 });
 
 /**
- * A `CryptoSuite` whose generator follows Effect's `Random`, for the engine's ids. The engine's
- * other operations need WP-2's suite, which replaces this once its test layer is on main.
+ * A `CryptoSuite` whose generator follows Effect's `Random`, for the engine's ids on a device that
+ * holds no root key, as in the simulation. Its other operations die. Tests that seal take
+ * `TestCrypto`, which `studienbuch/test-only-imports` keeps out of the simulation. Once the rule
+ * admits the simulation, it takes `TestCrypto` too and this goes.
  */
 export const crypto = Layer.succeed(
   CryptoSuite.Service,
@@ -98,6 +100,20 @@ export const crypto = Layer.succeed(
     },
   }),
 );
+
+/** The account's root key, which every one of its devices holds. */
+export const rootKey = Uint8Array.from({ length: 32 }, (_, index) => index + 1);
+
+/** Secrets of a device that holds the account's root key, of generation 0. */
+export const unlocked = Layer.effect(
+  Ports.DeviceSecrets,
+  Effect.gen(function* () {
+    const held = yield* Ports.DeviceSecrets;
+    yield* Effect.orDie(held.set("root-key", rootKey));
+
+    return held;
+  }),
+).pipe(Layer.provide(secrets));
 
 /**
  * A device whose platform reports no network, so the supervisor never connects: for tests that
