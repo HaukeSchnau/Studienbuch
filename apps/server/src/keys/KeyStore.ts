@@ -254,6 +254,22 @@ const lockNewest = Effect.fn("KeyStore.lockNewest")(function* (account: string) 
   return row === undefined ? Option.none() : Option.some(yield* decodeRecord(row.record));
 });
 
+/**
+ * The account's newest key record, held for share until the transaction ends, so a renewal waits
+ * for a `Seal` that checks a signature against it.
+ */
+export const newest = Effect.fn("KeyStore.newest")(function* (account: string) {
+  const sql = yield* SqlClient.SqlClient;
+
+  const [row] = yield* sql<{ readonly record: typeof recordJson.Encoded }>`
+    select record from account_key where account_id = ${account}
+    order by generation desc limit 1
+    for share
+  `;
+
+  return row === undefined ? Option.none() : Option.some(yield* decodeRecord(row.record));
+});
+
 /** What `Keys.state` answers: the chain and every wrapper's statement. */
 export const state = Effect.fn("KeyStore.state")(function* (account: string) {
   const sql = yield* SqlClient.SqlClient;

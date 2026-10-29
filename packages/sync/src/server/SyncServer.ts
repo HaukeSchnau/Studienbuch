@@ -40,7 +40,8 @@ export const writers = (definition: Sync.Definition) =>
 /**
  * The whole engine: connections with push, pull and events, tickets, and `Spaces` and
  * `SyncWriter`. It takes Postgres's `SqlClient` and `LISTEN` (`Listener`), the sessions
- * (`Ports.SessionResolver`) and Effect's `Crypto` for tickets.
+ * (`Ports.SessionResolver`), the account key records (`Ports.AccountKeys`) and `CryptoSuite` for
+ * the signatures a `Seal` carries, and Effect's `Crypto` for tickets.
  */
 export const layer = (definition: Sync.Definition, options?: Options) => {
   const minimum = options?.minimum ?? Contract.initialMinimum;

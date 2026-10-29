@@ -11,6 +11,7 @@ import {
   Studienbuch,
   Term,
 } from "@stu/core";
+import { CryptoSuite } from "@stu/e2ee";
 import { Command } from "@stu/sync";
 import { Listener, Ports, Push, Spaces, SyncServer, SyncWriter } from "@stu/sync/server";
 import { Postgres18 } from "@stu/sync/testing";
@@ -21,6 +22,7 @@ import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import * as Stream from "effect/Stream";
 import { Testing } from "../infra/database/Testing.ts";
+import { Sync } from "./Sync.ts";
 
 /** No sessions: these tests write and push rows, and open no connection. */
 const noSessions = Layer.succeed(
@@ -30,7 +32,7 @@ const noSessions = Layer.succeed(
 
 const engine = SyncServer.layer(Studienbuch.schema).pipe(
   Layer.provideMerge(Listener.layer(PgClient.PgClient, (notification) => notification.payload)),
-  Layer.provideMerge(noSessions),
+  Layer.provideMerge(Layer.mergeAll(noSessions, Sync.accountKeys, CryptoSuite.layer)),
   Layer.provideMerge(Testing.prepared),
   Layer.provideMerge(NodeServices.layer),
 );

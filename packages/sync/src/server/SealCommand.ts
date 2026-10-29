@@ -1,7 +1,8 @@
 /**
  * An encrypted table's command on the server, which can't read its rows. It checks what it can
  * see in the order of encryption.md section 4 (`Sync.NotMember`, `Sync.NotAllowed`, `Stale` for
- * the key epoch and each base, `Sync.BadEnvelope`, `Sync.TooLarge`) and stores what came.
+ * the key epoch and each base, `Sync.BadEnvelope` for a format or a signature, `Sync.TooLarge`)
+ * and stores what came.
  */
 import { CryptoSuite, SealedRow, SpaceKey } from "@stu/e2ee";
 import * as Effect from "effect/Effect";
@@ -12,6 +13,7 @@ import { Command } from "../protocol/Command.ts";
 import { Protocol } from "../protocol/Protocol.ts";
 import { Refusal } from "../protocol/Refusal.ts";
 import { Decision } from "./Decision.ts";
+import { Ports } from "./Ports.ts";
 import { SyncSchema } from "./SyncSchema.ts";
 
 export * as SealCommand from "./SealCommand.ts";
@@ -52,15 +54,32 @@ const knownFormat = (item: { readonly format: number; readonly suite: number }, 
   item.format === format && item.suite === CryptoSuite.id;
 
 /**
- * Boxes and links carry Ed25519 signatures by their author's identity key at `authorGeneration`.
- * Checking them needs WP-2's verification and WP-11's account key records. Until both land the
- * server finds no box or link whose signature fails, and a device checks a box's signature before
- * it opens it.
+ * The first box or link whose Ed25519 signature doesn't verify against the author's newest key
+ * record. One signed at an older generation counts as forged, because a thief may hold that key.
  */
-const unsigned = (
-  _command: Command.Seal,
-): Effect.Effect<Option.Option<{ readonly space: string; readonly id: string }>> =>
-  Effect.succeedNone;
+const forgedItem = Effect.fn("SealCommand.forgedItem")(function* (
+  account: string,
+  command: Command.Seal,
+) {
+  const { boxes, links } = command;
+
+  if (boxes.length === 0 && links.length === 0) return Option.none();
+  const newest = yield* (yield* Ports.AccountKeys).newest(account);
+
+  for (const box of boxes) {
+    if (Option.isNone(newest) || !(yield* SpaceKey.verifyBox(box, newest.value))) {
+      return Option.some({ space: box.space, id: Protocol.keyBoxId(box) });
+    }
+  }
+
+  for (const link of links) {
+    if (Option.isNone(newest) || !(yield* SpaceKey.verifyLink(link, newest.value))) {
+      return Option.some({ space: link.space, id: Protocol.historyLinkId(link) });
+    }
+  }
+
+  return Option.none();
+});
 
 /** The rows a command writes into a space. */
 interface Put {
@@ -174,7 +193,7 @@ export const decide = Effect.fn("SealCommand.decide")(function* (
     );
   }
 
-  const forged = yield* unsigned(command);
+  const forged = yield* forgedItem(account, command);
 
   if (Option.isSome(forged)) {
     return yield* Decision.refuse(new Refusal.BadEnvelope(forged.value));
