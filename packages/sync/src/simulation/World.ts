@@ -7,6 +7,8 @@
 import { eq } from "drizzle-orm";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
+import * as Deferred from "effect/Deferred";
+import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Fiber from "effect/Fiber";
@@ -55,6 +57,8 @@ export const accounts = { lena: "notebook-lena", tom: "notebook-tom" } as const;
 
 export type Account = keyof typeof accounts;
 
+export const accountIds = ["lena", "tom"] as const satisfies ReadonlyArray<Account>;
+
 export const deviceIds = ["a", "b", "c"] as const;
 
 export type DeviceId = (typeof deviceIds)[number];
@@ -81,8 +85,33 @@ export interface Device {
   ) => Effect.Effect<Exit.Exit<A, E>>;
   /** Whether the engine is online and has nothing to push, pull or wait for. */
   readonly idle: Effect.Effect<boolean>;
-  /** Interrupts the engine wherever it is and starts a new one on the same database. */
+  /** Whether a round is pushing or pulling. */
+  readonly syncing: Effect.Effect<boolean>;
+  /** The app goes to the background and comes back at once, which runs a round. */
+  readonly resume: Effect.Effect<void>;
+  /**
+   * Stops the engine before the `statement`th SQL statement from now, which then waits for a crash
+   * to end it. The result completes there.
+   */
+  readonly stopBefore: (statement: number) => Effect.Effect<Deferred.Deferred<Stopped>>;
+  /** How many statements ran since the last `stopBefore`. */
+  readonly statements: Effect.Effect<number>;
+  /**
+   * Interrupts the engine wherever it is and starts a new one on the same database. Its
+   * connections drop without a close frame, as a dead process's do, so the server sees 1006.
+   */
   readonly crash: Effect.Effect<void>;
+  /** Copies the device's database, as a phone's backup does. */
+  readonly backup: Effect.Effect<void>;
+  /** Crashes, puts the last backup's database back and starts again. `false` without a backup. */
+  readonly restore: Effect.Effect<boolean>;
+}
+
+/** Where a device's engine was when it stopped before a statement. */
+export interface Stopped {
+  /** Counting from 1 when the stop was set. */
+  readonly statement: number;
+  readonly inTransaction: boolean;
 }
 
 /** A UUIDv4 from `Random`, so a seeded run names everything the same way. */
@@ -148,15 +177,53 @@ const seedServer = Effect.gen(function* () {
 });
 
 /** What outlives the engine: the database and the secrets, as on a phone's disk and keychain. */
-const devicePlatform = Layer.effectDiscard(
-  Effect.orDie(DeviceDatabase.migrate(PlannerMigrations.migrations)),
-).pipe(
-  Layer.provideMerge(Layer.effect(SqlClient.SqlClient, DeviceSqlite.make)),
-  Layer.provideMerge(Reactivity.layer),
-  Layer.provideMerge(Devices.secrets),
-  Layer.provideMerge(Devices.crypto),
-  Layer.orDie,
-);
+const devicePlatform = (before: DeviceSqlite.Before) =>
+  Layer.effectDiscard(Effect.orDie(DeviceDatabase.migrate(PlannerMigrations.migrations))).pipe(
+    Layer.provideMerge(Layer.effect(SqlClient.SqlClient, DeviceSqlite.make(before))),
+    Layer.provideMerge(Reactivity.layer),
+    Layer.provideMerge(Devices.secrets),
+    Layer.provideMerge(Devices.crypto),
+    Layer.orDie,
+  );
+
+/** A value SQLite stores. */
+type Cell = string | number | bigint | Uint8Array | null;
+
+/** Every table's rows, as a backup of the device's database holds them. */
+const dump = Effect.gen(function* () {
+  const sql = yield* SqlClient.SqlClient;
+
+  const tables = yield* sql<{ readonly name: string }>`
+    select name from sqlite_master where type = 'table' and name not like 'sqlite_%' order by name
+  `;
+
+  return yield* Effect.forEach(tables, ({ name }) =>
+    Effect.map(sql<Readonly<Record<string, Cell>>>`select * from ${sql(name)}`, (rows) => ({
+      name,
+      rows,
+    })),
+  );
+}).pipe(Effect.orDie);
+
+type Backup = Effect.Success<typeof dump>;
+
+/** Puts a backup's rows back in place of every table's. */
+const load = (backup: Backup) =>
+  Effect.flatMap(SqlClient.SqlClient, (sql) =>
+    sql.withTransaction(
+      Effect.forEach(
+        backup,
+        ({ name, rows }) =>
+          Effect.andThen(
+            sql`delete from ${sql(name)}`,
+            rows.length === 0
+              ? Effect.void
+              : Effect.asVoid(sql`insert into ${sql(name)} ${sql.insert(rows)}`),
+          ),
+        { discard: true },
+      ),
+    ),
+  ).pipe(Effect.orDie);
 
 /**
  * Signed in for good. The supervisor connects only with a token, and the simulation's transport
@@ -175,11 +242,9 @@ const session = (account: Account) => {
 
 /** The server's side of one connection, as its WebSocket route runs it after the ticket. */
 const serve =
-  (server: Context.Context<Connections.Service>, recorder: Recorder.Recorder): Network.Serve =>
+  (server: Context.Context<Connections.Service>): Network.Serve =>
   (resolved, socket) =>
-    SyncServer.connection(resolved, socket).pipe(
-      Effect.provide(Layer.merge(Layer.succeedContext(server), recorder.layer)),
-    );
+    Effect.provide(SyncServer.connection(resolved, socket), server);
 
 /** Nobody signs in over HTTP in the simulation, so no session resolves and none is revoked. */
 const sessions = Layer.succeed(
@@ -190,7 +255,35 @@ const sessions = Layer.succeed(
 const makeDevice = Effect.fnUntraced(function* (id: DeviceId, network: Network.Network) {
   const account = devices[id];
   const notebook = accounts[account];
-  const platform = yield* Layer.build(devicePlatform);
+  let statements = 0;
+  let inTransaction = false;
+  let stop: { readonly at: number; readonly stopped: Deferred.Deferred<Stopped> } | undefined;
+
+  // Counts statements, follows the transaction and stops where `stopBefore` asked.
+  const before = (text: string) =>
+    Effect.suspend(() => {
+      statements += 1;
+
+      if (stop !== undefined && statements >= stop.at) {
+        const { stopped } = stop;
+        stop = undefined;
+
+        // Interruptible even where the SQL client masks interruption, around BEGIN and COMMIT.
+        return Effect.andThen(
+          Deferred.succeed(stopped, { statement: statements, inTransaction }),
+          Effect.interruptible(Effect.never),
+        );
+      }
+
+      const head = text.trimStart().toUpperCase();
+
+      if (head.startsWith("BEGIN")) inTransaction = true;
+      else if (head.startsWith("COMMIT") || /^ROLLBACK(?! TO)/u.test(head)) inTransaction = false;
+
+      return Effect.void;
+    });
+
+  const platform = yield* Layer.build(devicePlatform(before));
 
   const faults = yield* Faults.make.pipe(
     Effect.provideService(Faults.Allowed, { environment: "development" }),
@@ -212,15 +305,25 @@ const makeDevice = Effect.fnUntraced(function* (id: DeviceId, network: Network.N
     }),
   );
 
-  // The platform reports the network as the device's faults set it, and the app as in front.
+  const foreground = yield* SubscriptionRef.make(true);
+
+  // The platform reports the network as the device's faults set it, and the app in front unless
+  // `resume` sends it away for a moment.
   const lifecycle = Layer.succeed(ClientPorts.Lifecycle, {
-    changes: SubscriptionRef.changes(faults.settings).pipe(
-      Stream.map(({ offline }) => ({ foreground: true, online: !offline })),
-      Stream.changesWith((before, after) => before.online === after.online),
+    changes: Stream.zipLatestWith(
+      SubscriptionRef.changes(faults.settings),
+      SubscriptionRef.changes(foreground),
+      (settings, inFront) => ({ foreground: inFront, online: !settings.offline }),
+    ).pipe(
+      Stream.changesWith(
+        (before, after) => before.online === after.online && before.foreground === after.foreground,
+      ),
     ),
   });
 
-  const engineLayer = SyncClient.layer(Planner.schema).pipe(
+  // Without the periodic pull only pokes and writes run rounds, so a lost poke leaves the device
+  // behind instead of being covered by the timer.
+  const engineLayer = SyncClient.layer(Planner.schema, { pullEvery: Duration.infinity }).pipe(
     Layer.provide(
       Layer.mergeAll(
         session(account),
@@ -229,6 +332,7 @@ const makeDevice = Effect.fnUntraced(function* (id: DeviceId, network: Network.N
         Layer.succeedContext(platform),
       ),
     ),
+    Layer.provideMerge(Recorder.deviceTracer),
   );
 
   const start = Effect.gen(function* () {
@@ -244,12 +348,40 @@ const makeDevice = Effect.fnUntraced(function* (id: DeviceId, network: Network.N
 
   const engine = <A, E>(effect: Effect.Effect<A, E, SyncClient.Service>) =>
     Effect.suspend(() =>
-      Effect.provideService(
-        effect,
-        SyncClient.Service,
-        Context.get(running.context, SyncClient.Service),
-      ).pipe(Effect.forkIn(running.scope), Effect.flatMap(Fiber.await)),
+      Effect.provide(effect, running.context).pipe(
+        Effect.forkIn(running.scope),
+        Effect.flatMap(Fiber.await),
+      ),
     );
+
+  const status = Effect.suspend(() => Context.get(running.context, SyncClient.Service).status.get);
+
+  const restart = Effect.tap(start, (started) =>
+    Effect.sync(() => {
+      running = started;
+    }),
+  );
+
+  // A transaction a crash left open rolls back when the app opens its database again, as
+  // SQLite's journal does. The client rolls back itself unless the crash stopped its COMMIT.
+  const rollBack = Effect.suspend(() =>
+    inTransaction
+      ? sql(Effect.flatMap(SqlClient.SqlClient, (client) => client.unsafe("ROLLBACK"))).pipe(
+          Effect.orDie,
+          Effect.asVoid,
+        )
+      : Effect.void,
+  );
+
+  const kill = Effect.suspend(() => {
+    stop = undefined;
+
+    return network
+      .sever(id)
+      .pipe(Effect.andThen(Scope.close(running.scope, Exit.interrupt())), Effect.andThen(rollBack));
+  });
+
+  let backup: Backup | undefined;
 
   const device: Device = {
     id,
@@ -271,26 +403,36 @@ const makeDevice = Effect.fnUntraced(function* (id: DeviceId, network: Network.N
       return rows.map((row) => row.id);
     }).pipe(Effect.orDie),
     engine,
-    idle: Effect.suspend(() =>
-      Effect.map(
-        Context.get(running.context, SyncClient.Service).status.get,
-        (status) =>
-          status.connection === "online" &&
-          !status.pushing &&
-          !status.pulling &&
-          status.waiting === 0,
-      ),
+    idle: Effect.map(
+      status,
+      (now) => now.connection === "online" && !now.pushing && !now.pulling && now.waiting === 0,
     ),
-    crash: Effect.suspend(() =>
-      Effect.andThen(Scope.close(running.scope, Exit.interrupt()), start).pipe(
-        Effect.tap((started) =>
-          Effect.sync(() => {
-            running = started;
-          }),
-        ),
-        Effect.asVoid,
-      ),
+    syncing: Effect.map(status, (now) => now.pushing || now.pulling),
+    resume: Effect.andThen(
+      SubscriptionRef.set(foreground, false),
+      SubscriptionRef.set(foreground, true),
     ),
+    stopBefore: (statement) =>
+      Effect.tap(Deferred.make<Stopped>(), (stopped) =>
+        Effect.sync(() => {
+          statements = 0;
+          stop = { at: statement, stopped };
+        }),
+      ),
+    statements: Effect.sync(() => statements),
+    crash: Effect.asVoid(Effect.andThen(kill, restart)),
+    backup: Effect.flatMap(sql(dump), (copy) =>
+      Effect.sync(() => {
+        backup = copy;
+      }),
+    ),
+    restore: Effect.suspend(() => {
+      const copy = backup;
+
+      if (copy === undefined) return Effect.succeed(false);
+
+      return kill.pipe(Effect.andThen(sql(load(copy))), Effect.andThen(restart), Effect.as(true));
+    }),
   };
 
   return device;
@@ -302,6 +444,8 @@ export const make = Effect.gen(function* () {
   const recorder = yield* Recorder.make;
   const frames: Array<Network.Frame> = [];
 
+  // The recorder's logger and tracer reach everything the server runs: connections, imports,
+  // writes from the steps.
   const server = yield* Layer.build(
     SyncServer.layer(Planner.schema).pipe(
       Layer.provideMerge(
@@ -311,17 +455,36 @@ export const make = Effect.gen(function* () {
           Devices.crypto,
           Layer.succeed(Listener.Service)(yield* Listener.Service),
           Layer.succeed(SqlClient.SqlClient)(yield* SqlClient.SqlClient),
+          recorder.layer,
         ),
       ),
     ),
   );
 
+  // A fresh cluster has its own identifier, which the restore epoch carries.
+  const [system] = yield* Effect.provide(
+    Effect.flatMap(
+      SqlClient.SqlClient,
+      (sql) =>
+        sql<{ readonly id: string }>`select system_identifier::text as id from pg_control_system()`,
+    ),
+    server,
+  ).pipe(Effect.orDie);
+
   yield* Effect.provide(seedServer, server).pipe(Effect.orDie);
 
-  const network = yield* Network.make(serve(server, recorder), (frame) =>
-    Effect.sync(() => {
-      frames.push(frame);
-    }),
+  const closes: Array<string> = [];
+
+  const network = yield* Network.make(
+    serve(server),
+    (frame) =>
+      Effect.sync(() => {
+        frames.push(frame);
+      }),
+    (device, code) =>
+      Effect.sync(() => {
+        closes.push(`${device} ${code}`);
+      }),
   );
 
   const all = yield* Effect.forEach(deviceIds, (id) => makeDevice(id, network));
@@ -331,8 +494,25 @@ export const make = Effect.gen(function* () {
     network,
     /** Every frame either end received so far, in order. */
     frames: (): ReadonlyArray<Network.Frame> => frames,
+    /** Each connection that closed since the last call, as its device and close code. */
+    closed: Effect.sync(() => closes.splice(0)),
     /** Every line the server logged and every span it ended so far. */
     serverLines: recorder.lines,
+    /** Whether the database serves more than one connection at once, as PostgreSQL does. */
+    concurrent: (yield* SqlClient.SqlClient).driver !== "pglite",
+    /** `text` with the database's system identifier replaced, so runs on two databases compare. */
+    normalized: (text: string) =>
+      system === undefined ? text : text.replaceAll(system.id, "<system identifier>"),
+    /**
+     * Waits until no server SQL is in flight. A real database answers in real time, which the
+     * simulated clock must not run ahead of, or a slow machine would see timeouts a fast one
+     * doesn't.
+     */
+    quiet: Effect.gen(function* () {
+      for (let calm = 0; calm < 3; calm = recorder.sqlInFlight() === 0 ? calm + 1 : 0) {
+        yield* Effect.yieldNow;
+      }
+    }),
     /** Runs an effect against the server engine. */
     server: <A, E>(
       effect: Effect.Effect<A, E, Spaces.Service | SyncWriter.Service | SqlClient.SqlClient>,

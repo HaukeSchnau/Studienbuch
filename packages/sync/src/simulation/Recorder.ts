@@ -1,7 +1,6 @@
 /**
  * A Logger and a Tracer that keep, as text, every log line of a runtime and every span it ends, for
- * the leak check. Span ids count up: Effect's own come from `Math.random`, and RPC requests carry
- * them in their frames, so a seeded run would differ from its replay.
+ * the leak check. Span ids count up, so a seeded run's frames and lines equal its replay's.
  */
 import * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
@@ -70,16 +69,18 @@ const render = (value: unknown): string => {
 
 const id = (n: number, length: number) => n.toString(16).padStart(length, "0");
 
-export const make = Effect.sync(() => {
-  const lines: Array<string> = [];
+/** A statement, or a transaction around statements: SQL that may be waiting on the database. */
+const isSql = (options: { readonly name: string; readonly kind: Tracer.SpanKind }) =>
+  options.kind === "client" || options.name === "sql.transaction";
+
+/**
+ * A Tracer whose span and trace ids count up from 1. `ended` sees each span as it ends. Effect's
+ * own ids come from `Math.random`, and RPC requests carry them in their frames.
+ */
+const counting = (ended: (span: Tracer.NativeSpan, exit: Exit.Exit<unknown, unknown>) => void) => {
   let spans = 0;
 
-  // Fiber ids count across the whole process, so a replay would differ in them alone.
-  const logger = Logger.map(Logger.formatStructured, (entry) => {
-    lines.push(`log ${render({ ...entry, fiberId: undefined })}`);
-  });
-
-  const tracer = Tracer.make({
+  return Tracer.make({
     span: (options) => {
       spans += 1;
       const span = new Tracer.NativeSpan(options);
@@ -93,17 +94,54 @@ export const make = Effect.sync(() => {
 
       span.end = (endTime, exit) => {
         end(endTime, exit);
-        lines.push(
-          `span ${render({
-            name: span.name,
-            id: span.spanId,
-            trace: span.traceId,
-            attributes: span.attributes,
-            events: span.events,
-            links: span.links.map((link) => link.attributes),
-            failure: Exit.isFailure(exit) ? Cause.pretty(exit.cause) : undefined,
-          })}`,
-        );
+        ended(span, exit);
+      };
+
+      return span;
+    },
+  });
+};
+
+/** A device's tracer: ids that count, nothing recorded, as spans on a device may hold plaintext. */
+export const deviceTracer = Layer.sync(Tracer.Tracer)(() => counting(() => {}));
+
+/** Fiber ids count across the whole process, so a replay would differ in them alone. */
+const withoutFiberIds = (text: string) => text.replaceAll(/#\d+/gu, "#");
+
+export const make = Effect.sync(() => {
+  const lines: Array<string> = [];
+  let sql = 0;
+
+  const logger = Logger.map(Logger.formatStructured, (entry) => {
+    lines.push(`log ${render({ ...entry, fiberId: undefined })}`);
+  });
+
+  const recording = counting((span, exit) => {
+    lines.push(
+      `span ${render({
+        name: span.name,
+        id: span.spanId,
+        trace: span.traceId,
+        attributes: span.attributes,
+        events: span.events,
+        links: span.links.map((link) => link.attributes),
+        failure: Exit.isFailure(exit) ? withoutFiberIds(Cause.pretty(exit.cause)) : undefined,
+      })}`,
+    );
+  });
+
+  // Counts the SQL that hasn't ended, so a simulation on a real database can wait for it.
+  const tracer = Tracer.make({
+    span: (options) => {
+      const span = recording.span(options);
+
+      if (!isSql(options)) return span;
+      sql += 1;
+      const end = span.end.bind(span);
+
+      span.end = (endTime, exit) => {
+        sql -= 1;
+        end(endTime, exit);
       };
 
       return span;
@@ -113,6 +151,8 @@ export const make = Effect.sync(() => {
   return {
     /** Everything recorded so far, one line per log entry or ended span. */
     lines: (): ReadonlyArray<string> => lines,
+    /** How many statements and transactions have started and not ended. */
+    sqlInFlight: () => sql,
     /** Records a runtime's logs at every level, and its spans. */
     layer: Layer.mergeAll(
       Logger.layer([logger]),

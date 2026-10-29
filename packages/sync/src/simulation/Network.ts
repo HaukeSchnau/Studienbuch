@@ -6,6 +6,7 @@
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as NetAddress from "effect/net/NetAddress";
+import * as Predicate from "effect/Predicate";
 import type * as Rpc from "effect/rpc/Rpc";
 import type * as RpcGroup from "effect/rpc/RpcGroup";
 import * as RpcServer from "effect/rpc/RpcServer";
@@ -38,9 +39,37 @@ export interface Device {
   readonly session: ServerPorts.ResolvedSession;
 }
 
+/**
+ * Rows per pull page in the simulation, small enough that a pull spans pages and a crash can land
+ * between them. The device asks for `Replication.pageRows`, and the network rewrites the limit.
+ */
+export const pageRows = 2;
+
+/** The device's pulls ask for pages of `pageRows`, as a device built with that page size would. */
+const smallPages = (connected: Ports.Connected): Ports.Connected => ({
+  ...connected,
+  protocol: {
+    ...connected.protocol,
+    send: (clientId, message) =>
+      connected.protocol.send(
+        clientId,
+        message._tag === "Request" &&
+          message.tag === "Sync.pull" &&
+          Predicate.isObject(message.payload)
+          ? { ...message, payload: { ...message.payload, limit: pageRows } }
+          : message,
+      ),
+  },
+});
+
+/**
+ * `observe` sees every frame as it reaches the other end, and `closed` each connection's close
+ * code once both ends closed.
+ */
 export const make = Effect.fnUntraced(function* (
   serve: Serve,
   observe: (frame: Frame) => Effect.Effect<void>,
+  closed: (device: string, code: number) => Effect.Effect<void> = () => Effect.void,
 ) {
   const scope = yield* Effect.scope;
   const open = new Map<string, Set<Link>>();
@@ -66,7 +95,7 @@ export const make = Effect.fnUntraced(function* (
         yield* Effect.addFinalizer(() => Effect.sync(() => links.delete(link)));
         yield* Deferred.succeed(ready, link);
         yield* serve(device.session, link.server);
-        yield* link.closed;
+        yield* closed(device.id, yield* link.closed);
       }),
     ).pipe(Effect.forkIn(scope));
 
@@ -79,7 +108,7 @@ export const make = Effect.fnUntraced(function* (
         yield* accept(device, ready);
         const link = yield* Deferred.await(ready);
 
-        return yield* WebSocketTransport.fromSocket(link.device);
+        return smallPages(yield* WebSocketTransport.fromSocket(link.device));
       }),
     }),
 
