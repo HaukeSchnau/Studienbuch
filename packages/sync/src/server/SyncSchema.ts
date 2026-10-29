@@ -29,3 +29,14 @@ export const kindOf = (definition: Sync.Definition, name: string) => {
     ? Effect.die(`The space kind ${name} isn't declared`)
     : Effect.succeed(kind);
 };
+
+/**
+ * The roles that may write `kind`'s encrypted tables. `Sync.validate` keeps them one set per kind,
+ * because the server sees no table name in a sealed write.
+ */
+export const sealedWriters = (definition: Sync.Definition, kind: string): ReadonlySet<string> =>
+  new Set(
+    definition.tables
+      .filter((table) => table.class === "encrypted")
+      .flatMap((table) => table.writableBy[kind] ?? []),
+  );

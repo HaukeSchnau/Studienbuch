@@ -23,6 +23,11 @@ export interface Runner extends Tx.Runner {
    * undeclared table. Without it, the transaction may write any space that exists.
    */
   readonly spaces?: ReadonlyArray<string>;
+  /**
+   * Reads only spaces that `actor` is a member of, as a device holds no others. A command's run
+   * sets it, so a forged command can't read another school's rows. Server code reads every space.
+   */
+  readonly asMember?: boolean;
 }
 
 /** The server's `Tx` for a command of the connection's account, or for the server's own writes. */
@@ -30,6 +35,21 @@ export const make = Effect.fnUntraced(function* (runner: Runner) {
   const sql = yield* SqlClient.SqlClient;
   const versions = new Map<string, number>();
   const declared = runner.spaces === undefined ? undefined : new Set(runner.spaces);
+
+  const memberships =
+    runner.asMember === true
+      ? yield* Effect.cached(
+          sql<{ readonly space: string }>`
+            select space_id as space from space_member where account_id = ${runner.actor}
+          `.pipe(Effect.map((rows) => new Set(rows.map((row) => row.space)))),
+        )
+      : undefined;
+
+  /** Runs `read` on a space the transaction sees, and answers `none` for any other. */
+  const visible = <A, E>(space: string, read: Effect.Effect<A, E>, none: A) =>
+    memberships === undefined
+      ? read
+      : Effect.flatMap(memberships, (spaces) => (spaces.has(space) ? read : Effect.succeed(none)));
 
   const version = (space: string) => {
     const known = versions.get(space);
@@ -59,24 +79,32 @@ export const make = Effect.fnUntraced(function* (runner: Runner) {
     location: "server",
 
     read: (space, table, id) =>
-      sql<{ readonly data: string }>`
-        select data::text as data from sync_row
-        where space_id = ${space} and tbl = ${table} and id = ${id} and data is not null
-      `.pipe(Effect.map((rows) => Option.map(Option.fromNullishOr(rows[0]), (row) => row.data))),
+      visible(
+        space,
+        sql<{ readonly data: string }>`
+          select data::text as data from sync_row
+          where space_id = ${space} and tbl = ${table} and id = ${id} and data is not null
+        `.pipe(Effect.map((rows) => Option.map(Option.fromNullishOr(rows[0]), (row) => row.data))),
+        Option.none(),
+      ),
 
     list: (space, table, filter) =>
-      filter === undefined
-        ? sql<{ readonly id: string; readonly data: string }>`
-            select id, data::text as data from sync_row
-            where space_id = ${space} and tbl = ${table} and data is not null
-            order by id
-          `
-        : sql<{ readonly id: string; readonly data: string }>`
-            select id, data::text as data from sync_row
-            where space_id = ${space} and tbl = ${table}
-              and data -> (${filter.field}::text) = ${filter.json}::jsonb
-            order by id
-          `,
+      visible(
+        space,
+        filter === undefined
+          ? sql<{ readonly id: string; readonly data: string }>`
+              select id, data::text as data from sync_row
+              where space_id = ${space} and tbl = ${table} and data is not null
+              order by id
+            `
+          : sql<{ readonly id: string; readonly data: string }>`
+              select id, data::text as data from sync_row
+              where space_id = ${space} and tbl = ${table}
+                and data -> (${filter.field}::text) = ${filter.json}::jsonb
+              order by id
+            `,
+        [],
+      ),
 
     write: (space, table, id, data) =>
       Effect.flatMap(

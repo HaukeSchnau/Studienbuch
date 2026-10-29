@@ -71,7 +71,7 @@ const enroll = (notebook: string, courseIds: ReadonlyArray<string>) =>
       notebook,
       [Fixture.Enrollment],
       Effect.flatMap(Tx.Service, (tx) =>
-        tx.put(Fixture.Enrollment, notebook, "term", { courseIds }),
+        tx.put(Fixture.Enrollment, notebook, "term", { termId: "term", courseIds }),
       ),
     ),
   );
