@@ -9,7 +9,11 @@ import { Subject } from "./Subject.ts";
 
 export * as Course from "./Course.ts";
 
-/** One space per course. Its id is the course's, so the import creates the space with the course. */
+/**
+ * One space per course, under its school with the course's id as its key:
+ * `Spaces.create(spaceId, Course.Space, { parent: schoolId, key: courseId })`. Enrollments name
+ * courses by that key, which resolves only within the notebook's own school.
+ */
 export const Space = Sync.spaceKind("course", {
   encryption: "none",
   roles: ["reader"],
@@ -17,8 +21,8 @@ export const Space = Sync.spaceKind("course", {
 });
 
 /**
- * Permanent once published, because homework and enrollments name it. It is also the id of the
- * course's space, so it is unique across schools.
+ * Permanent once published, because homework and enrollments name it. Unique within its school,
+ * which may give another course the same id. Its space carries it as its key.
  */
 export const Id = Ids.Id.pipe(Schema.brand("CourseId"));
 

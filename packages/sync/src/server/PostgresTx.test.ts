@@ -9,15 +9,20 @@ import * as SqlClient from "effect/sql/SqlClient";
 import { Sync } from "../definition/Sync.ts";
 import { Postgres18 } from "../testing/Postgres18.ts";
 import { Tx } from "../transaction/Tx.ts";
+import { Fixture } from "./Fixture.ts";
 import { PostgresTx } from "./PostgresTx.ts";
 
 const Note = Sync.table("Note", { class: "readable", fields: { text: Schema.String } });
 
 const database = Layer.effectDiscard(
   Effect.flatMap(SqlClient.SqlClient, (sql) =>
-    Effect.forEach(PostgresTx.schema, (statement) => sql.unsafe(statement), { discard: true }),
+    Effect.forEach(
+      ["order", "busy-a", "busy-b"],
+      (space) => sql`insert into space (id, kind) values (${space}, 'note')`,
+      { discard: true },
+    ),
   ),
-).pipe(Layer.provideMerge(Postgres18.database(Postgres18.socket ?? "")));
+).pipe(Layer.provideMerge(Fixture.database));
 
 /** One push: a transaction that writes rows into a space through the server's `Tx`. */
 const push = (space: string, ids: ReadonlyArray<string>, beforeCommit = Effect.void) =>
