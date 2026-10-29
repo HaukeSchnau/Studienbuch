@@ -25,6 +25,10 @@
       // `fonts.css` imports the font, and `vp` runs the tests without a config file.
       "ignoreDependencies": ["@fontsource-variable/nunito", "vite-plus"],
     },
+    "packages/domain-ui": {
+      // `vp` runs the tests without a config file.
+      "ignoreDependencies": ["vite-plus"],
+    },
   },
   "ignore": [
     // Calder loads its own TypeScript project, with dependencies the workspace doesn't install.

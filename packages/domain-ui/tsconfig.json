@@ -2,6 +2,9 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "jsx": "react-jsx",
+    // Core's sources import e2ee and sync, which typecheck against the DOM lib's TextEncoder and
+    // URL, as packages/core does.
+    "lib": ["ESNext", "DOM"],
     "types": []
   },
   "include": ["src"]
