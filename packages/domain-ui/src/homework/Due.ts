@@ -13,16 +13,13 @@ const shortWeekdays = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
 const weekday = (date: CivilTime.PlainDate) => weekdays[PlainDateFns.dayOfWeek(date) - 1] ?? "";
 
-/** "9.11." */
-const dayMonth = (date: CivilTime.PlainDate) => {
-  const [, month, day] = PlainDateFns.toString(date).split("-");
-
-  return `${String(Number(day))}.${String(Number(month))}.`;
-};
+/** "9.11.", or "9.11.2027" in another year than today's. */
+const dayMonth = (date: CivilTime.PlainDate, today: CivilTime.PlainDate) =>
+  `${String(date.day)}.${String(date.month)}.${date.year === today.year ? "" : String(date.year)}`;
 
 /** "Mo, 9.11." */
-const short = (date: CivilTime.PlainDate) =>
-  `${shortWeekdays[PlainDateFns.dayOfWeek(date) - 1] ?? ""}, ${dayMonth(date)}`;
+const short = (date: CivilTime.PlainDate, today: CivilTime.PlainDate) =>
+  `${shortWeekdays[PlainDateFns.dayOfWeek(date) - 1] ?? ""}, ${dayMonth(date, today)}`;
 
 const done = (doneOn: CivilTime.PlainDate, today: CivilTime.PlainDate) => {
   const ago = PlainDateFns.diffDays(doneOn, today);
@@ -31,7 +28,7 @@ const done = (doneOn: CivilTime.PlainDate, today: CivilTime.PlainDate) => {
     ? "Heute erledigt"
     : ago === 1
       ? "Gestern erledigt"
-      : `Erledigt am ${ago < 7 ? weekday(doneOn) : dayMonth(doneOn)}`;
+      : `Erledigt am ${ago < 7 ? weekday(doneOn) : dayMonth(doneOn, today)}`;
 };
 
 /** The due date as the list and the panel show it. */
@@ -43,12 +40,12 @@ export const label = (homework: HomeworkDates.Listed, today: CivilTime.PlainDate
   if (HomeworkDates.isOverdue(homework, today)) {
     if (days === -1) return "Überfällig seit gestern";
 
-    return `Überfällig seit ${days > -7 ? weekday(homework.dueOn) : dayMonth(homework.dueOn)}`;
+    return `Überfällig seit ${days > -7 ? weekday(homework.dueOn) : dayMonth(homework.dueOn, today)}`;
   }
 
   return days === 0
     ? "Heute fällig"
     : days === 1
       ? "Bis morgen"
-      : `Bis ${days < 7 ? weekday(homework.dueOn) : short(homework.dueOn)}`;
+      : `Bis ${days < 7 ? weekday(homework.dueOn) : short(homework.dueOn, today)}`;
 };

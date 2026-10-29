@@ -21,10 +21,8 @@ const core = {
   "Enrollment.TwoInOneGroup": "Von diesen Kursen kannst du nur einen wählen.",
 } as const satisfies Record<Homework.Refusal["_tag"] | Enrollment.Refusal["_tag"], string>;
 
-// Refusals whose types live in @stu/sync, which this package may not import, and core's
-// `Enrollment.WrongSchool`, which arrives with the Notebook's school.
+// Refusals whose types live in @stu/sync, which this package may not import.
 const other = {
-  "Enrollment.WrongSchool": "Dieser Kurs gehört zu einer anderen Schule.",
   "Sync.NotMember": "Diese Änderung gehört in ein Notizbuch, in dem du nicht Mitglied bist.",
   "Sync.NotAllowed": "Hier darfst du nichts ändern.",
   "Sync.Locked": "Dieser Eintrag ist bestätigt und lässt sich nicht mehr ändern.",

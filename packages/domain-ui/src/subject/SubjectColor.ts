@@ -1,7 +1,7 @@
 /**
  * Which of the twelve subject colours a subject gets (D49): one subject, one colour, in every term,
  * on every device and on the landing page. Known subjects have a fixed slot, however a school spells
- * them; any other name hashes to a stable slot. The domain stays colour-free.
+ * them; any other name hashes to a stable shared slot. The domain stays colour-free.
  */
 import type { Subject } from "@stu/core";
 import type { Tokens } from "@stu/ui/Tokens";
@@ -36,6 +36,7 @@ const known: ReadonlyArray<readonly [Tokens.SubjectSlot, ReadonlyArray<string>]>
       "werteundnormen",
       "wn",
       "wun",
+      "ethik",
       "philosophie",
       "phil",
     ],
@@ -52,21 +53,9 @@ const slots: ReadonlyMap<string, Tokens.SubjectSlot> = new Map(
   known.flatMap(([slot, names]) => names.map((name) => [name, slot] as const)),
 );
 
-// The order of Tokens.subject, for the hash.
-const palette: ReadonlyArray<Tokens.SubjectSlot> = [
-  "red",
-  "rust",
-  "amber",
-  "olive",
-  "green",
-  "teal",
-  "cyan",
-  "blue",
-  "indigo",
-  "violet",
-  "magenta",
-  "slate",
-];
+// The slots several subjects share. An unknown subject hashes onto one of them, so it never takes
+// the colour of a subject that has its own, such as Mathematik or Geschichte.
+const shared: ReadonlyArray<Tokens.SubjectSlot> = ["olive", "indigo", "magenta", "slate"];
 
 /** Lower case, umlauts spelled out, letters only: "Politik-Wirtschaft" becomes "politikwirtschaft". */
 const normalize = (name: string) =>
@@ -86,14 +75,18 @@ const hashed = (name: string): Tokens.SubjectSlot => {
     hash = Math.imul(hash ^ name.charCodeAt(index), 0x01000193);
   }
 
-  return palette[(hash >>> 0) % palette.length] ?? "slate";
+  return shared[(hash >>> 0) % shared.length] ?? "slate";
 };
+
+// "Evangelische Religion", "Religion (kath.)": any religion is a values subject.
+const byName = (name: string) =>
+  slots.get(name) ?? (name.includes("religion") ? "slate" : undefined);
 
 /** The slot of a subject, by its name or else its short name. */
 export const ofSubject = (subject: Pick<Subject.Row, "name" | "shortName">): Tokens.SubjectSlot => {
   const name = normalize(subject.name);
 
-  return slots.get(name) ?? slots.get(normalize(subject.shortName)) ?? hashed(name);
+  return byName(name) ?? slots.get(normalize(subject.shortName)) ?? hashed(name);
 };
 
 /**
@@ -104,5 +97,5 @@ export const ofSubject = (subject: Pick<Subject.Row, "name" | "shortName">): Tok
 export const ofCourse = (courseName: string): Tokens.SubjectSlot => {
   const prefix = normalize(/^[A-Za-zÄÖÜäöüß]+/u.exec(courseName.trim())?.[0] ?? courseName);
 
-  return slots.get(prefix) ?? hashed(prefix);
+  return byName(prefix) ?? hashed(prefix);
 };
