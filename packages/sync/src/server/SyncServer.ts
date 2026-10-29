@@ -10,6 +10,7 @@ import type { Sync } from "../definition/Sync.ts";
 import { Connections } from "./Connections.ts";
 import { Contract } from "./Contract.ts";
 import { Events } from "./Events.ts";
+import { Inspection } from "./Inspection.ts";
 import type { Ports } from "./Ports.ts";
 import { Pull } from "./Pull.ts";
 import { Push } from "./Push.ts";
@@ -54,6 +55,9 @@ export const layer = (definition: Sync.Definition, options?: Options) => {
 
 /** The ticket route and the WebSocket at `Connection.socketPath`, for `HttpRouter.serve`. */
 export const routes = Routes.layer;
+
+/** `Sync.inspect` at `Inspect.path`, answering only when `answers` holds. */
+export const inspection = Inspection.route;
 
 /**
  * Serves one connection on `socket` until it closes, as the WebSocket route does after the
