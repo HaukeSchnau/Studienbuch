@@ -109,13 +109,11 @@ const write = (
 
 /** Opens key epoch 0 of the student's notebook, as the first device does with its first write. */
 const openNotebook = (student: School["lena"], clientId: string) =>
-  push(student.account, clientId, [
-    seal(
-      1,
-      [write(student.notebook, `${clientId}-first`, student.account)],
-      [Fixture.keyBox(student.notebook, student.account)],
-    ),
-  ]);
+  Effect.flatMap(Fixture.keyBox(student.notebook, student.account), (box) =>
+    push(student.account, clientId, [
+      seal(1, [write(student.notebook, `${clientId}-first`, student.account)], [box]),
+    ]),
+  );
 
 describe.skipIf(Postgres18.socket === null)("Push on PostgreSQL 18", () => {
   layer(Fixture.server)((it) => {
@@ -265,10 +263,21 @@ describe.skipIf(Postgres18.socket === null)("Push on PostgreSQL 18", () => {
           // Tom is a guest in Lena's notebook: he reads it and may write nothing there.
           yield* (yield* Spaces.Service).addMember(lena.notebook, tom.account, "guest");
           // Opening epoch 1 takes one box per member, the guest's included.
-          const nextBox = Fixture.keyBox(lena.notebook, lena.account, lena.account, 1);
-          const guestBox = Fixture.keyBox(lena.notebook, tom.account, lena.account, 1);
-          const badBox = Fixture.keyBox(lena.notebook, lena.account, lena.account, 1, 2);
-          const badLink = Fixture.historyLink(lena.notebook, lena.account, 1, 2);
+          const nextBox = yield* Fixture.keyBox(lena.notebook, lena.account, { keyEpoch: 1 });
+
+          const guestBox = yield* Fixture.keyBox(lena.notebook, tom.account, {
+            author: lena.account,
+            keyEpoch: 1,
+          });
+
+          const badBox = Fixture.alteredBox(nextBox, { format: 2 });
+          const link = yield* Fixture.historyLink(lena.notebook, lena.account);
+          const badLink = Fixture.alteredLink(link, { format: 2 });
+
+          const forgedLink = Fixture.alteredLink(link, {
+            signature: Fixture.forged(link.signature),
+          });
+
           const bad = { ct: large, format: 2 };
 
           // Each case breaks its own check and every later one, so only the order decides the answer.
@@ -319,6 +328,16 @@ describe.skipIf(Postgres18.socket === null)("Push on PostgreSQL 18", () => {
               lena,
               seal(1, [], [nextBox, guestBox], [badLink]),
             ],
+            [
+              "BadEnvelope: a forged history link",
+              lena,
+              seal(
+                1,
+                [write(lena.notebook, "h", lena.account, { ct: large, keyEpoch: 1 })],
+                [nextBox, guestBox],
+                [forgedLink],
+              ),
+            ],
             ["TooLarge", lena, seal(1, [write(lena.notebook, "g", lena.account, { ct: large })])],
           ] as const;
 
@@ -342,6 +361,7 @@ describe.skipIf(Postgres18.socket === null)("Push on PostgreSQL 18", () => {
             ["BadEnvelope: an unknown suite", refused("Sync.BadEnvelope")],
             ["BadEnvelope: a key box's format", refused("Sync.BadEnvelope")],
             ["BadEnvelope: a history link's format", refused("Sync.BadEnvelope")],
+            ["BadEnvelope: a forged history link", refused("Sync.BadEnvelope")],
             ["TooLarge", refused("Sync.TooLarge")],
           ]);
         }),
@@ -377,7 +397,15 @@ describe.skipIf(Postgres18.socket === null)("Push on PostgreSQL 18", () => {
                 write(lena.notebook, `row-${index}`, lena.account),
               ),
             ),
-            seal(5, [], [Fixture.keyBox("", lena.account)]),
+            seal(
+              5,
+              [],
+              [
+                Fixture.alteredBox(yield* Fixture.keyBox(lena.notebook, lena.account), {
+                  space: "",
+                }),
+              ],
+            ),
             // Neither the version nor the name fits the log's columns.
             Command.Mutate.make({
               mutationId: 6,
@@ -488,7 +516,8 @@ describe.skipIf(Postgres18.socket === null)("Push on PostgreSQL 18", () => {
     it.effect("a notebook's key epoch 0 opens once, with one box for each member", () =>
       Effect.gen(function* () {
         const { lena, tom } = yield* Fixture.school("epochs");
-        const box = Fixture.keyBox(lena.notebook, lena.account);
+        const box = yield* Fixture.keyBox(lena.notebook, lena.account);
+        const tomsBox = yield* Fixture.keyBox(lena.notebook, tom.account, { author: lena.account });
 
         const outcomes = [
           // No epoch yet, and no box to open one.
@@ -496,11 +525,7 @@ describe.skipIf(Postgres18.socket === null)("Push on PostgreSQL 18", () => {
             push(lena.account, "epochs-a", [seal(1, [write(lena.notebook, "x", lena.account)])]),
           ),
           // A box for someone who isn't a member.
-          yield* answer(
-            push(lena.account, "epochs-b", [
-              seal(1, [], [box, Fixture.keyBox(lena.notebook, tom.account, lena.account)]),
-            ]),
-          ),
+          yield* answer(push(lena.account, "epochs-b", [seal(1, [], [box, tomsBox])])),
           yield* answer(
             push(lena.account, "epochs-c", [
               seal(1, [write(lena.notebook, "x", lena.account)], [box]),
@@ -543,6 +568,93 @@ describe.skipIf(Postgres18.socket === null)("Push on PostgreSQL 18", () => {
 
         expect(keyRow?._tag === "Readable" ? yield* decodeKeyBox(keyRow.data) : null).toEqual(box);
       }),
+    );
+
+    it.effect(
+      "a forged key box is refused, one of a missing or older key record waits for keys, and none is stored",
+      () =>
+        Effect.gen(function* () {
+          const { lena, school } = yield* Fixture.school("signatures");
+          const spaces = yield* Spaces.Service;
+          const sql = yield* SqlClient.SqlClient;
+          // Ida's first device hasn't published her key record yet.
+          const ida = { account: "signatures-ida", notebook: "signatures-ida-notebook" };
+          yield* spaces.create(ida.notebook, Fixture.Notebook, { parent: school });
+          yield* spaces.addMember(ida.notebook, ida.account, "owner");
+          const box = yield* Fixture.keyBox(lena.notebook, lena.account);
+          const forged = Fixture.alteredBox(box, { signature: Fixture.forged(box.signature) });
+
+          const opening = (
+            student: { readonly account: string; readonly notebook: string },
+            clientId: string,
+            keyBox: typeof box,
+          ) =>
+            answer(
+              push(student.account, clientId, [
+                seal(1, [write(student.notebook, "x", student.account)], [keyBox]),
+              ]),
+            );
+
+          const forgedSignature = yield* opening(lena, "signatures-a", forged);
+
+          // The batch stops at the first command that waits for keys.
+          const noRecord = yield* answer(
+            push(ida.account, "signatures-b", [
+              seal(
+                1,
+                [write(ida.notebook, "x", ida.account)],
+                [yield* Fixture.keyBox(ida.notebook, ida.account)],
+              ),
+              seal(2, [write(ida.notebook, "y", ida.account)]),
+            ]),
+          );
+
+          // Lena renews her key: a box her generation 0 signed may come from a thief of that key.
+          yield* (yield* Fixture.Keys).publish(yield* Fixture.recordOf(lena.account, 1));
+
+          const renewed = (recipientGeneration: number) =>
+            Fixture.keyBox(lena.notebook, lena.account, {
+              authorGeneration: 1,
+              recipientGeneration,
+            });
+
+          const olderAuthor = yield* push(lena.account, "signatures-c", [
+            seal(1, [write(lena.notebook, "x", lena.account)], [box]),
+          ]);
+
+          const olderSealingKey = yield* opening(lena, "signatures-d", yield* renewed(0));
+
+          const [stored] = yield* sql<{ readonly rows: number }>`
+            select count(*)::int as rows from sync_row
+            where space_id in (${lena.notebook}, ${ida.notebook})
+          `;
+
+          const newest = yield* opening(lena, "signatures-e", yield* renewed(1));
+
+          const cases = [
+            ["a forged signature", forgedSignature],
+            ["no key record yet", noRecord],
+            ["an older author generation", olderAuthor],
+            ["her own older sealing key", olderSealingKey],
+            ["stored", stored?.rows],
+            ["the newest generation", newest],
+          ];
+
+          expect(cases).toEqual([
+            ["a forged signature", { lastMutationId: 1, outcomes: ["1 Sync.BadEnvelope"] }],
+            ["no key record yet", { lastMutationId: 0, outcomes: ["1 NoKeyRecord"] }],
+            [
+              "an older author generation",
+              {
+                lastMutationId: 0,
+                outcomes: [Protocol.KeysBehind.make({ mutationId: 1, generation: 1 })],
+              },
+            ],
+            ["her own older sealing key", { lastMutationId: 0, outcomes: ["1 KeysBehind"] }],
+            ["stored", 0],
+            ["the newest generation", { lastMutationId: 1, outcomes: ["1 Applied"] }],
+          ]);
+        }),
     );
 
     it.effect(

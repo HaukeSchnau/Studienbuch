@@ -6,6 +6,7 @@
  */
 import { sha256 } from "@noble/hashes/sha2.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
+import type { CryptoSuite } from "@stu/e2ee";
 import { SealedRow } from "@stu/e2ee";
 import * as Context from "effect/Context";
 import * as Data from "effect/Data";
@@ -28,6 +29,7 @@ import { CanonicalJson } from "../transaction/CanonicalJson.ts";
 import { Contract } from "./Contract.ts";
 import { Decision } from "./Decision.ts";
 import { MutateCommand } from "./MutateCommand.ts";
+import type { Ports } from "./Ports.ts";
 import { Pokes } from "./Pokes.ts";
 import { SealCommand } from "./SealCommand.ts";
 import { SyncEpoch } from "./SyncEpoch.ts";
@@ -192,7 +194,10 @@ const sealDetail = (command: Command.Seal) =>
 export const make = Effect.fn("Push.make")(function* (minimum: Contract.Minimum) {
   const sql = yield* SqlClient.SqlClient;
   const definition = yield* SyncSchema.Service;
-  const services = yield* Effect.context<SqlClient.SqlClient | SyncSchema.Service>();
+
+  const services = yield* Effect.context<
+    SqlClient.SqlClient | SyncSchema.Service | Ports.AccountKeys | CryptoSuite.Service
+  >();
 
   /**
    * What the command log keeps of a command: never content it can't read, and of a command past a
@@ -322,7 +327,7 @@ export const make = Effect.fn("Push.make")(function* (minimum: Contract.Minimum)
         const decided: Effect.Effect<
           Decision.Decision,
           SqlError.SqlError,
-          SqlClient.SqlClient | SyncSchema.Service
+          SqlClient.SqlClient | SyncSchema.Service | Ports.AccountKeys | CryptoSuite.Service
         > =
           command._tag === "Mutate"
             ? MutateCommand.decide(account, command)
@@ -393,6 +398,12 @@ export const make = Effect.fn("Push.make")(function* (minimum: Contract.Minimum)
           return Effect.succeed(Protocol.Retry.make({ mutationId }));
         case "Stale":
           return Effect.succeed(Protocol.Stale.make({ mutationId }));
+        case "NoKeyRecord":
+          return Effect.succeed(Protocol.NoKeyRecord.make({ mutationId }));
+        case "KeysBehind":
+          return Effect.succeed(
+            Protocol.KeysBehind.make({ mutationId, generation: decision.generation }),
+          );
       }
     };
 
@@ -428,7 +439,7 @@ export const make = Effect.fn("Push.make")(function* (minimum: Contract.Minimum)
         const outcome = yield* process(request.clientId, account, command);
         outcomes.push(outcome);
 
-        if (outcome._tag === "Retry" || outcome._tag === "Stale") break;
+        if (outcome._tag !== "Applied" && outcome._tag !== "Rejected") break;
       }
 
       const lastMutationId = (yield* clientRow(request.clientId))?.lastMutationId ?? 0;

@@ -2,14 +2,16 @@
  * A small definition in the shape of M1's domain, and a fresh PostgreSQL 18 database with the
  * engine's tables, for the server engine's tests.
  */
+import { sha256 } from "@noble/hashes/sha2.js";
 import { PgClient } from "@effect/sql-pg";
-import { CryptoSuite, SealedRow, SpaceKey } from "@stu/e2ee";
+import { AccountKey, CryptoSuite, SealedRow, SpaceKey } from "@stu/e2ee";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as PubSub from "effect/PubSub";
+import * as Redacted from "effect/Redacted";
 import * as Schema from "effect/Schema";
 import * as Stream from "effect/Stream";
 import * as TestCrypto from "effect/testing/TestCrypto";
@@ -239,13 +241,80 @@ export const crypto = TestCrypto.layer("fixture").pipe(
   ),
 );
 
-/** The whole engine over {@link database}, with test sessions. */
+/** Account key records, which a test publishes as `apps/server`'s key store keeps them. */
+export class Keys extends Context.Service<
+  Keys,
+  { readonly publish: (record: AccountKey.Record) => Effect.Effect<void> }
+>()("@stu/sync/server/Fixture/Keys") {}
+
+export const accountKeys = Layer.effectContext(
+  Effect.sync(() => {
+    const newest = new Map<string, AccountKey.Record>();
+
+    return Context.make(
+      Keys,
+      Keys.of({
+        publish: (record) =>
+          Effect.sync(() => {
+            if ((newest.get(record.accountId)?.generation ?? -1) < record.generation) {
+              newest.set(record.accountId, record);
+            }
+          }),
+      }),
+    ).pipe(
+      Context.add(
+        Ports.AccountKeys,
+        Ports.AccountKeys.of({
+          newest: (account) => Effect.sync(() => Option.fromNullishOr(newest.get(account))),
+        }),
+      ),
+    );
+  }),
+);
+
+/** The suite for the signatures a `Seal` carries. */
+export const suite = CryptoSuite.layer;
+
+const utf8 = new TextEncoder();
+
+/** Generation `generation` of the account's keys, the same in every run. */
+export const keysOf = (account: string, generation = 0) =>
+  Effect.orDie(
+    AccountKey.derive(
+      Redacted.make(sha256(utf8.encode(`${account}/${generation}`))),
+      account,
+      generation,
+    ),
+  );
+
+/** The account's key record at `generation`, linked from the one before. */
+export const recordOf: (
+  account: string,
+  generation?: number,
+) => Effect.Effect<AccountKey.Record, never, CryptoSuite.Service> = Effect.fn("Fixture.recordOf")(
+  function* (account: string, generation = 0) {
+    const keys = yield* keysOf(account, generation);
+
+    if (generation === 0) return yield* Effect.orDie(AccountKey.record(keys, "first"));
+
+    const previous = {
+      keys: yield* keysOf(account, generation - 1),
+      record: yield* recordOf(account, generation - 1),
+    };
+
+    return yield* Effect.orDie(AccountKey.record(keys, previous));
+  },
+);
+
+/** The whole engine over {@link database}, with test sessions and key records. */
 export const serverWith = (options?: SyncServer.Options) =>
   SyncServer.layer(definition, options).pipe(
     Layer.provideMerge(
       Layer.mergeAll(
         sessions,
         crypto,
+        accountKeys,
+        suite,
         Listener.layer(PgClient.PgClient, (notification) => notification.payload),
       ),
     ),
@@ -284,6 +353,7 @@ export const school = Effect.fn("Fixture.school")(function* (name: string) {
   }
 
   for (const student of [ids.lena, ids.tom]) {
+    yield* (yield* Keys).publish(yield* recordOf(student.account));
     yield* spaces.create(student.notebook, Notebook, { parent: ids.school });
     yield* spaces.addMember(student.notebook, student.account, "owner");
     yield* spaces.addMember(ids.school, student.account, "reader");
@@ -300,42 +370,76 @@ export const envelope = (
   suite = CryptoSuite.id,
 ) => new SealedRow.Envelope({ format, suite, keyEpoch, author });
 
-/** A key box that opens `keyEpoch` of `space` for `recipient`. The server never opens it. */
-export const keyBox = (
+const zeroKey = () => Redacted.make(new Uint8Array(32));
+
+/**
+ * A key box that opens `keyEpoch` of `space` for `recipient` at `recipientGeneration`, signed by
+ * `author` at `authorGeneration`. The server never opens it.
+ */
+export const keyBox = Effect.fn("Fixture.keyBox")(function* (
   space: string,
   recipient: string,
-  author = recipient,
-  keyEpoch = 0,
-  format = SpaceKey.format,
-) =>
-  new SpaceKey.KeyBox({
-    format,
-    suite: CryptoSuite.id,
-    space,
-    keyEpoch,
-    recipient,
-    recipientGeneration: 0,
-    author,
-    authorGeneration: 0,
-    enc: new Uint8Array(32),
-    ct: new Uint8Array(48),
-    signature: new Uint8Array(64),
-  });
+  options: {
+    readonly author?: string;
+    readonly keyEpoch?: number;
+    readonly authorGeneration?: number;
+    readonly recipientGeneration?: number;
+  } = {},
+) {
+  const keyEpoch = options.keyEpoch ?? 0;
+  const author = yield* keysOf(options.author ?? recipient, options.authorGeneration ?? 0);
+  const sealedTo = yield* recordOf(recipient, options.recipientGeneration ?? 0);
+  const keys = [{ epoch: keyEpoch, key: zeroKey() }] as const;
 
-/** A history link that holds epoch `keyEpoch - 1`'s key under `keyEpoch`'s. */
-export const historyLink = (
+  return yield* Effect.orDie(SpaceKey.box(space, keys, sealedTo, author));
+});
+
+/** A history link that holds epoch `keyEpoch - 1`'s key under `keyEpoch`'s, signed by `author`. */
+export const historyLink = Effect.fn("Fixture.historyLink")(function* (
   space: string,
   author: string,
   keyEpoch = 1,
-  format = SpaceKey.format,
+) {
+  const current = { epoch: keyEpoch, key: zeroKey() };
+
+  return yield* SpaceKey.link(space, current, zeroKey(), yield* keysOf(author));
+});
+
+/** A signature with one bit flipped. */
+export const forged = (signature: Uint8Array) =>
+  Uint8Array.from(signature, (byte, index) => (index === 0 ? byte ^ 1 : byte));
+
+/** `box` as a modified app might send it, with some fields replaced. */
+export const alteredBox = (
+  box: SpaceKey.KeyBox,
+  changes: { readonly format?: number; readonly space?: string; readonly signature?: Uint8Array },
+) =>
+  new SpaceKey.KeyBox({
+    format: changes.format ?? box.format,
+    suite: box.suite,
+    space: changes.space ?? box.space,
+    keyEpoch: box.keyEpoch,
+    recipient: box.recipient,
+    recipientGeneration: box.recipientGeneration,
+    author: box.author,
+    authorGeneration: box.authorGeneration,
+    enc: box.enc,
+    ct: box.ct,
+    signature: changes.signature ?? box.signature,
+  });
+
+/** `link` as a modified app might send it, with some fields replaced. */
+export const alteredLink = (
+  link: SpaceKey.HistoryLink,
+  changes: { readonly format?: number; readonly signature?: Uint8Array },
 ) =>
   new SpaceKey.HistoryLink({
-    format,
-    suite: CryptoSuite.id,
-    space,
-    keyEpoch,
-    author,
-    authorGeneration: 0,
-    ct: new Uint8Array(60),
-    signature: new Uint8Array(64),
+    format: changes.format ?? link.format,
+    suite: link.suite,
+    space: link.space,
+    keyEpoch: link.keyEpoch,
+    author: link.author,
+    authorGeneration: link.authorGeneration,
+    ct: link.ct,
+    signature: changes.signature ?? link.signature,
   });

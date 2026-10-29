@@ -315,10 +315,14 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
             sql.withTransaction(KeyStore.publishFirst("kai", kai.record, late)),
           );
 
+          // A Seal's signatures are checked against the newest record.
+          const newest = Option.map(yield* KeyStore.newest("kai"), (record) => record.generation);
+
           expect({
             short: short._tag === "Keys.Invalid" ? short.reason : short._tag,
             renewed: renewed._tag,
-          }).toEqual({ short: "seal", renewed: "Keys.ChainExists" });
+            newest,
+          }).toEqual({ short: "seal", renewed: "Keys.ChainExists", newest: Option.some(1) });
         }),
     );
   });

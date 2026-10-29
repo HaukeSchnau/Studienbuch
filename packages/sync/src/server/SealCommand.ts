@@ -1,7 +1,8 @@
 /**
  * An encrypted table's command on the server, which can't read its rows. It checks what it can
  * see in the order of encryption.md section 4 (`Sync.NotMember`, `Sync.NotAllowed`, `Stale` for
- * the key epoch and each base, `Sync.BadEnvelope`, `Sync.TooLarge`) and stores what came.
+ * the key epoch and each base, `Sync.BadEnvelope` for a format, the signatures, `Sync.TooLarge`)
+ * and stores what came.
  */
 import { CryptoSuite, SealedRow, SpaceKey } from "@stu/e2ee";
 import * as Effect from "effect/Effect";
@@ -12,6 +13,7 @@ import { Command } from "../protocol/Command.ts";
 import { Protocol } from "../protocol/Protocol.ts";
 import { Refusal } from "../protocol/Refusal.ts";
 import { Decision } from "./Decision.ts";
+import { Ports } from "./Ports.ts";
 import { SyncSchema } from "./SyncSchema.ts";
 
 export * as SealCommand from "./SealCommand.ts";
@@ -52,15 +54,49 @@ const knownFormat = (item: { readonly format: number; readonly suite: number }, 
   item.format === format && item.suite === CryptoSuite.id;
 
 /**
- * Boxes and links carry Ed25519 signatures by their author's identity key at `authorGeneration`.
- * Checking them needs WP-2's verification and WP-11's account key records. Until both land the
- * server finds no box or link whose signature fails, and a device checks a box's signature before
- * it opens it.
+ * What the Ed25519 signatures of boxes and links decide against the author's newest key record:
+ * `NoKeyRecord` before the account has one, `KeysBehind` for an older generation or an own box
+ * sealed to an older key, which a thief may hold, and `Sync.BadEnvelope` for a failed signature.
  */
-const unsigned = (
-  _command: Command.Seal,
-): Effect.Effect<Option.Option<{ readonly space: string; readonly id: string }>> =>
-  Effect.succeedNone;
+const signatures = Effect.fn("SealCommand.signatures")(function* (
+  account: string,
+  command: Command.Seal,
+) {
+  const { boxes, links } = command;
+
+  const decided = (decision: Decision.Decision) => Option.some(decision);
+
+  if (boxes.length === 0 && links.length === 0) return Option.none<Decision.Decision>();
+  const newest = yield* (yield* Ports.AccountKeys).newest(account);
+
+  // A first write can race ahead of the device publishing its record, as can one after a restore.
+  if (Option.isNone(newest)) return decided(Decision.NoKeyRecord());
+  const { generation } = newest.value;
+
+  const older =
+    [...boxes, ...links].some((item) => item.authorGeneration !== generation) ||
+    boxes.some((box) => box.recipient === account && box.recipientGeneration !== generation);
+
+  if (older) return decided(Decision.KeysBehind({ generation }));
+
+  for (const box of boxes) {
+    if (!(yield* SpaceKey.verifyBox(box, newest.value))) {
+      const forged = { space: box.space, id: Protocol.keyBoxId(box) };
+
+      return decided(yield* Decision.refuse(new Refusal.BadEnvelope(forged)));
+    }
+  }
+
+  for (const link of links) {
+    if (!(yield* SpaceKey.verifyLink(link, newest.value))) {
+      const forged = { space: link.space, id: Protocol.historyLinkId(link) };
+
+      return decided(yield* Decision.refuse(new Refusal.BadEnvelope(forged)));
+    }
+  }
+
+  return Option.none<Decision.Decision>();
+});
 
 /** The rows a command writes into a space. */
 interface Put {
@@ -174,11 +210,9 @@ export const decide = Effect.fn("SealCommand.decide")(function* (
     );
   }
 
-  const forged = yield* unsigned(command);
+  const signed = yield* signatures(account, command);
 
-  if (Option.isSome(forged)) {
-    return yield* Decision.refuse(new Refusal.BadEnvelope(forged.value));
-  }
+  if (Option.isSome(signed)) return signed.value;
 
   const large = writes.find((write) => (write.ct?.length ?? 0) > Command.maxSealedBytes);
 

@@ -29,6 +29,8 @@ describe.skipIf(Postgres18.socket === null)("Inspection on PostgreSQL 18", () =>
         // What a device sealed. Whatever the server shows of it, these bytes never appear.
         const ct = new TextEncoder().encode("MARKER-Mathe-Hausaufgabe");
 
+        const box = yield* Fixture.keyBox(lena.notebook, lena.account);
+
         const sealed = (mutationId: number, envelope = Fixture.envelope(lena.account)) =>
           Command.Seal.make({
             mutationId,
@@ -45,7 +47,7 @@ describe.skipIf(Postgres18.socket === null)("Inspection on PostgreSQL 18", () =>
                 ct,
               },
             ],
-            boxes: mutationId === 1 ? [Fixture.keyBox(lena.notebook, lena.account)] : [],
+            boxes: mutationId === 1 ? [box] : [],
             links: [],
           });
 

@@ -2,11 +2,13 @@
  * What the server engine needs from `apps/server`. Besides this it takes Effect's `SqlClient` on
  * PostgreSQL 18 and `CryptoSuite` from `@stu/e2ee`, for the signatures it checks.
  */
+import type { AccountKey } from "@stu/e2ee";
 import * as Context from "effect/Context";
 import type * as DateTime from "effect/DateTime";
 import type * as Effect from "effect/Effect";
 import type * as Headers from "effect/http/Headers";
 import type * as Option from "effect/Option";
+import type * as SqlError from "effect/sql/SqlError";
 import type * as Stream from "effect/Stream";
 
 export * as Ports from "./Ports.ts";
@@ -31,3 +33,21 @@ export class SessionResolver extends Context.Service<
     readonly revoked: Stream.Stream<string>;
   }
 >()("@stu/sync/server/SessionResolver") {}
+
+/**
+ * The account key records `apps/server` keeps, which a `Seal` checks its key boxes' and history
+ * links' signatures against.
+ */
+export class AccountKeys extends Context.Service<
+  AccountKeys,
+  {
+    /**
+     * The account's newest key record, or `None` before a device published one. A `Seal` reads it
+     * after locking its spaces and holds it for share until commit: a renewal that locks it later
+     * waits, and one that commits while the read is under way goes unseen.
+     */
+    readonly newest: (
+      accountId: string,
+    ) => Effect.Effect<Option.Option<AccountKey.Record>, SqlError.SqlError>;
+  }
+>()("@stu/sync/server/AccountKeys") {}

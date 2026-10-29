@@ -452,6 +452,7 @@ export const make = Effect.gen(function* () {
         Layer.mergeAll(
           sessions,
           Fixture.crypto,
+          Fixture.accountKeys,
           Devices.crypto,
           Layer.succeed(Listener.Service)(yield* Listener.Service),
           Layer.succeed(SqlClient.SqlClient)(yield* SqlClient.SqlClient),
