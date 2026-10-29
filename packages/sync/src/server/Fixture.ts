@@ -2,14 +2,18 @@
  * A small definition in the shape of M1's domain, and a fresh PostgreSQL 18 database with the
  * engine's tables, for the server engine's tests.
  */
+import { CryptoSuite, SealedRow, SpaceKey } from "@stu/e2ee";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import { Sync } from "../definition/Sync.ts";
 import { Postgres18 } from "../testing/Postgres18.ts";
 import { Tx } from "../transaction/Tx.ts";
 import { ServerDatabase } from "./ServerDatabase.ts";
+import { Spaces } from "./Spaces.ts";
 import { SyncServer } from "./SyncServer.ts";
+import { SyncWriter } from "./SyncWriter.ts";
 
 export * as Fixture from "./Fixture.ts";
 
@@ -35,8 +39,17 @@ export const Homework = Sync.table("Homework", {
 
 export const Enrollment = Sync.table("Enrollment", {
   class: "readable",
-  fields: { courseIds: Schema.Array(Schema.String) },
+  fields: { termId: Schema.String, courseIds: Schema.Array(Schema.String) },
   writableBy: { notebook: ["owner"] },
+});
+
+/** A term of a school, in the School space. */
+export const Term = Sync.table("Term", { class: "readable", fields: { name: Schema.String } });
+
+/** A course a school offers, in the School space. Its id is also its Course space's id. */
+export const Offering = Sync.table("Offering", {
+  class: "readable",
+  fields: { name: Schema.String },
 });
 
 export const Lesson = Sync.table("Lesson", {
@@ -45,28 +58,45 @@ export const Lesson = Sync.table("Lesson", {
   indexes: ["day"],
 });
 
+export class UnknownTerm extends Schema.TaggedError<
+  UnknownTerm,
+  { readonly brand: unique symbol }
+>()("Enrollment.UnknownTerm", { termId: Schema.String }) {}
+
 export class UnknownCourse extends Schema.TaggedError<
   UnknownCourse,
   { readonly brand: unique symbol }
 >()("Enrollment.UnknownCourse", { courseId: Schema.String }) {}
 
-/** Chooses courses. A course id starting with `x` doesn't exist, so the server refuses it. */
+/** Chooses the courses of a term, which the student's school must offer. */
 export const setEnrollment = Sync.mutator("enrollment.set", {
   version: 1,
   args: Schema.Struct({
     notebook: Schema.String,
-    id: Schema.String,
+    school: Schema.String,
+    termId: Schema.String,
     courseIds: Schema.Array(Schema.String),
   }),
-  error: UnknownCourse,
+  error: Schema.Union([UnknownTerm, UnknownCourse]),
   writes: [Enrollment],
   spaces: (args) => [args.notebook],
   run: Effect.fn("Fixture.setEnrollment")(function* (args) {
     const tx = yield* Tx.Service;
-    const unknown = args.courseIds.find((id) => id.startsWith("x"));
 
-    if (unknown !== undefined) return yield* new UnknownCourse({ courseId: unknown });
-    yield* tx.put(Enrollment, args.notebook, args.id, { courseIds: args.courseIds });
+    if (Option.isNone(yield* tx.get(Term, args.school, args.termId))) {
+      return yield* new UnknownTerm({ termId: args.termId });
+    }
+
+    for (const courseId of args.courseIds) {
+      if (Option.isNone(yield* tx.get(Offering, args.school, courseId))) {
+        return yield* new UnknownCourse({ courseId });
+      }
+    }
+
+    yield* tx.put(Enrollment, args.notebook, args.termId, {
+      termId: args.termId,
+      courseIds: args.courseIds,
+    });
   }),
 });
 
@@ -91,7 +121,7 @@ export const courses = Sync.membershipRule({
 export const definition = Sync.schema({
   version: 1,
   spaceKinds: [Notebook, School, Course],
-  tables: [Homework, Enrollment, Lesson],
+  tables: [Homework, Enrollment, Term, Offering, Lesson],
   mutators: [setEnrollment, createHomework],
   membership: [courses],
 });
@@ -103,3 +133,61 @@ export const database = Layer.effectDiscard(ServerDatabase.create).pipe(
 
 /** The engine's services over {@link database}. */
 export const server = SyncServer.layer(definition).pipe(Layer.provideMerge(database));
+
+/** The ids of one test's school: its own spaces and accounts, so tests share a database. */
+export const school = Effect.fn("Fixture.school")(function* (name: string) {
+  const spaces = yield* Spaces.Service;
+  const writer = yield* SyncWriter.Service;
+
+  const ids = {
+    school: `${name}-school`,
+    term: "term-1",
+    /** Course ids among the school's rows, which repeat across schools. */
+    courses: ["ma", "de"],
+    /** The Course space of each course. */
+    courseSpace: (course: string) => `${name}-${course}`,
+    lena: { account: `${name}-lena`, notebook: `${name}-lena-notebook` },
+    tom: { account: `${name}-tom`, notebook: `${name}-tom-notebook` },
+  };
+
+  yield* spaces.create(ids.school, School);
+  yield* writer.reconcile(ids.school, Term, [{ id: ids.term, row: { name: "1. Halbjahr" } }]);
+
+  yield* writer.reconcile(
+    ids.school,
+    Offering,
+    ids.courses.map((id) => ({ id, row: { name: id } })),
+  );
+
+  for (const course of ids.courses) {
+    yield* spaces.create(ids.courseSpace(course), Course, { parent: ids.school, key: course });
+  }
+
+  for (const student of [ids.lena, ids.tom]) {
+    yield* spaces.create(student.notebook, Notebook, { parent: ids.school });
+    yield* spaces.addMember(student.notebook, student.account, "owner");
+    yield* spaces.addMember(ids.school, student.account, "reader");
+  }
+
+  return ids;
+});
+
+/** A sealed row's envelope by `author` under `keyEpoch`. */
+export const envelope = (author: string, keyEpoch = 0, format = SealedRow.format) =>
+  new SealedRow.Envelope({ format, suite: CryptoSuite.id, keyEpoch, author });
+
+/** A key box that opens `keyEpoch` of `space` for `recipient`. The server never opens it. */
+export const keyBox = (space: string, recipient: string, author = recipient, keyEpoch = 0) =>
+  new SpaceKey.KeyBox({
+    format: SpaceKey.format,
+    suite: CryptoSuite.id,
+    space,
+    keyEpoch,
+    recipient,
+    recipientGeneration: 0,
+    author,
+    authorGeneration: 0,
+    enc: new Uint8Array(32),
+    ct: new Uint8Array(48),
+    signature: new Uint8Array(64),
+  });
