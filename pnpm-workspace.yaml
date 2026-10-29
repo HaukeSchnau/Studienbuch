@@ -101,3 +101,11 @@ minimumReleaseAgeExclude:
   - "@effect/sql-sqlite-wasm@4.0.7"
   - "@electric-sql/pglite@0.5.13"
   - "@noxcturnal/noxcturnal-win32-x64-msvc@0.1.11"
+
+patchedDependencies:
+  # Expo Router ignores `experiments.baseUrl` while NODE_ENV is development (expo/expo#47701), so
+  # behind the dev server's front door `/app/...` matched no route and links left `/app`. The patch
+  # is upstream's fix, expo/expo#49236: apply the base URL in every mode, as release builds do.
+  # Bumping expo-router fails `pnpm install` on this unused key; then delete the patch if the new
+  # release contains #49236, or recreate it with `pnpm patch` if not.
+  expo-router@58.0.27: patches/expo-router@58.0.27.patch

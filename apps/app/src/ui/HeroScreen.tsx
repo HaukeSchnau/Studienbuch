@@ -150,7 +150,7 @@ function Swoosh({ fill, edge }: { readonly fill: string; readonly edge: string }
       height={band.height}
       viewBox={`0 0 ${band.width} ${band.height}`}
       preserveAspectRatio="none"
-      accessible={false}
+      aria-hidden
     >
       <Path d={curve(band.edge)} fill={edge} />
       <Path d={curve(0)} fill={fill} />
