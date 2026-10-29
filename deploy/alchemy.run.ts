@@ -46,16 +46,24 @@ const roomForPreview = Effect.fn(function* (stage: string) {
   if (Option.isNone(store)) return;
 
   const stack = yield* Alchemy.Stack;
-  const stages = yield* State.listState({ path: stack.name }).pipe(
-    Effect.provideService(State.State, store.value),
-    Effect.orDie,
-  );
-  const names = stages.map((path) => path.slice(stack.name.length + 1).replace(/\/$/, ""));
+  // Every stage with resources, and none before the stack's first deploy.
+  const stages = yield* (yield* store.value).listStages(stack.name).pipe(Effect.orDie);
 
-  yield* Option.match(Environments.noRoomFor(stage, names), {
+  yield* Option.match(Environments.noRoomFor(stage, stages), {
     onNone: () => Effect.void,
     onSome: Effect.die,
   });
+});
+
+/**
+ * A preview's secrets, generated once per stage and kept in Alchemy's state, which every holder of
+ * the account's state-store token can read. That is fine for a Tailnet preview with demo data only;
+ * beta and prod read theirs from srv-2's SOPS file.
+ */
+const previewSecrets = Effect.gen(function* () {
+  const authSecret = yield* Alchemy.Random("AuthSecret");
+  const demoKeySeed = yield* Alchemy.Random("DemoKeySeed");
+  return { AUTH_SECRET: authSecret.text, DEMO_KEY_SEED: demoKeySeed.text };
 });
 
 /** The server of one environment, with its DNS record when it is public. */
@@ -68,10 +76,15 @@ const deploy = Effect.fn(function* (environment: Environments.Environment) {
 
   const tokens = yield* Alchemy.stackRef<Tokens>("Tokens", { stage: "prod" });
   const storage = environment.storage;
-  const server = yield* Platform.service(environment, release, {
-    endpoint: Output.map(tokens, (tokens) => tokens.studienbuch.s3Endpoint),
-    bucket: Output.map(tokens, (tokens) => tokens.studienbuch.buckets[storage]),
-  });
+  const server = yield* Platform.service(
+    environment,
+    release,
+    {
+      endpoint: Output.map(tokens, (tokens) => tokens.studienbuch.s3Endpoint),
+      bucket: Output.map(tokens, (tokens) => tokens.studienbuch.buckets[storage]),
+    },
+    environment.kind === "preview" ? yield* previewSecrets : Platform.sopsSecrets(environment),
+  );
 
   if (environment.visibility === "public") {
     const domains = yield* Alchemy.stackRef<Domains>("Domains", { stage: "prod" });

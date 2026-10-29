@@ -23,7 +23,26 @@ export interface Environment {
   readonly memory: string;
   /** Only a preview's database goes with it; the host dumps it first. */
   readonly dropDatabase: boolean;
+  /**
+   * `STUDIENBUCH_NATIVE_APPS`: the native builds that talk to this environment, as the server's
+   * `NativeApps.Apps` reads them. Previews are web only.
+   */
+  readonly nativeApps: Option.Option<NativeApps>;
 }
+
+export interface NativeApps {
+  readonly ios: ReadonlyArray<string>;
+  readonly android: ReadonlyArray<{
+    readonly package: string;
+    readonly sha256: ReadonlyArray<string>;
+  }>;
+}
+
+/**
+ * TestFlight, Play internal and the stores all ship `dev.schnau.studienbuch` (apps/app/app.config.ts).
+ * Android stays empty until the Play app exists and its signing certificates' SHA-256 are known.
+ */
+const studienbuchApps: NativeApps = { ios: ["2243J9RD68.dev.schnau.studienbuch"], android: [] };
 
 const preview = (pr: number): Environment => ({
   stage: `pr-${pr}`,
@@ -35,6 +54,7 @@ const preview = (pr: number): Environment => ({
   blobPrefix: `pr-${pr}/`,
   memory: "512M",
   dropDatabase: true,
+  nativeApps: Option.none(),
 });
 
 const beta: Environment = {
@@ -47,6 +67,7 @@ const beta: Environment = {
   blobPrefix: "",
   memory: "1G",
   dropDatabase: false,
+  nativeApps: Option.some(studienbuchApps),
 };
 
 const prod: Environment = {
@@ -59,6 +80,7 @@ const prod: Environment = {
   blobPrefix: "",
   memory: "1G",
   dropDatabase: false,
+  nativeApps: Option.some(studienbuchApps),
 };
 
 /** The environment of a stage, or none for a stage that isn't one of Studienbuch's. */
