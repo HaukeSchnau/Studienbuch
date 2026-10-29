@@ -4,11 +4,13 @@
  * and the refused ones in `sync_rejected_command`. Every function runs inside the caller's
  * transaction.
  */
+import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import type { Sync } from "../definition/Sync.ts";
+import { Command as Wire } from "../protocol/Command.ts";
 import { Refusal } from "../protocol/Refusal.ts";
 import { CanonicalJson } from "../transaction/CanonicalJson.ts";
 
@@ -89,6 +91,16 @@ const command = (row: typeof CommandRow.Type): Command => ({
   at: row.at,
   mode: row.mode,
 });
+
+/** A readable command as the push sends it. */
+export const asMutate = (command: Command) =>
+  Wire.Mutate.make({
+    mutationId: command.mutationId,
+    name: command.name,
+    version: command.version,
+    args: command.args,
+    at: DateTime.makeUnsafe(command.at),
+  });
 
 /** Creates the device's state on its first start. A later start keeps what is there. */
 export const start = Effect.fnUntraced(function* (clientId: string) {

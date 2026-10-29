@@ -1,6 +1,8 @@
 import { describe, expect, it } from "@effect/vitest";
+import type * as Cause from "effect/Cause";
 import * as Clock from "effect/Clock";
 import * as Deferred from "effect/Deferred";
+import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as PubSub from "effect/PubSub";
@@ -19,7 +21,7 @@ import { Supervisor } from "./Supervisor.ts";
 /** A link the test closes and pokes, which logs its subscription and its end. */
 const makeLink = Effect.fnUntraced(function* (log: Array<string>) {
   const closed = yield* Deferred.make<number>();
-  const pokes = yield* Queue.unbounded<Protocol.Event>();
+  const pokes = yield* Queue.unbounded<Protocol.Event, Cause.Done>();
 
   const remote: Replication.Remote = {
     push: () => Effect.die("The supervisor's rounds are faked"),
@@ -40,12 +42,16 @@ const makeLink = Effect.fnUntraced(function* (log: Array<string>) {
 
   return {
     link,
-    close: (code: number) => Deferred.succeed(closed, code),
+    /** Ends the events first, so the close code has to win over the ended stream. */
+    close: (code: number) => Effect.andThen(Queue.end(pokes), Deferred.succeed(closed, code)),
     poke: Queue.offer(pokes, Protocol.Poke.make({ spaces: [] })),
+    /** Ends the events on an open socket, as the server does with a second subscription. */
+    unsubscribe: Queue.end(pokes),
   };
 });
 
-type Script = ReadonlyArray<"unreachable" | "session-ended" | "link">;
+/** `unsubscribed` is a link whose events the server ends at once. */
+type Script = ReadonlyArray<"unreachable" | "session-ended" | "link" | "unsubscribed">;
 
 /**
  * Runs the supervisor with a scripted transport: each attempt takes the script's next answer,
@@ -78,11 +84,15 @@ const harnessWith = Effect.fnUntraced(function* (
     log.push("connect");
     const next = remaining.shift() ?? "unreachable";
 
-    if (next !== "link") return yield* new Ports.ConnectFailed({ reason: next });
+    if (next !== "link" && next !== "unsubscribed") {
+      return yield* new Ports.ConnectFailed({ reason: next });
+    }
 
     const made = yield* makeLink(log);
     links.push(made);
     yield* Effect.addFinalizer(() => Effect.sync(() => log.push("closed")));
+
+    if (next === "unsubscribed") yield* made.unsubscribe;
 
     return made.link;
   });
@@ -197,6 +207,28 @@ describe("Supervisor", () => {
       expect(again).toEqual(first);
       expect(other).not.toEqual(first);
     }),
+  );
+
+  it.effect("events the server ends drop the link, and the next link waits for the backoff", () =>
+    Effect.gen(function* () {
+      const device = yield* harness(Array.from({ length: 20 }, () => "unsubscribed" as const));
+
+      for (let second = 0; second < 60; second++) yield* TestClock.adjust("1 second");
+
+      const count = (entry: string) => device.log.filter((each) => each === entry).length;
+      const gaps = device.attempts.slice(1).map((at, index) => at - (device.attempts[index] ?? 0));
+
+      expect(device.attempts.length).toBeGreaterThanOrEqual(3);
+      expect(count("events")).toBe(device.attempts.length);
+      expect(count("closed")).toBe(device.attempts.length);
+
+      for (const [index, gap] of gaps.entries()) {
+        const ceiling = Supervisor.ceiling(index + 1) + Duration.toMillis(Supervisor.closeGrace);
+
+        // The clock moves in whole seconds, so a wait ends within the second after it.
+        expect(gap).toBeLessThanOrEqual(ceiling + 1_000);
+      }
+    }).pipe(Random.withSeed("lena"), Effect.scoped),
   );
 
   it.effect("a close with 4403 connects once more, and a revoked round stops it", () =>

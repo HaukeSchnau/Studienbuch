@@ -30,7 +30,7 @@ export const Note = Sync.table("Note", {
 
 export const Choice = Sync.table("Choice", {
   class: "readable",
-  fields: { course: Schema.String },
+  fields: { course: Schema.String, comment: Schema.optional(Schema.String) },
   writableBy: { notebook: ["owner"] },
 });
 
@@ -127,9 +127,33 @@ export const chooseByNote = Sync.mutator("choice.byNote", {
   }),
 });
 
+/** Adds a comment to a choice: a readable command whose arguments can grow large. */
+export const comment = Sync.mutator("choice.comment", {
+  version: 1,
+  args: Schema.Struct({ notebook: Schema.String, course: Schema.String, comment: Schema.String }),
+  writes: [Choice],
+  spaces: (args) => [args.notebook],
+  run: Effect.fn("Notes.comment")(function* (args) {
+    yield* (yield* Tx.Service).patch(Choice, args.notebook, args.course, { comment: args.comment });
+  }),
+});
+
+/** Creates many notes at once: a sealed command that can write more rows than one may carry. */
+export const createMany = Sync.mutator("note.createMany", {
+  version: 1,
+  args: Schema.Struct({ notebook: Schema.String, ids: Schema.Array(Schema.String) }),
+  writes: [Note],
+  spaces: (args) => [args.notebook],
+  run: Effect.fn("Notes.createMany")(function* (args) {
+    const tx = yield* Tx.Service;
+
+    for (const id of args.ids) yield* tx.insert(Note, args.notebook, id, { title: "Neu" });
+  }),
+});
+
 export const schema = Sync.schema({
   version: 1,
   spaceKinds: [Notebook, School],
   tables: [Note, Choice, Course],
-  mutators: [create, rename, remove, choose, chooseByNote],
+  mutators: [create, rename, remove, choose, chooseByNote, comment, createMany],
 });

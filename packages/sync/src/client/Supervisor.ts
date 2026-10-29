@@ -91,6 +91,9 @@ export const replaceAfter = Duration.seconds(30);
 /** The longest wait between two attempts. */
 export const maxBackoff = Duration.minutes(5);
 
+/** How long an attempt whose events ended waits for the socket's close code before it ends. */
+export const closeGrace = Duration.seconds(1);
+
 /** The ceiling after the `failures`-th failure in a row: 1 s, doubling to `maxBackoff`. */
 export const ceiling = (failures: number) =>
   Math.min(Duration.toMillis(maxBackoff), 1_000 * 2 ** Math.max(0, failures - 1));
@@ -343,18 +346,25 @@ export const run = Effect.fnUntraced(function* (options: Options) {
     // The connection counts as working 30 s after the server first answered on it.
     let answeredAt = Option.none<number>();
 
+    /** Ends the attempt after its current round, with the close code if the socket closed. */
+    const end = (code: Option.Option<number>) =>
+      Effect.flatMap(Clock.currentTimeMillis, (now) => {
+        const stable = Option.exists(
+          answeredAt,
+          (at) => now - at >= Duration.toMillis(stableAfter),
+        );
+
+        return Deferred.succeed(
+          stop,
+          Option.match(code, {
+            onNone: () => End.Dropped({ code, stable }),
+            onSome: (closedCode) => closedWith(closedCode, stable),
+          }),
+        );
+      });
+
     yield* link.success.closed.pipe(
-      Effect.flatMap((code) =>
-        Effect.flatMap(Clock.currentTimeMillis, (now) =>
-          Deferred.succeed(
-            stop,
-            closedWith(
-              code,
-              Option.exists(answeredAt, (at) => now - at >= Duration.toMillis(stableAfter)),
-            ),
-          ),
-        ),
-      ),
+      Effect.flatMap((code) => end(Option.some(code))),
       Effect.forkScoped,
     );
 
@@ -362,9 +372,14 @@ export const run = Effect.fnUntraced(function* (options: Options) {
     // waits a random part of `pokeSpread`.
     const pokes = yield* Queue.sliding<void>(1);
 
+    // The server ends a second subscription on a connection at once, so an ended stream ends the
+    // attempt instead of subscribing again, and the next connection subscribes after the backoff.
+    // A closing socket ends the stream too, and its close code decides how the attempt ended.
     yield* link.success.events.pipe(
       Stream.runForEach(() => Queue.offer(pokes, undefined)),
       Effect.ignore,
+      Effect.andThen(Effect.timeoutOption(link.success.closed, closeGrace)),
+      Effect.flatMap(end),
       Effect.forkScoped,
     );
 

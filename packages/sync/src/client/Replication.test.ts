@@ -225,8 +225,8 @@ describe("SyncClient.replicate", () => {
         expect(ids(server.pushes[0]), driver).toEqual([1, 2]);
         expect(server.pulls[0]?.cursors, driver).toEqual([{ space: "igs", version: 1 }]);
         expect(yield* choices, driver).toEqual([
-          { space: "nb-lena", id: "de", course: "de" },
-          { space: "nb-lena", id: "ma", course: "ma" },
+          { space: "nb-lena", id: "de", course: "de", comment: null },
+          { space: "nb-lena", id: "ma", course: "ma", comment: null },
         ]);
         expect(yield* rows("base_row"), driver).toEqual([{ id: "ma" }]);
         expect(yield* rows("pending_row"), driver).toEqual([{ id: "de" }]);
@@ -337,7 +337,9 @@ describe("SyncClient.replicate", () => {
         });
 
         expect(yield* sync.replicate(server.remote), driver).toBe("retry");
-        expect(yield* choices, driver).toEqual([{ space: "nb-lena", id: "de", course: "de" }]);
+        expect(yield* choices, driver).toEqual([
+          { space: "nb-lena", id: "de", course: "de", comment: null },
+        ]);
         expect(
           (yield* Outbox.pending).map((command) => command.mutationId),
           driver,

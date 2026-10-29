@@ -14,6 +14,7 @@ import type * as Scope from "effect/Scope";
 import * as Queue from "effect/Queue";
 import * as Stream from "effect/Stream";
 import * as TestClock from "effect/testing/TestClock";
+import { Bounds } from "../protocol/Bounds.ts";
 import { Protocol } from "../protocol/Protocol.ts";
 import { Refusal } from "../protocol/Refusal.ts";
 import { Link } from "../simulation/Link.ts";
@@ -144,6 +145,45 @@ describe("SyncClient.mutate", () => {
         expect(yield* outcome(create("n4", "Mathe")), driver).toBe("Notes.Full");
         expect(yield* mutationIds, driver).toEqual([1, 2, 3]);
         expect(yield* overlay, driver).toEqual([{ id: "n1" }, { id: "n2" }, { id: "n3" }]);
+      }),
+    ),
+  );
+
+  it.effect("a command past a bound gets the server's refusal and never enters the outbox", () =>
+    onEachDevice((driver) =>
+      Effect.gen(function* () {
+        const sync = yield* SyncClient.Service;
+        yield* Devices.space("igs", "school", "reader");
+        yield* Devices.baseRow("igs", "Course", "ma", '{"name":"Mathe"}');
+        yield* sync.mutate(Notes.choose, { notebook: "nb-lena", school: "igs", course: "ma" });
+
+        const comment = (text: string) =>
+          sync.mutate(Notes.comment, { notebook: "nb-lena", course: "ma", comment: text });
+
+        const ids = Array.from({ length: Bounds.maxSealedWrites + 1 }, (_, index) => `n${index}`);
+        const invalidArgs = new Refusal.InvalidArgs({ mutator: "choice.comment", version: 1 });
+
+        expect(yield* Effect.flip(comment("x".repeat(Bounds.maxArgsBytes))), driver).toEqual(
+          invalidArgs,
+        );
+        expect(yield* Effect.flip(comment("\u0000")), driver).toEqual(invalidArgs);
+        expect(
+          yield* Effect.flip(sync.mutate(Notes.createMany, { notebook: "nb-lena", ids })),
+          driver,
+        ).toEqual(new Refusal.TooLarge({ space: "nb-lena", id: "n0" }));
+        expect(
+          yield* Effect.flip(
+            sync.mutate(Notes.createMany, { notebook: "nb-lena", ids: ["n\u0000"] }),
+          ),
+          driver,
+        ).toEqual(new Refusal.BadEnvelope({ space: "nb-lena", id: "?" }));
+        expect(yield* mutationIds, driver).toEqual([1]);
+        expect(yield* overlay, driver).toEqual([{ id: "ma" }]);
+
+        yield* comment("Leistungskurs");
+        yield* sync.mutate(Notes.createMany, { notebook: "nb-lena", ids: ids.slice(1) });
+
+        expect(yield* mutationIds, driver).toEqual([1, 2, 3]);
       }),
     ),
   );
