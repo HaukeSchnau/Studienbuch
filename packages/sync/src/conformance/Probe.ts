@@ -9,10 +9,21 @@ import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import { Sync } from "../definition/Sync.ts";
 import { CanonicalJson } from "../transaction/CanonicalJson.ts";
+import type * as SqlError from "effect/sql/SqlError";
 import { Tx } from "../transaction/Tx.ts";
-import type { Engines } from "./Engines.ts";
 
 export * as Probe from "./Probe.ts";
+
+/** A device or server database that runs the steps. */
+export interface Engine {
+  readonly side: "device" | "server";
+  /** Runs an effect in one transaction with this engine's `Tx`. */
+  readonly transaction: <A, E>(
+    effect: Effect.Effect<A, E, Tx.Service>,
+  ) => Effect.Effect<A, E | SqlError.SqlError>;
+  /** Runs an effect against this engine's database outside the `Tx`. */
+  readonly sql: <A, E>(effect: Effect.Effect<A, E, SqlClient.SqlClient>) => Effect.Effect<A, E>;
+}
 
 export const table = Sync.table("Probe", {
   class: "readable",
@@ -31,6 +42,9 @@ export const table = Sync.table("Probe", {
 });
 
 export type Row = Sync.Row<typeof table>;
+
+/** What every engine's transactions run for, so the `actor` step returns the same everywhere. */
+export const runner = { actor: "account-probe", writes: [table] } satisfies Tx.Runner;
 
 /** A row's JSON object, as the table's codec encodes it. */
 export const encode = Schema.encodeEffect(table.codec);
@@ -91,7 +105,7 @@ const describe = (error: Tx.Error): Outcome => ({
 const unsetOf = (step: { readonly unset?: ReadonlyArray<keyof Row> }) =>
   Object.fromEntries((step.unset ?? []).map((field) => [field, undefined]));
 
-const step = (engine: Engines.Engine, space: string, step: Step) => {
+const step = (engine: Engine, space: string, step: Step) => {
   const run = (effect: Effect.Effect<Ok, Tx.Error, Tx.Service>) =>
     engine.transaction(effect).pipe(
       Effect.map((ok): Outcome => ({ ok })),
@@ -153,7 +167,7 @@ const step = (engine: Engines.Engine, space: string, step: Step) => {
 const seed = Effect.fn("Probe.seed")(
   // A seed writes raw JSON past the codec, including values the encoder must refuse.
   // oxlint-disable-next-line anti-slop/no-unknown-parameters -- see above
-  function* (engine: Engines.Engine, space: string, id: string, json: unknown) {
+  function* (engine: Engine, space: string, id: string, json: unknown) {
     const text = yield* Effect.fromResult(CanonicalJson.encode(json));
     const sql = yield* SqlClient.SqlClient;
 
@@ -172,7 +186,7 @@ const seed = Effect.fn("Probe.seed")(
   (effect, engine) => engine.sql(effect),
 );
 
-const stored = (engine: Engines.Engine, space: string) =>
+const stored = (engine: Engine, space: string) =>
   engine
     .sql(
       Effect.flatMap(SqlClient.SqlClient, (sql) =>
@@ -198,7 +212,7 @@ const stored = (engine: Engines.Engine, space: string) =>
 
 /** Runs the steps on one engine, each in its own transaction, in a space no other run uses. */
 export const run = Effect.fn("Probe.run")(function* (
-  engine: Engines.Engine,
+  engine: Engine,
   space: string,
   steps: ReadonlyArray<Step>,
 ) {

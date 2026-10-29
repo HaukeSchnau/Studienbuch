@@ -19,25 +19,14 @@ import { SqliteTx } from "../client/SqliteTx.ts";
 import { PostgresTx } from "../server/PostgresTx.ts";
 import { Postgres18 } from "../testing/Postgres18.ts";
 import { Probe } from "./Probe.ts";
-import type { Tx } from "../transaction/Tx.ts";
 import ProbeMigrations from "./migrations/migrations.js";
 
 export * as Engines from "./Engines.ts";
 
 export type Name = "sqlite-wasm" | "sqlite-node" | "pglite" | "postgres-18";
 
-/** The account every engine's transactions run for. */
-export const actor = "account-probe";
-
-export interface Engine {
+export interface Engine extends Probe.Engine {
   readonly name: Name;
-  readonly side: "device" | "server";
-  /** Runs an effect in one transaction with this engine's `Tx`. */
-  readonly transaction: <A, E>(
-    effect: Effect.Effect<A, E, Tx.Service>,
-  ) => Effect.Effect<A, E | SqlError.SqlError>;
-  /** Runs an effect against this engine's database outside the `Tx`. */
-  readonly sql: <A, E>(effect: Effect.Effect<A, E, SqlClient.SqlClient>) => Effect.Effect<A, E>;
 }
 
 export class Service extends Context.Service<Service, ReadonlyArray<Engine>>()(
@@ -63,8 +52,7 @@ const engine = Effect.fnUntraced(function* (
           }),
         ),
   ).pipe(Effect.orDie);
-  const runner = { actor, writes: [Probe.table] };
-  const txLayer = side === "device" ? SqliteTx.layer(runner) : PostgresTx.layer(runner);
+  const txLayer = side === "device" ? SqliteTx.layer(Probe.runner) : PostgresTx.layer(Probe.runner);
 
   return {
     name,

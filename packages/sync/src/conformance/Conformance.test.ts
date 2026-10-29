@@ -4,7 +4,6 @@ import * as Arr from "effect/Array";
 import * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
-import * as Predicate from "effect/Predicate";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import { Sync } from "../definition/Sync.ts";
@@ -12,6 +11,7 @@ import { CanonicalJson } from "../transaction/CanonicalJson.ts";
 import { Tx } from "../transaction/Tx.ts";
 import { Cases } from "./Cases.ts";
 import { Engines } from "./Engines.ts";
+import { Fixture } from "./Fixture.ts";
 import { Probe } from "./Probe.ts";
 
 const pick = <const A>(values: ReadonlyArray<A>) =>
@@ -140,12 +140,6 @@ const seed: Arbitrary.Arbitrary<Probe.Step> = Arbitrary.map(
   ({ id, row, extra }) => ({ op: "seed", id, json: { ...row, extra } }),
 );
 
-/** The fixture keeps numbers JSON can't hold as `{ "$number": "NaN" }`. */
-// JSON.stringify hands its replacer every value untyped.
-// oxlint-disable-next-line anti-slop/no-unknown-parameters -- see above
-const fixtureNumbers = (_key: string, value: unknown) =>
-  Predicate.isNumber(value) && !Number.isFinite(value) ? { $number: String(value) } : value;
-
 const agree = (steps: ReadonlyArray<Probe.Step>) =>
   Effect.gen(function* () {
     const engines = yield* Engines.Service;
@@ -174,9 +168,7 @@ layer(Engines.layer)("Tx conformance", (it) => {
       // JSON Lines: a header, then one case per line, which a device can replay one at a time.
       const engines = (yield* Engines.Service).map((engine) => engine.name);
 
-      const lines = [{ table: Probe.table.name, engines }, ...cases].map((line) =>
-        JSON.stringify(line, fixtureNumbers),
-      );
+      const lines = [{ table: Probe.table.name, engines }, ...cases].map(Fixture.encode);
 
       yield* Effect.promise(() =>
         expect(`${lines.join("\n")}\n`).toMatchFileSnapshot("./cases.jsonl"),
