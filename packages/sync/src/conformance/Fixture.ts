@@ -26,11 +26,15 @@ export interface Line extends Probe.Trace {
 const nonFinite = (_key: string, value: unknown) =>
   Predicate.isNumber(value) && !Number.isFinite(value) ? { $number: String(value) } : value;
 
+// Only the numbers `nonFinite` writes, so a case can't smuggle another value in as a number.
+const nonFiniteNumbers = new Set(["NaN", "Infinity", "-Infinity"]);
+
 const revive = (_key: string, value: unknown) =>
   Predicate.isObject(value) &&
   Object.keys(value).length === 1 &&
   "$number" in value &&
-  Predicate.isString(value.$number)
+  Predicate.isString(value.$number) &&
+  nonFiniteNumbers.has(value.$number)
     ? Number(value.$number)
     : value;
 /* oxlint-enable anti-slop/no-unknown-parameters */
