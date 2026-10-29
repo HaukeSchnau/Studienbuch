@@ -8,6 +8,8 @@ export { Connection } from "./protocol/Connection.ts";
 
 export { Ids } from "./protocol/Ids.ts";
 
+export { Inspect } from "./protocol/Inspect.ts";
+
 export { Protocol } from "./protocol/Protocol.ts";
 
 export { Refusal } from "./protocol/Refusal.ts";
