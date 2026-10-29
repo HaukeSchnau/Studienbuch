@@ -28,6 +28,8 @@
   "ignore": [
     // Calder loads its own TypeScript project, with dependencies the workspace doesn't install.
     ".calder/**",
+    // The Alchemy stack is its own package, with dependencies the workspace doesn't install.
+    "deploy/**",
     // Vendored as upstream wrote it, unused helpers included.
     "tools/oxlint/anti-slop/**",
     // Each fixture exists to fail the lint, not to be imported.

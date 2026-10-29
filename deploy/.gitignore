@@ -1,0 +1,2 @@
+# Alchemy's local caches and, for a stack run without Calder, its local state.
+.alchemy/

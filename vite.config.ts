@@ -35,8 +35,13 @@ export default defineConfig({
     sortPackageJson: {},
   },
   test: {
-    // The lint fixtures include test files that exist to fail the lint, not to run.
-    exclude: [...defaultExclude, "tools/oxlint/fixtures/**"],
+    exclude: [
+      ...defaultExclude,
+      // The lint fixtures include test files that exist to fail the lint, not to run.
+      "tools/oxlint/fixtures/**",
+      // The Alchemy stack's tests run on its own install's vitest (`test-deploy` in .calder/ci.ts).
+      "deploy/**",
+    ],
   },
   lint: {
     ignorePatterns: [
