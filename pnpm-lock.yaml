@@ -548,6 +548,9 @@ importers:
       '@stu/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@stu/e2ee':
+        specifier: workspace:*
+        version: link:../../packages/e2ee
       '@stu/sync':
         specifier: workspace:*
         version: link:../../packages/sync

@@ -8,9 +8,15 @@ import { Fixture } from "../school/Fixture.ts";
 import { DemoAccounts } from "./DemoAccounts.ts";
 import { Seed } from "./Seed.ts";
 
+const demoKeySeed = { DEMO_KEY_SEED: "a demo key seed that is long enough for the tests" };
+
 /** Runs the seed as `prepare` does with these variables, such as beta's `DEMO_PASSWORD`. */
 const seedWith = (env: Record<string, string>) =>
-  Seed.run.pipe(Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnv({ env }))));
+  Seed.run.pipe(
+    Effect.provide(
+      ConfigProvider.layer(ConfigProvider.fromEnv({ env: { ...demoKeySeed, ...env } })),
+    ),
+  );
 
 const reviewPassword = { DEMO_PASSWORD: "a password long enough for review" };
 
@@ -104,9 +110,21 @@ describe.skipIf(Postgres18.socket === null)("Seed on PostgreSQL 18", () => {
     );
   });
 
+  layer(Layer.merge(Fixture.database, DemoAccounts.seeding))((it) => {
+    it.effect("refuses to seed without DEMO_KEY_SEED, which the personas' keys derive from", () =>
+      Effect.gen(function* () {
+        const refusal = yield* Effect.flip(
+          Seed.run.pipe(Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnv({ env: {} })))),
+        );
+
+        expect([refusal._tag, (yield* state).accounts]).toEqual(["ConfigError", []]);
+      }),
+    );
+  });
+
   it.effect("two seeds on fresh databases give the same ids", () =>
     Effect.gen(function* () {
-      const seeded = Effect.andThen(Seed.run, state).pipe(
+      const seeded = Effect.andThen(seedWith({}), state).pipe(
         Effect.provide(Layer.merge(Fixture.database, DemoAccounts.seeding)),
       );
 

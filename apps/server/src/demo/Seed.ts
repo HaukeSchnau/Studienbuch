@@ -14,6 +14,7 @@ import * as Option from "effect/Option";
 import { Access } from "../school/Access.ts";
 import { Schools } from "../school/Schools.ts";
 import { DemoAccounts } from "./DemoAccounts.ts";
+import { DemoKeys } from "./DemoKeys.ts";
 import { DemoSchool } from "./DemoSchool.ts";
 
 export * as Seed from "./Seed.ts";
@@ -24,6 +25,8 @@ export * as Seed from "./Seed.ts";
  */
 export const run = Effect.gen(function* () {
   const password = yield* DemoAccounts.password;
+  // The personas' root keys derive from it, so a seed without it would leave them locked out.
+  yield* DemoKeys.seed;
 
   return yield* Effect.gen(function* () {
     const school = yield* DemoSchool.data(yield* Schools.today(DemoSchool.timeZone));

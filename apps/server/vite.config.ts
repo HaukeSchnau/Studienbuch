@@ -35,7 +35,9 @@ throw error;`
   test: {
     // A throwaway PostgreSQL 18 for the tests that need one (`Postgres18` in @stu/sync/testing).
     globalSetup: ["@stu/sync/testing/postgres18.setup"],
-    // Many tests start a database-backed server, which takes seconds on a loaded host.
+    // Many tests start a database-backed server, which takes seconds on a loaded host, in a test or
+    // in the hook that builds its layer.
     testTimeout: 30_000,
+    hookTimeout: 30_000,
   },
 });
