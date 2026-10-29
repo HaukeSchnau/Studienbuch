@@ -18,17 +18,20 @@ import * as Schema from "effect/Schema";
 import * as NodeHttp from "node:http";
 import * as NodeURL from "node:url";
 import packageJson from "../package.json" with { type: "json" };
+import { Auth } from "./auth/Auth.ts";
 import { Deployment } from "./infra/config/Deployment.ts";
 import { SecretFiles } from "./infra/config/SecretFiles.ts";
 import { Database } from "./infra/database/Database.ts";
 import { Migrations } from "./infra/database/Migrations.ts";
 import { Schema as Tables } from "./infra/database/Schema.ts";
 import { Jobs } from "./infra/jobs/Jobs.ts";
+import { Mail } from "./infra/mail/Mail.ts";
 import { Telemetry } from "./infra/telemetry/Telemetry.ts";
 import { Health } from "./routes/Health.ts";
 import { DevServers } from "./routes/DevServers.ts";
 import { Rpc } from "./routes/Rpc.ts";
 import { WebBuilds } from "./routes/WebBuilds.ts";
+import { WellKnown } from "./routes/WellKnown.ts";
 
 // This file runs as `src/main.ts` in the workspace and as `server/main.mjs` in the release bundle,
 // which keeps `migrations/`, `web/` and `app/` beside `server/` (hosting.md, section 2).
@@ -57,7 +60,10 @@ const webBuilds = Layer.unwrap(
   ),
 );
 
-const http = HttpRouter.serve(Layer.mergeAll(Health.layer, Rpc.layer, webBuilds)).pipe(
+const http = HttpRouter.serve(
+  Layer.mergeAll(Health.layer, Rpc.layer, webBuilds, Auth.route, WellKnown.layer),
+).pipe(
+  Layer.provide(Auth.layer.pipe(Layer.provide(Mail.layer))),
   Layer.provide(
     NodeHttpServer.layerConfig(NodeHttp.createServer, {
       host: Config.String("HOST"),
