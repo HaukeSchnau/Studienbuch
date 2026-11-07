@@ -48,7 +48,9 @@ export default function setup(project: TestProject) {
   // on the default collation sorts differently from SQLite and fails here.
   const initdb = ["-D", data, "-U", "postgres", "--auth=trust", "--encoding=UTF8"];
   const icu = ["--locale-provider=icu", "--icu-locale=en", "--locale=C.UTF-8"];
-  const socket = ["-o", `-k ${directory} -c listen_addresses=`];
+  // Every statement goes to the log with its parameters, so the simulation's leak scan reads what
+  // the server sent even when it succeeded.
+  const socket = ["-o", `-k ${directory} -c listen_addresses= -c log_statement=all`];
 
   const started =
     run("initdb", [...initdb, ...icu]) &&
