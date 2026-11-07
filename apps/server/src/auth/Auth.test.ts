@@ -1017,16 +1017,12 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
             call("POST", "/send-verification-email", { from, body: { email } }),
           );
 
-          const round = Effect.gen(function* () {
-            yield* resend;
-            const sent = yield* codeFor(email);
-
-            return yield* Effect.forEach([1, 2, 3, 4, 5], () => confirm(wrongCode(sent)));
-          });
-
-          const guesses = yield* Effect.forEach([1, 2, 3, 4, 5, 6], () => round);
+          // Six resends in an hour mail five codes, and five wrong tries use up the last of them.
+          yield* Effect.forEach([1, 2, 3, 4, 5, 6], () => resend);
           const mailed = yield* mailCount(email);
-          const right = yield* confirm(yield* codeFor(email));
+          const sent = yield* codeFor(email);
+          const guesses = yield* Effect.forEach([1, 2, 3, 4, 5], () => confirm(wrongCode(sent)));
+          const right = yield* confirm(sent);
 
           yield* TestClock.adjust("1 hour");
           yield* resend;
@@ -1037,7 +1033,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
 
           assert.deepStrictEqual(
             {
-              guesses: new Set(guesses.flat().map(answer)),
+              guesses: new Set(guesses.map(answer)),
               mailed,
               right: answer(right),
               later: later.status,
@@ -1127,58 +1123,86 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
         }),
       );
 
-      // A sign-up or confirmation that did its work for a code with a use limit gives its count
-      // back, so a year group behind its school's one address spends the ceiling on failures only.
-      it.effect("lets a year group of 180 behind one address sign up and confirm", () =>
-        Effect.gen(function* () {
-          const sql = yield* SqlClient.SqlClient;
-          const from = "198.51.100.40";
+      // Work done for a code with a use limit gives its count back, so a year group behind its
+      // school's one address spends the ceiling on failures only. Each student here finds one count
+      // left and leaves it so, as any number of students would.
+      it.effect(
+        "lets a year group behind one address sign up and confirm past a nearly full ceiling",
+        () =>
+          Effect.gen(function* () {
+            const sql = yield* SqlClient.SqlClient;
+            const from = "198.51.100.40";
 
-          const { code } = yield* AccessCodes.mint({
-            school,
-            kind: "student",
-            maxUses: Option.some(180),
-          });
+            const { code } = yield* AccessCodes.mint({
+              school,
+              kind: "student",
+              maxUses: Option.some(180),
+            });
 
-          const students = Array.from(
-            { length: 180 },
-            (_, index) => `jahrgang8.${index}@example.org`,
-          );
+            // A sign-up without a code and a confirmation without a password fail before any hash.
+            const failing = {
+              "/sign-up/email": (email: string) => ({ email, password, name: "" }),
+              "/email-otp/verify-email": (email: string) => ({ email, otp: "123456" }),
+            };
 
-          const answers = yield* Effect.forEach(
-            students,
-            (email) =>
-              Effect.gen(function* () {
-                const { token: held } = yield* AccessCodes.reserve(code);
+            const fill = (path: keyof typeof failing) =>
+              Effect.forEach(
+                Array.from({ length: Limits.perClient - 1 }, (_, index) => index),
+                (index) =>
+                  call("POST", path, { from, body: failing[path](`ohne.${index}@example.org`) }),
+                { concurrency: "unbounded" },
+              );
 
-                const signedUp = yield* call("POST", "/sign-up/email", {
-                  from,
-                  body: { email, password, name: "" },
-                  reservation: held,
-                });
+            yield* fill("/sign-up/email");
+            yield* fill("/email-otp/verify-email");
 
-                const confirmed = yield* call("POST", "/email-otp/verify-email", {
-                  from,
-                  body: { email, otp: yield* codeFor(email), password },
-                  reservation: held,
-                });
+            // One after another, so each takes the last count and gives it back before the next.
+            const answers = yield* Effect.forEach(
+              Array.from({ length: 3 }, (_, index) => `jahrgang8.${index}@example.org`),
+              (email) =>
+                Effect.gen(function* () {
+                  const { token: held } = yield* AccessCodes.reserve(code);
 
-                return `${signedUp.status} ${confirmed.status}`;
-              }),
-            { concurrency: 10 },
-          );
+                  const signedUp = yield* call("POST", "/sign-up/email", {
+                    from,
+                    body: { email, password, name: "" },
+                    reservation: held,
+                  });
 
-          const [admitted] = yield* sql<{ readonly count: number }>`
+                  const confirmed = yield* call("POST", "/email-otp/verify-email", {
+                    from,
+                    body: { email, otp: yield* codeFor(email), password },
+                    reservation: held,
+                  });
+
+                  return `${signedUp.status} ${confirmed.status}`;
+                }),
+            );
+
+            // The last count is still free: one more failure takes it, and the next waits.
+            const lastCount = yield* Effect.forEach(
+              ["/sign-up/email", "/email-otp/verify-email"] as const,
+              (path) =>
+                Effect.gen(function* () {
+                  const body = failing[path]("ohne.mehr@example.org");
+                  const taken = yield* call("POST", path, { from, body });
+                  const waiting = yield* call("POST", path, { from, body });
+
+                  return `${taken.status} ${waiting.status}`;
+                }),
+            );
+
+            const [admitted] = yield* sql<{ readonly count: number }>`
             select count(*)::int as count from school_access a
             join auth_user u on u.id = a.account_id
             where u.email like 'jahrgang8.%' and a.school_id = ${school}
           `;
 
-          assert.deepStrictEqual(
-            { answers: new Set(answers), admitted: admitted?.count },
-            { answers: new Set(["200 200"]), admitted: 180 },
-          );
-        }),
+            assert.deepStrictEqual(
+              { answers: new Set(answers), lastCount, admitted: admitted?.count },
+              { answers: new Set(["200 200"]), lastCount: ["400 429", "400 429"], admitted: 3 },
+            );
+          }),
       );
 
       // A classmate's junk counts against the classmate's own client, so it can't block the class.
@@ -1231,7 +1255,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
           const { code } = yield* AccessCodes.mint({
             school,
             kind: "student",
-            maxUses: Option.some(4),
+            maxUses: Option.some(1),
           });
 
           yield* signUp(known);
@@ -1256,10 +1280,10 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
 
           const from = "198.51.100.52";
 
-          // Another client spends its own twelve give-backs on the known address.
+          // Another client spends its own three give-backs on the known address.
           const griefer = yield* signUps(
             "198.51.100.53",
-            Array.from({ length: 12 }, () => known),
+            Array.from({ length: 3 }, () => known),
           );
 
           // Failures fill all but one of this client's ceiling: sign-ups without a code.
@@ -1274,13 +1298,13 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
 
           const ownCode = yield* signUps(
             from,
-            Array.from({ length: 14 }, (_, index) => `fremd.${index}@example.org`),
+            Array.from({ length: 5 }, (_, index) => `fremd.${index}@example.org`),
           );
 
-          // Twelve give the last count back, the thirteenth keeps it, and the fourteenth waits.
+          // Three give the last count back, the fourth keeps it, and the fifth waits.
           assert.deepStrictEqual(
             { griefer: counted(griefer), ownCode: counted(ownCode) },
-            { griefer: [12, 0], ownCode: [13, 1] },
+            { griefer: [3, 0], ownCode: [4, 1] },
           );
         }),
       );
