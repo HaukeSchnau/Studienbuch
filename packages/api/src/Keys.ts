@@ -1,4 +1,4 @@
-import { AccountKey, Wrapper } from "@stu/e2ee";
+import { AccountKey, Wrapper } from "@stu/e2ee/schemas";
 import * as Rpc from "effect/rpc/Rpc";
 import * as RpcGroup from "effect/rpc/RpcGroup";
 import * as Schema from "effect/Schema";

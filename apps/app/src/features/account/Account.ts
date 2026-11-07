@@ -3,7 +3,7 @@ import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
-import type * as Redacted from "effect/Redacted";
+import * as Redacted from "effect/Redacted";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Schema from "effect/Schema";
 import * as Semaphore from "effect/Semaphore";
@@ -39,6 +39,7 @@ export const Reason = Schema.Literals([
   "passkey-none",
   "passkey-no-biometrics",
   "passkey-failed",
+  "not-fresh",
   "failed",
 ]);
 
@@ -71,6 +72,7 @@ export const sentence: Record<Reason, string> = {
   "passkey-no-biometrics":
     "Für einen Passkey braucht dein Gerät Face ID oder Touch ID. Richte es in den Einstellungen ein.",
   "passkey-failed": "Mit dem Passkey hat es nicht geklappt. Versuch es noch einmal.",
+  "not-fresh": "Melde dich kurz neu an, dann geht es weiter.",
   failed: "Das hat nicht geklappt. Versuch es noch einmal.",
 };
 
@@ -90,6 +92,7 @@ const reasons = new Map<string, Reason>(
     AUTHENTICATION_FAILED: "passkey-failed",
     FAILED_TO_VERIFY_REGISTRATION: "passkey-failed",
     CHALLENGE_NOT_FOUND: "passkey-failed",
+    SESSION_NOT_FRESH: "not-fresh",
   } satisfies Record<string, Reason>),
 );
 
@@ -219,15 +222,24 @@ export const confirmedFor = (pending: Option.Option<Confirmed>, email: string) =
 export const finish = Effect.fn("Account.finish")(function* (email: string, withPasskey: boolean) {
   const { current, guard } = yield* Confirmations;
 
-  yield* Effect.gen(function* () {
+  return yield* Effect.gen(function* () {
     const confirmed = yield* Effect.fromOption(
       confirmedFor(yield* SubscriptionRef.get(current), email),
     ).pipe(Effect.mapError(() => new Problem({ reason: "failed" })));
 
-    if (withPasskey) yield* addPasskey(confirmed.signedIn.token);
+    const added = withPasskey
+      ? Option.some(yield* addPasskey(confirmed.signedIn.token))
+      : Option.none<{ readonly credentialId: string; readonly prf: Passkeys.CreatedPrf }>();
 
     yield* keep(confirmed.signedIn);
     yield* SubscriptionRef.set(current, Option.none());
+
+    // A PRF output from the registration waits for the notebook's key, which starts in the tabs.
+    return Option.map(added, ({ credentialId, prf }): PasskeyUsed => ({
+      accountId: confirmed.signedIn.accountId,
+      credentialId,
+      prf: prf._tag === "Output" ? Option.some(Redacted.make(prf.output)) : Option.none(),
+    }));
   }).pipe(Semaphore.withPermit(guard));
 });
 
@@ -249,6 +261,13 @@ export const abandon = Effect.fn("Account.abandon")(function* (email: string) {
   }).pipe(Semaphore.withPermit(guard));
 });
 
+/** A passkey ceremony's result: the passkey, and its PRF output, which stays on the device. */
+export interface PasskeyUsed {
+  readonly accountId: string;
+  readonly credentialId: string;
+  readonly prf: Option.Option<Redacted.Redacted<Uint8Array>>;
+}
+
 /**
  * Signs in with any passkey of this server. The PRF output stays on the device for the notebook's
  * unlock (recovery.md, section 2).
@@ -263,16 +282,22 @@ export const signInWithPasskey = Effect.fn("Account.signInWithPasskey")(function
     .get(options)
     .pipe(Effect.catchTags({ "Passkeys.Failed": (error) => Effect.fail(passkeyProblem(error)) }));
 
-  yield* keep(
-    yield* api.passkeySignIn(challenge, asserted.credential).pipe(Effect.mapError(problem)),
-  );
+  const signedIn = yield* api
+    .passkeySignIn(challenge, asserted.credential)
+    .pipe(Effect.mapError(problem));
 
-  return asserted.prf;
+  yield* keep(signedIn);
+
+  return {
+    accountId: signedIn.accountId,
+    credentialId: asserted.credential.id,
+    prf: Option.map(asserted.prf, (bytes) => Redacted.make(bytes)),
+  } satisfies PasskeyUsed;
 });
 
 /**
- * Adds a passkey to the account of a session less than a day old, and says what it can do for the
- * notebook's unlock.
+ * Adds a passkey to the account of a session at most `Keys.freshSignInMinutes` old, and says what
+ * it can do for the notebook's unlock.
  */
 export const addPasskey = Effect.fn("Account.addPasskey")(function* (token: Redacted.Redacted) {
   const api = yield* AuthApi.Service;
@@ -288,7 +313,24 @@ export const addPasskey = Effect.fn("Account.addPasskey")(function* (token: Reda
 
   yield* api.addPasskey(token, challenge, created.credential).pipe(Effect.mapError(problem));
 
-  return created.prf;
+  return { credentialId: created.credential.id, prf: created.prf };
+});
+
+/**
+ * The PRF output of a passkey that registered without one: one more prompt, for that passkey only
+ * ("Bestätige den Passkey noch einmal", recovery.md section 4). Nothing goes to the server.
+ */
+export const passkeyOutput = Effect.fn("Account.passkeyOutput")(function* (credentialId: string) {
+  const api = yield* AuthApi.Service;
+  const passkeys = yield* Passkeys.Authenticator;
+
+  const { options } = yield* api.passkeySignInOptions.pipe(Effect.mapError(problem));
+
+  const asserted = yield* passkeys
+    .get({ ...options, allowCredentials: [{ id: credentialId, type: "public-key" }] })
+    .pipe(Effect.catchTags({ "Passkeys.Failed": (error) => Effect.fail(passkeyProblem(error)) }));
+
+  return Option.map(asserted.prf, (bytes) => Redacted.make(bytes));
 });
 
 /**
