@@ -13,6 +13,7 @@ import type { Enrollment } from "../notebook/Enrollment.ts";
 import { Notebook } from "../notebook/Notebook.ts";
 import { Studienbuch } from "./Studienbuch.ts";
 import v1 from "./schema.v1.json" with { type: "json" };
+import v2 from "./schema.v2.json" with { type: "json" };
 
 const Document = Schema.Struct({
   dialect: Schema.Literal("draft-2020-12"),
@@ -35,7 +36,7 @@ const Snapshot = Schema.Struct({
 
 const decodeSnapshot = Schema.decodeUnknownEffect(Snapshot);
 
-const committed = Effect.forEach([v1], (snapshot) => decodeSnapshot(snapshot));
+const committed = Effect.forEach([v1, v2], (snapshot) => decodeSnapshot(snapshot));
 
 const toJson = Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown));
 

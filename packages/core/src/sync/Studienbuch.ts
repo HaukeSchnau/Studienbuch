@@ -20,7 +20,7 @@ import { Term } from "../school/Term.ts";
 
 export * as Studienbuch from "./Studienbuch.ts";
 
-export const version = 1;
+export const version = 2;
 
 export const tables = [
   School.Row,
@@ -42,6 +42,7 @@ export const mutators = [
   Homework.setDone,
   Homework.delete,
   Enrollment.set,
+  NotebookProfile.set,
 ] as const;
 
 /** The tags of the refusals that `Mutators` can fail with. */
