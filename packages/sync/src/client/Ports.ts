@@ -16,9 +16,15 @@ export * as Ports from "./Ports.ts";
 
 /**
  * The secrets a device keeps outside its database. `pending-key` is a first device's new root key
- * while the server hasn't confirmed it; the engine never reads it.
+ * while the server hasn't confirmed it, and `unseen-cards` the ids of Notfallkarten whose code
+ * never showed. The engine reads neither.
  */
-export const SecretName = Schema.Literals(["root-key", "device-seed", "pending-key"]);
+export const SecretName = Schema.Literals([
+  "root-key",
+  "device-seed",
+  "pending-key",
+  "unseen-cards",
+]);
 
 export type SecretName = typeof SecretName.Type;
 

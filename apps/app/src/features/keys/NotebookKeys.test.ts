@@ -41,6 +41,8 @@ const fakeServer = Effect.gen(function* () {
   const hideRecords = yield* Ref.make(false);
   // The next `init` or `addWrapper` takes effect, and its answer is lost on the way back.
   const loseAnswer = yield* Ref.make(false);
+  // The key the account's notebook was sealed with, which the server knows by its key boxes.
+  const sealedWith = yield* Ref.make(Option.none<AccountKey.Record>());
 
   const answer = <A, E>(effect: Effect.Effect<A, E>) =>
     Effect.flatMap(effect, (value) =>
@@ -68,12 +70,19 @@ const fakeServer = Effect.gen(function* () {
     ),
     init: (record, wrapper) =>
       Effect.flatMap(
-        Ref.get(stored),
-        ({ records, wrappers }): ReturnType<KeyServer.Service["Service"]["init"]> => {
+        Effect.all([Ref.get(stored), Ref.get(sealedWith)]),
+        ([{ records, wrappers }, sealer]): ReturnType<KeyServer.Service["Service"]["init"]> => {
           const [zero] = records;
 
           if (zero !== undefined && !samePublicKeys(zero, record)) {
             return Effect.fail(new Keys.ChainExists());
+          }
+
+          if (
+            zero === undefined &&
+            Option.exists(sealer, (sealed) => !samePublicKeys(sealed, record))
+          ) {
+            return Effect.fail(new Keys.KeysLost());
           }
 
           return answer(
@@ -108,7 +117,7 @@ const fakeServer = Effect.gen(function* () {
       }),
   });
 
-  return { server, stored, seals, hideRecords, loseAnswer };
+  return { server, stored, seals, hideRecords, loseAnswer, sealedWith };
 });
 
 type FakeServer = Effect.Success<typeof fakeServer>;
@@ -357,9 +366,9 @@ describe("NotebookKeys", () => {
         const server = yield* fakeServer;
         const phone = yield* device(server);
         yield* phone.run(NotebookKeys.status);
-        const alone = yield* phone.run(NotebookKeys.summary());
+        const alone = yield* phone.run(NotebookKeys.summary);
         yield* phone.run(createCard);
-        const withCard = yield* phone.run(NotebookKeys.summary());
+        const withCard = yield* phone.run(NotebookKeys.summary);
         const { records, wrappers } = yield* Ref.get(server.stored);
         const [own, card] = wrappers;
 
@@ -376,7 +385,7 @@ describe("NotebookKeys", () => {
         const method = { id: "planted", kind: "code", place: "card", credentialId: "" } as const;
         const planted = new Keys.Sealed(yield* Wrapper.create(method, code, stranger));
         yield* Ref.set(server.stored, { records, wrappers: [own, planted] });
-        const restored = yield* phone.run(NotebookKeys.summary());
+        const restored = yield* phone.run(NotebookKeys.summary);
 
         assert.deepStrictEqual(
           [alone, withCard, restored].map(({ secured, methods }) => ({
@@ -488,7 +497,7 @@ describe("NotebookKeys", () => {
         {
           stale,
           renewed: latest !== undefined && AccountKey.matches(latest, record1),
-          secured: (yield* phone.run(NotebookKeys.summary())).secured,
+          secured: (yield* phone.run(NotebookKeys.summary)).secured,
         },
         { stale: "stale", renewed: true, secured: true },
       );
@@ -536,8 +545,8 @@ describe("NotebookKeys", () => {
         const card = yield* phone.run(NotebookKeys.newRecoveryCode);
         yield* Ref.set(server.loseAnswer, true);
         const lost = yield* reasonOf(phone.run(NotebookKeys.sendRecoveryCode(card)));
-        const unseen = new Set([card.wrapper.statement.id]);
-        const beforeShown = yield* phone.run(NotebookKeys.summary(unseen));
+        // As after a restart, which forgets the card: its id stays on the device.
+        const beforeShown = yield* phone.run(NotebookKeys.summary);
         const shown = Redacted.value(yield* phone.run(NotebookKeys.sendRecoveryCode(card)));
         yield* laptop.run(NotebookKeys.unlockWithCode(shown));
 
@@ -557,6 +566,41 @@ describe("NotebookKeys", () => {
             securedBeforeShown: false,
             codes: 1,
             opened: Option.getOrUndefined(yield* phone.rootKey),
+          },
+        );
+      }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
+  );
+
+  it.effect(
+    "a new device makes no second key when the server lost the records of a sealed notebook",
+    () =>
+      Effect.gen(function* () {
+        const server = yield* fakeServer;
+        const phone = yield* device(server);
+        const laptop = yield* device(server);
+        yield* phone.run(NotebookKeys.status);
+        const [record] = (yield* Ref.get(server.stored)).records;
+        yield* Ref.set(server.sealedWith, Option.fromNullishOr(record));
+        yield* Ref.set(server.stored, { records: [], wrappers: [] });
+        const laptopStatus = yield* laptop.run(NotebookKeys.status);
+        const recordsAfterLaptop = (yield* Ref.get(server.stored)).records.length;
+        const phoneMatches = yield* phone.run(NotebookKeys.reconcile);
+        const [back] = (yield* Ref.get(server.stored)).records;
+
+        assert.deepStrictEqual(
+          {
+            laptopStatus: laptopStatus._tag,
+            recordsAfterLaptop,
+            laptopKey: Option.isNone(yield* laptop.rootKey),
+            phoneMatches,
+            back: back !== undefined && record !== undefined && samePublicKeys(back, record),
+          },
+          {
+            laptopStatus: "Locked",
+            recordsAfterLaptop: 0,
+            laptopKey: true,
+            phoneMatches: true,
+            back: true,
           },
         );
       }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),

@@ -5,7 +5,9 @@
  * like a first device does (ADR 0027).
  */
 import { Keys } from "@stu/api/Keys";
-import { AccountKey, CryptoSuite, Wrapper } from "@stu/e2ee";
+import { Notebook } from "@stu/core";
+import { AccountKey, CryptoSuite, SpaceKey, Wrapper } from "@stu/e2ee";
+import { Protocol } from "@stu/sync";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
@@ -169,6 +171,46 @@ const insertWrapper = Effect.fn("KeyStore.insertWrapper")(function* (
   `;
 });
 
+const boxJson = Schema.toCodecJson(SpaceKey.KeyBox);
+
+/**
+ * Whether `record` may start the account's chain: none of the key boxes the account wrote into a
+ * sealed notebook it owns is signed by another key. Only owned notebooks count, so a notebook the
+ * account merely reads can't block it, and a key epoch without any box to compare with doesn't.
+ */
+const sealedBy = Effect.fn("KeyStore.sealedBy")(function* (
+  account: string,
+  record: AccountKey.Record,
+) {
+  const sql = yield* SqlClient.SqlClient;
+
+  const rows = yield* sql<{ readonly box: typeof boxJson.Encoded }>`
+    select r.data as box
+    from space_member m
+    join space s on s.id = m.space_id
+    join sync_row r on r.space_id = s.id and r.tbl = ${Protocol.keyBoxTable}
+      and r.data is not null
+    where m.account_id = ${account} and m.role = 'owner' and s.kind = ${Notebook.Space.name}
+      and s.key_epoch is not null
+  `;
+
+  const boxes: Array<SpaceKey.KeyBox> = [];
+
+  for (const { box } of rows) {
+    const decoded = yield* Effect.option(Schema.decodeEffect(boxJson)(box));
+
+    if (Option.isSome(decoded) && decoded.value.author === account) boxes.push(decoded.value);
+  }
+
+  if (boxes.length === 0) return true;
+
+  for (const box of boxes) {
+    if (yield* SpaceKey.verifyBox(box, record)) return true;
+  }
+
+  return false;
+});
+
 /** A first device's wrapper, and the session that sends it. */
 export interface First {
   readonly wrapper: Keys.Sealed;
@@ -200,6 +242,13 @@ export const publishFirst = Effect.fn("KeyStore.publishFirst")(function* (
       return yield* new Keys.Invalid({ reason: "seal" });
     }
   }
+
+  const [held] = yield* sql`
+    select 1 from account_key where account_id = ${account} and generation = 0
+  `;
+
+  // Checked before anything is written, because the demo seed calls this outside a transaction.
+  if (held === undefined && !(yield* sealedBy(account, record))) return yield* new Keys.KeysLost();
 
   // A concurrent first publish of the same account waits here for the other to commit.
   yield* sql`

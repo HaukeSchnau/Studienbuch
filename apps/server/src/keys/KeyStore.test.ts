@@ -1,6 +1,6 @@
 import { describe, expect, layer } from "@effect/vitest";
 import { Keys } from "@stu/api/Keys";
-import { AccountKey, Wrapper } from "@stu/e2ee";
+import { AccountKey, SpaceKey, Wrapper } from "@stu/e2ee";
 import { TestCrypto } from "@stu/e2ee/testing";
 import { Postgres18 } from "@stu/sync/testing";
 import * as Effect from "effect/Effect";
@@ -38,6 +38,35 @@ const device = (id: string, fill: number, keys: AccountKey.Keys) =>
 const recordJson = Schema.encodeEffect(
   Schema.fromJsonString(Schema.toCodecJson(AccountKey.Record)),
 );
+
+const boxJson = Schema.encodeEffect(Schema.fromJsonString(Schema.toCodecJson(SpaceKey.KeyBox)));
+
+/**
+ * A notebook of `account`'s with key epoch 0, as the sync server stores it once sealed: by
+ * default the account owns it and its first sealed write left a key box signed by `keys`.
+ */
+const sealedNotebook = (
+  account: string,
+  keys: AccountKey.Keys,
+  record: AccountKey.Record,
+  { role = "owner", box = true }: { readonly role?: string; readonly box?: boolean } = {},
+) =>
+  Effect.gen(function* () {
+    const sql = yield* SqlClient.SqlClient;
+    const space = `nb-${account}-${role}`;
+    const key = yield* SpaceKey.generate;
+    const sealed = yield* SpaceKey.box(space, [{ epoch: 0, key }], record, keys);
+
+    yield* sql`insert into space (id, kind, version, key_epoch) values (${space}, 'notebook', 1, 0)`;
+    yield* sql`insert into space_member (space_id, account_id, role) values (${space}, ${account}, ${role})`;
+
+    if (!box) return;
+
+    yield* sql`
+      insert into sync_row (space_id, tbl, id, version, data)
+      values (${space}, '_key', ${`${account}:0`}, 1, ${yield* boxJson(sealed)}::jsonb)
+    `;
+  });
 
 const card = (account: string, keys: AccountKey.Keys) =>
   Effect.map(
@@ -323,6 +352,50 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
             renewed: renewed._tag,
             newest,
           }).toEqual({ short: "seal", renewed: "Keys.ChainExists", newest: Option.some(1) });
+        }),
+    );
+    it.effect(
+      "starts no second chain for an account whose own notebook was sealed by another key, without a transaction too",
+      () =>
+        Effect.gen(function* () {
+          const sql = yield* SqlClient.SqlClient;
+
+          const records = (account: string) =>
+            Effect.map(KeyStore.state(account), (state) => state.records.length);
+
+          // The server lost Lea's key records, or never had them: her notebook still has its box.
+          yield* Fixture.account("lea");
+          const lea = yield* firstDevice("lea", 90);
+          const other = yield* firstDevice("lea", 91);
+          yield* sealedNotebook("lea", lea.keys, lea.record);
+          // Like the demo seed, outside any transaction.
+
+          const second = yield* Effect.flip(
+            KeyStore.publishFirst("lea", other.record, Option.none()),
+          );
+
+          const afterSecond = yield* records("lea");
+          yield* sql.withTransaction(KeyStore.publishFirst("lea", lea.record, Option.none()));
+          const [back] = (yield* KeyStore.state("lea")).records;
+
+          // A key epoch without a box to compare with, and a notebook Ole only reads, block nothing.
+          yield* Fixture.account("uta");
+          const uta = yield* firstDevice("uta", 92);
+          yield* sealedNotebook("uta", uta.keys, uta.record, { box: false });
+          yield* KeyStore.publishFirst("uta", uta.record, Option.none());
+          yield* Fixture.account("ole");
+          const ole = yield* firstDevice("ole", 93);
+          const owner = yield* firstDevice("ole", 94);
+          yield* sealedNotebook("ole", owner.keys, owner.record, { role: "reader" });
+          yield* KeyStore.publishFirst("ole", ole.record, Option.none());
+
+          expect({
+            second: second._tag,
+            afterSecond,
+            back: back !== undefined && AccountKey.matches(lea.keys, back),
+            uta: yield* records("uta"),
+            ole: yield* records("ole"),
+          }).toEqual({ second: "Keys.KeysLost", afterSecond: 0, back: true, uta: 1, ole: 1 });
         }),
     );
   });

@@ -22,7 +22,10 @@ export class Service extends Context.Service<
     readonly init: (
       record: AccountKey.Record,
       wrapper: Keys.Sealed,
-    ) => Effect.Effect<void, Unreachable | Keys.SignedOut | Keys.ChainExists | Keys.Invalid>;
+    ) => Effect.Effect<
+      void,
+      Unreachable | Keys.SignedOut | Keys.ChainExists | Keys.KeysLost | Keys.Invalid
+    >;
     readonly addWrapper: (
       wrapper: Keys.Sealed,
     ) => Effect.Effect<
