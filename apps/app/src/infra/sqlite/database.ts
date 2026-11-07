@@ -14,6 +14,8 @@ import { ExpoSqliteClient } from "./ExpoSqliteClient.ts";
 
 const file = (location: Databases.Location) => `${location.name}.db`;
 
+export const keepsDatabases: Databases.Keeps = Effect.succeed(true);
+
 export const layer: Databases.Open = (location) =>
   Layer.unwrap(
     Effect.gen(function* () {

@@ -10,6 +10,8 @@ import type { ReactNode } from "react";
 import { Linking, StyleSheet, View } from "react-native";
 import { SafeAreaInsetsContext, useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { publicComputer } from "../../infra/device/publicComputer.ts";
+import { StoragePersistence } from "../../infra/offline/StoragePersistence.ts";
 import { AccountState } from "../account/AccountState.ts";
 import { KeysState } from "./KeysState.ts";
 
@@ -54,6 +56,10 @@ function Notice({
 
   useAtomMount(KeysState.republish(accountId));
 
+  // A public computer chose memory. A private window had no choice: it offers no OPFS.
+  const storage = AsyncResult.value(useAtomValue(StoragePersistence.state(publicComputer)));
+  const privateWindow = !publicComputer && Option.contains(storage, "memory only");
+
   const notice =
     access === "ended"
       ? {
@@ -85,7 +91,13 @@ function Notice({
                   action: "Erneut senden",
                   go: republish,
                 }
-              : undefined;
+              : privateWindow
+                ? {
+                    text: "Privates Fenster: Was du hier einträgst, ist weg, sobald du das Fenster schließt.",
+                    action: undefined,
+                    go: undefined,
+                  }
+                : undefined;
 
   // One tree either way, so the tabs keep their state when the notice comes or goes.
   return (
@@ -101,7 +113,7 @@ function Notice({
           <Text variant="subhead" style={styles.grow}>
             {notice.text}
           </Text>
-          <Link label={notice.action} onPress={notice.go} />
+          {notice.action === undefined ? null : <Link label={notice.action} onPress={notice.go} />}
         </View>
       )}
       {/* The notice takes the top inset, so the screens below start right under it. */}

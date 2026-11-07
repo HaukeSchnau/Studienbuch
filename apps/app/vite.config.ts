@@ -36,7 +36,7 @@ const metroForTheWeb: Plugin = {
           'new URL("./opfs.worker", window.location.href)',
           'new URL("./opfs.worker.ts", import.meta.url)',
         )
-        .replace("name: workerName(location),", 'type: "module", name: workerName(location),'),
+        .replace("name: workerName(", 'type: "module", name: workerName('),
       map: null,
     };
   },

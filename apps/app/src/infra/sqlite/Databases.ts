@@ -22,6 +22,12 @@ export interface Location {
   readonly memory: boolean;
 }
 
+/**
+ * Whether this device keeps databases across restarts: a phone always, a browser when it offers
+ * OPFS. Safari's private windows don't, and their databases live in memory.
+ */
+export type Keeps = Effect.Effect<boolean>;
+
 /** Opens a database as `SqlClient` for the layer's lifetime. */
 export type Open = (
   location: Location,

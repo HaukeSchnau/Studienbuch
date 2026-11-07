@@ -221,7 +221,7 @@ function storageRow(
       detail: Option.match(value.cipher, {
         onNone: () =>
           joined(
-            `SQLite ${value.sqlite}, eigener Ordner im Browser`,
+            `SQLite ${value.sqlite}, ${Option.contains(persistence, "memory only") ? "im Speicher des Tabs" : "eigener Ordner im Browser"}`,
             Option.getOrUndefined(Option.map(persistence, (state) => persistenceText[state])),
           ),
         onSome: (cipher) =>
