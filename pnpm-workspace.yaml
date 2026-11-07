@@ -112,12 +112,18 @@ catalog:
   # AES-256-GCM for NobleCrypto, the synchronous suite in @stu/e2ee/testing. The version Better
   # Auth and @noble/post-quantum already install.
   "@noble/ciphers": 2.4.0
+  # Motion on iOS, Android and the web (stack.md), at the versions Expo 58.0.20 names in
+  # `bundledNativeModules.json`. babel-preset-expo adds the worklets plugin once it resolves.
+  react-native-reanimated: 4.7.1
+  react-native-worklets: 0.13.0
 
 overrides:
   vite@*: "catalog:"
   vitest@*: "catalog:"
   # @effect/sql-pglite would otherwise bring its own older PGlite.
   "@electric-sql/pglite@*": "catalog:"
+  # A native module links once, so Expo's own optional peer gets the app's version too.
+  react-native-worklets@*: "catalog:"
 
 peerDependencyRules:
   # The alias reports Vite+'s version, not the Vite 8 inside it.

@@ -4,14 +4,23 @@
   "license": "BUSL-1.1",
   "type": "module",
   "exports": {
+    "./Arrive": {
+      "react-native": "./src/Arrive.tsx",
+      "default": "./src/Arrive.web.tsx"
+    },
+    "./AuthBackdrop": "./src/AuthBackdrop.tsx",
+    "./AuthCard": "./src/AuthCard.tsx",
+    "./AuthHeading": "./src/AuthHeading.tsx",
     "./Button": "./src/Button.tsx",
     "./Card": "./src/Card.tsx",
+    "./Checkbox": "./src/Checkbox.tsx",
     "./Field": "./src/Field.tsx",
     "./Hero": "./src/Hero.tsx",
     "./Icon": "./src/Icon.tsx",
     "./Link": "./src/Link.tsx",
     "./Pill": "./src/Pill.tsx",
     "./RevisionCard": "./src/RevisionCard.tsx",
+    "./SuccessTick": "./src/SuccessTick.tsx",
     "./Text": "./src/Text.tsx",
     "./Theme": "./src/Theme.ts",
     "./Tokens": "./src/Tokens.ts",
@@ -31,13 +40,16 @@
     "@types/react": "catalog:",
     "react": "catalog:",
     "react-native": "catalog:",
+    "react-native-reanimated": "catalog:",
     "react-native-svg": "catalog:",
+    "react-native-worklets": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
   },
   "peerDependencies": {
     "react": "*",
     "react-native": "*",
+    "react-native-reanimated": "*",
     "react-native-svg": "*"
   }
 }
