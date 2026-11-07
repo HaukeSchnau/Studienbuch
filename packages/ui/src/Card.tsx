@@ -4,6 +4,13 @@ import { Text } from "./Text.tsx";
 import { Theme } from "./Theme.ts";
 import { Tokens } from "./Tokens.ts";
 
+declare module "react-native" {
+  // react-native-web renders a header with a level as that heading, `<h2>`, and otherwise as `<h1>`.
+  interface AccessibilityProps {
+    readonly "aria-level"?: number | undefined;
+  }
+}
+
 export interface CardProps extends ViewProps {
   /** A heading in the accent green, such as "Fehlzeiten" or "Mit E-Mail und Passwort". */
   readonly title?: string | undefined;
@@ -29,6 +36,7 @@ export function Card({ title, padded = false, style, children, ...props }: CardP
         <Text
           variant="title2"
           accessibilityRole="header"
+          aria-level={2}
           style={[padded ? null : styles.title, { color: color.accent }]}
         >
           {title}

@@ -1,4 +1,4 @@
-import { useState, type ComponentRef, type Ref } from "react";
+import { useId, useState, type ComponentRef, type Ref } from "react";
 import {
   StyleSheet,
   TextInput,
@@ -11,24 +11,35 @@ import { Text } from "./Text.tsx";
 import { Theme } from "./Theme.ts";
 import { Tokens } from "./Tokens.ts";
 
+declare module "react-native" {
+  // react-native-web writes them to the DOM. Native has no invalid state, so the hint carries it.
+  interface AccessibilityProps {
+    readonly "aria-invalid"?: boolean | undefined;
+    readonly "aria-describedby"?: string | undefined;
+  }
+}
+
 export interface FieldProps extends Omit<TextInputProps, "style"> {
   readonly label: string;
   /** A line under the field, such as "Mindestens 10 Zeichen". */
   readonly hint?: string | undefined;
   /** "486/500" at the hint's right: how much of a limit the text uses. */
   readonly counter?: { readonly count: number; readonly limit: number } | undefined;
-  /** Outlines the field and turns the hint red, for a value that can't be saved. */
+  /** Outlines the field and turns the hint red, for a value that can't be saved. The hint says why. */
   readonly invalid?: boolean;
   readonly ref?: Ref<ComponentRef<typeof TextInput>>;
 }
 
 /**
  * A labelled text field, filled from the tokens. Editing, autofill and keyboards stay native, and
- * every TextInput prop passes through. A green outline shows where the keyboard types.
+ * every TextInput prop passes through. A green outline shows where the keyboard types; a read-only
+ * field has no fill.
  */
 export function Field({ label, hint, counter, invalid = false, ref, ...input }: FieldProps) {
   const { color } = Theme.useTheme();
   const focus = useFocused(input);
+  const hintId = useId();
+  const readOnly = input.readOnly === true || input.editable === false;
   const edge = invalid ? color.danger : focus.focused ? color.accent : color.hairline;
   const hintColor = invalid ? color.danger : color.inkSoft;
 
@@ -41,6 +52,8 @@ export function Field({ label, hint, counter, invalid = false, ref, ...input }: 
         ref={ref}
         accessibilityLabel={label}
         accessibilityHint={hint}
+        aria-invalid={invalid}
+        aria-describedby={hint === undefined ? undefined : hintId}
         placeholderTextColor={color.inkSoft}
         selectionColor={color.accent}
         {...input}
@@ -49,13 +62,23 @@ export function Field({ label, hint, counter, invalid = false, ref, ...input }: 
         style={[
           styles.input,
           input.multiline === true ? styles.multiline : null,
-          invalid || focus.focused ? styles.emphasised : null,
-          { backgroundColor: color.canvas, borderColor: edge, color: color.ink },
+          invalid && focus.focused
+            ? styles.invalidFocused
+            : invalid || focus.focused
+              ? styles.emphasised
+              : null,
+          {
+            backgroundColor: readOnly ? "transparent" : color.canvas,
+            borderColor: edge,
+            color: readOnly ? color.inkSoft : color.ink,
+          },
         ]}
       />
       {hint === undefined && counter === undefined ? null : (
         <View style={styles.hint}>
           <Text
+            id={hintId}
+            aria-live="polite"
             variant="footnote"
             weight={invalid ? "bold" : "medium"}
             style={[styles.hintText, { color: hintColor }]}
@@ -93,7 +116,7 @@ export function useFocused({ onFocus, onBlur }: Pick<TextInputProps, "onFocus" |
   };
 }
 
-// A two-point outline would shift the text, so the padding gives back the extra point.
+// A thicker outline would shift the text, so the padding gives back the extra points.
 const padding = Tokens.space.lg;
 
 const styles = StyleSheet.create({
@@ -116,6 +139,12 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     paddingHorizontal: padding - 1,
     paddingVertical: Tokens.space.md - 1,
+  },
+  // An invalid field is already outlined in red, so the focus thickens the outline.
+  invalidFocused: {
+    borderWidth: 3,
+    paddingHorizontal: padding - 2,
+    paddingVertical: Tokens.space.md - 2,
   },
   hint: { flexDirection: "row", justifyContent: "space-between", gap: Tokens.space.md },
   hintText: { flexShrink: 1 },
