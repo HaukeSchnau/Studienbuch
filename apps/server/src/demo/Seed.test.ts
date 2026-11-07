@@ -1,9 +1,10 @@
 import { describe, expect, it, layer } from "@effect/vitest";
-import { AccountKey, CryptoSuite } from "@stu/e2ee";
+import { AccountKey, CryptoSuite, SealedRow, SpaceKey } from "@stu/e2ee";
 import { Postgres18 } from "@stu/sync/testing";
 import * as ConfigProvider from "effect/ConfigProvider";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as Redacted from "effect/Redacted";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import { Deployment } from "../infra/config/Deployment.ts";
@@ -109,6 +110,51 @@ const derived = (account: string) =>
     return { signingKey: keys.signingKey, sealingKey: keys.sealingKey };
   }).pipe(Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnv({ env: demoKeySeed }))));
 
+const decodeBox = Schema.decodeUnknownEffect(Schema.toCodecJson(SpaceKey.KeyBox));
+
+const decodeEnvelope = Schema.decodeUnknownEffect(Schema.toCodecJson(SealedRow.Envelope));
+
+/**
+ * The persona's notebook as a device holding its root key opens it: the box's key, then every
+ * sealed row, as `<table> <JSON>`.
+ */
+const opened = (account: string, notebook: string) =>
+  Effect.gen(function* () {
+    const sql = yield* SqlClient.SqlClient;
+    const { keys, record } = yield* DemoKeys.chain(account);
+
+    const [box] = yield* sql<{ readonly data: unknown }>`
+      select data from sync_row where space_id = ${notebook} and tbl = '_key'
+    `;
+
+    const [epoch] = yield* SpaceKey.openBox(yield* decodeBox(box?.data), notebook, keys, record);
+
+    const sealed = yield* sql<{
+      readonly id: string;
+      readonly envelope: unknown;
+      readonly ct: Uint8Array;
+    }>`
+      select id, envelope, ct from sync_row
+      where space_id = ${notebook} and tbl = '' and ct is not null order by id
+    `;
+
+    return yield* Effect.forEach(sealed, (row) =>
+      Effect.gen(function* () {
+        const envelope = yield* decodeEnvelope(row.envelope);
+        const key = epoch?.key ?? Redacted.make(new Uint8Array(32));
+
+        const { table, json } = yield* SealedRow.open(
+          { space: notebook, id: row.id },
+          envelope,
+          row.ct,
+          key,
+        );
+
+        return `${table} ${json}`;
+      }),
+    );
+  }).pipe(Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnv({ env: demoKeySeed }))));
+
 /** What the seed needs from the server it runs in. */
 const seeding = Layer.mergeAll(
   Fixture.database,
@@ -127,6 +173,33 @@ describe.skipIf(Postgres18.socket === null)("Seed on PostgreSQL 18", () => {
 
         expect(yield* state).toEqual(first);
       }),
+    );
+
+    it.effect(
+      "seals each notebook's profile and homework so the persona's own key opens them",
+      () =>
+        Effect.gen(function* () {
+          yield* seedWith({});
+          const lena = yield* opened("demo-lena", "demo-lena");
+          const tom = yield* opened("demo-tom", "demo-tom");
+
+          expect({
+            lena: lena.filter((row) => row.startsWith("NotebookProfile")),
+            tom: tom.filter((row) => row.startsWith("NotebookProfile")),
+            // The TestClock starts on January 1, 1970.
+            lenasMath: lena.filter((row) => row.includes("ma-1")),
+            homework: [lena, tom].map(
+              (rows) => rows.filter((row) => row.startsWith("Homework")).length,
+            ),
+          }).toEqual({
+            lena: ['NotebookProfile {"displayName":"Lena"}'],
+            tom: ['NotebookProfile {"displayName":"Tom"}'],
+            lenasMath: [
+              'Homework {"courseId":"ma-1","dueOn":"1970-01-02","title":"Aufgaben S. 112, Nr. 3 bis 7"}',
+            ],
+            homework: [6, 6],
+          });
+        }),
     );
 
     it.effect("publishes each persona's generation 0, derived from its own root key", () =>
