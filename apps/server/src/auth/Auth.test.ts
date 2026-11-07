@@ -31,6 +31,7 @@ import { Database } from "../infra/database/Database.ts";
 import { Migrations } from "../infra/database/Migrations.ts";
 import { Mail } from "../infra/mail/Mail.ts";
 import { MailTables } from "../infra/mail/MailTables.ts";
+import { Limits } from "../limits/Limits.ts";
 import { AccessCodes } from "../school/AccessCodes.ts";
 import { Auth } from "./Auth.ts";
 import { AuthTables } from "./AuthTables.ts";
@@ -122,9 +123,9 @@ interface CallOptions {
 }
 
 /**
- * One call to Better Auth, as a device makes it: JSON, a bearer token and no cookie jar. Better
- * Auth's rate limits are per client address and shared by every instance in the process, so each
- * call comes from an address of its own.
+ * One call to Better Auth, as a device makes it: JSON, a bearer token and no cookie jar. Rate
+ * limits count per client address, Better Auth's across every instance in the process, so each
+ * call comes from an address of its own unless it names one.
  */
 const call = Effect.fnUntraced(function* (
   method: "GET" | "POST",
@@ -493,6 +494,8 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
               ["POST", "/email-otp/check-verification-otp"],
               ["POST", "/sign-in/email-otp"],
               ["POST", "/forget-password/email-otp"],
+              ["POST", "/verify-password"],
+              ["POST", "/delete-user"],
             ] as const,
             ([method, path]) =>
               Effect.map(
@@ -501,7 +504,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
               ),
           );
 
-          assert.deepStrictEqual(statuses, [404, 404, 404, 404, 404, 404]);
+          assert.deepStrictEqual(statuses, [404, 404, 404, 404, 404, 404, 404, 404]);
         }),
       );
 
@@ -889,25 +892,419 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
         }),
       );
 
-      it.effect("limits reset codes per client as it limits sign-up codes", () =>
+      // A school's network reaches the server from one address, so a client's limit is a ceiling.
+      it.effect("gives a client a ceiling per route, high enough for a school", () =>
         Effect.gen(function* () {
-          const statuses = (path: string, from: string) =>
-            Effect.forEach([1, 2, 3, 4], (attempt) =>
-              Effect.map(
-                call("POST", path, { from, body: { email: `lena.limit${attempt}@example.org` } }),
-                (answer) => answer.status,
+          const from = "192.0.2.10";
+
+          const statuses = (path: string) =>
+            Effect.map(
+              Effect.forEach(
+                Array.from({ length: Limits.perClient + 1 }, (_, index) => index),
+                (index) =>
+                  call("POST", path, { from, body: { email: `lena.ceiling${index}@example.org` } }),
+                { concurrency: "unbounded" },
               ),
+              (answers) =>
+                [200, 429].map(
+                  (status) => answers.filter((answer) => answer.status === status).length,
+                ),
             );
 
+          const resends = yield* statuses("/send-verification-email");
+          const resets = yield* statuses("/email-otp/request-password-reset");
+
+          const elsewhere = yield* call("POST", "/send-verification-email", {
+            from: "192.0.2.11",
+            body: { email: "lena.ceiling.elsewhere@example.org" },
+          });
+
+          yield* TestClock.adjust(Limits.clientWindow);
+
+          const later = yield* call("POST", "/send-verification-email", {
+            from,
+            body: { email: "lena.ceiling.later@example.org" },
+          });
+
           assert.deepStrictEqual(
-            [
-              yield* statuses("/send-verification-email", "192.0.2.10"),
-              yield* statuses("/email-otp/request-password-reset", "192.0.2.11"),
-            ],
-            [
-              [200, 200, 200, 429],
-              [200, 200, 200, 429],
-            ],
+            { resends, resets, elsewhere: elsewhere.status, later: later.status },
+            {
+              resends: [Limits.perClient, 1],
+              resets: [Limits.perClient, 1],
+              elsewhere: 200,
+              later: 200,
+            },
+          );
+        }),
+      );
+
+      // A class signs up in one lesson, all from its school's one address.
+      it.effect("lets a class behind one address sign up, confirm and sign in together", () =>
+        Effect.gen(function* () {
+          const sql = yield* SqlClient.SqlClient;
+          const from = "198.51.100.30";
+
+          const students = Array.from(
+            { length: 30 },
+            (_, index) => `klasse7b.${index}@example.org`,
+          );
+
+          const answers = yield* Effect.forEach(
+            students,
+            (email) =>
+              Effect.gen(function* () {
+                const held = yield* reservation;
+
+                const signedUp = yield* call("POST", "/sign-up/email", {
+                  from,
+                  body: { email, password, name: "" },
+                  reservation: held,
+                });
+
+                const confirmed = yield* call("POST", "/email-otp/verify-email", {
+                  from,
+                  body: { email, otp: yield* codeFor(email), password },
+                  reservation: held,
+                });
+
+                const signedIn = yield* call("POST", "/sign-in/email", {
+                  from,
+                  body: { email, password },
+                });
+
+                return `${signedUp.status} ${confirmed.status} ${signedIn.status}`;
+              }),
+            { concurrency: 10 },
+          );
+
+          const [admitted] = yield* sql<{ readonly count: number }>`
+            select count(*)::int as count from school_access a
+            join auth_user u on u.id = a.account_id
+            where u.email like 'klasse7b.%' and a.school_id = ${school}
+          `;
+
+          assert.deepStrictEqual(
+            { answers: new Set(answers), admitted: admitted?.count },
+            { answers: new Set(["200 200 200"]), admitted: 30 },
+          );
+        }),
+      );
+
+      // Better Auth gives a code five tries, and an address gets five resent codes an hour, so its
+      // codes take at most thirty guesses an hour, from one client or from many.
+      it.effect("stops one client guessing the codes of one address", () =>
+        Effect.gen(function* () {
+          const from = "198.51.100.31";
+          const email = "lena.guessed@example.org";
+          const held = yield* reservation;
+
+          yield* call("POST", "/sign-up/email", {
+            from,
+            body: { email, password, name: "" },
+            reservation: held,
+          });
+
+          const confirm = (otp: string) =>
+            call("POST", "/email-otp/verify-email", {
+              from,
+              body: { email, otp, password },
+              reservation: held,
+            });
+
+          // Each mail a minute apart, so the newest captured one is the last code sent.
+          const resend = Effect.andThen(
+            TestClock.adjust("1 minute"),
+            call("POST", "/send-verification-email", { from, body: { email } }),
+          );
+
+          // Six resends in an hour mail five codes, and five wrong tries use up the last of them.
+          yield* Effect.forEach([1, 2, 3, 4, 5, 6], () => resend);
+          const mailed = yield* mailCount(email);
+          const sent = yield* codeFor(email);
+          const guesses = yield* Effect.forEach([1, 2, 3, 4, 5], () => confirm(wrongCode(sent)));
+          const right = yield* confirm(sent);
+
+          yield* TestClock.adjust("1 hour");
+          yield* resend;
+          const later = yield* confirm(yield* codeFor(email));
+
+          const answer = (response: { readonly status: number; readonly text: string }) =>
+            `${response.status} ${response.text}`;
+
+          assert.deepStrictEqual(
+            {
+              guesses: new Set(guesses.map(answer)),
+              mailed,
+              right: answer(right),
+              later: later.status,
+            },
+            {
+              guesses: new Set([`400 {"message":"Invalid OTP","code":"INVALID_OTP"}`]),
+              // The sign-up's code and five resent ones; the sixth resend mails nothing.
+              mailed: 6,
+              right: `400 {"message":"Invalid OTP","code":"INVALID_OTP"}`,
+              later: 200,
+            },
+          );
+        }),
+      );
+
+      it.effect("stops guessing the password of one address, from one client or from many", () =>
+        Effect.gen(function* () {
+          const email = "lena.guessed.password@example.org";
+          const neighbour = "lena.neighbour@example.org";
+          const from = "198.51.100.32";
+
+          yield* signUp(email);
+          yield* signUp(neighbour);
+
+          const signIn = (address: string, secret: string, client = from) =>
+            Effect.map(
+              call("POST", "/sign-in/email", {
+                from: client,
+                body: { email: address, password: secret },
+              }),
+              (answer) => answer.status,
+            );
+
+          // At once, so a guess counts before its password is checked.
+          const wrong = yield* Effect.forEach(
+            Array.from({ length: 30 }, (_, index) => `falsch-geraten-${index}`),
+            (guess) => signIn(email, guess),
+            { concurrency: "unbounded" },
+          );
+
+          const right = yield* signIn(email, password);
+          const elsewhere = yield* signIn(email, password, "198.51.100.33");
+          const sameClient = yield* signIn(neighbour, password);
+
+          yield* TestClock.adjust(Limits.clientWindow);
+          const later = yield* signIn(email, password);
+
+          assert.deepStrictEqual(
+            {
+              wrong: [401, 429].map((status) => wrong.filter((each) => each === status).length),
+              right,
+              elsewhere,
+              sameClient,
+              later,
+            },
+            { wrong: [10, 20], right: 429, elsewhere: 429, sameClient: 200, later: 200 },
+          );
+        }),
+      );
+
+      it.effect("counts a wrong current password like a wrong one at sign-in", () =>
+        Effect.gen(function* () {
+          const email = "lena.changing@example.org";
+          const token = yield* signUp(email);
+
+          const change = (currentPassword: string) =>
+            Effect.map(
+              call("POST", "/change-password", {
+                token,
+                body: { currentPassword, newPassword: "ganz-neu-4567" },
+              }),
+              (answer) => answer.status,
+            );
+
+          const wrong = yield* Effect.forEach(
+            Array.from({ length: 10 }, (_, index) => `falsch-geraten-${index}`),
+            change,
+          );
+
+          const right = yield* change(password);
+          const signIn = yield* call("POST", "/sign-in/email", { body: { email, password } });
+
+          assert.deepStrictEqual(
+            { wrong: new Set(wrong), right, signIn: signIn.status },
+            { wrong: new Set([400]), right: 429, signIn: 429 },
+          );
+        }),
+      );
+
+      // Work done for a code with a use limit gives its count back, so a year group behind its
+      // school's one address spends the ceiling on failures only. Each student here finds one count
+      // left and leaves it so, as any number of students would.
+      it.effect(
+        "lets a year group behind one address sign up and confirm past a nearly full ceiling",
+        () =>
+          Effect.gen(function* () {
+            const sql = yield* SqlClient.SqlClient;
+            const from = "198.51.100.40";
+
+            const { code } = yield* AccessCodes.mint({
+              school,
+              kind: "student",
+              maxUses: Option.some(180),
+            });
+
+            // A sign-up without a code and a confirmation without a password fail before any hash.
+            const failing = {
+              "/sign-up/email": (email: string) => ({ email, password, name: "" }),
+              "/email-otp/verify-email": (email: string) => ({ email, otp: "123456" }),
+            };
+
+            const fill = (path: keyof typeof failing) =>
+              Effect.forEach(
+                Array.from({ length: Limits.perClient - 1 }, (_, index) => index),
+                (index) =>
+                  call("POST", path, { from, body: failing[path](`ohne.${index}@example.org`) }),
+                { concurrency: "unbounded" },
+              );
+
+            yield* fill("/sign-up/email");
+            yield* fill("/email-otp/verify-email");
+
+            // One after another, so each takes the last count and gives it back before the next.
+            const answers = yield* Effect.forEach(
+              Array.from({ length: 3 }, (_, index) => `jahrgang8.${index}@example.org`),
+              (email) =>
+                Effect.gen(function* () {
+                  const { token: held } = yield* AccessCodes.reserve(code);
+
+                  const signedUp = yield* call("POST", "/sign-up/email", {
+                    from,
+                    body: { email, password, name: "" },
+                    reservation: held,
+                  });
+
+                  const confirmed = yield* call("POST", "/email-otp/verify-email", {
+                    from,
+                    body: { email, otp: yield* codeFor(email), password },
+                    reservation: held,
+                  });
+
+                  return `${signedUp.status} ${confirmed.status}`;
+                }),
+            );
+
+            // The last count is still free: one more failure takes it, and the next waits.
+            const lastCount = yield* Effect.forEach(
+              ["/sign-up/email", "/email-otp/verify-email"] as const,
+              (path) =>
+                Effect.gen(function* () {
+                  const body = failing[path]("ohne.mehr@example.org");
+                  const taken = yield* call("POST", path, { from, body });
+                  const waiting = yield* call("POST", path, { from, body });
+
+                  return `${taken.status} ${waiting.status}`;
+                }),
+            );
+
+            const [admitted] = yield* sql<{ readonly count: number }>`
+            select count(*)::int as count from school_access a
+            join auth_user u on u.id = a.account_id
+            where u.email like 'jahrgang8.%' and a.school_id = ${school}
+          `;
+
+            assert.deepStrictEqual(
+              { answers: new Set(answers), lastCount, admitted: admitted?.count },
+              { answers: new Set(["200 200"]), lastCount: ["400 429", "400 429"], admitted: 3 },
+            );
+          }),
+      );
+
+      // A classmate's junk counts against the classmate's own client, so it can't block the class.
+      it.effect("lets a class confirm after someone sends junk with its code", () =>
+        Effect.gen(function* () {
+          const { code } = yield* AccessCodes.mint({
+            school,
+            kind: "student",
+            maxUses: Option.some(4),
+          });
+
+          const { token: junk } = yield* AccessCodes.reserve(code);
+
+          yield* Effect.forEach(
+            Array.from({ length: 12 }, (_, index) => index),
+            (index) =>
+              call("POST", "/email-otp/verify-email", {
+                from: "198.51.100.50",
+                body: { email: `nobody.${index}@example.org`, otp: "123456", password },
+                reservation: junk,
+              }),
+          );
+
+          const email = "lena.klassenkamerad@example.org";
+          const { token: held } = yield* AccessCodes.reserve(code);
+
+          const signedUp = yield* call("POST", "/sign-up/email", {
+            from: "198.51.100.51",
+            body: { email, password, name: "" },
+            reservation: held,
+          });
+
+          const confirmed = yield* call("POST", "/email-otp/verify-email", {
+            from: "198.51.100.51",
+            body: { email, otp: yield* codeFor(email), password },
+            reservation: held,
+          });
+
+          assert.deepStrictEqual([signedUp.status, confirmed.status], [200, 200]);
+        }),
+      );
+
+      // Redeeming is free and a sign-up of a known address mails nothing, so a code gives each
+      // client back three sign-ups per use: one client can't mail past the ceiling with it, nor
+      // spend another client's give-backs.
+      it.effect("gives each client back at most three sign-ups per use of a code", () =>
+        Effect.gen(function* () {
+          const known = "lena.bekannt@example.org";
+
+          const { code } = yield* AccessCodes.mint({
+            school,
+            kind: "student",
+            maxUses: Option.some(1),
+          });
+
+          yield* signUp(known);
+
+          const signUps = (client: string, emails: ReadonlyArray<string>) =>
+            Effect.forEach(emails, (email) =>
+              Effect.gen(function* () {
+                const { token } = yield* AccessCodes.reserve(code);
+
+                const answer = yield* call("POST", "/sign-up/email", {
+                  from: client,
+                  body: { email, password, name: "" },
+                  reservation: token,
+                });
+
+                return answer.status;
+              }),
+            );
+
+          const counted = (statuses: ReadonlyArray<number>) =>
+            [200, 429].map((status) => statuses.filter((each) => each === status).length);
+
+          const from = "198.51.100.52";
+
+          // Another client spends its own three give-backs on the known address.
+          const griefer = yield* signUps(
+            "198.51.100.53",
+            Array.from({ length: 3 }, () => known),
+          );
+
+          // Failures fill all but one of this client's ceiling: sign-ups without a code.
+          yield* Effect.forEach(
+            Array.from({ length: Limits.perClient - 1 }, (_, index) => index),
+            (index) =>
+              call("POST", "/sign-up/email", {
+                from,
+                body: { email: `ohne.code.${index}@example.org`, password, name: "" },
+              }),
+          );
+
+          const ownCode = yield* signUps(
+            from,
+            Array.from({ length: 5 }, (_, index) => `fremd.${index}@example.org`),
+          );
+
+          // Three give the last count back, the fourth keeps it, and the fifth waits.
+          assert.deepStrictEqual(
+            { griefer: counted(griefer), ownCode: counted(ownCode) },
+            { griefer: [3, 0], ownCode: [4, 1] },
           );
         }),
       );

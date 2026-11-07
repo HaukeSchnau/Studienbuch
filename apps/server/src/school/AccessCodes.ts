@@ -174,6 +174,19 @@ export const reserve = Effect.fn("AccessCodes.reserve")(function* (typed: string
   return { token, schoolName: code.schoolName ?? "", kind: code.kind, expiresAt };
 });
 
+/** The code a reservation belongs to, with its use limit, whatever became of either since. */
+export const codeOf = Effect.fn("AccessCodes.codeOf")(function* (token: string) {
+  const sql = yield* SqlClient.SqlClient;
+
+  const [code] = yield* sql<{ readonly id: string; readonly maxUses: number | null }>`
+    select c.id, c.max_uses as "maxUses"
+    from access_reservation r join access_code c on c.id = r.code_id
+    where r.token_hash = ${yield* digest(token)}
+  `;
+
+  return Option.fromNullishOr(code);
+});
+
 /**
  * Charges one sign-up to the reservation, before Better Auth creates the account, and answers
  * whether the reservation allows it. Atomic, so parallel sign-ups can't all pass a check.
