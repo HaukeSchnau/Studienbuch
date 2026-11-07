@@ -1,7 +1,9 @@
 import * as NodeHttpServer from "@effect/platform-node/NodeHttpServer";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { describe, expect, layer } from "@effect/vitest";
+import { Access } from "@stu/api/Access";
 import { Accounts } from "@stu/api/Accounts";
+import { Dev } from "@stu/api/Dev";
 import { Api } from "@stu/api";
 import { Keys } from "@stu/api/Keys";
 import { AccountKey, Wrapper } from "@stu/e2ee";
@@ -126,15 +128,19 @@ interface AuthBody {
 }
 
 /** One call to Better Auth from a client address of its own, as its rate limits count them. */
-const auth = Effect.fnUntraced(function* (path: string, body: AuthBody) {
+const auth = Effect.fnUntraced(function* (path: string, body: AuthBody, reservation?: string) {
   const client = yield* HttpClient.HttpClient;
   const address = `10.${crypto.getRandomValues(new Uint8Array(3)).join(".")}`;
 
-  const response = yield* client.execute(
-    HttpClientRequest.post(`${Accounts.path}${path}`, {
-      headers: { "x-forwarded-for": address, origin: publicUrl },
-    }).pipe(HttpClientRequest.bodyJsonUnsafe(body)),
-  );
+  let request = HttpClientRequest.post(`${Accounts.path}${path}`, {
+    headers: { "x-forwarded-for": address, origin: publicUrl },
+  }).pipe(HttpClientRequest.bodyJsonUnsafe(body));
+
+  if (reservation !== undefined) {
+    request = HttpClientRequest.setHeader(request, Access.reservationHeader, reservation);
+  }
+
+  const response = yield* client.execute(request);
 
   return {
     status: response.status,
@@ -142,18 +148,28 @@ const auth = Effect.fnUntraced(function* (path: string, body: AuthBody) {
   };
 });
 
-/** Signs Mia up with an address of her own and returns her device's signed token. */
+/**
+ * Signs Mia up with the demo school's code, as anyone may on a development server, and returns
+ * her device's signed token.
+ */
 const signUpMia = Effect.gen(function* () {
   const sql = yield* SqlClient.SqlClient;
   const email = "mia@example.org";
-  yield* auth("/sign-up/email", { email, password: "lange-genug-123", name: "" });
+  const client = yield* rpc;
+  const { token } = yield* client["Access.redeem"]({ code: Dev.demoSchoolCode });
+  yield* auth("/sign-up/email", { email, password: "lange-genug-123", name: "" }, token);
 
   const [mail] = yield* sql<{ readonly text: string }>`
     select text from captured_mail where "to" = ${email} order by sent_at desc limit 1
   `;
 
   const otp = /\b(?<code>\d{6})\b/u.exec(mail?.text ?? "")?.groups?.code ?? "";
-  const verified = yield* auth("/email-otp/verify-email", { email, otp });
+
+  const verified = yield* auth("/email-otp/verify-email", {
+    email,
+    otp,
+    password: "lange-genug-123",
+  });
 
   return verified.token ?? "no token";
 });
@@ -280,6 +296,9 @@ describe.skipIf(Postgres18.socket === null)("Demo sign-in over the router", () =
             ),
             "Demo.signIn": Effect.exit(client["Demo.signIn"]({ persona: "lena" }, bearer(mia))),
             "Demo.rootKey": Effect.exit(client["Demo.rootKey"](undefined, bearer(mia))),
+            "Access.redeem": Effect.exit(
+              client["Access.redeem"]({ code: "ZZZZ-ZZZZ-ZZZZ-ZZZZ" }, bearer(mia)),
+            ),
             "Keys.state": Effect.exit(client["Keys.state"](undefined, bearer(mia))),
             "Keys.init": Effect.exit(
               client["Keys.init"]({ record: miaKeys.record, wrapper: miaKeys.device }, bearer(mia)),
@@ -345,6 +364,8 @@ describe.skipIf(Postgres18.socket === null)("Demo sign-in over the router", () =
               "Demo.signIn": "Success",
               // Mia is no demo account, so `Demo.rootKey` refuses her.
               "Demo.rootKey": "Failure",
+              // No school has this code.
+              "Access.redeem": "Failure",
               "Keys.state": "Success",
               "Keys.init": "Success",
               "Keys.addWrapper": "Success",

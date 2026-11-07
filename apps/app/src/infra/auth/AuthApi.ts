@@ -1,3 +1,4 @@
+import { Access } from "@stu/api/Access";
 import { Accounts } from "@stu/api/Accounts";
 import { Ports } from "@stu/sync/client";
 import type * as Cause from "effect/Cause";
@@ -136,8 +137,12 @@ export class Service extends Context.Service<
   Service,
   {
     /** Creates an account. Better Auth mails a code, and answers the same for a known address. */
-    readonly signUp: (email: string, password: string) => Effect.Effect<void, Failure>;
-    /** `EMAIL_NOT_VERIFIED` means the address still needs its code, which is on its way. */
+    /** `reservation` is a code's, from `Access.redeem`, which every sign-up carries. */
+    readonly signUp: (
+      email: string,
+      password: string,
+      reservation: Option.Option<string>,
+    ) => Effect.Effect<void, Failure>;
     readonly signIn: (email: string, password: string) => Effect.Effect<SignedIn, Failure>;
     readonly sendCode: (email: string) => Effect.Effect<void, Failure>;
     /** Mails a reset code if `email` has an account. The answer is the same either way. */
@@ -148,7 +153,16 @@ export class Service extends Context.Service<
       code: string,
       password: string,
     ) => Effect.Effect<void, Failure>;
-    readonly confirmEmail: (email: string, code: string) => Effect.Effect<SignedIn, Failure>;
+    /**
+     * Confirms the address with its code and sets the account's password, which counts only from
+     * here on: anyone can sign up any address, so the server keeps no password from before.
+     */
+    readonly confirmEmail: (
+      email: string,
+      code: string,
+      password: Redacted.Redacted,
+      reservation: Option.Option<string>,
+    ) => Effect.Effect<SignedIn, Failure>;
     /** When the session ends now, or `None` once it ended. A call also renews it (D27). */
     readonly session: (token: Redacted.Redacted) => Effect.Effect<Option.Option<Date>, Failure>;
     readonly signOut: (token: Redacted.Redacted) => Effect.Effect<void, Failure>;
@@ -188,6 +202,16 @@ const checked = (
 const post = (path: string, body: Body) =>
   HttpClientRequest.bodyJsonUnsafe(HttpClientRequest.post(path), body);
 
+/** The request with the code's reservation, which admits the account to that code's school. */
+const reserved = (
+  request: HttpClientRequest.HttpClientRequest,
+  reservation: Option.Option<string>,
+) =>
+  Option.match(reservation, {
+    onNone: () => request,
+    onSome: (token) => HttpClientRequest.setHeader(request, Access.reservationHeader, token),
+  });
+
 /** Better Auth on the device's server, over the device's HTTP client. */
 export const layer = Layer.effect(Service)(
   Effect.gen(function* () {
@@ -222,16 +246,28 @@ export const layer = Layer.effect(Service)(
       HttpClientRequest.setHeader(request, Accounts.challengeHeader, challenge);
 
     return {
-      signUp: (email, password) =>
-        Effect.asVoid(send(post("/sign-up/email", { email, password, name: "" }))),
+      signUp: (email, password, reservation) =>
+        Effect.asVoid(
+          send(reserved(post("/sign-up/email", { email, password, name: "" }), reservation)),
+        ),
       signIn: (email, password) => read(post("/sign-in/email", { email, password }), signedIn),
       sendCode: (email) => Effect.asVoid(send(post("/send-verification-email", { email }))),
       requestPasswordReset: (email) =>
         Effect.asVoid(send(post("/email-otp/request-password-reset", { email }))),
       resetPassword: (email, code, password) =>
         Effect.asVoid(send(post("/email-otp/reset-password", { email, otp: code, password }))),
-      confirmEmail: (email, code) =>
-        read(post("/email-otp/verify-email", { email, otp: code }), signedIn),
+      confirmEmail: (email, code, password, reservation) =>
+        read(
+          reserved(
+            post("/email-otp/verify-email", {
+              email,
+              otp: code,
+              password: Redacted.value(password),
+            }),
+            reservation,
+          ),
+          signedIn,
+        ),
       session: (token) =>
         Effect.map(
           read(

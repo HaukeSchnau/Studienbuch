@@ -1,0 +1,638 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "a52a1272-c055-42e8-b4e0-1470af2ea893",
+  "prevIds": ["fac17431-49d6-437c-9d97-1a5e3442d3df"],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": ["table", "public", "access_code"],
+      "writes": [
+        "s|tbl|public.access_code",
+        "n|tbl|public.access_code",
+        "e|tbl|public.access_code",
+        "n|rel|public.access_code",
+        "n|type|public.access_code",
+        "n|rel|public.access_code_pkey",
+        "n|rel|public.access_code_secret_hash_key"
+      ],
+      "reads": ["n|sch|public"]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": ["table", "public", "access_reservation"],
+      "writes": [
+        "s|tbl|public.access_reservation",
+        "n|tbl|public.access_reservation",
+        "e|tbl|public.access_reservation",
+        "n|rel|public.access_reservation",
+        "n|type|public.access_reservation",
+        "n|rel|public.access_reservation_pkey",
+        "n|rel|public.access_reservation_token_hash_key"
+      ],
+      "reads": ["n|sch|public"]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": ["table", "public", "access_sign_up"],
+      "writes": [
+        "s|tbl|public.access_sign_up",
+        "n|tbl|public.access_sign_up",
+        "e|tbl|public.access_sign_up",
+        "n|rel|public.access_sign_up",
+        "n|type|public.access_sign_up",
+        "n|rel|public.access_sign_up_pkey"
+      ],
+      "reads": ["n|sch|public"]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": ["index", "public", "access_code", "access_code_school"],
+      "writes": [
+        "s|idx|public.access_code_school",
+        "n|idx|public.access_code_school",
+        "e|idx|public.access_code_school",
+        "n|rel|public.access_code_school"
+      ],
+      "reads": ["n|tbl|public.access_code", "n|sch|public", "n|col|public.access_code.school_id"]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": ["index", "public", "access_reservation", "access_reservation_code"],
+      "writes": [
+        "s|idx|public.access_reservation_code",
+        "n|idx|public.access_reservation_code",
+        "e|idx|public.access_reservation_code",
+        "n|rel|public.access_reservation_code"
+      ],
+      "reads": [
+        "n|tbl|public.access_reservation",
+        "n|sch|public",
+        "n|col|public.access_reservation.code_id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "access_code"],
+      "writes": [
+        "s|fk|public.access_code.access_code_school_id_space_id_fkey",
+        "n|fk|public.access_code.access_code_school_id_space_id_fkey",
+        "e|fk|public.access_code.access_code_school_id_space_id_fkey",
+        "n|con|public.access_code.access_code_school_id_space_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.access_code",
+        "n|sch|public",
+        "n|tbl|public.space",
+        "n|sch|public",
+        "n|col|public.access_code.school_id",
+        "n|col|public.space.id",
+        "e|uniqueness|public.space.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "access_reservation"],
+      "writes": [
+        "s|fk|public.access_reservation.access_reservation_code_id_access_code_id_fkey",
+        "n|fk|public.access_reservation.access_reservation_code_id_access_code_id_fkey",
+        "e|fk|public.access_reservation.access_reservation_code_id_access_code_id_fkey",
+        "n|con|public.access_reservation.access_reservation_code_id_access_code_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.access_reservation",
+        "n|sch|public",
+        "n|tbl|public.access_code",
+        "n|sch|public",
+        "n|col|public.access_reservation.code_id",
+        "n|col|public.access_code.id",
+        "e|uniqueness|public.access_code.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "access_sign_up"],
+      "writes": [
+        "s|fk|public.access_sign_up.access_sign_up_account_id_auth_user_id_fkey",
+        "n|fk|public.access_sign_up.access_sign_up_account_id_auth_user_id_fkey",
+        "e|fk|public.access_sign_up.access_sign_up_account_id_auth_user_id_fkey",
+        "n|con|public.access_sign_up.access_sign_up_account_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.access_sign_up",
+        "n|sch|public",
+        "n|tbl|public.auth_user",
+        "n|sch|public",
+        "n|col|public.access_sign_up.account_id",
+        "n|col|public.auth_user.id",
+        "e|uniqueness|public.auth_user.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "access_sign_up"],
+      "writes": [
+        "s|fk|public.access_sign_up.access_sign_up_reservation_id_access_reservation_id_fkey",
+        "n|fk|public.access_sign_up.access_sign_up_reservation_id_access_reservation_id_fkey",
+        "e|fk|public.access_sign_up.access_sign_up_reservation_id_access_reservation_id_fkey",
+        "n|con|public.access_sign_up.access_sign_up_reservation_id_access_reservation_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.access_sign_up",
+        "n|sch|public",
+        "n|tbl|public.access_reservation",
+        "n|sch|public",
+        "n|col|public.access_sign_up.reservation_id",
+        "n|col|public.access_reservation.id",
+        "e|uniqueness|public.access_reservation.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "access_code",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "access_reservation",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "access_sign_up",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "access_code",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "gen_random_uuid()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "access_code",
+        "name": "school_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "access_code",
+        "name": "kind",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "access_code",
+        "name": "secret_hash",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "access_code",
+        "name": "max_uses",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "access_code",
+        "name": "uses",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "access_code",
+        "name": "expires_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "access_code",
+        "name": "revoked_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "access_code",
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "access_reservation",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "gen_random_uuid()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "access_reservation",
+        "name": "code_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "access_reservation",
+        "name": "token_hash",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "access_reservation",
+        "name": "expires_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "access_reservation",
+        "name": "sign_ups",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "access_reservation",
+        "name": "spent_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "access_reservation",
+        "name": "spent_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "access_sign_up",
+        "name": "account_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "access_sign_up",
+        "name": "reservation_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "access_code",
+        "name": "access_code_school",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "school_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "access_reservation",
+        "name": "access_reservation_code",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "code_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "access_code",
+        "name": "access_code_school_id_space_id_fkey",
+        "nameExplicit": false,
+        "columns": ["school_id"],
+        "schemaTo": "public",
+        "tableTo": "space",
+        "columnsTo": ["id"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "NO ACTION",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "access_reservation",
+        "name": "access_reservation_code_id_access_code_id_fkey",
+        "nameExplicit": false,
+        "columns": ["code_id"],
+        "schemaTo": "public",
+        "tableTo": "access_code",
+        "columnsTo": ["id"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "access_sign_up",
+        "name": "access_sign_up_account_id_auth_user_id_fkey",
+        "nameExplicit": false,
+        "columns": ["account_id"],
+        "schemaTo": "public",
+        "tableTo": "auth_user",
+        "columnsTo": ["id"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "access_sign_up",
+        "name": "access_sign_up_reservation_id_access_reservation_id_fkey",
+        "nameExplicit": false,
+        "columns": ["reservation_id"],
+        "schemaTo": "public",
+        "tableTo": "access_reservation",
+        "columnsTo": ["id"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "access_sign_up",
+        "name": "access_sign_up_pkey",
+        "columns": ["account_id", "reservation_id"],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "access_code",
+        "name": "access_code_pkey",
+        "columns": ["id"],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "access_reservation",
+        "name": "access_reservation_pkey",
+        "columns": ["id"],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "access_code",
+        "name": "access_code_secret_hash_key",
+        "nameExplicit": false,
+        "columns": ["secret_hash"],
+        "nullsNotDistinct": false,
+        "entityType": "uniques"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "access_reservation",
+        "name": "access_reservation_token_hash_key",
+        "nameExplicit": false,
+        "columns": ["token_hash"],
+        "nullsNotDistinct": false,
+        "entityType": "uniques"
+      }
+    }
+  ]
+}

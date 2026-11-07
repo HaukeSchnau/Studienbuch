@@ -15,6 +15,7 @@ import * as Result from "effect/Result";
 import { DemoSchool } from "../demo/DemoSchool.ts";
 import { Deployment } from "../infra/config/Deployment.ts";
 import { Access } from "../school/Access.ts";
+import { AccessCodes } from "../school/AccessCodes.ts";
 import { Schools } from "../school/Schools.ts";
 
 export * as Shortcuts from "./Shortcuts.ts";
@@ -32,7 +33,8 @@ const subjects = {
 
 /**
  * A school of its own under a random id, with this school year's two terms and one course of each
- * subject offered in both. The answer names today's term.
+ * subject offered in both, and an access code for any number of sign-ups. The answer names today's
+ * term.
  */
 export const createSchool = Effect.gen(function* () {
   const crypto = yield* Crypto.Crypto;
@@ -64,10 +66,19 @@ export const createSchool = Effect.gen(function* () {
     ),
   });
 
+  const { code } = yield* Effect.orDie(
+    AccessCodes.mint({
+      school: id,
+      kind: "student",
+      maxUses: Option.none(),
+    }),
+  );
+
   return new Dev.School({
     id,
     termId: year.current.id,
     courseIds: courses.map((course) => course.id),
+    code,
   });
 });
 

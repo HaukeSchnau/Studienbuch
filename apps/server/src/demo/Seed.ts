@@ -4,6 +4,7 @@
  * `STUDIENBUCH_DEMO_SCHOOL=seed`, and `console demo seed` on request. A second run writes nothing.
  */
 import { Demo } from "@stu/api/Demo";
+import { Dev } from "@stu/api/Dev";
 import { CryptoSuite } from "@stu/e2ee";
 import * as Command from "effect/cli/Command";
 import * as Config from "effect/Config";
@@ -12,7 +13,9 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import { KeyStore } from "../keys/KeyStore.ts";
+import { Deployment } from "../infra/config/Deployment.ts";
 import { Access } from "../school/Access.ts";
+import { AccessCodes } from "../school/AccessCodes.ts";
 import { Schools } from "../school/Schools.ts";
 import { DemoAccounts } from "./DemoAccounts.ts";
 import { DemoKeys } from "./DemoKeys.ts";
@@ -35,6 +38,18 @@ export const run = Effect.gen(function* () {
     const school = yield* DemoSchool.data(today);
     const term = school.year.current.id;
     yield* Schools.publish(school.data);
+
+    // Anyone may sign up to the demo school where anyone may sign in as its students.
+    if (Deployment.isDevelopmentOrPreview((yield* Deployment.Current).environment)) {
+      yield* AccessCodes.ensure(
+        {
+          school: DemoSchool.id,
+          kind: "student",
+          maxUses: Option.none(),
+        },
+        Dev.demoSchoolCode,
+      );
+    }
 
     for (const persona of Demo.Persona.literals) {
       const { account, notebook } = DemoSchool.personas[persona];

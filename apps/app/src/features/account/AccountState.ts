@@ -54,8 +54,13 @@ export const signIn = runtime.fn<{ readonly email: string; readonly password: st
   ({ email, password }) => Account.signIn(email, password),
 );
 
-export const signUp = runtime.fn<{ readonly email: string; readonly password: string }>()(
-  ({ email, password }) => Account.signUp(email, password),
+/** `reservation` from `Access.redeem` on the code screen. */
+export const signUp = runtime.fn<{
+  readonly email: string;
+  readonly password: string;
+  readonly reservation?: string;
+}>()(({ email, password, reservation }) =>
+  Account.signUp(email, password, Option.fromNullishOr(reservation)),
 );
 
 export const sendCode = runtime.fn<string>()((email) => Account.sendCode(email));
@@ -71,8 +76,22 @@ export const resetPassword = runtime.fn<{
   readonly password: string;
 }>()(({ email, code, password }) => Account.resetPassword(email, code, password));
 
-export const confirmEmail = runtime.fn<{ readonly email: string; readonly code: string }>()(
-  ({ email, code }) => Account.confirmEmail(email, code),
+/**
+ * `password` only when the screen asked for it again, after a restart (`password-needed`), and
+ * `reservation` when the screen still holds the code's.
+ */
+export const confirmEmail = runtime.fn<{
+  readonly email: string;
+  readonly code: string;
+  readonly password?: string;
+  readonly reservation?: string;
+}>()(({ email, code, password, reservation }) =>
+  Account.confirmEmail(
+    email,
+    code,
+    Option.fromNullishOr(password),
+    Option.fromNullishOr(reservation),
+  ),
 );
 
 // `finish`, `abandon` and `signOut` run while their screen goes away. They stay alive so the

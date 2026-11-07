@@ -8,6 +8,7 @@ import * as Redacted from "effect/Redacted";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import { Deployment } from "../infra/config/Deployment.ts";
+import { AccessCodes } from "../school/AccessCodes.ts";
 import { Fixture } from "../school/Fixture.ts";
 import { DemoAccounts } from "./DemoAccounts.ts";
 import { DemoKeys } from "./DemoKeys.ts";
@@ -254,6 +255,43 @@ describe.skipIf(Postgres18.socket === null)("Seed on PostgreSQL 18", () => {
       }),
     );
   });
+
+  it.effect("seeds the demo school's code on preview servers only, and once", () =>
+    Effect.gen(function* () {
+      const codes = (environment: "preview" | "beta") =>
+        Effect.gen(function* () {
+          const sql = yield* SqlClient.SqlClient;
+          yield* seedWith({});
+          yield* seedWith({});
+
+          const [row] = yield* sql<{ readonly count: number }>`
+            select count(*)::int as count from access_code
+          `;
+
+          // As someone types it, with the letter O.
+          const redeemed = yield* Effect.exit(AccessCodes.reserve("demo-0000-0000-0000"));
+
+          return {
+            count: row?.count,
+            redeemed: redeemed._tag === "Success" ? redeemed.value.schoolName : "refused",
+          };
+        }).pipe(
+          Effect.provide(
+            Layer.mergeAll(
+              Fixture.database,
+              DemoAccounts.seeding,
+              CryptoSuite.layer,
+              Layer.succeed(Deployment.Current, { revision: "test", environment }),
+            ),
+          ),
+        );
+
+      expect({ preview: yield* codes("preview"), beta: yield* codes("beta") }).toEqual({
+        preview: { count: 1, redeemed: "Demoschule am Wiesengrund" },
+        beta: { count: 0, redeemed: "refused" },
+      });
+    }),
+  );
 
   it.effect("two seeds on fresh databases give the same ids", () =>
     Effect.gen(function* () {

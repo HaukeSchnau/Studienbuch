@@ -22,12 +22,12 @@ export * as Account from "./Account.ts";
 /** Why something didn't work, in words a screen can show (`sentence`). */
 export const Reason = Schema.Literals([
   "wrong-password",
-  "email-unconfirmed",
   "incomplete",
   "invalid-email",
   "weak-password",
   "sign-up-closed",
   "wrong-code",
+  "password-needed",
   "too-many-attempts",
   "offline",
   "server-error",
@@ -51,7 +51,6 @@ export class Problem extends Schema.TaggedError<Problem, { readonly brand: uniqu
 
 export const sentence: Record<Reason, string> = {
   "wrong-password": "E-Mail-Adresse oder Passwort stimmt nicht.",
-  "email-unconfirmed": "Bestätige zuerst deine E-Mail-Adresse.",
   incomplete: "Füll bitte alle Felder aus.",
   "invalid-email": "Diese E-Mail-Adresse sieht nicht richtig aus.",
   "weak-password": `Dein Passwort braucht mindestens ${Accounts.minPasswordLength} Zeichen.`,
@@ -59,6 +58,7 @@ export const sentence: Record<Reason, string> = {
   // The server answers a wrong, spent and expired code alike, so an address without an account
   // can't be told apart. The sentence covers all three.
   "wrong-code": `Der Code stimmt nicht oder gilt nicht mehr. Nach fünf falschen Versuchen und nach ${Accounts.codeMinutes} Minuten brauchst du einen neuen.`,
+  "password-needed": "Gib zum Bestätigen dein Passwort noch einmal ein.",
   "too-many-attempts": "Zu viele Versuche. Warte kurz und versuch es dann noch einmal.",
   offline: "Keine Verbindung zum Server. Zum Anmelden brauchst du einmal Internet.",
   "server-error": "Beim Server ist gerade etwas schiefgelaufen. Versuch es gleich noch einmal.",
@@ -79,12 +79,12 @@ export const sentence: Record<Reason, string> = {
 const reasons = new Map<string, Reason>(
   Object.entries({
     INVALID_EMAIL_OR_PASSWORD: "wrong-password",
-    EMAIL_NOT_VERIFIED: "email-unconfirmed",
     VALIDATION_ERROR: "incomplete",
     INVALID_EMAIL: "invalid-email",
     PASSWORD_TOO_SHORT: "weak-password",
     EMAIL_PASSWORD_SIGN_UP_DISABLED: "sign-up-closed",
     INVALID_OTP: "wrong-code",
+    PASSWORD_REQUIRED: "password-needed",
     RATE_LIMITED: "too-many-attempts",
     PASSKEY_NOT_FOUND: "passkey-unknown",
     AUTHENTICATION_FAILED: "passkey-failed",
@@ -148,11 +148,24 @@ export const signIn = Effect.fn("Account.signIn")(function* (email: string, pass
   yield* keep(yield* api.signIn(email.trim(), password).pipe(Effect.mapError(problem)));
 });
 
-/** Creates the account. A code goes to `email`, and `confirmEmail` signs the device in with it. */
-export const signUp = Effect.fn("Account.signUp")(function* (email: string, password: string) {
+/**
+ * Creates the account with a code's reservation. A code goes to `email`, and `confirmEmail` signs
+ * the device in with it. Password and reservation wait in memory for the confirmation, which sets
+ * the password and admits the account to the code's school.
+ */
+export const signUp = Effect.fn("Account.signUp")(function* (
+  email: string,
+  password: string,
+  reservation: Option.Option<string> = Option.none(),
+) {
   const api = yield* AuthApi.Service;
+  const { signingUp } = yield* Confirmations;
 
-  yield* api.signUp(email.trim(), password).pipe(Effect.mapError(problem));
+  yield* api.signUp(email.trim(), password, reservation).pipe(Effect.mapError(problem));
+  yield* SubscriptionRef.set(
+    signingUp,
+    Option.some({ email: email.trim(), password: Redacted.make(password), reservation }),
+  );
 });
 
 export const sendCode = Effect.fn("Account.sendCode")(function* (email: string) {
@@ -204,27 +217,60 @@ export class Confirmations extends Context.Service<
   {
     readonly current: SubscriptionRef.SubscriptionRef<Option.Option<Confirmed>>;
     readonly guard: Semaphore.Semaphore;
+    /** The password of this run's sign-up, for its confirmation. Never stored on the device. */
+    readonly signingUp: SubscriptionRef.SubscriptionRef<Option.Option<SigningUp>>;
   }
 >()("Account.Confirmations") {}
+
+export interface SigningUp {
+  readonly email: string;
+  readonly password: Redacted.Redacted;
+  readonly reservation: Option.Option<string>;
+}
 
 export const confirmations = Layer.effect(Confirmations)(
   Effect.all({
     current: SubscriptionRef.make(Option.none<Confirmed>()),
     guard: Semaphore.make(1),
+    signingUp: SubscriptionRef.make(Option.none<SigningUp>()),
   }),
 );
 
-/** Confirms the address with its code. The new session waits for `finish`, so a passkey can come first. */
+/**
+ * Confirms the address with its code and sets the password, the one this run signed up with or,
+ * after a restart, `password` as typed again. The sign-up's reservation, or `reservation` from the
+ * screen, admits the account to the code's school. The new session waits for `finish`, so a
+ * passkey can come first.
+ */
 export const confirmEmail = Effect.fn("Account.confirmEmail")(function* (
   email: string,
   code: string,
+  password: Option.Option<string> = Option.none(),
+  reservation: Option.Option<string> = Option.none(),
 ) {
   const api = yield* AuthApi.Service;
-  const { current, guard } = yield* Confirmations;
+  const { current, guard, signingUp } = yield* Confirmations;
+
+  const pending = Option.filter(yield* SubscriptionRef.get(signingUp), (signedUp) =>
+    sameAddress(signedUp.email, email),
+  );
+
+  const known = Option.isSome(password)
+    ? Option.some(Redacted.make(password.value))
+    : Option.map(pending, (signedUp) => signedUp.password);
+
+  if (Option.isNone(known)) return yield* new Problem({ reason: "password-needed" });
 
   const signedIn = yield* api
-    .confirmEmail(email.trim(), code.replaceAll(/\s/gu, ""))
+    .confirmEmail(
+      email.trim(),
+      code.replaceAll(/\s/gu, ""),
+      known.value,
+      Option.orElse(reservation, () => Option.flatMap(pending, (signedUp) => signedUp.reservation)),
+    )
     .pipe(Effect.mapError(problem));
+
+  yield* SubscriptionRef.set(signingUp, Option.none());
 
   // Said here, on the code screen, rather than after the passkey offer.
   yield* refuseOtherAccount(signedIn);

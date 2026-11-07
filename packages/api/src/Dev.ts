@@ -8,11 +8,19 @@ import * as Schema from "effect/Schema";
 
 export * as Dev from "./Dev.ts";
 
+/**
+ * The demo school's access code on development and preview servers, which anyone may sign up
+ * with. Beta and production have no such code.
+ */
+export const demoSchoolCode = "DEM0-0000-0000-0000";
+
 /** A school that `Dev.createSchool` made, with today's term and the courses it offers there. */
 export class School extends Schema.Class<School, { readonly brand: unique symbol }>("Dev.School")({
   id: Schema.String,
   termId: Schema.String,
   courseIds: Schema.Array(Schema.String),
+  /** Signs up any number of students. `Dev.admit` chooses courses for an account. */
+  code: Schema.String,
 }) {}
 
 /** The caller's notebook at the school. */

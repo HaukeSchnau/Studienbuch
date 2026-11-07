@@ -8,6 +8,7 @@
   "exports": {
     ".": "./src/Api.ts",
     "./System": "./src/System.ts",
+    "./Access": "./src/Access.ts",
     "./Accounts": "./src/Accounts.ts",
     "./Demo": "./src/Demo.ts",
     "./Dev": "./src/Dev.ts",

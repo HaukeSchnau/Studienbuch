@@ -1,7 +1,9 @@
 import * as NodeHttpServer from "@effect/platform-node/NodeHttpServer";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { assert, describe, layer } from "@effect/vitest";
+import { Access } from "@stu/api/Access";
 import { Accounts } from "@stu/api/Accounts";
+import { School } from "@stu/core";
 import { Ports } from "@stu/sync/server";
 import { Postgres18 } from "@stu/sync/testing";
 import { desc, eq } from "drizzle-orm";
@@ -22,12 +24,14 @@ import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import * as Stream from "effect/Stream";
+import * as TestClock from "effect/testing/TestClock";
 import * as NodeURL from "node:url";
 import { Deployment } from "../infra/config/Deployment.ts";
 import { Database } from "../infra/database/Database.ts";
 import { Migrations } from "../infra/database/Migrations.ts";
 import { Mail } from "../infra/mail/Mail.ts";
 import { MailTables } from "../infra/mail/MailTables.ts";
+import { AccessCodes } from "../school/AccessCodes.ts";
 import { Auth } from "./Auth.ts";
 import { AuthTables } from "./AuthTables.ts";
 
@@ -50,6 +54,14 @@ const watchedMail = Layer.effect(Mail.Service)(
   Layer.provideMerge(Layer.effect(Outbox)(Queue.unbounded<Mail.Message>())),
 );
 
+const school = School.Id.make("auth-school");
+
+const schoolCode = "A7H5-0000-0000-0001";
+
+/** Another school, whose code an attacker might sign the victim's address up with. */
+const otherSchool = School.Id.make("other-school");
+
+const otherCode = "A7H5-0000-0000-0002";
 const migrations = NodeURL.fileURLToPath(new URL("../../migrations/", import.meta.url));
 
 /**
@@ -63,6 +75,15 @@ const server = (environment: string, overrides: Record<string, string> = {}) =>
       const [row] = yield* sql<{ readonly name: string }>`select current_database() as name`;
 
       yield* Migrations.apply(yield* Migrations.read(migrations));
+      // A school whose code every test's sign-up redeems.
+      yield* sql`insert into space (id, kind) values (${school}, 'school'), (${otherSchool}, 'school')`;
+
+      yield* AccessCodes.ensure({ school, kind: "student", maxUses: Option.none() }, schoolCode);
+
+      yield* AccessCodes.ensure(
+        { school: otherSchool, kind: "student", maxUses: Option.none() },
+        otherCode,
+      );
 
       const socket = encodeURIComponent(Postgres18.socket ?? "");
 
@@ -90,6 +111,8 @@ const server = (environment: string, overrides: Record<string, string> = {}) =>
 
 interface CallOptions {
   readonly body?: object;
+  /** The access code reservation a sign-up carries. */
+  readonly reservation?: string;
   readonly token?: string;
   readonly challenge?: string;
   /** A browser's own origin by default. Native apps send none (`null`). */
@@ -117,6 +140,10 @@ const call = Effect.fnUntraced(function* (
 
   if (options.token !== undefined) {
     request = HttpClientRequest.bearerToken(request, options.token);
+  }
+
+  if (options.reservation !== undefined) {
+    request = HttpClientRequest.setHeader(request, Access.reservationHeader, options.reservation);
   }
 
   if (options.challenge !== undefined) {
@@ -235,16 +262,27 @@ const addPasskey = Effect.fnUntraced(function* (token: string) {
   assert.strictEqual(registered.status, 200);
 });
 
-/** Signs up, enters the mailed code, and returns the signed token the device keeps. */
+/** A reservation of the test school's code, as `Access.redeem` gives one. */
+const reservation = Effect.map(AccessCodes.reserve(schoolCode), ({ token }) => token);
+
+/**
+ * Redeems the school's code, signs up, enters the mailed code, and returns the signed token the
+ * device keeps.
+ */
 const signUp = Effect.fnUntraced(function* (email: string) {
+  const held = yield* reservation;
+
   const created = yield* call("POST", "/sign-up/email", {
     body: { email, password, name: "Lena Beispiel" },
+    reservation: held,
   });
 
   assert.strictEqual(created.status, 200);
 
+  // The confirmation carries the password, which counts from here on, and the device's reservation.
   const verified = yield* call("POST", "/email-otp/verify-email", {
-    body: { email, otp: yield* codeFor(email) },
+    body: { email, otp: yield* codeFor(email), password },
+    reservation: held,
   });
 
   assert.strictEqual(verified.status, 200);
@@ -271,31 +309,149 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
   layer(NodeServices.layer)((it) => {
     // One server for the file: each test signs up its own address.
     it.layer(server("development"))((it) => {
-      it.effect("opens sign-up in development, and the mailed code signs the device in", () =>
-        Effect.gen(function* () {
-          const resolver = yield* Ports.SessionResolver;
+      it.effect(
+        "a sign-up with a school's code is admitted there when its mailed code signs in",
+        () =>
+          Effect.gen(function* () {
+            const resolver = yield* Ports.SessionResolver;
 
-          const short = yield* call("POST", "/sign-up/email", {
-            body: { email: "lena.signup@example.org", password: "123456789", name: "" },
+            const short = yield* call("POST", "/sign-up/email", {
+              body: { email: "lena.signup@example.org", password: "123456789", name: "" },
+              reservation: yield* reservation,
+            });
+
+            assert.strictEqual(short.status, 400);
+            assert.deepStrictEqual(yield* decodeCode(short.json), { code: "PASSWORD_TOO_SHORT" });
+
+            const token = yield* signUp("lena.signup@example.org");
+
+            assert.isTrue(Option.isSome(yield* resolver.resolve(bearer(token))));
+            assert.isTrue(Option.isNone(yield* resolver.resolve(Headers.empty)));
+
+            // The name lives in the encrypted notebook, whatever sign-up sent.
+            const user = yield* userOf("lena.signup@example.org");
+
+            assert.deepStrictEqual([user?.name, user?.image], ["", null]);
+
+            // Confirming the address admitted the account before its session existed.
+            const sql = yield* SqlClient.SqlClient;
+
+            const admitted = yield* sql<{ readonly school: string }>`
+            select school_id as school from school_access where account_id = ${user?.id ?? ""}
+          `;
+
+            assert.deepStrictEqual(admitted, [{ school }]);
+
+            // The console lists the code's mail for whoever tests the sign-up.
+            const mails = yield* Mail.captured;
+
+            assert.strictEqual(mails[0]?.to, "lena.signup@example.org");
+          }),
+      );
+
+      it.effect("a password from before the address was confirmed never signs anyone in", () =>
+        Effect.gen(function* () {
+          const email = "opfer@example.org";
+          const theirs = "vom-mitschueler-gewaehlt";
+          const mine = "mein-eigenes-passwort";
+
+          // A classmate with the class code signs up the victim's address first.
+          yield* call("POST", "/sign-up/email", {
+            body: { email, password: theirs, name: "" },
+            reservation: yield* reservation,
           });
 
-          assert.strictEqual(short.status, 400);
-          assert.deepStrictEqual(yield* decodeCode(short.json), { code: "PASSWORD_TOO_SHORT" });
+          // Later the victim signs up, asks for the code again and enters it.
+          const signedUp = yield* call("POST", "/sign-up/email", {
+            body: { email, password: mine, name: "" },
+            reservation: yield* reservation,
+          });
 
-          const token = yield* signUp("lena.signup@example.org");
+          // A later mail, so `codeFor` reads its code.
+          yield* TestClock.adjust("1 minute");
+          yield* call("POST", "/send-verification-email", { body: { email } });
 
-          assert.isTrue(Option.isSome(yield* resolver.resolve(bearer(token))));
-          assert.isTrue(Option.isNone(yield* resolver.resolve(Headers.empty)));
+          const confirmed = yield* call("POST", "/email-otp/verify-email", {
+            body: { email, otp: yield* codeFor(email), password: mine },
+          });
 
-          // The name lives in the encrypted notebook, whatever sign-up sent.
-          const user = yield* userOf("lena.signup@example.org");
+          const asClassmate = yield* call("POST", "/sign-in/email", {
+            body: { email, password: theirs },
+          });
 
-          assert.deepStrictEqual([user?.name, user?.image], ["", null]);
+          const asVictim = yield* call("POST", "/sign-in/email", {
+            body: { email, password: mine },
+          });
 
-          // The console lists the code's mail for whoever tests the sign-up.
-          const mails = yield* Mail.captured;
+          assert.deepStrictEqual(
+            {
+              signedUp: signedUp.status,
+              confirmed: confirmed.status,
+              asClassmate: asClassmate.status,
+              asVictim: asVictim.status,
+            },
+            { signedUp: 200, confirmed: 200, asClassmate: 401, asVictim: 200 },
+          );
+        }),
+      );
 
-          assert.strictEqual(mails[0]?.to, "lena.signup@example.org");
+      it.effect("the device that confirms decides the school, not whoever signed up last", () =>
+        Effect.gen(function* () {
+          const sql = yield* SqlClient.SqlClient;
+          const email = "opfer.schule@example.org";
+          const mine = yield* reservation;
+          const theirs = yield* Effect.map(AccessCodes.reserve(otherCode), ({ token }) => token);
+
+          yield* call("POST", "/sign-up/email", {
+            body: { email, password, name: "" },
+            reservation: mine,
+          });
+
+          // An attacker signs the same address up later, with another school's code.
+          yield* call("POST", "/sign-up/email", {
+            body: { email, password: "vom-angreifer-gewaehlt", name: "" },
+            reservation: theirs,
+          });
+
+          yield* TestClock.adjust("1 minute");
+          yield* call("POST", "/send-verification-email", { body: { email } });
+
+          const confirmed = yield* call("POST", "/email-otp/verify-email", {
+            body: { email, otp: yield* codeFor(email), password },
+            reservation: mine,
+          });
+
+          const user = yield* userOf(email);
+
+          const admitted = yield* sql<{ readonly school: string }>`
+            select school_id as school from school_access where account_id = ${user?.id ?? ""}
+          `;
+
+          assert.deepStrictEqual([confirmed.status, admitted], [200, [{ school }]]);
+        }),
+      );
+
+      it.effect("a confirmation carries the password, and without one confirms nothing", () =>
+        Effect.gen(function* () {
+          const email = "lena.nopassword@example.org";
+
+          yield* call("POST", "/sign-up/email", {
+            body: { email, password, name: "" },
+            reservation: yield* reservation,
+          });
+
+          const otp = yield* codeFor(email);
+          const bare = yield* call("POST", "/email-otp/verify-email", { body: { email, otp } });
+          const unconfirmed = (yield* userOf(email))?.emailVerified;
+
+          // The sign-up's password counts for nothing until a confirmation carries it: it is wrong,
+          // not merely unconfirmed.
+          const early = yield* call("POST", "/sign-in/email", { body: { email, password } });
+
+          assert.deepStrictEqual(
+            [bare.status, yield* decodeCode(bare.json), unconfirmed, early.status],
+            [400, { code: "PASSWORD_REQUIRED" }, false, 401],
+          );
         }),
       );
 
@@ -312,7 +468,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
           });
 
           const guessed = yield* call("POST", "/email-otp/verify-email", {
-            body: { email: "lena.resend@example.org", otp: "000000" },
+            body: { email: "lena.resend@example.org", otp: "000000", password },
           });
 
           assert.strictEqual(resent.status, 200);
@@ -499,7 +655,10 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
         Effect.gen(function* () {
           const email = "lena.unconfirmed@example.org";
 
-          yield* call("POST", "/sign-up/email", { body: { email, password, name: "" } });
+          yield* call("POST", "/sign-up/email", {
+            body: { email, password, name: "" },
+            reservation: yield* reservation,
+          });
           yield* call("POST", "/email-otp/request-password-reset", { body: { email } });
 
           const code = yield* resetCodeFor(email);
@@ -582,17 +741,18 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
 
           const confirm = Effect.fnUntraced(function* (email: string) {
             const request = call("POST", "/send-verification-email", { body: { email } });
+            const extra = { password };
 
             yield* request;
             const first = email.startsWith("lena") ? yield* codeFor(email) : "123456";
-            const wrong = yield* tries("/email-otp/verify-email", email, wrongCode(first), {});
+            const wrong = yield* tries("/email-otp/verify-email", email, wrongCode(first), extra);
 
             yield* request;
             const second = email.startsWith("lena") ? yield* codeFor(email) : "123456";
             yield* expire(email);
 
             const expired = yield* call("POST", "/email-otp/verify-email", {
-              body: { email, otp: second },
+              body: { email, otp: second, ...extra },
             });
 
             return yield* outcomes([...wrong, expired]);
@@ -601,6 +761,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
           yield* signUp("lena.tries@example.org");
           yield* call("POST", "/sign-up/email", {
             body: { email: "lena.unconfirmed.tries@example.org", password, name: "" },
+            reservation: yield* reservation,
           });
 
           const everyAnswer = Array.from(
@@ -898,16 +1059,21 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
     });
 
     it.layer(server("beta"))((it) => {
-      it.effect("refuses sign-up outside development and preview", () =>
+      it.effect("refuses a sign-up without a school's access code, as everywhere", () =>
         Effect.gen(function* () {
           const created = yield* call("POST", "/sign-up/email", {
             body: { email: "lena@example.org", password, name: "" },
           });
 
-          assert.strictEqual(created.status, 400);
-          assert.deepStrictEqual(yield* decodeCode(created.json), {
-            code: "EMAIL_PASSWORD_SIGN_UP_DISABLED",
+          const forged = yield* call("POST", "/sign-up/email", {
+            body: { email: "lena@example.org", password, name: "" },
+            reservation: "a reservation this server never gave out",
           });
+
+          assert.deepStrictEqual(
+            [created.status, yield* decodeCode(created.json), forged.status],
+            [400, { code: Access.reservationRefused }, 400],
+          );
 
           const listed = yield* Effect.flip(Mail.captured);
 
