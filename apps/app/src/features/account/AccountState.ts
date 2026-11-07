@@ -60,6 +60,17 @@ export const signUp = runtime.fn<{ readonly email: string; readonly password: st
 
 export const sendCode = runtime.fn<string>()((email) => Account.sendCode(email));
 
+export const requestPasswordReset = runtime.fn<string>()((email) =>
+  Account.requestPasswordReset(email),
+);
+
+/** Sets the new password with the mailed code and signs the device in with it. */
+export const resetPassword = runtime.fn<{
+  readonly email: string;
+  readonly code: string;
+  readonly password: string;
+}>()(({ email, code, password }) => Account.resetPassword(email, code, password));
+
 export const confirmEmail = runtime.fn<{ readonly email: string; readonly code: string }>()(
   ({ email, code }) => Account.confirmEmail(email, code),
 );

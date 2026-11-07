@@ -26,7 +26,12 @@ const options = Auth.options(
     nativeApps: { ios: [], android: [] },
     signUp: true,
   },
-  { sendCode: () => Promise.resolve(), sessionDeleted: () => {}, log: () => {} },
+  {
+    sendCode: () => Promise.resolve(),
+    requestReset: () => {},
+    sessionDeleted: () => {},
+    log: () => {},
+  },
 );
 
 // The Postgres types Better Auth's own migrations create for each field type.

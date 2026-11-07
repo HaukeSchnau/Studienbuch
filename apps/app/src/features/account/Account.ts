@@ -28,7 +28,6 @@ export const Reason = Schema.Literals([
   "weak-password",
   "sign-up-closed",
   "wrong-code",
-  "code-expired",
   "too-many-attempts",
   "offline",
   "server-error",
@@ -57,8 +56,9 @@ export const sentence: Record<Reason, string> = {
   "invalid-email": "Diese E-Mail-Adresse sieht nicht richtig aus.",
   "weak-password": `Dein Passwort braucht mindestens ${Accounts.minPasswordLength} Zeichen.`,
   "sign-up-closed": "Neue Konten gibt es bald mit dem Zugangscode deiner Schule.",
-  "wrong-code": "Der Code stimmt nicht. Schau noch einmal in die E-Mail.",
-  "code-expired": "Der Code ist abgelaufen. Lass dir einen neuen schicken.",
+  // The server answers a wrong, spent and expired code alike, so an address without an account
+  // can't be told apart. The sentence covers all three.
+  "wrong-code": `Der Code stimmt nicht oder gilt nicht mehr. Nach fünf falschen Versuchen und nach ${Accounts.codeMinutes} Minuten brauchst du einen neuen.`,
   "too-many-attempts": "Zu viele Versuche. Warte kurz und versuch es dann noch einmal.",
   offline: "Keine Verbindung zum Server. Zum Anmelden brauchst du einmal Internet.",
   "server-error": "Beim Server ist gerade etwas schiefgelaufen. Versuch es gleich noch einmal.",
@@ -85,8 +85,6 @@ const reasons = new Map<string, Reason>(
     PASSWORD_TOO_SHORT: "weak-password",
     EMAIL_PASSWORD_SIGN_UP_DISABLED: "sign-up-closed",
     INVALID_OTP: "wrong-code",
-    OTP_EXPIRED: "code-expired",
-    TOO_MANY_ATTEMPTS: "too-many-attempts",
     RATE_LIMITED: "too-many-attempts",
     PASSKEY_NOT_FOUND: "passkey-unknown",
     AUTHENTICATION_FAILED: "passkey-failed",
@@ -161,6 +159,34 @@ export const sendCode = Effect.fn("Account.sendCode")(function* (email: string) 
   const api = yield* AuthApi.Service;
 
   yield* api.sendCode(email.trim()).pipe(Effect.mapError(problem));
+});
+
+/** Mails a reset code to `email` if it has an account. The answer doesn't say whether it has. */
+export const requestPasswordReset = Effect.fn("Account.requestPasswordReset")(function* (
+  email: string,
+) {
+  const api = yield* AuthApi.Service;
+
+  yield* api.requestPasswordReset(email.trim()).pipe(Effect.mapError(problem));
+});
+
+/**
+ * Sets a new password with the mailed code, then signs this device in with it. The code alone
+ * signs nobody in, and the notebook stays locked on a new device until a passkey or the
+ * Notfallkarte opens it.
+ */
+export const resetPassword = Effect.fn("Account.resetPassword")(function* (
+  email: string,
+  code: string,
+  password: string,
+) {
+  const api = yield* AuthApi.Service;
+
+  yield* api
+    .resetPassword(email.trim(), code.replaceAll(/\D/gu, ""), password)
+    .pipe(Effect.mapError(problem));
+
+  yield* signIn(email, password);
 });
 
 /** A confirmed address and its new session, waiting for the passkey offer before `keep`. */

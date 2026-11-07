@@ -140,6 +140,14 @@ export class Service extends Context.Service<
     /** `EMAIL_NOT_VERIFIED` means the address still needs its code, which is on its way. */
     readonly signIn: (email: string, password: string) => Effect.Effect<SignedIn, Failure>;
     readonly sendCode: (email: string) => Effect.Effect<void, Failure>;
+    /** Mails a reset code if `email` has an account. The answer is the same either way. */
+    readonly requestPasswordReset: (email: string) => Effect.Effect<void, Failure>;
+    /** Sets a new password with the mailed code. It signs nobody in. */
+    readonly resetPassword: (
+      email: string,
+      code: string,
+      password: string,
+    ) => Effect.Effect<void, Failure>;
     readonly confirmEmail: (email: string, code: string) => Effect.Effect<SignedIn, Failure>;
     /** When the session ends now, or `None` once it ended. A call also renews it (D27). */
     readonly session: (token: Redacted.Redacted) => Effect.Effect<Option.Option<Date>, Failure>;
@@ -218,6 +226,10 @@ export const layer = Layer.effect(Service)(
         Effect.asVoid(send(post("/sign-up/email", { email, password, name: "" }))),
       signIn: (email, password) => read(post("/sign-in/email", { email, password }), signedIn),
       sendCode: (email) => Effect.asVoid(send(post("/send-verification-email", { email }))),
+      requestPasswordReset: (email) =>
+        Effect.asVoid(send(post("/email-otp/request-password-reset", { email }))),
+      resetPassword: (email, code, password) =>
+        Effect.asVoid(send(post("/email-otp/reset-password", { email, otp: code, password }))),
       confirmEmail: (email, code) =>
         read(post("/email-otp/verify-email", { email, otp: code }), signedIn),
       session: (token) =>
