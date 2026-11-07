@@ -1143,40 +1143,48 @@ describe("Seal", () => {
     ),
   );
 
-  it.effect("a Seal the server has no key record for waits until the keys change", () =>
+  it.effect("a Seal the server has no key record for goes out again next round, and says why", () =>
     onEachDriver((driver) =>
       Effect.gen(function* () {
         const a = yield* Layer.build(device(driver, "a"));
 
         yield* Effect.provide(
           Effect.gen(function* () {
+            const sync = yield* SyncClient.Service;
+            const held = Effect.map(sync.status.get, (status) => status.held);
             yield* Devices.space("nb-lena", "notebook", "owner");
+            yield* Devices.space("igs", "school", "reader");
+            yield* Devices.baseRow("igs", "Course", "ma", '{"name":"Mathe"}');
             yield* create("n1", "Mathe");
+            yield* sync.mutate(Notes.choose, { notebook: "nb-lena", school: "igs", course: "ma" });
 
+            const spaces = (version: number, keyEpoch: number | null) => [
+              ...notebook(version, keyEpoch),
+              { id: "igs", kind: "school", role: "reader", version: 1, keyEpoch: null },
+            ];
+
+            // The first push meets an account without a key record. Before the next round, another
+            // device of the account published it, and nothing on this device changed.
             const server = Scripted.scripted({
               push: [
                 stopFirst((mutationId) => Protocol.NoKeyRecord.make({ mutationId })),
                 Scripted.applyAll,
               ],
               pull: [
-                Scripted.page({ spaces: notebook(0, null), lastMutationId: 0 }),
-                Scripted.page({ spaces: notebook(0, null), lastMutationId: 0 }),
-                Scripted.page({ spaces: notebook(1, 0), lastMutationId: 1 }),
+                Scripted.page({ spaces: spaces(0, null), lastMutationId: 0 }),
+                Scripted.page({ spaces: spaces(1, 0), lastMutationId: 2 }),
               ],
             });
 
-            yield* replicate(server.remote);
-            yield* replicate(server.remote);
-            expect(server.pushes, driver).toHaveLength(1);
+            expect(yield* replicate(server.remote), driver).toBe("retry");
+            expect(yield* held, driver).toEqual(Option.some("no-key-record"));
 
-            // The app published the account's record (`Keys.init`) and hands the engine its key.
-            yield* (yield* SyncClient.Service).unlock(Devices.rootKey, 0);
-            yield* replicate(server.remote);
-
-            expect(
-              Option.map(sealOf(server.pushes[1]), (seal) => seal.writes.map((write) => write.id)),
-              driver,
-            ).toEqual(Option.some(["n1"]));
+            expect(yield* replicate(server.remote), driver).toBe("idle");
+            expect(server.pushes.map(Scripted.ids), driver).toEqual([
+              [1, 2],
+              [1, 2],
+            ]);
+            expect(yield* held, driver).toEqual(Option.none());
           }),
           a,
         );
@@ -1223,7 +1231,7 @@ describe("Seal", () => {
       ),
   );
 
-  it.effect("`KeysBehind` at an older generation than the device's holds its Seals", () =>
+  it.effect("`KeysBehind` at an older generation than the device's says why, and asks again", () =>
     onEachDriver((driver) =>
       Effect.gen(function* () {
         let fetched = 0;
@@ -1246,10 +1254,12 @@ describe("Seal", () => {
             yield* create("n1", "Mathe");
 
             // The server lost generation 1's record: a seal can't help, the records need publishing.
+            const lostRecords = stopFirst((mutationId) =>
+              Protocol.KeysBehind.make({ mutationId, generation: 0 }),
+            );
+
             const server = Scripted.scripted({
-              push: [
-                stopFirst((mutationId) => Protocol.KeysBehind.make({ mutationId, generation: 0 })),
-              ],
+              push: [lostRecords, lostRecords],
               pull: [
                 Scripted.page({ spaces: notebook(0, null), lastMutationId: 0 }),
                 Scripted.page({ spaces: notebook(0, null), lastMutationId: 0 }),
@@ -1259,8 +1269,12 @@ describe("Seal", () => {
             yield* replicate(server.remote);
             yield* replicate(server.remote);
 
-            expect(server.pushes, driver).toHaveLength(1);
+            // Each round asks again, since another device may have published the records since.
+            expect(server.pushes, driver).toHaveLength(2);
             expect(fetched, driver).toBe(0);
+            expect((yield* (yield* SyncClient.Service).status.get).held, driver).toEqual(
+              Option.some("keys-behind"),
+            );
           }),
           a,
         );
