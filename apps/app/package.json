@@ -20,6 +20,7 @@
     "@simplewebauthn/browser": "catalog:",
     "@stu/api": "workspace:*",
     "@stu/core": "workspace:*",
+    "@stu/domain-ui": "workspace:*",
     "@stu/e2ee": "workspace:*",
     "@stu/sync": "workspace:*",
     "@stu/ui": "workspace:*",

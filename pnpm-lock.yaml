@@ -433,6 +433,9 @@ importers:
       '@stu/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@stu/domain-ui':
+        specifier: workspace:*
+        version: link:../../packages/domain-ui
       '@stu/e2ee':
         specifier: workspace:*
         version: link:../../packages/e2ee
