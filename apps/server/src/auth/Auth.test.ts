@@ -133,16 +133,20 @@ const call = Effect.fnUntraced(function* (
   }
 
   const response = yield* client.execute(request);
+  const text = yield* response.text;
 
   return {
     status: response.status,
-    json: yield* Effect.orElseSucceed(response.json, () => null),
+    /** The body as sent, byte for byte. */
+    text,
+    json: Option.getOrNull(decodeJson(text)),
     cookies: response.headers["set-cookie"] ?? null,
     challenge: Option.getOrUndefined(Headers.get(response.headers, Accounts.challengeHeader)),
     token: Option.getOrUndefined(Headers.get(response.headers, "set-auth-token")),
   };
 });
 
+const decodeJson = Schema.decodeUnknownOption(Schema.fromJsonString(Schema.Unknown));
 const decodeToken = Schema.decodeUnknownEffect(Schema.Struct({ token: Schema.String }));
 const decodeCode = Schema.decodeUnknownEffect(Schema.Struct({ code: Schema.String }));
 const decodeChallenge = Schema.decodeUnknownEffect(Schema.Struct({ challenge: Schema.String }));
@@ -211,14 +215,9 @@ const resetCodeFor = (email: string) =>
 /** Whatever the code, a different one of six digits. */
 const wrongCode = (code: string) => String((Number(code) + 1) % 1_000_000).padStart(6, "0");
 
-/** The status and error code of each answer, which must not tell a known address from another. */
-const outcomes = (answers: ReadonlyArray<{ readonly status: number; readonly json: unknown }>) =>
-  Effect.forEach(answers, (answer) =>
-    Effect.map(
-      Effect.orElseSucceed(decodeCode(answer.json), () => ({ code: "none" })),
-      ({ code }) => `${answer.status} ${code}`,
-    ),
-  );
+/** Each answer's status and raw body, which must not tell a known address from another. */
+const outcomes = (answers: ReadonlyArray<{ readonly status: number; readonly text: string }>) =>
+  Effect.succeed(answers.map((answer) => `${answer.status} ${answer.text}`));
 
 /** Registers a passkey for the account of a fresh session, as "Passkey anlegen" does. */
 const addPasskey = Effect.fnUntraced(function* (token: string) {
@@ -604,7 +603,10 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
             body: { email: "lena.unconfirmed.tries@example.org", password, name: "" },
           });
 
-          const everyAnswer = Array.from({ length: 7 }, () => "400 INVALID_OTP");
+          const everyAnswer = Array.from(
+            { length: 7 },
+            () => `400 {"message":"Invalid OTP","code":"INVALID_OTP"}`,
+          );
 
           assert.deepStrictEqual(
             {
@@ -620,6 +622,36 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
               confirmUnknown: everyAnswer,
             },
           );
+        }),
+      );
+
+      // Anything else would leave a code row for any string, as long as it is.
+      it.effect("answers a reset request for no address alike, and starts nothing for it", () =>
+        Effect.gen(function* () {
+          const sql = yield* SqlClient.SqlClient;
+          const notAddresses = ["x".repeat(100_000), `${"a".repeat(250)}@example.org`, "lena"];
+
+          const answers = yield* Effect.forEach(notAddresses, (email) =>
+            call("POST", "/email-otp/request-password-reset", { body: { email } }),
+          );
+
+          // The jobs run in order; once this one mailed, the ones before it are done.
+          yield* signUp("lena.after@example.org");
+          yield* call("POST", "/email-otp/request-password-reset", {
+            body: { email: "lena.after@example.org" },
+          });
+          yield* resetMailTo("lena.after@example.org");
+
+          const [rows] = yield* sql<{ readonly count: number }>`
+            select count(*)::int as count from auth_verification
+            where identifier = any(${notAddresses.map((email) => `forget-password-otp-${email}`)})
+          `;
+
+          assert.deepStrictEqual(
+            answers.map((answer) => `${answer.status} ${answer.text}`),
+            notAddresses.map(() => `200 {"success":true}`),
+          );
+          assert.strictEqual(rows?.count, 0);
         }),
       );
 

@@ -120,7 +120,8 @@ export const options = (settings: Settings, callbacks: Callbacks) =>
               ? { context: { body: { ...context.body, createSession: false } } }
               : context.path === "/email-otp/request-password-reset"
                 ? Option.match(decodeAddress(context.body), {
-                    onNone: () => undefined,
+                    // Not an address: the same answer, and nothing starts.
+                    onNone: () => context.json({ success: true }),
                     onSome: ({ email }) => {
                       callbacks.requestReset(email);
 
@@ -222,7 +223,15 @@ const codeMail = (to: string, code: string): Mail.Message => ({
   ].join("\n"),
 });
 
-const decodeAddress = Schema.decodeUnknownOption(Schema.Struct({ email: Schema.String }));
+// RFC 5321 allows 254 characters in a path; one @, nothing blank, a dot in the domain.
+const decodeAddress = Schema.decodeUnknownOption(
+  Schema.Struct({
+    email: Schema.String.check(
+      Schema.isMaxLength(254),
+      Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u),
+    ),
+  }),
+);
 
 const text = new TextEncoder();
 
@@ -296,7 +305,8 @@ const resetMail = (
 });
 
 // Better Auth counts wrong tries and expiry only where a code exists. A sign-up that was never
-// confirmed has one and an unknown address none, so every bad code answers as a wrong one.
+// confirmed has one and an unknown address none, so every answer about the code is one constant
+// response, byte for byte. Password lengths are checked before the code, alike for everyone.
 const sameAnswerForBadCodes = (response: Response): Promise<Response> =>
   response.status === 400 || response.status === 403
     ? response
@@ -304,11 +314,11 @@ const sameAnswerForBadCodes = (response: Response): Promise<Response> =>
         .json()
         .then(decodeErrorCode)
         .then((error) =>
-          Option.exists(error, ({ code }) => hiddenCodes.has(code))
-            ? Response.json(
-                { code: "INVALID_OTP", message: "Invalid OTP" },
-                { status: 400, headers: response.headers },
-              )
+          Option.exists(error, ({ code }) => codeAnswers.has(code))
+            ? new Response(invalidCode, {
+                status: 400,
+                headers: { "content-type": "application/json" },
+              })
             : response,
         )
     : Promise.resolve(response);
@@ -316,7 +326,10 @@ const sameAnswerForBadCodes = (response: Response): Promise<Response> =>
 const decodeErrorCode = Schema.decodeUnknownOption(Schema.Struct({ code: Schema.String }));
 
 // A guessed code for an address without an account reaches USER_NOT_FOUND.
-const hiddenCodes = new Set(["OTP_EXPIRED", "TOO_MANY_ATTEMPTS", "USER_NOT_FOUND"]);
+const codeAnswers = new Set(["INVALID_OTP", "OTP_EXPIRED", "TOO_MANY_ATTEMPTS", "USER_NOT_FOUND"]);
+
+// In the order Better Auth writes its errors.
+const invalidCode = JSON.stringify({ message: "Invalid OTP", code: "INVALID_OTP" });
 
 const codePaths = new Set([
   `${Accounts.path}/email-otp/reset-password`,
