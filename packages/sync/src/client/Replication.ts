@@ -7,7 +7,6 @@
 import * as Clock from "effect/Clock";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
-import * as Ref from "effect/Ref";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
@@ -73,6 +72,7 @@ export interface Device {
       readonly pushing: boolean;
       readonly pulling: boolean;
       readonly updateRequired: Option.Option<UpdateRequired>;
+      readonly held: Option.Option<Held>;
     }>,
   ) => Effect.Effect<void>;
   /** Runs `effect` in one transaction, then invalidates the tables it reports. */
@@ -90,11 +90,6 @@ export interface Device {
   readonly keyring: Keyring.Keyring;
   /** After a pull: opens boxes that waited for the account's keys, and picks up a renewed key. */
   readonly afterPull: Effect.Effect<void, SqlError.SqlError>;
-  /**
-   * Whether every `Seal` waits for the account's keys to change on the device: the server holds no
-   * key record for the account, or the renewal `KeysBehind` asked for didn't come.
-   */
-  readonly sealsHeld: Ref.Ref<boolean>;
   /** Fetches the device's own seal and unlocks with it, if it reaches `generation`. */
   readonly renewTo: (generation: number) => Effect.Effect<boolean, SqlError.SqlError>;
 }
@@ -115,6 +110,13 @@ type Step =
   | "renumber-after-pull"
   | Exclude<Outcome, "idle" | "retry">;
 
+/**
+ * Why the server didn't take a `Seal`. `no-key-record`: the account has no key record there yet,
+ * which publishing one (`Keys.init`) fixes. `keys-behind`: the server and the device hold
+ * different newest generations, and the device's own seal didn't reconcile them.
+ */
+export type Held = "no-key-record" | "keys-behind";
+
 /** Where a round's push stands: what the server confirmed, and the generation it asked for. */
 interface Fence {
   pushedUpTo: number;
@@ -123,6 +125,15 @@ interface Fence {
 
 export const make = (device: Device) => {
   const { definition, actor } = device;
+  let held = Option.none<Held>();
+
+  /** Reports why `Seal` commands don't go out, when that changed. */
+  const hold = (reason: Option.Option<Held>) => {
+    if (Option.getOrNull(held) === Option.getOrNull(reason)) return Effect.void;
+    held = reason;
+
+    return device.report({ held: reason });
+  };
 
   /** Reports `key` while `effect` runs, so a pull's flag also covers applying its pages. */
   const flagged = <A, E, R>(key: "pushing" | "pulling", effect: Effect.Effect<A, E, R>) =>
@@ -194,13 +205,16 @@ export const make = (device: Device) => {
    * than what the server confirms.
    */
   const push = Effect.fnUntraced(function* (remote: Remote, fence: Fence) {
-    const held = yield* Ref.get(device.sealsHeld);
-
     for (;;) {
       const meta = yield* Outbox.meta;
       const waiting = yield* Outbox.after(fence.pushedUpTo, pushBatch);
 
-      if (waiting.length === 0) return "done";
+      // The server took every command up to here, held ones included.
+      if (waiting.length === 0) {
+        yield* hold(Option.none());
+
+        return "done";
+      }
 
       // Spaces whose epoch 0 a command of this batch opens: later ones in it need no box. A batch
       // the server didn't take carries no box for the next one.
@@ -215,8 +229,6 @@ export const make = (device: Device) => {
           commands.push(Outbox.asMutate(command));
           continue;
         }
-
-        if (held) break;
 
         if (command.sealed !== null) {
           for (const box of command.sealed.boxes) opening.add(box.space);
@@ -291,8 +303,10 @@ export const make = (device: Device) => {
       if (response.outcomes.some((outcome) => outcome._tag === "Stale")) return "stale";
 
       for (const outcome of response.outcomes) {
+        // Another device of the account may publish the record any time, so the round backs off
+        // and asks again.
         if (outcome._tag === "NoKeyRecord") {
-          yield* Ref.set(device.sealsHeld, true);
+          yield* hold(Option.some("no-key-record"));
 
           return "retry";
         }
@@ -487,7 +501,7 @@ export const make = (device: Device) => {
       // the push sent, and the device's own seal brings the newer keys to seal it again with.
       if (pushed === "keys-behind") {
         if (fence.keysBehind !== null && (yield* device.renewTo(fence.keysBehind))) continue;
-        yield* Ref.set(device.sealsHeld, true);
+        yield* hold(Option.some("keys-behind"));
 
         return "retry";
       }

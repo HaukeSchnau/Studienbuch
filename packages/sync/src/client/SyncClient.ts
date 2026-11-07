@@ -20,7 +20,6 @@ import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Reactivity from "effect/reactivity/Reactivity";
 import * as Redacted from "effect/Redacted";
-import * as Ref from "effect/Ref";
 import * as Schema from "effect/Schema";
 import * as Semaphore from "effect/Semaphore";
 import * as SqlClient from "effect/sql/SqlClient";
@@ -88,6 +87,11 @@ export interface Status {
   readonly waiting: number;
   /** The server needs a newer app. The device keeps working on its own data and keeps its outbox. */
   readonly updateRequired: Option.Option<Replication.UpdateRequired>;
+  /**
+   * Why the server didn't take the device's encrypted entries in the last push that reached them.
+   * The engine asks again each round, and the reason goes once the server takes them.
+   */
+  readonly held: Option.Option<Replication.Held>;
   /** Another device removed this one, and the engine wiped its data and keys. */
   readonly revoked: boolean;
 }
@@ -252,7 +256,6 @@ export const make = Effect.fnUntraced(function* (
   const secrets = yield* Ports.DeviceSecrets;
   const suite = yield* CryptoSuite.Service;
   const keyring = yield* Keyring.make(actor);
-  const sealsHeld = yield* Ref.make(false);
 
   const withSuite = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
     Effect.provideService(effect, CryptoSuite.Service, suite);
@@ -274,6 +277,7 @@ export const make = Effect.fnUntraced(function* (
     pulling: false,
     waiting: yield* Outbox.waiting,
     updateRequired: Option.none(),
+    held: Option.none(),
     revoked: false,
   });
 
@@ -504,7 +508,6 @@ export const make = Effect.fnUntraced(function* (
     yield* withSuite(keyring.unlock(rootKey, generation)).pipe(
       Effect.provideService(SqlClient.SqlClient, sql),
     );
-    yield* Ref.set(sealsHeld, false);
     yield* reopenAll;
 
     // Sealed commands that waited for a key can go out now.
@@ -512,13 +515,9 @@ export const make = Effect.fnUntraced(function* (
   });
 
   /**
-   * Picks up a renewed root key once a box from the account's newer generation waits: fetches the
-   * device's own seal and unlocks with its key. A box that doesn't open yet stays, and opens then.
-   */
-  /**
    * Picks up the account's keys at `generation` from the device's own seal. A generation at or below
    * the device's own means the server lost newer key records, which a seal can't bring back: the
-   * device's records need publishing again, and its `Seal` commands wait until then.
+   * device's records need publishing again, and the push asks again each round until they are.
    */
   const renewTo = Effect.fn("SyncClient.renewTo")(
     function* (generation: number) {
@@ -552,6 +551,10 @@ export const make = Effect.fnUntraced(function* (
     }),
   );
 
+  /**
+   * Picks up a renewed root key once a box from the account's newer generation waits: fetches the
+   * device's own seal and unlocks with its key. A box that doesn't open yet stays, and opens then.
+   */
   const renew = Effect.gen(function* () {
     const own = yield* withSuite(keyring.account);
 
@@ -605,7 +608,6 @@ export const make = Effect.fnUntraced(function* (
     opener,
     keyring,
     afterPull: Effect.andThen(retryBoxes, renew),
-    sealsHeld,
     renewTo,
   });
 
