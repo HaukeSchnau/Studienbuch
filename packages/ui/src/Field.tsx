@@ -1,10 +1,12 @@
-import { useId, useState, type ComponentRef, type Ref } from "react";
+import { useId, useState, type ComponentRef, type ReactNode, type Ref } from "react";
 import {
   StyleSheet,
   TextInput,
   View,
+  type StyleProp,
   type TextInputFocusEvent,
   type TextInputProps,
+  type TextStyle,
 } from "react-native";
 
 import { Text } from "./Text.tsx";
@@ -27,6 +29,15 @@ export interface FieldProps extends Omit<TextInputProps, "style"> {
   readonly counter?: { readonly count: number; readonly limit: number } | undefined;
   /** Outlines the field and turns the hint red, for a value that can't be saved. The hint says why. */
   readonly invalid?: boolean;
+  /**
+   * The old web's grey pill with a blue ring on focus, for the sign-in and setup cards. The label
+   * sits above it in ink.
+   */
+  readonly pill?: boolean;
+  /** Type for one kind of value, such as the access code's spaced capitals. */
+  readonly inputStyle?: StyleProp<TextStyle>;
+  /** A mark at the field's right end, such as the tick of a complete access code. */
+  readonly trailing?: ReactNode;
   readonly ref?: Ref<ComponentRef<typeof TextInput>>;
 }
 
@@ -35,7 +46,17 @@ export interface FieldProps extends Omit<TextInputProps, "style"> {
  * every TextInput prop passes through. A green outline shows where the keyboard types; a read-only
  * field has no fill.
  */
-export function Field({ label, hint, counter, invalid = false, ref, ...input }: FieldProps) {
+export function Field({
+  label,
+  hint,
+  counter,
+  invalid = false,
+  pill = false,
+  inputStyle,
+  trailing,
+  ref,
+  ...input
+}: FieldProps) {
   const { color } = Theme.useTheme();
   const focus = useFocused(input);
   const hintId = useId();
@@ -44,44 +65,68 @@ export function Field({ label, hint, counter, invalid = false, ref, ...input }: 
   const hintColor = invalid ? color.danger : color.inkSoft;
 
   return (
-    <View style={styles.field}>
-      <Text variant="subhead" weight="semibold" style={{ color: color.inkSoft }}>
+    <View style={[styles.field, pill ? styles.pillField : null]}>
+      <Text
+        variant="subhead"
+        weight={pill ? "medium" : "semibold"}
+        style={pill ? [styles.pillLabel, { color: color.ink }] : { color: color.inkSoft }}
+      >
         {label}
       </Text>
-      <TextInput
-        ref={ref}
-        accessibilityLabel={label}
-        accessibilityHint={hint}
-        aria-invalid={invalid}
-        aria-describedby={hint === undefined ? undefined : hintId}
-        placeholderTextColor={color.inkSoft}
-        selectionColor={color.accent}
-        {...input}
-        onFocus={focus.onFocus}
-        onBlur={focus.onBlur}
-        style={[
-          styles.input,
-          input.multiline === true ? styles.multiline : null,
-          invalid && focus.focused
-            ? styles.invalidFocused
-            : invalid || focus.focused
-              ? styles.emphasised
-              : null,
-          {
-            backgroundColor: readOnly ? "transparent" : color.canvas,
-            borderColor: edge,
-            color: readOnly ? color.inkSoft : color.ink,
-          },
-        ]}
-      />
+      <View style={styles.box}>
+        <TextInput
+          ref={ref}
+          accessibilityLabel={label}
+          accessibilityHint={hint}
+          aria-invalid={invalid}
+          aria-describedby={hint === undefined ? undefined : hintId}
+          placeholderTextColor={color.inkSoft}
+          selectionColor={color.accent}
+          {...input}
+          onFocus={focus.onFocus}
+          onBlur={focus.onBlur}
+          style={[
+            styles.input,
+            input.multiline === true ? styles.multiline : null,
+            pill
+              ? [
+                  styles.pill,
+                  {
+                    backgroundColor: color.fieldFill,
+                    color: color.ink,
+                    boxShadow:
+                      invalid || focus.focused
+                        ? `0 0 0 3px ${invalid ? color.fieldRingInvalid : color.fieldRing}`
+                        : "none",
+                  },
+                  focus.focused ? styles.pillFocused : null,
+                  trailing === undefined ? null : styles.pillTrailing,
+                ]
+              : [
+                  invalid && focus.focused
+                    ? styles.invalidFocused
+                    : invalid || focus.focused
+                      ? styles.emphasised
+                      : null,
+                  {
+                    backgroundColor: readOnly ? "transparent" : color.canvas,
+                    borderColor: edge,
+                    color: readOnly ? color.inkSoft : color.ink,
+                  },
+                ],
+            inputStyle,
+          ]}
+        />
+        {trailing === undefined ? null : <View style={styles.trailing}>{trailing}</View>}
+      </View>
       {hint === undefined && counter === undefined ? null : (
         <View style={styles.hint}>
           <Text
             id={hintId}
             aria-live="polite"
             variant="footnote"
-            weight={invalid ? "bold" : "medium"}
-            style={[styles.hintText, { color: hintColor }]}
+            weight={pill ? "regular" : invalid ? "bold" : "medium"}
+            style={[styles.hintText, pill ? styles.pillHint : null, { color: hintColor }]}
           >
             {hint}
           </Text>
@@ -146,6 +191,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: padding - 2,
     paddingVertical: Tokens.space.md - 2,
   },
+  box: { justifyContent: "center" },
+  trailing: { position: "absolute", right: Tokens.space.md, pointerEvents: "none" },
   hint: { flexDirection: "row", justifyContent: "space-between", gap: Tokens.space.md },
   hintText: { flexShrink: 1 },
+  // The old web's Field and Input: text-sm label, h-12 pill, px-5, text-xs hint, gap-2.
+  pillField: { gap: Tokens.space.sm },
+  pillLabel: { fontSize: 14, lineHeight: 20 },
+  pill: {
+    minHeight: Tokens.layout.minTarget,
+    borderRadius: Tokens.radius.pill,
+    borderWidth: 0,
+    paddingHorizontal: 20,
+    fontSize: 16,
+  },
+  // Room for the trailing mark, the old web's pr-12.
+  pillTrailing: { paddingRight: 48 },
+  // The field lifts 2 points while it has the keyboard.
+  pillFocused: { transform: [{ translateY: -2 }] },
+  pillHint: { fontSize: 12, lineHeight: 16 },
 });

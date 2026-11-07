@@ -45,10 +45,12 @@
     "react-native-passkeys": "catalog:",
     "react-native-quick-base64": "catalog:",
     "react-native-quick-crypto": "catalog:",
+    "react-native-reanimated": "catalog:",
     "react-native-safe-area-context": "catalog:",
     "react-native-screens": "catalog:",
     "react-native-svg": "catalog:",
-    "react-native-web": "catalog:"
+    "react-native-web": "catalog:",
+    "react-native-worklets": "catalog:"
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",

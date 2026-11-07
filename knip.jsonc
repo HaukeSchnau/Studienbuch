@@ -22,6 +22,8 @@
       "ignoreDependencies": ["@expo-google-fonts/nunito"],
     },
     "packages/ui": {
+      // Metro bundles `X.web.tsx` in place of the `X.tsx` a relative import names, for the web.
+      "entry": ["src/*.web.{ts,tsx}"],
       // `fonts.css` imports the font, and `vp` runs the tests without a config file.
       "ignoreDependencies": ["@fontsource-variable/nunito", "vite-plus"],
     },
