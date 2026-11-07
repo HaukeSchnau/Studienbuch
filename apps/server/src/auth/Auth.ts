@@ -34,6 +34,7 @@ import { Pool } from "pg";
 import { DemoAccounts } from "../demo/DemoAccounts.ts";
 import { Deployment } from "../infra/config/Deployment.ts";
 import { Mail } from "../infra/mail/Mail.ts";
+import { Limits } from "../limits/Limits.ts";
 import { AccessCodes } from "../school/AccessCodes.ts";
 import { NativeApps } from "./NativeApps.ts";
 
@@ -54,7 +55,7 @@ export interface Settings {
 
 export interface Callbacks {
   readonly sendCode: (email: string, code: string) => Promise<void>;
-  /** Starts a reset for `email` after the answer, unless the address had its codes this hour. */
+  /** Starts a reset for `email` after the answer. */
   readonly requestReset: (email: string) => void;
   /**
    * A sign-up starts with an access code: the reservation from `Access.redeem` pays for one, and
@@ -81,6 +82,18 @@ export interface Callbacks {
   readonly log: (level: "debug" | "info" | "success" | "warn" | "error", message: string) => void;
 }
 
+// Routes `limited` limits instead of Better Auth, each with a ceiling per client address. A sign-up
+// spends its reservation's budget of three, and a code request or a password counts per address.
+// A code is bounded by Better Auth's five tries per code and by the mail caps.
+const limitedRoutes = new Set([
+  "/sign-up/email",
+  "/sign-in/email",
+  "/send-verification-email",
+  "/email-otp/verify-email",
+  "/email-otp/request-password-reset",
+  "/email-otp/reset-password",
+]);
+
 /** Better Auth's configuration without its database. `AuthTables.test.ts` reads its tables. */
 export const options = (settings: Settings, callbacks: Callbacks) =>
   ({
@@ -91,7 +104,14 @@ export const options = (settings: Settings, callbacks: Callbacks) =>
     telemetry: { enabled: false },
     logger: { level: "warn", log: callbacks.log },
     // Better Auth would limit only when NODE_ENV is "production"; one build serves every environment.
-    rateLimit: { enabled: true },
+    // It keys a limit on the client's address and counts on until the route goes quiet for a whole
+    // window, which a school's network never does, so `limited` takes these routes.
+    rateLimit: {
+      enabled: true,
+      customRules: Object.fromEntries(
+        Array.from(limitedRoutes, (route) => [route, false] as const),
+      ),
+    },
     advanced: {
       // Better Auth turns both checks off when it thinks it runs in a test (`TEST`, `NODE_ENV`).
       disableOriginCheck: false,
@@ -374,10 +394,34 @@ const keyedHash = (secret: Redacted.Redacted, value: string) =>
     .then((key) => crypto.subtle.sign("HMAC", key, text.encode(value)))
     .then((signature) => Base64Url.encode(new Uint8Array(signature)));
 
-/** At most this many reset requests an hour start a code for one address. */
-const resetsPerHour = 5;
+/** Code mails per address and hour, for confirmation codes and for reset codes. */
+const mailsPerHour = 5;
 
-const hour = 60 * 60 * 1000;
+/** Wrong passwords per address in `Limits.clientWindow`, after which its sign-in waits. */
+const failedSignIns = 10;
+
+// Better Auth's answer to a code request, which a capped one gets too, so it tells nothing.
+const codeRequests = new Map<string, object>([
+  ["/send-verification-email", { status: true }],
+  ["/email-otp/request-password-reset", { success: true }],
+]);
+
+// Better Auth's own answer when it limits, which the app shows as "Zu viele Versuche".
+const tooMany = (seconds: number) =>
+  Response.json(
+    { message: "Too many requests. Please try again later." },
+    { status: 429, headers: { "x-retry-after": String(seconds) } },
+  );
+
+/** The lower-cased address a request's JSON body names, if it names one. */
+const addressIn = (request: Request) =>
+  request
+    .clone()
+    .json()
+    .then(
+      (body) => Option.map(decodeAddress(body), ({ email }) => email.toLowerCase()),
+      () => Option.none<string>(),
+    );
 
 const dateOf = (date: DateTime.Utc) =>
   DateTime.format(date, {
@@ -547,15 +591,50 @@ const make = Effect.gen(function* () {
   // Resets run after the answer; the layer's scope waits for them or ends them.
   const background = yield* FiberSet.makeRuntime();
 
-  // When each address last started a reset, kept in this process like the revocations below.
-  const resets = new Map<string, ReadonlyArray<number>>();
+  // Kept in this process like the revocations below.
+  const clients = Limits.make(Limits.clientWindow);
+  const mails = Limits.make("1 hour");
+  const signIns = Limits.make(Limits.clientWindow);
 
-  const forgetStaleResets = (now: number) => {
-    if (resets.size < 10_000) return;
+  // A school's network shares one client address, so a client gets a ceiling per route, and an
+  // email address its own caps: a few code mails an hour, and a few wrong passwords.
+  const limited = (
+    request: Request,
+    next: (request: Request) => Promise<Response>,
+  ): Promise<Response> => {
+    const route = new URL(request.url).pathname.slice(Accounts.path.length);
 
-    for (const [address, times] of resets) {
-      if (times.every((at) => at <= now - hour)) resets.delete(address);
-    }
+    if (!limitedRoutes.has(route)) return next(request);
+
+    const now = Effect.runSyncWith(services)(Clock.currentTimeMillis);
+    const client = Limits.client(request.headers.get("x-forwarded-for"));
+    const ceiling = clients.take(`${route} ${client}`, Limits.perClient, now);
+
+    if (Option.isSome(ceiling)) return Promise.resolve(tooMany(ceiling.value));
+
+    const answer = codeRequests.get(route);
+
+    if (answer === undefined && route !== "/sign-in/email") return next(request);
+
+    return addressIn(request).then((address) => {
+      if (Option.isNone(address)) return next(request);
+
+      if (answer !== undefined) {
+        return Option.isSome(mails.take(`${route} ${address.value}`, mailsPerHour, now))
+          ? Response.json(answer)
+          : next(request);
+      }
+
+      const wait = signIns.blocked(address.value, failedSignIns, now);
+
+      if (Option.isSome(wait)) return tooMany(wait.value);
+
+      return next(request).then((response) => {
+        if (response.status === 401) signIns.add(address.value, now);
+
+        return response;
+      });
+    });
   };
 
   // Every address gets a reset code, also one without an account, so a wrong, spent or expired
@@ -619,17 +698,8 @@ const make = Effect.gen(function* () {
             ),
         ),
       requestReset: (email) => {
-        const address = email.trim().toLowerCase();
-        const now = Effect.runSyncWith(services)(Clock.currentTimeMillis);
-        const recent = (resets.get(address) ?? []).filter((at) => at > now - hour);
-
-        if (recent.length >= resetsPerHour) return;
-
-        resets.set(address, [...recent, now]);
-        forgetStaleResets(now);
-
         background(
-          startReset(address).pipe(
+          startReset(email.toLowerCase()).pipe(
             Effect.catchCause((cause) => Effect.logError("A reset didn't start", cause)),
             Effect.provideContext(services),
           ),
@@ -747,9 +817,11 @@ const make = Effect.gen(function* () {
 
   return {
     handler: (request: Request) =>
-      codePaths.has(new URL(request.url).pathname)
-        ? auth.handler(request).then(sameAnswerForBadCodes)
-        : auth.handler(request),
+      limited(request, (request) =>
+        codePaths.has(new URL(request.url).pathname)
+          ? auth.handler(request).then(sameAnswerForBadCodes)
+          : auth.handler(request),
+      ),
     challengeCookie: context.createAuthCookie(challengeCookie).name,
     origin: new URL(settings.publicUrl).origin,
     sessions: { resolve, revoked: Stream.fromPubSub(deleted) },
