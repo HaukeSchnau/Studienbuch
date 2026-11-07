@@ -287,19 +287,6 @@ describe("Account", () => {
         Option.map(yield* sessions.current, (signed) => signed.accountId),
         Option.some("lena"),
       );
-
-      const spent = yield* Effect.flip(
-        Account.resetPassword("lena@example.org", "000000", "ganz-neu-4567").pipe(
-          Effect.provide(
-            AuthApiTesting.layer({
-              resetPassword: () =>
-                Effect.fail(new AuthApi.Refused({ status: 403, code: "TOO_MANY_ATTEMPTS" })),
-            }),
-          ),
-        ),
-      );
-
-      assert.strictEqual(spent.reason, "code-spent");
     }).pipe(Effect.provide(store)),
   );
 

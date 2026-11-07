@@ -28,7 +28,7 @@ const options = Auth.options(
   },
   {
     sendCode: () => Promise.resolve(),
-    sendResetCode: () => {},
+    requestReset: () => {},
     sessionDeleted: () => {},
     log: () => {},
   },

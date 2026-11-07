@@ -191,17 +191,49 @@ const codeFor = Effect.fnUntraced(function* (email: string) {
   return /\b(?<code>\d{6})\b/u.exec(mail?.text ?? "")?.groups?.code ?? "no code";
 });
 
-/** The six digits of the next reset mail to `email`, which the server sends in the background. */
-const resetCodeFor = Effect.fnUntraced(function* (email: string) {
-  const outbox = yield* Outbox;
-
-  const mail = yield* Queue.take(outbox).pipe(
-    Effect.repeat({
-      until: (message) => message.to === email && message.subject.includes("Passwort"),
-    }),
+/** The next reset mail to `email`, which the server sends in the background. */
+const resetMailTo = (email: string) =>
+  Effect.flatMap(Outbox, (outbox) =>
+    Queue.take(outbox).pipe(
+      Effect.repeat({
+        until: (message) => message.to === email && message.subject.includes("Passwort"),
+      }),
+    ),
   );
 
-  return /\b(?<code>\d{6})\b/u.exec(mail.text)?.groups?.code ?? "no code";
+/** The six digits of the next reset mail to `email`. */
+const resetCodeFor = (email: string) =>
+  Effect.map(
+    resetMailTo(email),
+    (mail) => /\b(?<code>\d{6})\b/u.exec(mail.text)?.groups?.code ?? "no code",
+  );
+
+/** Whatever the code, a different one of six digits. */
+const wrongCode = (code: string) => String((Number(code) + 1) % 1_000_000).padStart(6, "0");
+
+/** The status and error code of each answer, which must not tell a known address from another. */
+const outcomes = (answers: ReadonlyArray<{ readonly status: number; readonly json: unknown }>) =>
+  Effect.forEach(answers, (answer) =>
+    Effect.map(
+      Effect.orElseSucceed(decodeCode(answer.json), () => ({ code: "none" })),
+      ({ code }) => `${answer.status} ${code}`,
+    ),
+  );
+
+/** Registers a passkey for the account of a fresh session, as "Passkey anlegen" does. */
+const addPasskey = Effect.fnUntraced(function* (token: string) {
+  const authenticator = yield* VirtualAuthenticator.make;
+  const offered = yield* call("GET", "/passkey/generate-register-options", { token });
+
+  const registered = yield* call("POST", "/passkey/verify-registration", {
+    token,
+    challenge: offered.challenge,
+    body: {
+      response: authenticator.create(yield* decodeChallenge(offered.json), { verified: true }),
+    },
+  });
+
+  assert.strictEqual(registered.status, 200);
 });
 
 /** Signs up, enters the mailed code, and returns the signed token the device keeps. */
@@ -506,6 +538,157 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
           });
 
           assert.strictEqual(signedIn.status, 200);
+        }),
+      );
+
+      // Better Auth counts wrong tries and expiry only where a code exists, so their error codes
+      // would tell an address with an account from one without.
+      it.effect("answers a wrong, spent or expired code the same, account or not", () =>
+        Effect.gen(function* () {
+          const sql = yield* SqlClient.SqlClient;
+
+          const expire = (email: string) => sql`
+            update auth_verification set "expiresAt" = now() - interval '1 minute'
+            where identifier like ${`%-otp-${email}`}
+          `;
+
+          const tries = (
+            path: string,
+            email: string,
+            code: string,
+            extra: { readonly password?: string },
+          ) =>
+            Effect.forEach([1, 2, 3, 4, 5, 6], () =>
+              call("POST", path, { body: { email, otp: code, ...extra } }),
+            );
+
+          const reset = Effect.fnUntraced(function* (email: string) {
+            const request = call("POST", "/email-otp/request-password-reset", { body: { email } });
+            const extra = { password: "ganz-neu-4567" };
+
+            yield* request;
+            const first = email.startsWith("lena") ? yield* resetCodeFor(email) : "123456";
+            const wrong = yield* tries("/email-otp/reset-password", email, wrongCode(first), extra);
+
+            yield* request;
+            const second = email.startsWith("lena") ? yield* resetCodeFor(email) : "123456";
+            yield* expire(email);
+
+            const expired = yield* call("POST", "/email-otp/reset-password", {
+              body: { email, otp: second, ...extra },
+            });
+
+            return yield* outcomes([...wrong, expired]);
+          });
+
+          const confirm = Effect.fnUntraced(function* (email: string) {
+            const request = call("POST", "/send-verification-email", { body: { email } });
+
+            yield* request;
+            const first = email.startsWith("lena") ? yield* codeFor(email) : "123456";
+            const wrong = yield* tries("/email-otp/verify-email", email, wrongCode(first), {});
+
+            yield* request;
+            const second = email.startsWith("lena") ? yield* codeFor(email) : "123456";
+            yield* expire(email);
+
+            const expired = yield* call("POST", "/email-otp/verify-email", {
+              body: { email, otp: second },
+            });
+
+            return yield* outcomes([...wrong, expired]);
+          });
+
+          yield* signUp("lena.tries@example.org");
+          yield* call("POST", "/sign-up/email", {
+            body: { email: "lena.unconfirmed.tries@example.org", password, name: "" },
+          });
+
+          const everyAnswer = Array.from({ length: 7 }, () => "400 INVALID_OTP");
+
+          assert.deepStrictEqual(
+            {
+              reset: yield* reset("lena.tries@example.org"),
+              resetUnknown: yield* reset("nobody.tries@example.org"),
+              confirm: yield* confirm("lena.unconfirmed.tries@example.org"),
+              confirmUnknown: yield* confirm("nobody.confirm@example.org"),
+            },
+            {
+              reset: everyAnswer,
+              resetUnknown: everyAnswer,
+              confirm: everyAnswer,
+              confirmUnknown: everyAnswer,
+            },
+          );
+        }),
+      );
+
+      // Many clients could otherwise take turns guessing, and flood a student's inbox.
+      it.effect("mails at most five reset codes an hour to one address", () =>
+        Effect.gen(function* () {
+          const email = "lena.flooded@example.org";
+
+          yield* signUp(email);
+
+          const answers = yield* Effect.forEach([1, 2, 3, 4, 5, 6], () =>
+            call("POST", "/email-otp/request-password-reset", { body: { email } }),
+          );
+
+          yield* Effect.forEach([1, 2, 3, 4, 5], () => resetCodeFor(email));
+
+          assert.deepStrictEqual(
+            answers.map((answer) => answer.status),
+            [200, 200, 200, 200, 200, 200],
+          );
+          // The sign-up code and five reset codes.
+          assert.strictEqual(yield* mailCount(email), 6);
+        }),
+      );
+
+      // Six digits hash back in milliseconds, so a plain hash would hand a reader of the table
+      // every pending code.
+      it.effect("keeps mailed codes only as a hash keyed with the server's secret", () =>
+        Effect.gen(function* () {
+          const sql = yield* SqlClient.SqlClient;
+          const email = "lena.stored@example.org";
+
+          yield* signUp(email);
+          yield* call("POST", "/email-otp/request-password-reset", { body: { email } });
+
+          const code = yield* resetCodeFor(email);
+
+          const [row] = yield* sql<{ readonly value: string }>`
+            select value from auth_verification where identifier = ${`forget-password-otp-${email}`}
+          `;
+
+          const stored = row?.value.split(":")[0] ?? "";
+
+          const unkeyed = Base64Url.encode(
+            new Uint8Array(
+              yield* Effect.promise(() =>
+                crypto.subtle.digest("SHA-256", new TextEncoder().encode(code)),
+              ),
+            ),
+          );
+
+          assert.isNotEmpty(stored);
+          assert.notInclude(stored, code);
+          assert.notStrictEqual(stored, unkeyed);
+        }),
+      );
+
+      // A thief may have added a passkey, which a new password doesn't remove. The student
+      // learns how many the account has, and since when.
+      it.effect("lists the account's passkeys in the reset mail", () =>
+        Effect.gen(function* () {
+          const email = "lena.passkeys@example.org";
+
+          yield* addPasskey(yield* signUp(email));
+          yield* call("POST", "/email-otp/request-password-reset", { body: { email } });
+
+          const mail = yield* resetMailTo(email);
+
+          assert.include(mail.text, "Auf deinem Konto ist 1 Passkey eingerichtet");
         }),
       );
 

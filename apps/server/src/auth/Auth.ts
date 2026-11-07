@@ -6,10 +6,12 @@ import { type BetterAuthOptions, betterAuth } from "better-auth";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { bearer, emailOTP } from "better-auth/plugins";
 import { serializeSignedCookie } from "better-call";
+import * as Clock from "effect/Clock";
 import * as Config from "effect/Config";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
+import * as Base64Url from "effect/encoding/Base64Url";
 import * as FiberSet from "effect/FiberSet";
 import * as Cookies from "effect/http/Cookies";
 import * as Headers from "effect/http/Headers";
@@ -49,8 +51,8 @@ export interface Settings {
 
 export interface Callbacks {
   readonly sendCode: (email: string, code: string) => Promise<void>;
-  /** Hands the reset mail over and returns at once, so a known address answers as fast as an unknown one. */
-  readonly sendResetCode: (email: string, code: string) => void;
+  /** Starts a reset for `email` after the answer, unless the address had its codes this hour. */
+  readonly requestReset: (email: string) => void;
   readonly sessionDeleted: (sessionId: string) => void;
   readonly log: (level: "debug" | "info" | "success" | "warn" | "error", message: string) => void;
 }
@@ -91,6 +93,7 @@ export const options = (settings: Settings, callbacks: Callbacks) =>
       disableSignUp: !settings.signUp,
       minPasswordLength: Accounts.minPasswordLength,
       // A forgotten password may be a stolen one, so the reset ends every session of the account.
+      // A thief's passkey stays; the reset mail lists the account's passkeys instead.
       revokeSessionsOnPasswordReset: true,
     },
     emailVerification: {
@@ -107,13 +110,24 @@ export const options = (settings: Settings, callbacks: Callbacks) =>
     hooks: {
       // A new password ends the session on every other device, whatever the request asks for. A
       // new passkey signs nobody in, so a fresh sign-in can't be stretched by registering again.
+      // A reset request answers at once and runs in `requestReset`, after the rate limit, so known
+      // and unknown addresses take the same time.
       before: createAuthMiddleware((context) =>
         Promise.resolve(
           context.path === "/change-password"
             ? { context: { body: { ...context.body, revokeOtherSessions: true } } }
             : context.path === "/passkey/verify-registration"
               ? { context: { body: { ...context.body, createSession: false } } }
-              : undefined,
+              : context.path === "/email-otp/request-password-reset"
+                ? Option.match(decodeAddress(context.body), {
+                    onNone: () => undefined,
+                    onSome: ({ email }) => {
+                      callbacks.requestReset(email);
+
+                      return context.json({ success: true });
+                    },
+                  })
+                : undefined,
         ),
       ),
     },
@@ -152,15 +166,11 @@ export const options = (settings: Settings, callbacks: Callbacks) =>
         otpLength: 6,
         expiresIn: Accounts.codeMinutes * 60,
         allowedAttempts: 5,
-        storeOTP: "hashed",
-        // Better Auth mails a reset code only to an address with an account, and answers an
-        // unknown one the same way.
+        // Keyed, because six digits hash back in milliseconds from a plain SHA-256.
+        storeOTP: { hash: (otp) => keyedHash(settings.secret, `studienbuch.otp.v1:${otp}`) },
+        // Reset codes go out from `requestReset`, which never calls Better Auth's reset request.
         sendVerificationOTP: ({ email, otp, type }) =>
-          type === "email-verification"
-            ? callbacks.sendCode(email, otp)
-            : type === "forget-password"
-              ? Promise.resolve(callbacks.sendResetCode(email, otp))
-              : Promise.resolve(),
+          type === "email-verification" ? callbacks.sendCode(email, otp) : Promise.resolve(),
       }),
       passkey({
         rpID: settings.rpId,
@@ -212,7 +222,64 @@ const codeMail = (to: string, code: string): Mail.Message => ({
   ].join("\n"),
 });
 
-const resetMail = (to: string, code: string): Mail.Message => ({
+const decodeAddress = Schema.decodeUnknownOption(Schema.Struct({ email: Schema.String }));
+
+const text = new TextEncoder();
+
+/** HMAC-SHA-256 under `AUTH_SECRET`, as base64url. */
+const keyedHash = (secret: Redacted.Redacted, value: string) =>
+  crypto.subtle
+    .importKey(
+      "raw",
+      text.encode(Redacted.value(secret)),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"],
+    )
+    .then((key) => crypto.subtle.sign("HMAC", key, text.encode(value)))
+    .then((signature) => Base64Url.encode(new Uint8Array(signature)));
+
+/** At most this many reset requests an hour start a code for one address. */
+const resetsPerHour = 5;
+
+const hour = 60 * 60 * 1000;
+
+const dateOf = (date: DateTime.Utc) =>
+  DateTime.format(date, {
+    locale: "de-DE",
+    timeZone: "Europe/Berlin",
+    day: "numeric",
+    month: "numeric",
+    year: "numeric",
+  });
+
+/** "am 3.11.2026, am 5.11.2026 und am 7.11.2026" */
+const days = (dates: ReadonlyArray<DateTime.Utc>) => {
+  const each = dates.map((date) => `am ${dateOf(date)}`);
+
+  return each.length < 2 ? each.join("") : `${each.slice(0, -1).join(", ")} und ${each.at(-1)}`;
+};
+
+// A new password leaves passkeys alone, the student's own unlock among them. So the mail names
+// them, and a stranger's stands out.
+const passkeyLines = (created: ReadonlyArray<DateTime.Utc>, impressum: string) =>
+  created.length === 0
+    ? []
+    : [
+        "",
+        created.length === 1
+          ? `Auf deinem Konto ist 1 Passkey eingerichtet, angelegt ${days(created)}.`
+          : `Auf deinem Konto sind ${created.length} Passkeys eingerichtet, angelegt ${days(created)}.`,
+        "Ein neues Passwort ändert daran nichts. Wenn du einen davon nicht selbst angelegt hast, kann sich jemand anderes damit anmelden. Schreib uns dann über " +
+          `${impressum}.`,
+      ];
+
+const resetMail = (
+  to: string,
+  code: string,
+  passkeys: ReadonlyArray<DateTime.Utc>,
+  impressum: string,
+): Mail.Message => ({
   to,
   subject: `${code} ist dein Code für ein neues Passwort`,
   text: [
@@ -222,10 +289,39 @@ const resetMail = (to: string, code: string): Mail.Message => ({
     `Dein Code ist ${code}.`,
     "",
     `Gib ihn in der App ein und setze ein neues Passwort. Er gilt ${Accounts.codeMinutes} Minuten.`,
+    ...passkeyLines(passkeys, impressum),
     "",
     "Wenn du das nicht angefordert hast, kannst du diese Mail ignorieren. Dein Passwort bleibt dann unverändert.",
   ].join("\n"),
 });
+
+// Better Auth counts wrong tries and expiry only where a code exists. A sign-up that was never
+// confirmed has one and an unknown address none, so every bad code answers as a wrong one.
+const sameAnswerForBadCodes = (response: Response): Promise<Response> =>
+  response.status === 400 || response.status === 403
+    ? response
+        .clone()
+        .json()
+        .then(decodeErrorCode)
+        .then((error) =>
+          Option.exists(error, ({ code }) => hiddenCodes.has(code))
+            ? Response.json(
+                { code: "INVALID_OTP", message: "Invalid OTP" },
+                { status: 400, headers: response.headers },
+              )
+            : response,
+        )
+    : Promise.resolve(response);
+
+const decodeErrorCode = Schema.decodeUnknownOption(Schema.Struct({ code: Schema.String }));
+
+// A guessed code for an address without an account reaches USER_NOT_FOUND.
+const hiddenCodes = new Set(["OTP_EXPIRED", "TOO_MANY_ATTEMPTS", "USER_NOT_FOUND"]);
+
+const codePaths = new Set([
+  `${Accounts.path}/email-otp/reset-password`,
+  `${Accounts.path}/email-otp/verify-email`,
+]);
 
 export class Service extends Context.Service<
   Service,
@@ -271,8 +367,49 @@ const make = Effect.gen(function* () {
   const services = yield* Effect.context();
   const deleted = yield* PubSub.unbounded<string>();
 
-  // Reset mails go out after the answer; the layer's scope waits for them or ends them.
+  // Resets run after the answer; the layer's scope waits for them or ends them.
   const background = yield* FiberSet.makeRuntime();
+
+  // When each address last started a reset, kept in this process like the revocations below.
+  const resets = new Map<string, ReadonlyArray<number>>();
+
+  const forgetStaleResets = (now: number) => {
+    if (resets.size < 10_000) return;
+
+    for (const [address, times] of resets) {
+      if (times.every((at) => at <= now - hour)) resets.delete(address);
+    }
+  };
+
+  // Every address gets a code, also one without an account, which nobody learns. So a wrong,
+  // spent or expired code answers alike for both, and takes as long. The identifier is the one
+  // Better Auth's email-OTP plugin gives a reset code.
+  const startReset = Effect.fn("Auth.startReset")(function* (address: string) {
+    const identifier = `forget-password-otp-${address}`;
+
+    yield* Effect.promise(() => context.internalAdapter.deleteVerificationByIdentifier(identifier));
+
+    const code = yield* Effect.promise(() =>
+      auth.api.createVerificationOTP({ body: { email: address, type: "forget-password" } }),
+    );
+
+    const user = yield* Effect.promise(() => context.internalAdapter.findUserByEmail(address));
+
+    if (user === null) return;
+
+    const passkeys = yield* passkeysOf(address);
+
+    yield* mail.send(resetMail(address, code, passkeys, `${settings.publicUrl}/impressum`));
+  });
+
+  const passkeysOf = (email: string) =>
+    Effect.map(
+      sql<{ readonly createdAt: Date }>`
+        select p."createdAt" from auth_passkey p join auth_user u on u.id = p."userId"
+        where u.email = ${email} order by p."createdAt"
+      `,
+      (rows) => rows.map((row) => DateTime.fromDateUnsafe(row.createdAt)),
+    ).pipe(Effect.orDie);
 
   // Better Auth's own pool, beside Effect's client: auth queries are rare (stack.md).
   const pool = yield* Effect.acquireRelease(
@@ -294,10 +431,19 @@ const make = Effect.gen(function* () {
                 ),
               ),
           ),
-        sendResetCode: (email, code) => {
+        requestReset: (email) => {
+          const address = email.trim().toLowerCase();
+          const now = Effect.runSyncWith(services)(Clock.currentTimeMillis);
+          const recent = (resets.get(address) ?? []).filter((at) => at > now - hour);
+
+          if (recent.length >= resetsPerHour) return;
+
+          resets.set(address, [...recent, now]);
+          forgetStaleResets(now);
+
           background(
-            mail.send(resetMail(email, code)).pipe(
-              Effect.catchCause((cause) => Effect.logError("A reset code wasn't sent", cause)),
+            startReset(address).pipe(
+              Effect.catchCause((cause) => Effect.logError("A reset didn't start", cause)),
               Effect.provideContext(services),
             ),
           );
@@ -355,7 +501,10 @@ const make = Effect.gen(function* () {
   });
 
   return {
-    handler: auth.handler,
+    handler: (request: Request) =>
+      codePaths.has(new URL(request.url).pathname)
+        ? auth.handler(request).then(sameAnswerForBadCodes)
+        : auth.handler(request),
     challengeCookie: context.createAuthCookie(challengeCookie).name,
     origin: new URL(settings.publicUrl).origin,
     sessions: { resolve, revoked: Stream.fromPubSub(deleted) },
