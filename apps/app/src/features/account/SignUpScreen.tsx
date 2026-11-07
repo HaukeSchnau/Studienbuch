@@ -1,5 +1,8 @@
 import { useAtom } from "@effect/atom-react";
 import { Accounts } from "@stu/api/Accounts";
+import { Button } from "@stu/ui/Button";
+import { Card } from "@stu/ui/Card";
+import { Field } from "@stu/ui/Field";
 import { Theme } from "@stu/ui/Theme";
 import * as Exit from "effect/Exit";
 import { useRouter } from "expo-router";
@@ -9,7 +12,6 @@ import { HeroScreen } from "../../ui/HeroScreen.tsx";
 import { Text } from "@stu/ui/Text";
 import { AppTile, OtherWay, ProblemText, reasonOf, useCredentials } from "./AccountForm.tsx";
 import { AccountState } from "./AccountState.ts";
-import { Button, Field, Section } from "./SharedUi.tsx";
 
 /** "Konto anlegen": email and password, then the code from the mail. */
 export function SignUpScreen() {
@@ -33,7 +35,7 @@ export function SignUpScreen() {
 
   return (
     <HeroScreen title="Konto anlegen" subtitle="In einer Minute fertig." aside={<AppTile />}>
-      <Section>
+      <Card padded>
         <Field
           label="E-Mail-Adresse"
           value={email}
@@ -52,8 +54,10 @@ export function SignUpScreen() {
           ref={passwordField}
           label="Passwort"
           hint={`Mindestens ${Accounts.minPasswordLength} Zeichen`}
-          count={short ? `${password.length}/${Accounts.minPasswordLength}` : undefined}
-          bad={short && password.length > 0}
+          counter={
+            short ? { count: password.length, limit: Accounts.minPasswordLength } : undefined
+          }
+          invalid={short && password.length > 0}
           value={password}
           onChangeText={setPassword}
           autoComplete="new-password"
@@ -77,8 +81,8 @@ export function SignUpScreen() {
           Wir schicken dir einen Code, um deine E-Mail-Adresse zu bestätigen. Deine Noten und
           Hausaufgaben verschlüsselt dein Gerät, bevor sie es verlassen.
         </Text>
-      </Section>
-      <OtherWay question="Schon ein Konto?" label="Anmelden" onPress={() => router.back()} />
+      </Card>
+      <OtherWay question="Schon ein Konto?" label="Anmelden" href="/anmelden" back />
     </HeroScreen>
   );
 }

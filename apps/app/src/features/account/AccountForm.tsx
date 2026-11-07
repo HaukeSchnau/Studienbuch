@@ -1,21 +1,22 @@
+import { Icon } from "@stu/ui/Icon";
+import { Link } from "@stu/ui/Link";
+import { Text } from "@stu/ui/Text";
 import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
 import * as Cause from "effect/Cause";
 import * as Exit from "effect/Exit";
 import * as Option from "effect/Option";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
+import { Link as RouteLink, type Href } from "expo-router";
 import { useRef, useState, type ComponentRef } from "react";
 import { Image, StyleSheet, View, type TextInput } from "react-native";
 
 import appIcon from "../../../assets/icon.png";
-
-import { Text } from "@stu/ui/Text";
 import { Account } from "./Account.ts";
-import { HeroTile, Link, PasskeyIcon } from "./SharedUi.tsx";
 
-// What the account screens share besides the copies in SharedUi.tsx: the sentence for a problem,
-// the passkey sentence, the reason behind a failed run, the way to the other screen and the
-// credentials being typed.
+// What the account screens share: the sentence for a problem, the app's tile, the passkey
+// sentence, the reason behind a failed run, the way to the other screen and the credentials being
+// typed.
 
 /** What went wrong, read out as soon as it shows. */
 export function ProblemText({ reason }: { readonly reason: Option.Option<Account.Reason> }) {
@@ -39,11 +40,13 @@ export function ProblemText({ reason }: { readonly reason: Option.Option<Account
 export interface OtherWayProps {
   readonly question: string;
   readonly label: string;
-  readonly onPress: () => void;
+  readonly href: Href;
+  /** Goes back to `href` when it is already on the stack, as "Anmelden" from "Konto anlegen". */
+  readonly back?: boolean;
 }
 
-/** "Noch kein Konto? Konto anlegen" under the cards. */
-export function OtherWay({ question, label, onPress }: OtherWayProps) {
+/** "Noch kein Konto? Konto anlegen" under the cards, a link on the web. */
+export function OtherWay({ question, label, href, back = false }: OtherWayProps) {
   const { color } = Theme.useTheme();
 
   return (
@@ -51,17 +54,29 @@ export function OtherWay({ question, label, onPress }: OtherWayProps) {
       <Text variant="subhead" style={{ color: color.inkSoft }}>
         {question}
       </Text>
-      <Link label={label} onPress={onPress} />
+      <RouteLink href={href} dismissTo={back} asChild>
+        <Link label={label} variant="subhead" />
+      </RouteLink>
     </View>
   );
 }
 
-/** The app's icon in the hero's tile, on the screens before an account exists. */
+/**
+ * The app's icon in a tile at the hero's right, on the screens before an account exists. It stays
+ * here until the sign-in screens get their restyle.
+ */
 export function AppTile() {
+  const { color, elevation } = Theme.useTheme();
+
   return (
-    <HeroTile>
+    <View
+      style={[
+        styles.tile,
+        { backgroundColor: color.surface, borderColor: color.cardEdge, boxShadow: elevation.float },
+      ]}
+    >
       <Image source={appIcon} accessibilityIgnoresInvertColors style={styles.appIcon} />
-    </HeroTile>
+    </View>
   );
 }
 
@@ -72,7 +87,7 @@ export function PasskeyLead({ children }: { readonly children: string }) {
   return (
     <View style={styles.passkey}>
       <View style={[styles.passkeyTile, { backgroundColor: color.accentTint }]}>
-        <PasskeyIcon color={color.accent} size={26} />
+        <Icon name="passkey" color={color.accent} size={26} />
       </View>
       <Text variant="callout" style={styles.grow}>
         {children}
@@ -128,6 +143,16 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     justifyContent: "center",
     alignItems: "center",
+    gap: Tokens.space.xs,
+  },
+  tile: {
+    width: 80,
+    height: 80,
+    borderRadius: 24,
+    borderWidth: 1,
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
   },
   passkey: { flexDirection: "row", alignItems: "center", gap: Tokens.space.md },
   passkeyTile: {

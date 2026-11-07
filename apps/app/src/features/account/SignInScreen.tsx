@@ -1,4 +1,7 @@
 import { useAtom } from "@effect/atom-react";
+import { Button } from "@stu/ui/Button";
+import { Card } from "@stu/ui/Card";
+import { Field } from "@stu/ui/Field";
 import * as Option from "effect/Option";
 import { useRouter } from "expo-router";
 import { Keyboard } from "react-native";
@@ -14,7 +17,6 @@ import {
   useCredentials,
 } from "./AccountForm.tsx";
 import { AccountState } from "./AccountState.ts";
-import { Button, Field, Section } from "./SharedUi.tsx";
 
 /** "Anmelden": a passkey first, email and password below. */
 export function SignInScreen() {
@@ -39,7 +41,7 @@ export function SignInScreen() {
 
   return (
     <HeroScreen title="Anmelden" subtitle="Schön, dass du da bist." aside={<AppTile />}>
-      <Section>
+      <Card padded>
         <PasskeyLead>Mit deinem Passkey bist du in Sekunden drin, ganz ohne Passwort.</PasskeyLead>
         <Button
           label="Mit Passkey anmelden"
@@ -48,8 +50,8 @@ export function SignInScreen() {
           onPress={() => void signInWithPasskey()}
         />
         <ProblemText reason={reasonOf(passkey)} />
-      </Section>
-      <Section title="Mit E-Mail und Passwort">
+      </Card>
+      <Card padded title="Mit E-Mail und Passwort">
         <Field
           label="E-Mail-Adresse"
           value={email}
@@ -87,12 +89,8 @@ export function SignInScreen() {
           busy={withPassword.waiting}
           onPress={() => void submit()}
         />
-      </Section>
-      <OtherWay
-        question="Noch kein Konto?"
-        label="Konto anlegen"
-        onPress={() => router.push("/konto-anlegen")}
-      />
+      </Card>
+      <OtherWay question="Noch kein Konto?" label="Konto anlegen" href="/konto-anlegen" />
     </HeroScreen>
   );
 }

@@ -5,11 +5,11 @@ import { Redirect } from "expo-router";
 import { StyleSheet, View } from "react-native";
 
 import { Button } from "@stu/ui/Button";
+import { Card } from "@stu/ui/Card";
 import { HeroScreen } from "../../ui/HeroScreen.tsx";
 import { Text } from "@stu/ui/Text";
 import { ServerInfo } from "../diagnostics/ServerInfo.ts";
 import { AccountState } from "./AccountState.ts";
-import { Section } from "./SharedUi.tsx";
 
 /**
  * "Passkey-Test" on every server but production. The check needs beta, the one public host real
@@ -37,7 +37,7 @@ function PasskeyCheck() {
 
   return (
     <HeroScreen title="Passkey-Test" subtitle="Für die Geräteprüfung.">
-      <Section title="1. Test-Passkey anlegen">
+      <Card padded title="1. Test-Passkey anlegen">
         <Text>Legt einen Passkey „Passkey-Test“ an und zeigt, was er zu PRF sagt.</Text>
         <View style={styles.actions}>
           <Button label="Test-Passkey anlegen" busy={created.waiting} onPress={() => create()} />
@@ -49,8 +49,8 @@ function PasskeyCheck() {
             onSuccess: ({ value }) => `PRF beim Anlegen: ${value}`,
           })}
         </Text>
-      </Section>
-      <Section title="2. Mit Passkey prüfen">
+      </Card>
+      <Card padded title="2. Mit Passkey prüfen">
         <Text>Meldet sich mit einem Passkey dieses Servers an. Zweimal prüfen: gleicher Wert?</Text>
         <View style={styles.actions}>
           <Button label="Mit Passkey prüfen" busy={asserted.waiting} onPress={() => assert()} />
@@ -62,7 +62,7 @@ function PasskeyCheck() {
             onSuccess: ({ value }) => `Passkey ${value.credential}, PRF ${value.prf}`,
           })}
         </Text>
-      </Section>
+      </Card>
     </HeroScreen>
   );
 }

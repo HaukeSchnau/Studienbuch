@@ -1,8 +1,8 @@
 import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
-import { useState } from "react";
 import { StyleSheet, TextInput, View } from "react-native";
 
+import { useFocused } from "@stu/ui/Field";
 import { Text } from "@stu/ui/Text";
 
 export const codeLength = 6;
@@ -19,7 +19,7 @@ export interface CodeFieldProps {
  */
 export function CodeField({ value, onChangeText }: CodeFieldProps) {
   const { color } = Theme.useTheme();
-  const focus = useFocused();
+  const focus = useFocused({});
   const next = Math.min(value.length, codeLength - 1);
 
   return (
@@ -28,8 +28,8 @@ export function CodeField({ value, onChangeText }: CodeFieldProps) {
         accessibilityLabel="Code aus der E-Mail"
         value={value}
         onChangeText={onChangeText}
-        onFocus={() => focus.set(true)}
-        onBlur={() => focus.set(false)}
+        onFocus={focus.onFocus}
+        onBlur={focus.onBlur}
         autoComplete="one-time-code"
         textContentType="oneTimeCode"
         keyboardType="number-pad"
@@ -65,13 +65,6 @@ export function CodeField({ value, onChangeText }: CodeFieldProps) {
       </View>
     </View>
   );
-}
-
-/** Whether a field has the focus, for its edge. */
-export function useFocused() {
-  const [focused, set] = useState(false);
-
-  return { focused, set };
 }
 
 const styles = StyleSheet.create({
