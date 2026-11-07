@@ -11,7 +11,7 @@ import { Platform } from "react-native";
 
 interface Native {
   readonly excludeFromBackup: (path: string) => boolean;
-  readonly firstStartSinceInstall: () => boolean;
+  readonly clearKeychainAfterInstall: (services: ReadonlyArray<string>) => number;
 }
 
 const native = Option.fromNullishOr(requireOptionalNativeModule<Native>("DeviceFiles"));
@@ -36,15 +36,12 @@ export const excludeDatabases = Effect.suspend(() => {
 });
 
 /**
- * Whether the app starts for the first time since it was installed, which only matters on iOS,
- * where the keychain outlives the app. Each install answers true once.
+ * On the first start of an iOS install, deletes every keychain entry of the given services, which
+ * iOS kept from an earlier install of the app. Returns how many it deleted: 0 on every later
+ * start, on Android, whose keystore goes with the app, and in a binary without the module. Throws
+ * when iOS refuses, so the next call tries again.
  */
-export const firstStartSinceInstall = (): boolean => {
-  if (Platform.OS !== "ios" || Option.isNone(native)) return false;
-
-  try {
-    return native.value.firstStartSinceInstall();
-  } catch {
-    return false;
-  }
-};
+export const clearKeychainAfterInstall = (services: ReadonlyArray<string>): number =>
+  Platform.OS === "ios" && Option.isSome(native)
+    ? native.value.clearKeychainAfterInstall(services)
+    : 0;
