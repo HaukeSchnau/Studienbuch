@@ -30,7 +30,7 @@ const countMany = (limits: ReturnType<typeof Limits.make>, prefix: string, amoun
   });
 
 describe("Limits", () => {
-  it.effect("a count looks at one key, however many keys the counter holds", () =>
+  it.effect("prunes at most once a second, however many keys the counter holds", () =>
     Effect.gen(function* () {
       const counts = new Visited();
       const limits = Limits.make("15 minutes", counts);
@@ -47,11 +47,15 @@ describe("Limits", () => {
       const left = counts.size;
 
       counts.visits = 0;
-      yield* countMany(limits, "next", 1000);
+      yield* countMany(limits, "same second", 1000);
+      const sameSecond = counts.visits;
+
+      yield* TestClock.adjust("1 second");
+      yield* countMany(limits, "next second", 1000);
 
       assert.deepStrictEqual(
-        { whileLive, left, afterwards: counts.visits },
-        { whileLive: 1000, left: 1, afterwards: 1000 },
+        { whileLive, left, sameSecond, nextSecond: counts.visits - sameSecond },
+        { whileLive: 1, left: 1, sameSecond: 0, nextSecond: 1 },
       );
     }),
   );

@@ -1124,8 +1124,8 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
         }),
       );
 
-      // A code with a use limit bounds its sign-ups, so a year group behind its school's one
-      // address isn't held to the client's ceiling.
+      // A sign-up or confirmation that did its work for a code with a use limit gives its count
+      // back, so a year group behind its school's one address spends the ceiling on failures only.
       it.effect("lets a year group of 180 behind one address sign up and confirm", () =>
         Effect.gen(function* () {
           const sql = yield* SqlClient.SqlClient;
@@ -1174,6 +1174,81 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
           assert.deepStrictEqual(
             { answers: new Set(answers), admitted: admitted?.count },
             { answers: new Set(["200 200"]), admitted: 180 },
+          );
+        }),
+      );
+
+      // A classmate's junk counts against the classmate's own client, so it can't block the class.
+      it.effect("lets a class confirm after someone sends junk with its code", () =>
+        Effect.gen(function* () {
+          const { code } = yield* AccessCodes.mint({
+            school,
+            kind: "student",
+            maxUses: Option.some(4),
+          });
+
+          const { token: junk } = yield* AccessCodes.reserve(code);
+
+          yield* Effect.forEach(
+            Array.from({ length: 12 }, (_, index) => index),
+            (index) =>
+              call("POST", "/email-otp/verify-email", {
+                from: "198.51.100.50",
+                body: { email: `nobody.${index}@example.org`, otp: "123456", password },
+                reservation: junk,
+              }),
+          );
+
+          const email = "lena.klassenkamerad@example.org";
+          const { token: held } = yield* AccessCodes.reserve(code);
+
+          const signedUp = yield* call("POST", "/sign-up/email", {
+            from: "198.51.100.51",
+            body: { email, password, name: "" },
+            reservation: held,
+          });
+
+          const confirmed = yield* call("POST", "/email-otp/verify-email", {
+            from: "198.51.100.51",
+            body: { email, otp: yield* codeFor(email), password },
+            reservation: held,
+          });
+
+          assert.deepStrictEqual([signedUp.status, confirmed.status], [200, 200]);
+        }),
+      );
+
+      // Redeeming is free, so a code's sign-ups give their client's count back only up to three
+      // per use, and a code can't mail past the ceiling from one client.
+      it.effect("gives back at most three sign-ups per use of a code", () =>
+        Effect.gen(function* () {
+          const from = "198.51.100.52";
+
+          const { code } = yield* AccessCodes.mint({
+            school,
+            kind: "student",
+            maxUses: Option.some(4),
+          });
+
+          const statuses = yield* Effect.forEach(
+            Array.from({ length: 12 + Limits.perClient + 1 }, (_, index) => index),
+            (index) =>
+              Effect.gen(function* () {
+                const { token } = yield* AccessCodes.reserve(code);
+
+                const answer = yield* call("POST", "/sign-up/email", {
+                  from,
+                  body: { email: `fremd.${index}@example.org`, password, name: "" },
+                  reservation: token,
+                });
+
+                return answer.status;
+              }),
+          );
+
+          assert.deepStrictEqual(
+            [200, 429].map((status) => statuses.filter((each) => each === status).length),
+            [12 + Limits.perClient, 1],
           );
         }),
       );

@@ -30,11 +30,12 @@ export interface Count {
 
 /**
  * Counts per key in fixed windows, each starting at the key's first count. A key that starts a
- * window moves to the back, so the map runs in the order windows end, and a count drops old keys
+ * window moves to the back, so the map runs in the order windows end, and pruning drops old keys
  * from the front until it meets one still counting.
  */
 export const make = (window: Duration.Input, counts = new Map<string, Count>()) => {
   const length = Duration.toMillis(window);
+  let prunedAt = Number.NEGATIVE_INFINITY;
 
   const live = (key: string, now: number) => {
     const found = counts.get(key);
@@ -60,6 +61,12 @@ export const make = (window: Duration.Input, counts = new Map<string, Count>()) 
     } else {
       counts.set(key, { count: found.count + 1, resetAt: found.resetAt });
     }
+
+    // At most once a second: V8 keeps a deleted entry's slot until the map rehashes, and a loop
+    // from the front walks those slots, so under constant churn every prune would cost more.
+    if (now - prunedAt < 1000) return;
+
+    prunedAt = now;
 
     for (const [each, value] of counts) {
       if (value.resetAt > now) break;

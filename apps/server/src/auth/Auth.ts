@@ -94,8 +94,8 @@ const limitedRoutes = new Set([
   "/email-otp/reset-password",
 ]);
 
-// A sign-up or confirmation that carries a reservation of a code with a use limit counts against
-// the code instead of the client: three sign-ups per use, wherever they come from.
+// A sign-up or confirmation that did its work for a reservation of a code with a use limit gives
+// its client's count back, so a year group behind one address spends the ceiling on its failures.
 const reservedRoutes = new Set(["/sign-up/email", "/email-otp/verify-email"]);
 
 const passwordRoutes = new Set(["/sign-in/email", "/change-password"]);
@@ -621,31 +621,22 @@ const make = Effect.gen(function* () {
   const mails = Limits.make("1 hour");
   const passwords = Limits.make(Limits.clientWindow);
 
-  // The count a request takes: its code's for a sign-up or confirmation with a reservation of a
-  // code with a use limit, and its client's ceiling for anything else.
-  const ceiling = (route: string, request: Request, now: number) => {
-    const reservation = reservedRoutes.has(route)
-      ? request.headers.get(Access.reservationHeader)
-      : null;
+  // Redeeming is free, so a code gives back three counts per use in a window, and one client
+  // can't sign up and mail past the ceiling with it. A code without a limit gives none back.
+  const giveBackFor = (route: string, client: string, request: Request, now: number) => {
+    const reservation = request.headers.get(Access.reservationHeader);
 
-    const byClient = () =>
-      clients.take(
-        `${route} ${Limits.client(request.headers.get("x-forwarded-for"))}`,
-        Limits.perClient,
-        now,
-      );
+    if (reservation === null) return Promise.resolve();
 
-    if (reservation === null) return Promise.resolve(byClient());
+    return run(AccessCodes.codeOf(reservation)).then((code) => {
+      if (Option.isNone(code) || code.value.maxUses === null) return;
 
-    return run(AccessCodes.codeOf(reservation)).then((code) =>
-      Option.isSome(code) && code.value.maxUses !== null
-        ? codes.take(
-            `${route} ${code.value.id}`,
-            AccessCodes.signUpBudget * code.value.maxUses,
-            now,
-          )
-        : byClient(),
-    );
+      const limit = AccessCodes.signUpBudget * code.value.maxUses;
+
+      if (Option.isNone(codes.take(`${route} ${code.value.id}`, limit, now))) {
+        clients.giveBack(client, now);
+      }
+    });
   };
 
   // The account a password check is for: the address at sign-in, the session's when changing it.
@@ -682,9 +673,8 @@ const make = Effect.gen(function* () {
       );
     });
 
-  // A school's network shares one client address, so a client gets a ceiling per route, a code
-  // with a use limit its own count, and an email address its caps: a few code mails an hour, and
-  // a few wrong passwords.
+  // A school's network shares one client address, so a client gets a ceiling per route, and an
+  // email address its caps: a few code mails an hour, and a few wrong passwords.
   const limited = (
     request: Request,
     next: (request: Request) => Promise<Response>,
@@ -694,25 +684,31 @@ const make = Effect.gen(function* () {
     if (!limitedRoutes.has(route)) return next(request);
 
     const now = Effect.runSyncWith(services)(Clock.currentTimeMillis);
+    const client = `${route} ${Limits.client(request.headers.get("x-forwarded-for"))}`;
+    const ceiling = clients.take(client, Limits.perClient, now);
 
-    return ceiling(route, request, now).then((wait) => {
-      if (Option.isSome(wait)) return tooMany(wait.value);
+    if (Option.isSome(ceiling)) return Promise.resolve(tooMany(ceiling.value));
 
-      const answer = codeRequests.get(route);
+    const answer = codeRequests.get(route);
 
-      if (answer !== undefined) {
-        return addressIn(request).then((address) =>
-          Option.isSome(address) &&
-          Option.isSome(mails.take(`${route} ${address.value}`, mailsPerHour, now))
-            ? Response.json(answer)
-            : next(request),
-        );
-      }
+    if (answer !== undefined) {
+      return addressIn(request).then((address) =>
+        Option.isSome(address) &&
+        Option.isSome(mails.take(`${route} ${address.value}`, mailsPerHour, now))
+          ? Response.json(answer)
+          : next(request),
+      );
+    }
 
-      return passwordRoutes.has(route)
-        ? checkingPassword(route, request, now, next)
-        : next(request);
-    });
+    if (passwordRoutes.has(route)) return checkingPassword(route, request, now, next);
+
+    if (!reservedRoutes.has(route)) return next(request);
+
+    return next(request).then((response) =>
+      response.status === 200
+        ? giveBackFor(route, client, request, now).then(() => response)
+        : response,
+    );
   };
 
   // Every address gets a reset code, also one without an account, so a wrong, spent or expired
