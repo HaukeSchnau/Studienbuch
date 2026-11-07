@@ -47,7 +47,6 @@
     "react-native": "catalog:",
     "react-native-reanimated": "catalog:",
     "react-native-svg": "catalog:",
-    "react-native-worklets": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
   },
