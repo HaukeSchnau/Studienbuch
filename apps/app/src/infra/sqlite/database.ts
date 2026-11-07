@@ -51,9 +51,21 @@ export const remove: Databases.Remove = (location) =>
         Effect.andThen(Keychain.forgetDatabaseKey(location.name)),
       );
 
+// M0 kept one database, `studienbuch.db`, under the key `database-key`. The key goes only when the
+// file was still there, so a start without M0's leftovers touches no keychain entry.
 export const removeLeftovers: Databases.RemoveLeftovers = Effect.gen(function* () {
   const store = yield* Keychain.Store;
 
-  yield* remove({ device: "phone", name: "studienbuch", memory: false });
-  yield* store.remove("database-key");
+  const existed = yield* Effect.tryPromise({
+    try: () => SQLite.deleteDatabaseAsync("studienbuch.db"),
+    catch: (cause) => new Databases.RemoveFailed({ cause }),
+  }).pipe(
+    Effect.as(true),
+    Effect.catchIf(
+      (error) => notFound(error.cause),
+      () => Effect.succeed(false),
+    ),
+  );
+
+  if (existed) yield* store.remove("database-key");
 }).pipe(Effect.catchCause((cause) => Effect.logWarning("M0's database stays for now", cause)));
