@@ -430,6 +430,21 @@ const resetMail = (
   ].join("\n"),
 });
 
+const confirmInsteadMail = (to: string, code: string): Mail.Message => ({
+  to,
+  subject: `${code} ist dein Code für Studienbuch`,
+  text: [
+    "Hallo,",
+    "",
+    "wir haben eine Anfrage bekommen, dein Studienbuch-Passwort zurückzusetzen. Deine E-Mail-Adresse ist aber noch nicht bestätigt, darum gibt es noch kein Passwort.",
+    `Dein Code ist ${code}.`,
+    "",
+    `Gib ihn in der App ein, um deine Adresse zu bestätigen, und lege dabei dein Passwort fest. Er gilt ${Accounts.codeMinutes} Minuten.`,
+    "",
+    "Wenn du das nicht angefordert hast, kannst du diese Mail ignorieren.",
+  ].join("\n"),
+});
+
 // Better Auth counts wrong tries and expiry only where a code exists. A sign-up that was never
 // confirmed has one and an unknown address none, so every answer about the code is one constant
 // response, byte for byte. Password lengths are checked before the code, alike for everyone.
@@ -543,25 +558,39 @@ const make = Effect.gen(function* () {
     }
   };
 
-  // Every address gets a code, also one without an account, which nobody learns. So a wrong,
-  // spent or expired code answers alike for both, and takes as long. The identifier is the one
-  // Better Auth's email-OTP plugin gives a reset code.
+  // Every address gets a reset code, also one without an account, so a wrong, spent or expired
+  // code answers alike for all and takes as long. Only a confirmed address is mailed its code.
   const startReset = Effect.fn("Auth.startReset")(function* (address: string) {
-    const identifier = `forget-password-otp-${address}`;
-
-    yield* Effect.promise(() => context.internalAdapter.deleteVerificationByIdentifier(identifier));
-
-    const code = yield* Effect.promise(() =>
-      auth.api.createVerificationOTP({ body: { email: address, type: "forget-password" } }),
-    );
-
+    const code = yield* freshCode("forget-password", address);
     const user = yield* Effect.promise(() => context.internalAdapter.findUserByEmail(address));
 
     if (user === null) return;
 
+    // A reset would confirm the address without `beforeEmailVerification`, which admits the
+    // account to its school, so an unconfirmed address gets the sign-up's confirmation code.
+    if (!user.user.emailVerified) {
+      const confirming = yield* freshCode("email-verification", address);
+
+      return yield* mail.send(confirmInsteadMail(address, confirming));
+    }
+
     const passkeys = yield* passkeysOf(address);
 
     yield* mail.send(resetMail(address, code, passkeys, `${settings.publicUrl}/impressum`));
+  });
+
+  // Replaces the address's earlier code of this type. The identifier is the email-OTP plugin's.
+  const freshCode = Effect.fnUntraced(function* (
+    type: "forget-password" | "email-verification",
+    address: string,
+  ) {
+    yield* Effect.promise(() =>
+      context.internalAdapter.deleteVerificationByIdentifier(`${type}-otp-${address}`),
+    );
+
+    return yield* Effect.promise(() =>
+      auth.api.createVerificationOTP({ body: { email: address, type } }),
+    );
   });
 
   const passkeysOf = (email: string) =>

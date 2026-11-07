@@ -222,15 +222,17 @@ const codeFor = Effect.fnUntraced(function* (email: string) {
   return /\b(?<code>\d{6})\b/u.exec(mail?.text ?? "")?.groups?.code ?? "no code";
 });
 
-/** The next reset mail to `email`, which the server sends in the background. */
-const resetMailTo = (email: string) =>
+/** The next mail to `email` that `matches`, which the server may send in the background. */
+const mailTo = (email: string, matches: (message: Mail.Message) => boolean) =>
   Effect.flatMap(Outbox, (outbox) =>
     Queue.take(outbox).pipe(
-      Effect.repeat({
-        until: (message) => message.to === email && message.subject.includes("Passwort"),
-      }),
+      Effect.repeat({ until: (message) => message.to === email && matches(message) }),
     ),
   );
+
+/** The next reset mail to `email`, which the server sends in the background. */
+const resetMailTo = (email: string) =>
+  mailTo(email, (message) => message.subject.includes("Passwort"));
 
 /** The six digits of the next reset mail to `email`. */
 const resetCodeFor = (email: string) =>
@@ -651,51 +653,53 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
 
       // A mailed code never signs a device in by itself (#35): the reset code sets a password,
       // and the device signs in with it.
-      it.effect("confirms an unconfirmed address with a reset code, but signs nobody in", () =>
+      it.effect("mails an unconfirmed address a confirmation code, never a reset code", () =>
         Effect.gen(function* () {
+          const sql = yield* SqlClient.SqlClient;
           const email = "lena.unconfirmed@example.org";
+          const held = yield* reservation;
 
           yield* call("POST", "/sign-up/email", {
             body: { email, password, name: "" },
-            reservation: yield* reservation,
+            reservation: held,
           });
+
+          // The sign-up's own confirmation mail goes first.
+          yield* mailTo(email, (message) => !message.subject.includes("Passwort"));
           yield* call("POST", "/email-otp/request-password-reset", { body: { email } });
 
-          const code = yield* resetCodeFor(email);
-
-          const asConfirmation = yield* call("POST", "/email-otp/verify-email", {
-            body: { email, otp: code },
-          });
+          // What the reset request mailed: a confirmation code, which no reset accepts.
+          const mailed = yield* mailTo(email, () => true);
+          const code = /\b(?<code>\d{6})\b/u.exec(mailed.text)?.groups?.code ?? "no code";
 
           const reset = yield* call("POST", "/email-otp/reset-password", {
             body: { email, otp: code, password: "ganz-neu-4567" },
           });
 
-          const sql = yield* SqlClient.SqlClient;
+          const confirmed = yield* call("POST", "/email-otp/verify-email", {
+            body: { email, otp: code, password },
+            reservation: held,
+          });
 
-          const [sessions] = yield* sql<{ readonly count: number }>`
-            select count(*)::int as count from auth_session s
-            join auth_user u on u.id = s."userId" where u.email = ${email}
+          const admitted = yield* sql<{ readonly school: string }>`
+            select a.school_id as school from school_access a
+            join auth_user u on u.id = a.account_id where u.email = ${email}
           `;
 
           assert.deepStrictEqual(
             {
-              asConfirmation: [asConfirmation.status, asConfirmation.token],
-              reset: [reset.status, reset.token, reset.cookies],
-              sessions: sessions?.count,
+              mail: mailed.subject.includes("Passwort") ? "reset" : "confirmation",
+              reset: `${reset.status} ${reset.text}`,
+              confirmed: confirmed.status,
+              admitted,
             },
             {
-              asConfirmation: [400, undefined],
-              reset: [200, undefined, null],
-              sessions: 0,
+              mail: "confirmation",
+              reset: `400 {"message":"Invalid OTP","code":"INVALID_OTP"}`,
+              confirmed: 200,
+              admitted: [{ school }],
             },
           );
-
-          const signedIn = yield* call("POST", "/sign-in/email", {
-            body: { email, password: "ganz-neu-4567" },
-          });
-
-          assert.strictEqual(signedIn.status, 200);
         }),
       );
 
