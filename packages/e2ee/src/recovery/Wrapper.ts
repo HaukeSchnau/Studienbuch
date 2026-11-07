@@ -216,8 +216,8 @@ const known = (statement: Statement) =>
         }),
       );
 
-/** Whether `signingKey`, of `generation`, endorses the statement, and its public key is usable. */
-const endorsedBy = Effect.fn("Wrapper.endorsedBy")(function* (
+/** Whether `signingKey`, of `generation`, endorses the statement. */
+const endorsement = Effect.fn("Wrapper.endorsement")(function* (
   statement: Statement,
   accountId: string,
   generation: number,
@@ -229,8 +229,6 @@ const endorsedBy = Effect.fn("Wrapper.endorsedBy")(function* (
     return false;
   }
 
-  if (!(yield* suite.kem.validate(statement.publicKey))) return false;
-
   const message = yield* endorsed(
     fieldsOf(statement),
     statement.anchorGeneration,
@@ -241,10 +239,26 @@ const endorsedBy = Effect.fn("Wrapper.endorsedBy")(function* (
   return yield* suite.sign.verify(signingKey, message, statement.endorsement);
 });
 
+/** `endorsement`, and the statement's public key is one a root key can be sealed to. */
+const endorsedBy = Effect.fn("Wrapper.endorsedBy")(function* (
+  statement: Statement,
+  accountId: string,
+  generation: number,
+  signingKey: Uint8Array,
+) {
+  const suite = yield* CryptoSuite.Service;
+
+  return (
+    (yield* endorsement(statement, accountId, generation, signingKey)) &&
+    (yield* suite.kem.validate(statement.publicKey))
+  );
+});
+
 /**
- * Whether `record`, the account's key record at the statement's endorsed generation, endorses it.
- * A kind, format or suite this build doesn't know is `Unsupported`, never a forgery, so a rotating
- * app asks for an update instead of revoking a wrapper it can't read.
+ * Whether `record`, the account's key record at the statement's endorsed generation, endorses it,
+ * and a root key can be sealed to its public key. A kind, format or suite this build doesn't know
+ * is `Unsupported`, never a forgery, so a rotating app asks for an update instead of revoking a
+ * wrapper it can't read. The server runs this on every statement it accepts.
  */
 export const verify = Effect.fn("Wrapper.verify")(function* (
   statement: Statement,
@@ -467,7 +481,9 @@ export const recover = Effect.fn("Wrapper.recover")(function* (
       candidate.generation === statement.anchorGeneration && candidate.accountId === accountId,
   );
 
-  if (origin === undefined || !(yield* AccountKey.verify(origin))) {
+  // Recovery seals to no key: it derived the statement's public key itself, and `openNewest` checks
+  // that the root key derives the newest record. So it checks signatures, not sealing keys.
+  if (origin === undefined || !(yield* AccountKey.verifySignatures(origin))) {
     return yield* untrusted("chain");
   }
 
@@ -484,7 +500,9 @@ export const recover = Effect.fn("Wrapper.recover")(function* (
 
   const newest = yield* AccountKey.verifyChain(origin, records);
 
-  if (!(yield* verify(statement, newest))) return yield* untrusted("signature");
+  if (!(yield* endorsement(statement, newest.accountId, newest.generation, newest.signingKey))) {
+    return yield* untrusted("signature");
+  }
 
   return yield* openNewest(sealed, newest, statement.id, derived.seed);
 });

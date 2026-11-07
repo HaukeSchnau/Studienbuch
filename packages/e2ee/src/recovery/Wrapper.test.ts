@@ -1,12 +1,14 @@
 import { assert, describe, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Hex from "effect/encoding/Hex";
+import * as Layer from "effect/Layer";
 import * as Redacted from "effect/Redacted";
 import * as Schema from "effect/Schema";
 
 import { AccountKey } from "../accounts/AccountKey.ts";
 import { Bytes } from "../format/Bytes.ts";
 import { E2ee } from "../format/E2ee.ts";
+import { SpaceKey } from "../space-keys/SpaceKey.ts";
 import { CryptoSuite } from "../suite/CryptoSuite.ts";
 import { TestCrypto } from "../testing/TestCrypto.ts";
 import { Wrapper } from "./Wrapper.ts";
@@ -106,6 +108,36 @@ const serverSeal = (statement: Wrapper.Statement, keys: AccountKey.Keys) =>
       enc,
       ct,
     });
+  });
+
+/** Runs `effect` and names, in order, every public key that `kem.validate` checks meanwhile. */
+const validatedBy = <A, E>(
+  effect: Effect.Effect<A, E, CryptoSuite.Service>,
+  names: ReadonlyArray<readonly [string, Uint8Array]>,
+) =>
+  Effect.gen(function* () {
+    const checked: Array<string> = [];
+
+    const recording = Layer.effect(
+      CryptoSuite.Service,
+      Effect.gen(function* () {
+        const suite = yield* CryptoSuite.Service;
+
+        const validate = (publicKey: Uint8Array) =>
+          Effect.suspend(() => {
+            const named = names.find(([, key]) => Bytes.equal(key, publicKey));
+            checked.push(named?.[0] ?? "another key");
+
+            return suite.kem.validate(publicKey);
+          });
+
+        return { ...suite, kem: { ...suite.kem, validate } };
+      }),
+    ).pipe(Layer.provide(TestCrypto.layer("Wrapper.test")));
+
+    yield* Effect.provide(effect, recording);
+
+    return checked;
   });
 
 describe("derive", () => {
@@ -323,6 +355,60 @@ describe("renewed", () => {
       ]);
 
       assert.isTrue(AccountKey.matches(keys, record1));
+    }).pipe(Effect.provide(TestCrypto.layer("Wrapper.test"))),
+  );
+});
+
+// `kem.validate` is a trial X-Wing encapsulation. Recovery seals to no key: it derives the
+// statement's public key itself, and the root key it opens must derive the newest record. So it
+// validates nothing, and the paths that seal to a key or accept one validate it once.
+describe("kem.validate", () => {
+  it.effect("checks the key each path seals to or accepts, and none while recovering", () =>
+    Effect.gen(function* () {
+      const { keys0, record0, keys1, record1 } = yield* account;
+      const { statement: card0 } = yield* Wrapper.create(card, secret(3, 16), keys0);
+      const kept = yield* Wrapper.reendorse(card0, record0, keys1);
+      const seal = yield* Wrapper.seal(kept, keys1);
+      const { statement: device0 } = yield* Wrapper.create(device, secret(1), keys0);
+      const renewal = yield* Wrapper.seal(yield* Wrapper.reendorse(device0, record0, keys1), keys1);
+      const epochKey = { epoch: 0, key: yield* SpaceKey.generate };
+      const records = [record0, record1];
+
+      const names = [
+        ["record 0", record0.sealingKey],
+        ["record 1", record1.sealingKey],
+        ["card", kept.publicKey],
+      ] as const;
+
+      const paths: ReadonlyArray<
+        readonly [string, Effect.Effect<unknown, E2ee.Failure, CryptoSuite.Service>]
+      > = [
+        ["AccountKey.verify", AccountKey.verify(record1, record0)],
+        ["Wrapper.verify", Wrapper.verify(kept, record1)],
+        ["Wrapper.seal", Wrapper.seal(kept, keys1)],
+        ["SpaceKey.box", SpaceKey.box("nb", [epochKey], record1, keys1)],
+        ["AccountKey.verifyChain", AccountKey.verifyChain(record0, records)],
+        [
+          "Wrapper.recover",
+          Wrapper.recover("code", secret(3, 16), "acc-lena", kept, seal, records),
+        ],
+        ["Wrapper.renewed", Wrapper.renewed(secret(1), device.id, record0, renewal, records)],
+      ];
+
+      assert.deepStrictEqual(
+        yield* Effect.forEach(paths, ([path, effect]) =>
+          Effect.map(validatedBy(effect, names), (checked) => [path, checked]),
+        ),
+        [
+          ["AccountKey.verify", ["record 1"]],
+          ["Wrapper.verify", ["card"]],
+          ["Wrapper.seal", ["card"]],
+          ["SpaceKey.box", ["record 1"]],
+          ["AccountKey.verifyChain", []],
+          ["Wrapper.recover", []],
+          ["Wrapper.renewed", []],
+        ],
+      );
     }).pipe(Effect.provide(TestCrypto.layer("Wrapper.test"))),
   );
 });
