@@ -1,8 +1,8 @@
 /**
  * Zugang: admitting an account to a school. One transaction creates the account's notebook there,
  * makes the account its owner and a reader of the school, and writes the first course choice
- * through `enrollment.set`, so the server applies a device's rules. Access codes redeem through it
- * from M3. Until then the console, the demo seed and the dev shortcuts admit.
+ * through `enrollment.set`, so the server applies a device's rules. A confirmed sign-up with an
+ * access code admits through it, and so do the console, the demo seed and the dev shortcuts.
  */
 import { Enrollment, Notebook, School } from "@stu/core";
 import { Spaces, SyncWriter } from "@stu/sync/server";

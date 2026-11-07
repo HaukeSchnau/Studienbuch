@@ -13,6 +13,7 @@ import * as RpcTest from "effect/rpc/RpcTest";
 import * as SqlClient from "effect/sql/SqlClient";
 import * as Stream from "effect/Stream";
 import { Deployment } from "../infra/config/Deployment.ts";
+import { AccessCodes } from "../school/AccessCodes.ts";
 import { Fixture } from "../school/Fixture.ts";
 import { Schools } from "../school/Schools.ts";
 import { Shortcuts } from "./Shortcuts.ts";
@@ -95,12 +96,19 @@ describe.skipIf(Postgres18.socket === null)("Dev on PostgreSQL 18", () => {
 
         expect({
           school,
+          redeemed: (yield* AccessCodes.reserve(school.code)).schoolName,
           again,
           enrollments: yield* enrollments("mia"),
           memberships: yield* Fixture.memberships("mia"),
         }).toEqual({
           // The TestClock starts on January 1, 1970, in the first half of 1969/70.
-          school: { id: school.id, termId: "1969-1", courseIds: ["ma-1", "de-1", "en-1"] },
+          school: {
+            id: school.id,
+            termId: "1969-1",
+            courseIds: ["ma-1", "de-1", "en-1"],
+            code: school.code,
+          },
+          redeemed: `Schule ${school.id.slice("dev-".length)}`,
           again: first,
           enrollments: ['1969-1 ["de-1", "en-1", "ma-1"]'],
           memberships: [

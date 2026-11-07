@@ -1,7 +1,9 @@
 import { passkey } from "@better-auth/passkey";
 import { Accounts } from "@stu/api/Accounts";
 import { Keys } from "@stu/api/Keys";
-import { Ports } from "@stu/sync/server";
+import { Access } from "@stu/api/Access";
+import { Studienbuch } from "@stu/core";
+import { Ports, type Spaces, SyncServer, type SyncWriter } from "@stu/sync/server";
 import { type BetterAuthOptions, betterAuth } from "better-auth";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { bearer, emailOTP } from "better-auth/plugins";
@@ -9,6 +11,7 @@ import { serializeSignedCookie } from "better-call";
 import * as Clock from "effect/Clock";
 import * as Config from "effect/Config";
 import * as Context from "effect/Context";
+import * as Crypto from "effect/Crypto";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Base64Url from "effect/encoding/Base64Url";
@@ -23,6 +26,7 @@ import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as PubSub from "effect/PubSub";
 import * as Redacted from "effect/Redacted";
+import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import * as Stream from "effect/Stream";
@@ -30,6 +34,7 @@ import { Pool } from "pg";
 import { DemoAccounts } from "../demo/DemoAccounts.ts";
 import { Deployment } from "../infra/config/Deployment.ts";
 import { Mail } from "../infra/mail/Mail.ts";
+import { AccessCodes } from "../school/AccessCodes.ts";
 import { NativeApps } from "./NativeApps.ts";
 
 export * as Auth from "./Auth.ts";
@@ -45,14 +50,33 @@ export interface Settings {
   /** The environment's own host, which every passkey of this environment belongs to. */
   readonly rpId: string;
   readonly nativeApps: NativeApps.Apps;
-  /** Open in development and preview only, until access codes arrive in M3. */
-  readonly signUp: boolean;
 }
 
 export interface Callbacks {
   readonly sendCode: (email: string, code: string) => Promise<void>;
   /** Starts a reset for `email` after the answer, unless the address had its codes this hour. */
   readonly requestReset: (email: string) => void;
+  /**
+   * A sign-up starts with an access code: the reservation from `Access.redeem` pays for one, and
+   * `signedUp` keeps or returns that payment.
+   */
+  readonly signingUp: (reservation: string) => Promise<boolean>;
+  /**
+   * The sign-up for `email` went through, also as Better Auth's stand-in answer for a known
+   * address, or Better Auth refused it.
+   */
+  readonly signedUp: (reservation: string, email: Option.Option<string>) => Promise<void>;
+  /** A password nobody knows, which an account keeps until its address is confirmed. */
+  readonly throwaway: () => Promise<string>;
+  /** Keeps the password hash a confirmation request carries, for `proven`. */
+  readonly proving: (request: Request, hash: string) => void;
+  /**
+   * The request's code was right: sets the password it carried, and ends whatever the account
+   * picked up before, its sessions and passkeys. Rejects a request that carried none.
+   */
+  readonly proven: (account: string, request: Request | undefined) => Promise<void>;
+  /** Admits the account to the school of the reservation the confirming device carries. */
+  readonly confirmed: (account: string, reservation: Option.Option<string>) => Promise<void>;
   readonly sessionDeleted: (sessionId: string) => void;
   readonly log: (level: "debug" | "info" | "success" | "warn" | "error", message: string) => void;
 }
@@ -90,7 +114,8 @@ export const options = (settings: Settings, callbacks: Callbacks) =>
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: true,
-      disableSignUp: !settings.signUp,
+      // Open everywhere, and the `before` hook lets in only a sign-up with a reservation.
+      disableSignUp: false,
       minPasswordLength: Accounts.minPasswordLength,
       // A forgotten password may be a stolen one, so the reset ends every session of the account.
       // A thief's passkey stays; the reset mail lists the account's passkeys instead.
@@ -101,19 +126,70 @@ export const options = (settings: Settings, callbacks: Callbacks) =>
       sendOnSignIn: true,
       // The code signs the device in, so it may only ever confirm an address once.
       autoSignInAfterVerification: true,
-      beforeEmailVerification: (user) =>
+      // Runs once the code is checked and before the address counts as confirmed, so a password
+      // set before the proof never survives it, and a failure here leaves the address unconfirmed.
+      beforeEmailVerification: (user, request) =>
         user.emailVerified
           ? // oxlint-disable-next-line studienbuch/no-throwing-errors -- Better Auth hooks refuse a request by rejecting with APIError.
             Promise.reject(APIError.from("BAD_REQUEST", alreadyConfirmed))
-          : Promise.resolve(),
+          : callbacks.proven(user.id, request),
+      // The confirming device names its own reservation, so a later sign-up of the address by
+      // someone else can't choose the school.
+      afterEmailVerification: (user, request) =>
+        callbacks.confirmed(
+          user.id,
+          Option.fromNullishOr(request?.headers.get(Access.reservationHeader)),
+        ),
     },
     hooks: {
       // A new password ends the session on every other device, whatever the request asks for. A
       // new passkey signs nobody in, so a fresh sign-in can't be stretched by registering again.
       // A reset request answers at once and runs in `requestReset`, after the rate limit, so known
       // and unknown addresses take the same time.
-      before: createAuthMiddleware((context) =>
-        Promise.resolve(
+      before: createAuthMiddleware((context) => {
+        if (context.path === "/sign-up/email") {
+          const reservation = context.headers?.get(Access.reservationHeader) ?? null;
+
+          return (
+            reservation === null ? Promise.resolve(false) : callbacks.signingUp(reservation)
+          ).then((allowed) => {
+            if (!allowed) {
+              // oxlint-disable-next-line studienbuch/no-throwing-errors -- Better Auth hooks refuse a request by rejecting with APIError.
+              return Promise.reject(APIError.from("BAD_REQUEST", reservationRefused));
+            }
+
+            // Anyone may sign up any address, so the password a sign-up names counts only once the
+            // address's code confirms it. Until then the account holds one nobody knows. A
+            // password Better Auth would refuse stays, so it answers with its own error.
+            return lengthProblem(
+              passwordOf(context.body?.password),
+              context.context.password.config,
+            ) === undefined
+              ? callbacks
+                  .throwaway()
+                  .then((password) => ({ context: { body: { ...context.body, password } } }))
+              : undefined;
+          });
+        }
+
+        if (context.path === "/email-otp/verify-email") {
+          const password = passwordOf(context.body?.password);
+          const problem = lengthProblem(password, context.context.password.config);
+          const request = context.request;
+
+          if (problem !== undefined || Option.isNone(password) || request === undefined) {
+            // oxlint-disable-next-line studienbuch/no-throwing-errors -- Better Auth hooks refuse a request by rejecting with APIError.
+            return Promise.reject(APIError.from("BAD_REQUEST", problem ?? passwordRequired));
+          }
+
+          return context.context.password.hash(password.value).then((hash) => {
+            callbacks.proving(request, hash);
+
+            return undefined;
+          });
+        }
+
+        return Promise.resolve(
           context.path === "/change-password"
             ? { context: { body: { ...context.body, revokeOtherSessions: true } } }
             : context.path === "/passkey/verify-registration"
@@ -129,8 +205,22 @@ export const options = (settings: Settings, callbacks: Callbacks) =>
                     },
                   })
                 : undefined,
-        ),
-      ),
+        );
+      }),
+      // After-hooks run for refused calls too, with the error as `returned`. Better Auth answers a
+      // known address with an account that doesn't exist, which counts like a real one.
+      after: createAuthMiddleware((context) => {
+        const reservation = context.headers?.get(Access.reservationHeader) ?? null;
+
+        if (context.path !== "/sign-up/email" || reservation === null) return Promise.resolve();
+
+        const created = decodeSignedUp(context.context.returned);
+
+        return callbacks.signedUp(
+          reservation,
+          Result.isSuccess(created) ? Option.some(created.success.user.email) : Option.none(),
+        );
+      }),
     },
     databaseHooks: {
       user: {
@@ -190,6 +280,42 @@ export const options = (settings: Settings, callbacks: Callbacks) =>
   }) satisfies BetterAuthOptions;
 
 const alreadyConfirmed = { code: "EMAIL_ALREADY_VERIFIED", message: "Email already verified" };
+
+const reservationRefused = {
+  code: Access.reservationRefused,
+  message: "A sign-up needs a school's access code",
+};
+
+const decodeSignedUp = Schema.decodeUnknownResult(
+  Schema.Struct({ user: Schema.Struct({ email: Schema.String }) }),
+);
+
+const passwordRequired = {
+  code: "PASSWORD_REQUIRED",
+  message: "Confirming an address sets the account's password",
+};
+
+const passwordTooShort = { code: "PASSWORD_TOO_SHORT", message: "Password too short" };
+
+const passwordTooLong = { code: "PASSWORD_TOO_LONG", message: "Password too long" };
+
+/** A request body's `password`, which Better Auth parses only after the hooks ran. */
+const passwordOf = Schema.decodeUnknownOption(Schema.String);
+
+/** Why Better Auth would refuse `password`, or none for a password it takes. */
+const lengthProblem = (
+  password: Option.Option<string>,
+  limits: { readonly minPasswordLength: number; readonly maxPasswordLength: number },
+) =>
+  Option.match(password, {
+    onNone: () => passwordRequired,
+    onSome: (value) =>
+      value.length < limits.minPasswordLength
+        ? passwordTooShort
+        : value.length > limits.maxPasswordLength
+          ? passwordTooLong
+          : undefined,
+  });
 
 /** `AUTH_SECRET` is shorter than 32 bytes. Better Auth would fall back to a public default. */
 export class WeakSecret extends Schema.TaggedError<WeakSecret, { readonly brand: unique symbol }>()(
@@ -304,6 +430,21 @@ const resetMail = (
   ].join("\n"),
 });
 
+const confirmInsteadMail = (to: string, code: string): Mail.Message => ({
+  to,
+  subject: `${code} ist dein Code für Studienbuch`,
+  text: [
+    "Hallo,",
+    "",
+    "wir haben eine Anfrage bekommen, dein Studienbuch-Passwort zurückzusetzen. Deine E-Mail-Adresse ist aber noch nicht bestätigt, darum gibt es noch kein Passwort.",
+    `Dein Code ist ${code}.`,
+    "",
+    `Gib ihn in der App ein, um deine Adresse zu bestätigen, und lege dabei dein Passwort fest. Er gilt ${Accounts.codeMinutes} Minuten.`,
+    "",
+    "Wenn du das nicht angefordert hast, kannst du diese Mail ignorieren.",
+  ].join("\n"),
+});
+
 // Better Auth counts wrong tries and expiry only where a code exists. A sign-up that was never
 // confirmed has one and an unknown address none, so every answer about the code is one constant
 // response, byte for byte. Password lengths are checked before the code, alike for everyone.
@@ -358,6 +499,7 @@ const make = Effect.gen(function* () {
   const { environment } = yield* Deployment.Current;
   const mail = yield* Mail.Service;
   const sql = yield* SqlClient.SqlClient;
+  const crypto = yield* Crypto.Crypto;
 
   const settings = yield* Config.all({
     publicUrl: Config.String("PUBLIC_URL"),
@@ -378,6 +520,28 @@ const make = Effect.gen(function* () {
 
   // Better Auth's callbacks run outside Effect, with this layer's logger and tracer.
   const services = yield* Effect.context();
+
+  // The password hash each confirmation request carries, until its code is checked.
+  const proofs = new WeakMap<Request, string>();
+
+  // Admitting an account writes its notebook through the sync engine.
+  const writers = yield* Layer.build(SyncServer.writers(Studienbuch.schema));
+
+  const run = <A, E>(
+    effect: Effect.Effect<
+      A,
+      E,
+      SqlClient.SqlClient | Crypto.Crypto | Spaces.Service | SyncWriter.Service
+    >,
+  ) =>
+    Effect.runPromiseWith(services)(
+      effect.pipe(
+        Effect.provide(writers),
+        Effect.provideService(SqlClient.SqlClient, sql),
+        Effect.provideService(Crypto.Crypto, crypto),
+      ),
+    );
+
   const deleted = yield* PubSub.unbounded<string>();
 
   // Resets run after the answer; the layer's scope waits for them or ends them.
@@ -394,25 +558,39 @@ const make = Effect.gen(function* () {
     }
   };
 
-  // Every address gets a code, also one without an account, which nobody learns. So a wrong,
-  // spent or expired code answers alike for both, and takes as long. The identifier is the one
-  // Better Auth's email-OTP plugin gives a reset code.
+  // Every address gets a reset code, also one without an account, so a wrong, spent or expired
+  // code answers alike for all and takes as long. Only a confirmed address is mailed its code.
   const startReset = Effect.fn("Auth.startReset")(function* (address: string) {
-    const identifier = `forget-password-otp-${address}`;
-
-    yield* Effect.promise(() => context.internalAdapter.deleteVerificationByIdentifier(identifier));
-
-    const code = yield* Effect.promise(() =>
-      auth.api.createVerificationOTP({ body: { email: address, type: "forget-password" } }),
-    );
-
+    const code = yield* freshCode("forget-password", address);
     const user = yield* Effect.promise(() => context.internalAdapter.findUserByEmail(address));
 
     if (user === null) return;
 
+    // A reset would confirm the address without `beforeEmailVerification`, which admits the
+    // account to its school, so an unconfirmed address gets the sign-up's confirmation code.
+    if (!user.user.emailVerified) {
+      const confirming = yield* freshCode("email-verification", address);
+
+      return yield* mail.send(confirmInsteadMail(address, confirming));
+    }
+
     const passkeys = yield* passkeysOf(address);
 
     yield* mail.send(resetMail(address, code, passkeys, `${settings.publicUrl}/impressum`));
+  });
+
+  // Replaces the address's earlier code of this type. The identifier is the email-OTP plugin's.
+  const freshCode = Effect.fnUntraced(function* (
+    type: "forget-password" | "email-verification",
+    address: string,
+  ) {
+    yield* Effect.promise(() =>
+      context.internalAdapter.deleteVerificationByIdentifier(`${type}-otp-${address}`),
+    );
+
+    return yield* Effect.promise(() =>
+      auth.api.createVerificationOTP({ body: { email: address, type } }),
+    );
   });
 
   const passkeysOf = (email: string) =>
@@ -431,50 +609,104 @@ const make = Effect.gen(function* () {
   );
 
   const auth = betterAuth({
-    ...options(
-      { ...settings, signUp: Deployment.isDevelopmentOrPreview(environment) },
-      {
-        sendCode: (email, code) =>
-          Effect.runPromiseWith(services)(
-            mail
-              .send(codeMail(email, code))
-              .pipe(
-                Effect.tapError((error) =>
-                  Effect.logError("A verification code wasn't sent", error),
-                ),
-              ),
-          ),
-        requestReset: (email) => {
-          const address = email.trim().toLowerCase();
-          const now = Effect.runSyncWith(services)(Clock.currentTimeMillis);
-          const recent = (resets.get(address) ?? []).filter((at) => at > now - hour);
-
-          if (recent.length >= resetsPerHour) return;
-
-          resets.set(address, [...recent, now]);
-          forgetStaleResets(now);
-
-          background(
-            startReset(address).pipe(
-              Effect.catchCause((cause) => Effect.logError("A reset didn't start", cause)),
-              Effect.provideContext(services),
+    ...options(settings, {
+      sendCode: (email, code) =>
+        Effect.runPromiseWith(services)(
+          mail
+            .send(codeMail(email, code))
+            .pipe(
+              Effect.tapError((error) => Effect.logError("A verification code wasn't sent", error)),
             ),
-          );
-        },
-        sessionDeleted: (sessionId) => {
-          PubSub.publishUnsafe(deleted, sessionId);
-        },
-        log: (level, message) => {
-          Effect.runForkWith(services)(
-            level === "error"
-              ? Effect.logError(message)
-              : level === "warn"
-                ? Effect.logWarning(message)
-                : Effect.logDebug(message),
-          );
-        },
+        ),
+      requestReset: (email) => {
+        const address = email.trim().toLowerCase();
+        const now = Effect.runSyncWith(services)(Clock.currentTimeMillis);
+        const recent = (resets.get(address) ?? []).filter((at) => at > now - hour);
+
+        if (recent.length >= resetsPerHour) return;
+
+        resets.set(address, [...recent, now]);
+        forgetStaleResets(now);
+
+        background(
+          startReset(address).pipe(
+            Effect.catchCause((cause) => Effect.logError("A reset didn't start", cause)),
+            Effect.provideContext(services),
+          ),
+        );
       },
-    ),
+      signingUp: (reservation) => run(AccessCodes.claimSignUp(reservation)),
+      signedUp: (reservation, email) =>
+        run(
+          Option.match(email, {
+            onNone: () => AccessCodes.releaseSignUp(reservation),
+            onSome: (address) => AccessCodes.rememberSignUp(reservation, address),
+          }),
+        ),
+      throwaway: () =>
+        run(Effect.map(Effect.orDie(crypto.randomBytes(32)), (bytes) => Base64Url.encode(bytes))),
+      proving: (request, hash) => {
+        proofs.set(request, hash);
+      },
+      proven: (account, request) => {
+        const hash = request === undefined ? undefined : proofs.get(request);
+
+        if (hash === undefined) {
+          // oxlint-disable-next-line studienbuch/no-throwing-errors -- Better Auth hooks refuse a request by rejecting with APIError.
+          return Promise.reject(APIError.from("BAD_REQUEST", passwordRequired));
+        }
+
+        const replace = sql.withTransaction(
+          Effect.gen(function* () {
+            yield* sql`
+              update auth_account set password = ${hash}, "updatedAt" = now()
+              where "userId" = ${account} and "providerId" = 'credential'
+            `;
+            yield* sql`delete from auth_passkey where "userId" = ${account}`;
+
+            return yield* sql<{ readonly id: string }>`
+              delete from auth_session where "userId" = ${account} returning id
+            `;
+          }),
+        );
+
+        return run(
+          replace.pipe(
+            // Rows deleted here pass no Better Auth hook, so the resolver hears of them here.
+            Effect.tap((ended) =>
+              Effect.sync(() => {
+                for (const { id } of ended) PubSub.publishUnsafe(deleted, id);
+              }),
+            ),
+            Effect.orDie,
+            Effect.asVoid,
+          ),
+        );
+      },
+      // A failed admission leaves an account without a school, which still works, so the
+      // confirmation succeeds whatever happens here.
+      confirmed: (account, reservation) =>
+        run(
+          AccessCodes.admitConfirmed(account, reservation).pipe(
+            Effect.catchCause((cause) =>
+              Effect.logError("A confirmed sign-up wasn't admitted", cause),
+            ),
+            Effect.asVoid,
+          ),
+        ),
+      sessionDeleted: (sessionId) => {
+        PubSub.publishUnsafe(deleted, sessionId);
+      },
+      log: (level, message) => {
+        Effect.runForkWith(services)(
+          level === "error"
+            ? Effect.logError(message)
+            : level === "warn"
+              ? Effect.logWarning(message)
+              : Effect.logDebug(message),
+        );
+      },
+    }),
     database: pool,
   });
 

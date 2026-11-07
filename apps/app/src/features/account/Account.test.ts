@@ -141,6 +141,44 @@ describe("Account", () => {
     }),
   );
 
+  it.effect("confirms with this run's password and reservation, and asks after a restart", () =>
+    Effect.gen(function* () {
+      const sent = yield* Ref.make<ReadonlyArray<string>>([]);
+
+      const api = AuthApiTesting.layer({
+        signUp: () => Effect.void,
+        confirmEmail: (_email, _code, password, reservation) =>
+          Effect.as(
+            Ref.update(sent, (passwords) => [
+              ...passwords,
+              `${Redacted.value(password)} ${Option.getOrElse(reservation, () => "none")}`,
+            ]),
+            signedIn("lena", "token-lena"),
+          ),
+      });
+
+      // The app restarted between sign-up and confirmation: nothing remembers the password.
+      const restarted = yield* Effect.flip(
+        Account.confirmEmail("lena@example.org", "123456").pipe(
+          Effect.provide(Layer.mergeAll(store, api, Account.confirmations)),
+        ),
+      );
+
+      yield* Effect.gen(function* () {
+        yield* Account.signUp("Lena@example.org ", "mein-eigenes-passwort", Option.some("am-see"));
+        yield* Account.confirmEmail("lena@example.org", "123 456");
+      }).pipe(Effect.provide(Layer.mergeAll(store, api, Account.confirmations)));
+
+      assert.deepStrictEqual(
+        [
+          restarted._tag === "Account.Problem" ? restarted.reason : restarted._tag,
+          yield* Ref.get(sent),
+        ],
+        ["password-needed", ["mein-eigenes-passwort am-see"]],
+      );
+    }),
+  );
+
   it.effect("signs out offline: the device forgets everything, and the session runs out", () =>
     Effect.gen(function* () {
       const forgotten = yield* Ref.make<ReadonlyArray<string>>([]);

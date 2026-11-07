@@ -12,6 +12,7 @@ import { Shortcuts } from "../dev/Shortcuts.ts";
 import { Deployment } from "../infra/config/Deployment.ts";
 import { Mail } from "../infra/mail/Mail.ts";
 import { KeyCalls } from "../keys/KeyCalls.ts";
+import { Redemption } from "../school/Redemption.ts";
 
 const handlers = System.Rpcs.merge(ApiMail.Rpcs).toLayer(
   Effect.gen(function* () {
@@ -39,6 +40,7 @@ export const layer = RpcServer.layerHttp({
     Shortcuts.handlers,
     PersonaSignIn.handlers,
     KeyCalls.handlers,
+    Redemption.handlers,
     Api.serialization,
   ]),
   // Answers carry sessions and demo root keys, which no cache may keep.

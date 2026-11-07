@@ -2,8 +2,6 @@ import { useAtom } from "@effect/atom-react";
 import { Button } from "@stu/ui/Button";
 import { Card } from "@stu/ui/Card";
 import { Field } from "@stu/ui/Field";
-import * as Option from "effect/Option";
-import { useRouter } from "expo-router";
 import { Keyboard } from "react-native";
 
 import { HeroScreen } from "../../ui/HeroScreen.tsx";
@@ -14,14 +12,12 @@ import {
   PasskeyLead,
   ProblemText,
   reasonOf,
-  reasonOfExit,
   useCredentials,
 } from "./AccountForm.tsx";
 import { AccountState } from "./AccountState.ts";
 
 /** "Anmelden": a passkey first, email and password below. */
 export function SignInScreen() {
-  const router = useRouter();
   const { email, setEmail, password, setPassword, passwordField, toPassword } = useCredentials();
 
   const [passkey, signInWithPasskey] = useAtom(AccountState.signInWithPasskey, {
@@ -32,12 +28,7 @@ export function SignInScreen() {
 
   const submit = async () => {
     Keyboard.dismiss();
-    const exit = await signIn({ email, password });
-
-    // The server sent a new code with the refusal.
-    if (Option.contains(reasonOfExit(exit), "email-unconfirmed")) {
-      router.push({ pathname: "/e-mail-bestaetigen", params: { email: email.trim() } });
-    }
+    await signIn({ email, password });
   };
 
   return (
@@ -81,9 +72,7 @@ export function SignInScreen() {
           returnKeyType="go"
           onSubmitEditing={() => void submit()}
         />
-        <ProblemText
-          reason={Option.filter(reasonOf(withPassword), (reason) => reason !== "email-unconfirmed")}
-        />
+        <ProblemText reason={reasonOf(withPassword)} />
         <Button
           kind="quiet"
           label="Anmelden"
