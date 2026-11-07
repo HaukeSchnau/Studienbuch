@@ -10,6 +10,17 @@ export default function OverviewLayout() {
       {/* The hero carries the title. Without toolbar buttons yet, an empty header row would only
           push it down (the mock keeps the row for its "+"). */}
       <Stack.Screen name="index" options={{ title: "Übersicht", headerShown: false }} />
+      {/* Its hero carries the title too; on iOS the header adds only the way back over it. */}
+      <Stack.Screen
+        name="diagnose"
+        options={{
+          title: "Dieses Gerät",
+          headerShown: Platform.OS === "ios",
+          headerTransparent: true,
+          headerTitle: "",
+          headerTintColor: "#FFFFFF",
+        }}
+      />
       <Stack.Screen
         name="selbsttest"
         options={{ title: "Verschlüsselung", headerLargeTitle: Platform.OS === "ios" }}

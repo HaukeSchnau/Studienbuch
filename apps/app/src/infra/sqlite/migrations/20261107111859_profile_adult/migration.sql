@@ -1,0 +1,2 @@
+DROP VIEW `NotebookProfile`;--> statement-breakpoint
+CREATE VIEW `NotebookProfile` AS select space, id, data ->> '$."displayName"' as "displayName", data ->> '$."adult"' as "adult" from sync_row_view where tbl = 'NotebookProfile';
