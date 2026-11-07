@@ -5,7 +5,9 @@
  * like a first device does (ADR 0027).
  */
 import { Keys } from "@stu/api/Keys";
-import { AccountKey, CryptoSuite, Wrapper } from "@stu/e2ee";
+import { Notebook } from "@stu/core";
+import { AccountKey, CryptoSuite, SpaceKey, Wrapper } from "@stu/e2ee";
+import { Protocol } from "@stu/sync";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
@@ -169,6 +171,40 @@ const insertWrapper = Effect.fn("KeyStore.insertWrapper")(function* (
   `;
 });
 
+const boxJson = Schema.toCodecJson(SpaceKey.KeyBox);
+
+/**
+ * Whether `record` may start the account's chain: none of the account's notebooks was sealed yet,
+ * or one of the key boxes it was sealed with is signed by `record`'s identity key.
+ */
+const sealedBy = Effect.fn("KeyStore.sealedBy")(function* (
+  account: string,
+  record: AccountKey.Record,
+) {
+  const sql = yield* SqlClient.SqlClient;
+
+  const notebooks = yield* sql<{ readonly box: typeof boxJson.Encoded | null }>`
+    select r.data as box
+    from space_member m
+    join space s on s.id = m.space_id
+    left join sync_row r on r.space_id = s.id and r.tbl = ${Protocol.keyBoxTable}
+      and r.data is not null
+    where m.account_id = ${account} and s.kind = ${Notebook.Space.name}
+      and s.key_epoch is not null
+  `;
+
+  if (notebooks.length === 0) return true;
+
+  for (const { box } of notebooks) {
+    if (box === null) continue;
+    const decoded = yield* Effect.option(Schema.decodeEffect(boxJson)(box));
+
+    if (Option.isSome(decoded) && (yield* SpaceKey.verifyBox(decoded.value, record))) return true;
+  }
+
+  return false;
+});
+
 /** A first device's wrapper, and the session that sends it. */
 export interface First {
   readonly wrapper: Keys.Sealed;
@@ -202,10 +238,11 @@ export const publishFirst = Effect.fn("KeyStore.publishFirst")(function* (
   }
 
   // A concurrent first publish of the same account waits here for the other to commit.
-  yield* sql`
+  const inserted = yield* sql`
     insert into account_key (account_id, generation, record)
     values (${account}, 0, ${yield* recordText(record)})
     on conflict (account_id, generation) do nothing
+    returning 1
   `;
 
   const stored = yield* sql<{
@@ -221,6 +258,10 @@ export const publishFirst = Effect.fn("KeyStore.publishFirst")(function* (
   if (zero === undefined) return yield* Effect.die("A key record vanished inside its transaction");
 
   if (!sameRecord(yield* decodeRecord(zero.record), record)) return yield* new Keys.ChainExists();
+
+  if (inserted.length > 0 && !(yield* sealedBy(account, record))) {
+    return yield* new Keys.KeysLost();
+  }
 
   if (Option.isSome(first)) {
     // A wrapper endorsed by generation 0 after a renewal would hold a root key nobody uses.

@@ -64,6 +64,16 @@ export class ChainExists extends Schema.TaggedError<
   { readonly brand: unique symbol }
 >()("Keys.ChainExists", {}) {}
 
+/**
+ * The account's notebook was sealed under a key the server has no record of, and the record sent
+ * isn't that key's. A second chain would leave everything sealed so far unreadable, so only a
+ * device that still holds the old key can publish it again.
+ */
+export class KeysLost extends Schema.TaggedError<KeysLost, { readonly brand: unique symbol }>()(
+  "Keys.KeysLost",
+  {},
+) {}
+
 /** What the device sent doesn't verify, or doesn't belong to the account or generation it names. */
 export class Invalid extends Schema.TaggedError<Invalid, { readonly brand: unique symbol }>()(
   "Keys.Invalid",
@@ -109,7 +119,7 @@ export const Rpcs = RpcGroup.make(
    */
   Rpc.make("Keys.init", {
     payload: { record: AccountKey.Record, wrapper: Sealed },
-    error: Schema.Union([SignedOut, ChainExists, Invalid]),
+    error: Schema.Union([SignedOut, ChainExists, KeysLost, Invalid]),
   }),
   /**
    * A device that holds the root key adds a wrapper at the newest generation: its own device

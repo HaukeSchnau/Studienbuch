@@ -1,6 +1,6 @@
 import { describe, expect, layer } from "@effect/vitest";
 import { Keys } from "@stu/api/Keys";
-import { AccountKey, Wrapper } from "@stu/e2ee";
+import { AccountKey, SpaceKey, Wrapper } from "@stu/e2ee";
 import { TestCrypto } from "@stu/e2ee/testing";
 import { Postgres18 } from "@stu/sync/testing";
 import * as Effect from "effect/Effect";
@@ -38,6 +38,28 @@ const device = (id: string, fill: number, keys: AccountKey.Keys) =>
 const recordJson = Schema.encodeEffect(
   Schema.fromJsonString(Schema.toCodecJson(AccountKey.Record)),
 );
+
+const boxJson = Schema.encodeEffect(Schema.fromJsonString(Schema.toCodecJson(SpaceKey.KeyBox)));
+
+/**
+ * The account's notebook, sealed under `keys`: its key epoch 0 and the key box the account's
+ * first sealed write left, as the sync server stores them.
+ */
+const sealedNotebook = (account: string, keys: AccountKey.Keys, record: AccountKey.Record) =>
+  Effect.gen(function* () {
+    const sql = yield* SqlClient.SqlClient;
+    const space = `nb-${account}`;
+    const key = yield* SpaceKey.generate;
+    const box = yield* SpaceKey.box(space, [{ epoch: 0, key }], record, keys);
+
+    yield* sql`insert into space (id, kind, version, key_epoch) values (${space}, 'notebook', 1, 0)`;
+    yield* sql`insert into space_member (space_id, account_id, role) values (${space}, ${account}, 'owner')`;
+
+    yield* sql`
+      insert into sync_row (space_id, tbl, id, version, data)
+      values (${space}, '_key', ${`${account}:0`}, 1, ${yield* boxJson(box)}::jsonb)
+    `;
+  });
 
 const card = (account: string, keys: AccountKey.Keys) =>
   Effect.map(
@@ -323,6 +345,32 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
             renewed: renewed._tag,
             newest,
           }).toEqual({ short: "seal", renewed: "Keys.ChainExists", newest: Option.some(1) });
+        }),
+    );
+    it.effect(
+      "starts no second chain for an account whose notebook was sealed, but takes the lost one back",
+      () =>
+        Effect.gen(function* () {
+          const sql = yield* SqlClient.SqlClient;
+          yield* Fixture.account("lea");
+          const lea = yield* firstDevice("lea", 90);
+          const other = yield* firstDevice("lea", 91);
+          // The server lost Lea's key records, or never had them: her notebook still has its box.
+          yield* sealedNotebook("lea", lea.keys, lea.record);
+
+          const second = yield* Effect.flip(
+            sql.withTransaction(KeyStore.publishFirst("lea", other.record, Option.none())),
+          );
+
+          const afterSecond = (yield* KeyStore.state("lea")).records.length;
+          yield* sql.withTransaction(KeyStore.publishFirst("lea", lea.record, Option.none()));
+          const [back] = (yield* KeyStore.state("lea")).records;
+
+          expect({
+            second: second._tag,
+            afterSecond,
+            back: back !== undefined && AccountKey.matches(lea.keys, back),
+          }).toEqual({ second: "Keys.KeysLost", afterSecond: 0, back: true });
         }),
     );
   });

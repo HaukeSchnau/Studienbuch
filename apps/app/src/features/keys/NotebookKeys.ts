@@ -195,6 +195,7 @@ export const reconcile = Effect.gen(function* () {
       Effect.catchTags({
         ...fromServer,
         "Keys.ChainExists": () => Effect.succeed(false),
+        "Keys.KeysLost": () => Effect.succeed(false),
         "Keys.Invalid": Effect.die,
       }),
     );
@@ -273,9 +274,9 @@ const newPending = Effect.gen(function* () {
 });
 
 /**
- * The first device of an account makes the root key and its own device wrapper, and keeps them
- * as `pending-key` until the server took them, so a lost answer sends the same record and wrapper
- * again. Another device that got there first wins, and this one is then locked like any new one.
+ * The first device makes the root key and its device wrapper, kept as `pending-key` until the
+ * server took them, so a lost answer resends them. It stays locked when another chain won, or when
+ * the server lost the key a sealed notebook still uses (`KeysLost`).
  */
 const start = Effect.gen(function* () {
   const secrets = yield* Ports.DeviceSecrets;
@@ -288,6 +289,7 @@ const start = Effect.gen(function* () {
     Effect.as(true),
     Effect.catchTags({
       "Keys.ChainExists": () => Effect.succeed(false),
+      "Keys.KeysLost": () => Effect.succeed(false),
       "Keys.Invalid": Effect.die,
     }),
   );
