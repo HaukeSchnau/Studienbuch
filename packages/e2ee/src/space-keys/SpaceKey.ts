@@ -170,7 +170,7 @@ export const box = Effect.fn("SpaceKey.box")(function* (
     return yield* new E2ee.Malformed({ format: "keyBox", reason: "sealing key" });
   }
 
-  if (!(yield* AccountKey.verify(recipient))) {
+  if (!(yield* AccountKey.verifySignatures(recipient))) {
     return yield* new E2ee.Untrusted({ format: "keyBox", reason: "signature" });
   }
 

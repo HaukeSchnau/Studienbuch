@@ -195,12 +195,14 @@ export const record = Effect.fn("AccountKey.record")(function* (
 });
 
 /**
- * Whether `next` is well-formed, has a sealing key boxes can be sealed to, and is signed by its own
- * identity key; and, given the record of the generation before, linked from it. A newer format or
- * suite is `Unsupported`, so the app asks for an update instead of treating it as forged. The
- * server runs this on every record it accepts.
+ * Whether `next` is well-formed and signed by its own identity key; and, given the record of the
+ * generation before, linked from it. A newer format or suite is `Unsupported`, so the app asks for
+ * an update instead of treating it as forged. It leaves the sealing key to `verify`.
  */
-export const verify = Effect.fn("AccountKey.verify")(function* (next: Record, previous?: Record) {
+export const verifySignatures = Effect.fn("AccountKey.verifySignatures")(function* (
+  next: Record,
+  previous?: Record,
+) {
   if (next.format !== format || next.suite !== CryptoSuite.id) {
     return yield* new E2ee.Unsupported({
       format: "accountKey",
@@ -212,12 +214,7 @@ export const verify = Effect.fn("AccountKey.verify")(function* (next: Record, pr
   const suite = yield* CryptoSuite.Service;
   const message = signed(next);
 
-  const wellFormed =
-    Result.isSuccess(message) &&
-    next.signingKey.length === 32 &&
-    (yield* suite.kem.validate(next.sealingKey));
-
-  if (!wellFormed) return false;
+  if (Result.isFailure(message) || next.signingKey.length !== 32) return false;
 
   if (!(yield* suite.sign.verify(next.signingKey, message.success, next.signature))) return false;
 
@@ -236,8 +233,19 @@ export const verify = Effect.fn("AccountKey.verify")(function* (next: Record, pr
 });
 
 /**
+ * `verifySignatures`, and the sealing key is one boxes can be sealed to. The server runs this on
+ * every record it accepts.
+ */
+export const verify = Effect.fn("AccountKey.verify")(function* (next: Record, previous?: Record) {
+  const suite = yield* CryptoSuite.Service;
+
+  return (yield* verifySignatures(next, previous)) && (yield* suite.kem.validate(next.sealingKey));
+});
+
+/**
  * Walks from a record the device trusts to the newest of `records`: every generation in between
- * must be present, self-signed and linked from the one before. Returns the newest record.
+ * must be present, self-signed and linked from the one before. Returns the newest record. It checks
+ * no sealing key, because `SpaceKey.box` checks the one it seals to.
  */
 export const verifyChain = Effect.fn("AccountKey.verifyChain")(function* (
   trusted: Record,
@@ -250,7 +258,7 @@ export const verifyChain = Effect.fn("AccountKey.verifyChain")(function* (
   let current = trusted;
 
   for (const next of later) {
-    if (!(yield* verify(next, current))) {
+    if (!(yield* verifySignatures(next, current))) {
       return yield* new E2ee.Untrusted({ format: "accountKey", reason: "chain" });
     }
 
