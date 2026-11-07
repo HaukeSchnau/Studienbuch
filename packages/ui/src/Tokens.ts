@@ -40,6 +40,10 @@ const light = {
   // The decorative blobs, drawn at 45 % opacity. Landing page, onboarding and empty states only.
   blobGreen: "#6DB868",
   blobBlue: "#76A6E5",
+  // The old web's grey pill field on a white card, and its focus and error rings.
+  fieldFill: "rgba(229, 229, 229, 0.6)",
+  fieldRing: "rgba(59, 127, 217, 0.4)",
+  fieldRingInvalid: "rgba(164, 43, 51, 0.3)",
 } as const;
 
 export type ColorName = keyof typeof light;
@@ -73,6 +77,9 @@ const dark = {
   panelFold: "rgba(0, 0, 0, 0.18)",
   blobGreen: "#1F5A1B",
   blobBlue: "#1E4170",
+  fieldFill: "rgba(255, 255, 255, 0.07)",
+  fieldRing: "rgba(119, 173, 245, 0.45)",
+  fieldRingInvalid: "rgba(242, 151, 155, 0.4)",
 } as const satisfies Palette;
 
 export const color = { light, dark } as const;

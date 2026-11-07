@@ -1,9 +1,10 @@
-import { useState, type ReactNode } from "react";
-import { StyleSheet, View, type LayoutChangeEvent, type LayoutRectangle } from "react-native";
+import type { ReactNode } from "react";
+import { StyleSheet, View } from "react-native";
 
 import { Text } from "./Text.tsx";
 import { Theme } from "./Theme.ts";
 import { Tokens } from "./Tokens.ts";
+import { useLayout } from "./useLayout.ts";
 import { Vector } from "./Vector.tsx";
 
 export interface HeroProps {
@@ -155,38 +156,31 @@ function depth(x: number) {
  * Until the first layout it assumes text that ends at 70 % of the width.
  */
 export function useSwoosh() {
-  const [layout, setLayout] = useState<{
-    readonly area?: LayoutRectangle;
-    readonly heading?: LayoutRectangle;
-    readonly text?: LayoutRectangle;
-  }>({});
-
-  const { area, heading, text } = layout;
-  const band = bandFor(area?.width ?? 0);
+  const area = useLayout();
+  const heading = useLayout();
+  const text = useLayout();
+  const band = bandFor(area.layout?.width ?? 0);
 
   const lift =
-    area === undefined || heading === undefined || text === undefined
+    area.layout === undefined || heading.layout === undefined || text.layout === undefined
       ? band / 3
       : Math.min(
-          depth(Math.min(1, (heading.x + text.x + text.width + reachPadding) / area.width)) * band,
-          text.height,
+          depth(
+            Math.min(
+              1,
+              (heading.layout.x + text.layout.x + text.layout.width + reachPadding) /
+                area.layout.width,
+            ),
+          ) * band,
+          text.layout.height,
         );
 
   return {
     band,
     lift,
-    onArea: (event: LayoutChangeEvent) => {
-      const next = event.nativeEvent.layout;
-      setLayout((current) => ({ ...current, area: next }));
-    },
-    onHeading: (event: LayoutChangeEvent) => {
-      const next = event.nativeEvent.layout;
-      setLayout((current) => ({ ...current, heading: next }));
-    },
-    onText: (event: LayoutChangeEvent) => {
-      const next = event.nativeEvent.layout;
-      setLayout((current) => ({ ...current, text: next }));
-    },
+    onArea: area.onLayout,
+    onHeading: heading.onLayout,
+    onText: text.onLayout,
   };
 }
 

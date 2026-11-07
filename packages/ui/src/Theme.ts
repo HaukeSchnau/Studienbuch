@@ -27,6 +27,13 @@ const webFontStack = '"Nunito Variable", Nunito, system-ui, sans-serif';
 
 export const fontFamily = Platform.OS === "web" ? webFontStack : Tokens.fontFamily;
 
+/** A monospaced face for a code copied off paper, such as the school's access code. */
+export const codeFontFamily = Platform.select({
+  ios: "Menlo",
+  android: "monospace",
+  default: 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace',
+});
+
 const variable = (group: string, name: string) =>
   `--${group}-${name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`;
 
