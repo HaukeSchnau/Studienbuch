@@ -1,22 +1,34 @@
-import { useAtom } from "@effect/atom-react";
+import { useAtom, useAtomValue } from "@effect/atom-react";
+import type { Access } from "@stu/api/Access";
 import { Accounts } from "@stu/api/Accounts";
+import { AuthHeading } from "@stu/ui/AuthHeading";
 import { Button } from "@stu/ui/Button";
-import { Card } from "@stu/ui/Card";
 import { Field } from "@stu/ui/Field";
-import { Theme } from "@stu/ui/Theme";
+import { Link } from "@stu/ui/Link";
 import * as Exit from "effect/Exit";
-import { useRouter } from "expo-router";
-import { Keyboard } from "react-native";
+import * as Option from "effect/Option";
+import { Link as RouteLink, Redirect, useRouter } from "expo-router";
+import { Keyboard, StyleSheet, View } from "react-native";
 
-import { HeroScreen } from "../../ui/HeroScreen.tsx";
-import { Text } from "@stu/ui/Text";
-import { AppTile, OtherWay, ProblemText, reasonOf, useCredentials } from "./AccountForm.tsx";
+import { AccessCode } from "./AccessCode.ts";
+import { Form, Lead, OtherWay, ProblemText, reasonOf, useCredentials } from "./AccountForm.tsx";
 import { AccountState } from "./AccountState.ts";
+import { Steps } from "./Steps.ts";
 
-/** "Konto anlegen": email and password, then the code from the mail. */
+/**
+ * "Konto erstellen": the school the code opened, then email and password; the code from the mail
+ * follows. The name comes later, in the encrypted notebook, so the server never sees it.
+ */
 export function SignUpScreen() {
+  // Without a redeemed code there is nothing to sign up for: the code comes first.
+  return Option.match(useAtomValue(Steps.reservation), {
+    onNone: () => <Redirect href="/aktivieren" />,
+    onSome: (reservation) => <SignUpForm reservation={reservation} />,
+  });
+}
+
+function SignUpForm({ reservation }: { readonly reservation: Access.Reservation }) {
   const router = useRouter();
-  const { color } = Theme.useTheme();
   const { email, setEmail, password, setPassword, passwordField, toPassword } = useCredentials();
   const [result, signUp] = useAtom(AccountState.signUp, { mode: "promiseExit" });
   const short = password.length < Accounts.minPasswordLength;
@@ -26,17 +38,18 @@ export function SignUpScreen() {
     if (!complete) return;
 
     Keyboard.dismiss();
-    const exit = await signUp({ email, password });
+    const exit = await signUp({ email, password, reservation });
 
-    if (Exit.isSuccess(exit)) {
-      router.push({ pathname: "/e-mail-bestaetigen", params: { email: email.trim() } });
-    }
+    if (Exit.isSuccess(exit)) router.push("/e-mail-bestaetigen");
   };
 
   return (
-    <HeroScreen title="Konto anlegen" subtitle="In einer Minute fertig." aside={<AppTile />}>
-      <Card padded>
+    <>
+      <AuthHeading>Konto erstellen</AuthHeading>
+      <Lead>{AccessCode.describe(reservation)}</Lead>
+      <Form>
         <Field
+          pill
           label="E-Mail-Adresse"
           value={email}
           onChangeText={setEmail}
@@ -51,13 +64,15 @@ export function SignUpScreen() {
           onSubmitEditing={toPassword}
         />
         <Field
+          pill
           ref={passwordField}
           label="Passwort"
-          hint={`Mindestens ${Accounts.minPasswordLength} Zeichen`}
+          hint={`Mindestens ${Accounts.minPasswordLength} Zeichen.`}
           counter={
-            short ? { count: password.length, limit: Accounts.minPasswordLength } : undefined
+            short && password.length > 0
+              ? { count: password.length, limit: Accounts.minPasswordLength }
+              : undefined
           }
-          invalid={short && password.length > 0}
           value={password}
           onChangeText={setPassword}
           autoComplete="new-password"
@@ -70,19 +85,27 @@ export function SignUpScreen() {
           onSubmitEditing={() => void submit()}
         />
         <ProblemText reason={reasonOf(result)} />
+        {Option.contains(reasonOf(result), "reservation-refused") ? (
+          <View style={styles.center}>
+            <RouteLink href="/aktivieren" dismissTo asChild>
+              <Link label="Zugangscode eingeben" variant="subhead" />
+            </RouteLink>
+          </View>
+        ) : null}
         <Button
-          label="Konto anlegen"
+          kind="action"
+          label={result.waiting ? "Konto wird erstellt …" : "Konto erstellen"}
           block
           disabled={!complete}
           busy={result.waiting}
           onPress={() => void submit()}
         />
-        <Text variant="subhead" style={{ color: color.inkSoft }}>
-          Wir schicken dir einen Code, um deine E-Mail-Adresse zu bestätigen. Deine Noten und
-          Hausaufgaben verschlüsselt dein Gerät, bevor sie es verlassen.
-        </Text>
-      </Card>
-      <OtherWay question="Schon ein Konto?" label="Anmelden" href="/anmelden" back />
-    </HeroScreen>
+      </Form>
+      <OtherWay question="Schon ein Konto?" label="Anmelden" href="/anmelden" />
+    </>
   );
 }
+
+const styles = StyleSheet.create({
+  center: { alignItems: "center" },
+});
