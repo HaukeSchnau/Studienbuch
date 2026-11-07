@@ -137,6 +137,7 @@ Agents work through pull requests ([ADR 0008](docs/adr/0008-agents-work-through-
 - Commit with conventional titles in plain language: `fix(app): a refused homework entry keeps its reason`. The body says the problem in a sentence or two, then how you fixed it.
 - Push a bookmark to Gitea (`origin`, git.schnau.dev) and open the PR there with `tea`. GitHub is a mirror for outside contributors.
 - A PR that changes what a user sees links its preview and shows before and after screenshots.
+- A new or redesigned screen starts from its counterpart in the legacy Flutter app or the old web (`legacy-2026-10`), and its PR shows the two side by side. Departing from the legacy look needs Hauke's OK on that comparison first.
 - The orchestrator merges once checks pass and the preview looks right. Hauke can open any preview and never has to review code.
 - The catalog in `pnpm-workspace.yaml` is append-only while packages run in parallel: add entries only for dependencies you introduce. Regenerate `pnpm-lock.yaml` with `pnpm install` after a rebase, never merge it by hand.
 - Reviewer agents follow [docs/internals/review.md](docs/internals/review.md): what to check per area, and what not to report.
