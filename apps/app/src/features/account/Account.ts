@@ -1,5 +1,7 @@
+import { Access } from "@stu/api/Access";
 import { Accounts } from "@stu/api/Accounts";
 import * as Context from "effect/Context";
+import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
@@ -10,7 +12,9 @@ import * as Semaphore from "effect/Semaphore";
 import * as SubscriptionRef from "effect/SubscriptionRef";
 
 import { AuthApi } from "../../infra/auth/AuthApi.ts";
+import { PendingSignUp } from "../../infra/auth/PendingSignUp.ts";
 import { SessionStore } from "../../infra/auth/SessionStore.ts";
+import { Device } from "../../infra/device/Device.ts";
 import { Passkeys } from "../../infra/passkeys/Passkeys.ts";
 
 // Signing up, in and out on this device. Signing in needs the network once; after that the device
@@ -26,6 +30,7 @@ export const Reason = Schema.Literals([
   "invalid-email",
   "weak-password",
   "sign-up-closed",
+  "reservation-refused",
   "wrong-code",
   "password-needed",
   "too-many-attempts",
@@ -55,6 +60,8 @@ export const sentence: Record<Reason, string> = {
   "invalid-email": "Diese E-Mail-Adresse sieht nicht richtig aus.",
   "weak-password": `Dein Passwort braucht mindestens ${Accounts.minPasswordLength} Zeichen.`,
   "sign-up-closed": "Neue Konten gibt es bald mit dem Zugangscode deiner Schule.",
+  "reservation-refused":
+    "Dieser Zugangscode lässt sich nicht mehr verwenden. Gib ihn noch einmal ein, oder frag deine Schule nach einem neuen.",
   // The server answers a wrong, spent and expired code alike, so an address without an account
   // can't be told apart. The sentence covers all three.
   "wrong-code": `Der Code stimmt nicht oder gilt nicht mehr. Nach fünf falschen Versuchen und nach ${Accounts.codeMinutes} Minuten brauchst du einen neuen.`,
@@ -83,6 +90,7 @@ const reasons = new Map<string, Reason>(
     INVALID_EMAIL: "invalid-email",
     PASSWORD_TOO_SHORT: "weak-password",
     EMAIL_PASSWORD_SIGN_UP_DISABLED: "sign-up-closed",
+    [Access.reservationRefused]: "reservation-refused",
     INVALID_OTP: "wrong-code",
     PASSWORD_REQUIRED: "password-needed",
     RATE_LIMITED: "too-many-attempts",
@@ -150,21 +158,25 @@ export const signIn = Effect.fn("Account.signIn")(function* (email: string, pass
 
 /**
  * Creates the account with a code's reservation. A code goes to `email`, and `confirmEmail` signs
- * the device in with it. Password and reservation wait in memory for the confirmation, which sets
- * the password and admits the account to the code's school.
+ * the device in with it, setting the password and admitting the account to the code's school.
  */
 export const signUp = Effect.fn("Account.signUp")(function* (
   email: string,
   password: string,
-  reservation: Option.Option<string> = Option.none(),
+  reservation: Access.Reservation,
 ) {
   const api = yield* AuthApi.Service;
-  const { signingUp } = yield* Confirmations;
 
-  yield* api.signUp(email.trim(), password, reservation).pipe(Effect.mapError(problem));
-  yield* SubscriptionRef.set(
-    signingUp,
-    Option.some({ email: email.trim(), password: Redacted.make(password), reservation }),
+  yield* api
+    .signUp(email.trim(), password, Option.some(reservation.token))
+    .pipe(Effect.mapError(problem));
+
+  yield* waitForCode(
+    Option.some({
+      email: email.trim(),
+      reservation,
+      password: Option.some(Redacted.make(password)),
+    }),
   );
 });
 
@@ -209,55 +221,110 @@ export interface Confirmed {
 }
 
 /**
- * The confirmed session waiting for its passkey offer. `finish` and `abandon` take turns through
- * `guard`, so a back press during the offer never ends a session the device is keeping.
+ * The sign-up waiting for its code and the confirmed session waiting for its passkey offer.
+ * `finish` and `leave` take turns through `guard`, so a back press during the offer never ends a
+ * session the device is keeping.
  */
 export class Confirmations extends Context.Service<
   Confirmations,
   {
     readonly current: SubscriptionRef.SubscriptionRef<Option.Option<Confirmed>>;
     readonly guard: Semaphore.Semaphore;
-    /** The password of this run's sign-up, for its confirmation. Never stored on the device. */
+    /** Changed only through `waitForCode`, which keeps it on the device. */
     readonly signingUp: SubscriptionRef.SubscriptionRef<Option.Option<SigningUp>>;
   }
 >()("Account.Confirmations") {}
 
+/**
+ * A sign-up waiting for its address's code. The device keeps address and reservation, so a
+ * reload or a restart comes back to the code. The password stays in this run's memory only: after
+ * a restart the code screen asks for it again.
+ */
 export interface SigningUp {
   readonly email: string;
-  readonly password: Redacted.Redacted;
-  readonly reservation: Option.Option<string>;
+  readonly reservation: Access.Reservation;
+  readonly password: Option.Option<Redacted.Redacted>;
 }
+
+const Kept = Schema.fromJsonString(
+  Schema.toCodecJson(Schema.Struct({ email: Schema.String, reservation: Access.Reservation })),
+);
+
+const decodeKept = Schema.decodeEffect(Kept);
+const encodeKept = Schema.encodeEffect(Kept);
+
+/**
+ * The sign-up an earlier run kept, unless its reservation expired: then nothing could confirm it,
+ * and it goes. So does an entry that doesn't parse, which only another build could have written.
+ */
+const restore = Effect.gen(function* () {
+  const store = yield* PendingSignUp.Store;
+  const text = yield* store.get.pipe(Effect.orElseSucceed(() => Option.none<string>()));
+
+  if (Option.isNone(text)) return Option.none<SigningUp>();
+
+  const live = yield* decodeKept(text.value).pipe(
+    Effect.flatMap((kept) =>
+      Effect.map(DateTime.isFuture(kept.reservation.expiresAt), (future) =>
+        future ? Option.some(kept) : Option.none(),
+      ),
+    ),
+    Effect.catchTags({ SchemaError: () => Effect.succeedNone }),
+  );
+
+  if (Option.isNone(live)) yield* Effect.ignore(store.remove);
+
+  return Option.map(live, (kept): SigningUp => ({ ...kept, password: Option.none() }));
+});
 
 export const confirmations = Layer.effect(Confirmations)(
   Effect.all({
     current: SubscriptionRef.make(Option.none<Confirmed>()),
     guard: Semaphore.make(1),
-    signingUp: SubscriptionRef.make(Option.none<SigningUp>()),
+    signingUp: Effect.flatMap(restore, SubscriptionRef.make),
   }),
 );
 
+/** Sets the sign-up waiting for its code, and keeps it on the device without its password. */
+const waitForCode = Effect.fn("Account.waitForCode")(function* (next: Option.Option<SigningUp>) {
+  const store = yield* PendingSignUp.Store;
+  const { signingUp } = yield* Confirmations;
+
+  // A store that refuses costs only the way back after a restart; this run holds it in memory.
+  yield* Effect.ignore(
+    Option.match(next, {
+      onNone: () => store.remove,
+      onSome: ({ email, reservation }) =>
+        Effect.flatMap(encodeKept({ email, reservation }), store.set),
+    }),
+  );
+
+  yield* SubscriptionRef.set(signingUp, next);
+});
+
+/** Ends the sign-up waiting for its code ("Abbrechen"). The address stays unconfirmed. */
+export const cancelSignUp = waitForCode(Option.none());
+
 /**
- * Confirms the address with its code and sets the password, the one this run signed up with or,
- * after a restart, `password` as typed again. The sign-up's reservation, or `reservation` from the
- * screen, admits the account to the code's school. The new session waits for `finish`, so a
- * passkey can come first.
+ * Confirms the address with its code and sets the password: the one this run signed up with or,
+ * after a restart, `password` as typed again. The sign-up's reservation admits the account to the
+ * code's school. The new session waits for `finish`, so a passkey can come first.
  */
 export const confirmEmail = Effect.fn("Account.confirmEmail")(function* (
   email: string,
   code: string,
   password: Option.Option<string> = Option.none(),
-  reservation: Option.Option<string> = Option.none(),
 ) {
   const api = yield* AuthApi.Service;
   const { current, guard, signingUp } = yield* Confirmations;
 
-  const pending = Option.filter(yield* SubscriptionRef.get(signingUp), (signedUp) =>
-    sameAddress(signedUp.email, email),
+  const pending = Option.filter(yield* SubscriptionRef.get(signingUp), (waiting) =>
+    sameAddress(waiting.email, email),
   );
 
   const known = Option.isSome(password)
     ? Option.some(Redacted.make(password.value))
-    : Option.map(pending, (signedUp) => signedUp.password);
+    : Option.flatMap(pending, (waiting) => waiting.password);
 
   if (Option.isNone(known)) return yield* new Problem({ reason: "password-needed" });
 
@@ -266,11 +333,9 @@ export const confirmEmail = Effect.fn("Account.confirmEmail")(function* (
       email.trim(),
       code.replaceAll(/\s/gu, ""),
       known.value,
-      Option.orElse(reservation, () => Option.flatMap(pending, (signedUp) => signedUp.reservation)),
+      Option.map(pending, (waiting) => waiting.reservation.token),
     )
     .pipe(Effect.mapError(problem));
-
-  yield* SubscriptionRef.set(signingUp, Option.none());
 
   // Said here, on the code screen, rather than after the passkey offer.
   yield* refuseOtherAccount(signedIn);
@@ -278,6 +343,9 @@ export const confirmEmail = Effect.fn("Account.confirmEmail")(function* (
   yield* SubscriptionRef.set(current, Option.some({ email: email.trim(), signedIn })).pipe(
     Semaphore.withPermit(guard),
   );
+
+  // Only now, so the code screen always has the sign-up or its confirmed session to show.
+  yield* waitForCode(Option.none());
 });
 
 const sameAddress = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
@@ -316,11 +384,13 @@ export const finish = Effect.fn("Account.finish")(function* (email: string, with
 });
 
 /**
- * Ends the session that confirmed `email` when its screen goes and nobody finished it. It waits
- * for a `finish` under way, whose session the device keeps.
+ * Settles the session that confirmed `email` when its screen goes and nobody finished it: the
+ * device keeps it, as "Später" does. A public computer ends it, so the next person there finds
+ * nobody signed in. It waits for a `finish` under way.
  */
-export const abandon = Effect.fn("Account.abandon")(function* (email: string) {
+export const leave = Effect.fn("Account.leave")(function* (email: string) {
   const api = yield* AuthApi.Service;
+  const device = yield* Device.Service;
   const { current, guard } = yield* Confirmations;
 
   yield* Effect.gen(function* () {
@@ -328,8 +398,20 @@ export const abandon = Effect.fn("Account.abandon")(function* (email: string) {
 
     if (Option.isNone(unfinished)) return;
 
+    const { signedIn } = unfinished.value;
+    const end = Effect.ignore(api.signOut(signedIn.token));
+
+    if (device.publicComputer) {
+      yield* SubscriptionRef.set(current, Option.none());
+      yield* end;
+
+      return;
+    }
+
+    // Kept before it leaves `current`, so the screen behind never shows a signed-out step. A
+    // session the device can't keep ends on the server too.
+    yield* keep(signedIn).pipe(Effect.catchTags({ "Account.Problem": () => end }));
     yield* SubscriptionRef.set(current, Option.none());
-    yield* Effect.ignore(api.signOut(unfinished.value.signedIn.token));
   }).pipe(Semaphore.withPermit(guard));
 });
 

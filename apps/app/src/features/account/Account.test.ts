@@ -1,6 +1,8 @@
 import { assert, describe, it } from "@effect/vitest";
+import { Access } from "@stu/api/Access";
 import { Ports } from "@stu/sync/client";
 import * as Context from "effect/Context";
+import * as DateTime from "effect/DateTime";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as Fiber from "effect/Fiber";
@@ -10,12 +12,16 @@ import * as Redacted from "effect/Redacted";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Ref from "effect/Ref";
 import * as SubscriptionRef from "effect/SubscriptionRef";
+import * as TestClock from "effect/testing/TestClock";
 
 import { AuthApi } from "../../infra/auth/AuthApi.ts";
 import { AuthApiTesting } from "../../infra/auth/AuthApiTesting.ts";
 import { SessionStore } from "../../infra/auth/SessionStore.ts";
+import { layer as signUpStore } from "../../infra/auth/signUpStore.ts";
 import { Device } from "../../infra/device/Device.ts";
 import { DeviceSessions } from "../../infra/keychain/DeviceSessions.ts";
+import { PendingSignUp } from "../../infra/auth/PendingSignUp.ts";
+import { Keychain } from "../../infra/keychain/Keychain.ts";
 import { MemoryKeychain } from "../../infra/keychain/MemoryKeychain.ts";
 import { Passkeys } from "../../infra/passkeys/Passkeys.ts";
 import { Account } from "./Account.ts";
@@ -25,11 +31,60 @@ const signedIn = (accountId: string, token: string): AuthApi.SignedIn => ({
   token: Redacted.make(token),
 });
 
+const server = Layer.succeed(Ports.Server)({ origin: new URL("https://one.example") });
+const phone = Device.layer({ name: "phone", publicComputer: false });
+
 const store = SessionStore.layer.pipe(
   Layer.provide(DeviceSessions.layer),
   Layer.provide(MemoryKeychain.layer()),
-  Layer.provide(Device.layer({ name: "phone", publicComputer: false })),
-  Layer.provide(Layer.succeed(Ports.Server)({ origin: new URL("https://one.example") })),
+  Layer.provide(phone),
+  Layer.provide(server),
+);
+
+/** One run of the app on a device whose keychain is `keychain`, so a test can restart it. */
+const confirmations = (
+  keychain: Layer.Layer<Keychain.Store> = MemoryKeychain.layer(),
+  device: Layer.Layer<Device.Service> = phone,
+) =>
+  Account.confirmations.pipe(
+    Layer.provideMerge(signUpStore),
+    Layer.provideMerge(Layer.mergeAll(keychain, device, server)),
+  );
+
+const reservation = (expiresAt: string) =>
+  new Access.Reservation({
+    token: "am-see",
+    schoolName: "Demoschule am Wiesengrund",
+    kind: "student",
+    expiresAt: DateTime.makeUnsafe(expiresAt),
+  });
+
+// `it.effect`'s clock starts at 1970-01-01, and a reservation lasts two hours.
+const soon = reservation("1970-01-01T02:00:00Z");
+const later = reservation("1970-01-01T04:00:00Z");
+
+/** Runs of the app on one device: each starts with empty memory and the same keychain. */
+const restarts = Effect.map(
+  Effect.provide(Keychain.Store, MemoryKeychain.layer()),
+  (keychain) =>
+    <A, E, R>(effect: Effect.Effect<A, E, R>, api: Layer.Layer<AuthApi.Service>) =>
+      effect.pipe(
+        Effect.provide(
+          Layer.mergeAll(store, api, confirmations(Layer.succeed(Keychain.Store)(keychain))),
+        ),
+      ),
+);
+
+/** The sign-up a run found waiting: address, reservation, and whether it holds the password. */
+const kept = Account.Confirmations.use(({ signingUp }) =>
+  Effect.map(
+    SubscriptionRef.get(signingUp),
+    Option.map((waiting) => [
+      waiting.email,
+      waiting.reservation.token,
+      Option.isSome(waiting.password),
+    ]),
+  ),
 );
 
 /** Lena's code was confirmed; her session waits for the passkey offer. */
@@ -62,39 +117,40 @@ const credential: AuthApi.Credential = {
   clientExtensionResults: {},
 };
 
-const withPasskeyDialog = Layer.mergeAll(
-  store,
-  Account.confirmations,
-  Layer.unwrap(
-    Effect.map(Passkey, ({ dialog, revoked }) =>
-      Layer.mergeAll(
-        AuthApiTesting.layer({
-          passkeyCreationOptions: () =>
-            Effect.succeed({
-              challenge: "challenge",
-              options: {
+const withPasskeyDialog = (device = phone) =>
+  Layer.mergeAll(
+    store,
+    confirmations(MemoryKeychain.layer(), device),
+    Layer.unwrap(
+      Effect.map(Passkey, ({ dialog, revoked }) =>
+        Layer.mergeAll(
+          AuthApiTesting.layer({
+            passkeyCreationOptions: () =>
+              Effect.succeed({
                 challenge: "challenge",
-                rp: { name: "Studienbuch" },
-                user: { id: "lena", name: "", displayName: "" },
-                pubKeyCredParams: [],
-              },
-            }),
-          addPasskey: () => Effect.void,
-          signOut: (token) => Ref.update(revoked, (tokens) => [...tokens, Redacted.value(token)]),
-        }),
-        Layer.succeed(Passkeys.Authenticator)({
-          create: () =>
-            Effect.flatMap(Deferred.await(dialog), (answer) =>
-              answer === "created"
-                ? Effect.succeed({ credential, prf: Passkeys.CreatedPrf.Unsupported() })
-                : Effect.fail(new Passkeys.Cancelled()),
-            ),
-          get: () => Effect.die("no sign-in was asked for"),
-        }),
+                options: {
+                  challenge: "challenge",
+                  rp: { name: "Studienbuch" },
+                  user: { id: "lena", name: "", displayName: "" },
+                  pubKeyCredParams: [],
+                },
+              }),
+            addPasskey: () => Effect.void,
+            signOut: (token) => Ref.update(revoked, (tokens) => [...tokens, Redacted.value(token)]),
+          }),
+          Layer.succeed(Passkeys.Authenticator)({
+            create: () =>
+              Effect.flatMap(Deferred.await(dialog), (answer) =>
+                answer === "created"
+                  ? Effect.succeed({ credential, prf: Passkeys.CreatedPrf.Unsupported() })
+                  : Effect.fail(new Passkeys.Cancelled()),
+              ),
+            get: () => Effect.die("no sign-in was asked for"),
+          }),
+        ),
       ),
     ),
-  ),
-).pipe(Layer.provideMerge(passkeyDialog));
+  ).pipe(Layer.provideMerge(passkeyDialog));
 
 describe("Account", () => {
   it.effect("refuses another account while the device holds one whose session ended", () =>
@@ -141,40 +197,110 @@ describe("Account", () => {
     }),
   );
 
-  it.effect("confirms with this run's password and reservation, and asks after a restart", () =>
+  // A reload, or the OS ending the app, between sign-up and code. The device kept the address and
+  // the code's reservation, never the password, which the code screen asks for again.
+  it.effect("keeps a sign-up's address and reservation across a restart, never its password", () =>
     Effect.gen(function* () {
       const sent = yield* Ref.make<ReadonlyArray<string>>([]);
+      const run = yield* restarts;
 
       const api = AuthApiTesting.layer({
         signUp: () => Effect.void,
-        confirmEmail: (_email, _code, password, reservation) =>
+        confirmEmail: (email, _code, password, reservation) =>
           Effect.as(
-            Ref.update(sent, (passwords) => [
-              ...passwords,
-              `${Redacted.value(password)} ${Option.getOrElse(reservation, () => "none")}`,
+            Ref.update(sent, (made) => [
+              ...made,
+              `${email} ${Redacted.value(password)} ${Option.getOrElse(reservation, () => "none")}`,
             ]),
-            signedIn("lena", "token-lena"),
+            signedIn(email, `token-${email}`),
           ),
       });
 
-      // The app restarted between sign-up and confirmation: nothing remembers the password.
-      const restarted = yield* Effect.flip(
-        Account.confirmEmail("lena@example.org", "123456").pipe(
-          Effect.provide(Layer.mergeAll(store, api, Account.confirmations)),
-        ),
+      // Lena signs up and confirms in one run, with the password she signed up with.
+      const lena = yield* run(
+        Effect.gen(function* () {
+          const before = yield* kept;
+
+          yield* Account.signUp("Lena@example.org ", "lenas-passwort-123", soon);
+          yield* Account.confirmEmail("lena@example.org", "123 456");
+
+          return before;
+        }),
+        api,
       );
 
-      yield* Effect.gen(function* () {
-        yield* Account.signUp("Lena@example.org ", "mein-eigenes-passwort", Option.some("am-see"));
-        yield* Account.confirmEmail("lena@example.org", "123 456");
-      }).pipe(Effect.provide(Layer.mergeAll(store, api, Account.confirmations)));
+      // Tom signs up, and the app restarts before his code.
+      const tom = yield* run(
+        Effect.gen(function* () {
+          const before = yield* kept;
+
+          yield* Account.signUp("tom@example.org", "toms-passwort-456", soon);
+
+          return before;
+        }),
+        api,
+      );
+
+      const restarted = yield* run(
+        Effect.gen(function* () {
+          const before = yield* kept;
+          const asked = yield* Effect.flip(Account.confirmEmail("tom@example.org", "654321"));
+
+          yield* Account.confirmEmail(
+            "tom@example.org",
+            "654321",
+            Option.some("toms-passwort-456"),
+          );
+
+          return { before, asked: asked.reason };
+        }),
+        api,
+      );
+
+      const afterwards = yield* run(kept, api);
 
       assert.deepStrictEqual(
+        [lena, tom, restarted, afterwards, yield* Ref.get(sent)],
         [
-          restarted._tag === "Account.Problem" ? restarted.reason : restarted._tag,
-          yield* Ref.get(sent),
+          Option.none(),
+          Option.none(),
+          { before: Option.some(["tom@example.org", "am-see", false]), asked: "password-needed" },
+          Option.none(),
+          [
+            "lena@example.org lenas-passwort-123 am-see",
+            "tom@example.org toms-passwort-456 am-see",
+          ],
         ],
-        ["password-needed", ["mein-eigenes-passwort am-see"]],
+      );
+    }),
+  );
+
+  it.effect("forgets a kept sign-up when its reservation expires, and when it's cancelled", () =>
+    Effect.gen(function* () {
+      const run = yield* restarts;
+      const api = AuthApiTesting.layer({ signUp: () => Effect.void });
+      const stored = PendingSignUp.Store.use((entry) => entry.get);
+
+      yield* run(Account.signUp("lena@example.org", "lenas-passwort-123", soon), api);
+
+      const withinTwoHours = yield* run(kept, api);
+
+      yield* TestClock.adjust("2 hours");
+
+      const expired = yield* run(Effect.all([kept, stored]), api);
+
+      yield* run(Account.signUp("lena@example.org", "lenas-passwort-123", later), api);
+      yield* run(Account.cancelSignUp, api);
+
+      const cancelled = yield* run(Effect.all([kept, stored]), api);
+
+      assert.deepStrictEqual(
+        [withinTwoHours, expired, cancelled],
+        [
+          Option.some(["lena@example.org", "am-see", false]),
+          [Option.none(), Option.none()],
+          [Option.none(), Option.none()],
+        ],
       );
     }),
   );
@@ -197,7 +323,7 @@ describe("Account", () => {
         Effect.provide(
           Layer.mergeAll(
             store,
-            Account.confirmations,
+            confirmations(),
             AuthApiTesting.layer({
               signOut: () => Effect.fail(new AuthApi.Unreachable({ cause: "offline" })),
             }),
@@ -230,7 +356,7 @@ describe("Account", () => {
       Effect.provide(
         Layer.mergeAll(
           store,
-          Account.confirmations,
+          confirmations(),
           AuthApiTesting.layer({}),
           Layer.succeed(Passkeys.Authenticator)({
             create: () => Effect.die("no passkey was asked for"),
@@ -254,7 +380,7 @@ describe("Account", () => {
         startImmediately: true,
       });
 
-      const leaving = yield* Effect.forkChild(Account.abandon("lena@example.org"), {
+      const leaving = yield* Effect.forkChild(Account.leave("lena@example.org"), {
         startImmediately: true,
       });
 
@@ -270,31 +396,46 @@ describe("Account", () => {
         ),
         Option.some("token-lena"),
       );
-    }).pipe(Effect.provide(withPasskeyDialog)),
+    }).pipe(Effect.provide(withPasskeyDialog())),
   );
 
-  it.effect("ends the session when the dialog was closed and the screen went", () =>
+  // The dialog was closed and the screen went without "Später": the student meant to go on, and only
+  // a public computer must leave nobody signed in for the next person.
+  it.effect("keeps the session when the screen went, and ends it on a public computer", () =>
     Effect.gen(function* () {
-      const sessions = yield* SessionStore.Service;
-      const { dialog, revoked } = yield* Passkey;
+      const leaveAfterClosedDialog = (publicComputer: boolean) =>
+        Effect.gen(function* () {
+          const sessions = yield* SessionStore.Service;
+          const { dialog, revoked } = yield* Passkey;
 
-      yield* confirmed("lena@example.org", "lena", "token-lena");
+          yield* confirmed("lena@example.org", "lena", "token-lena");
 
-      const finishing = yield* Effect.forkChild(Account.finish("lena@example.org", true), {
-        startImmediately: true,
-      });
+          const finishing = yield* Effect.forkChild(Account.finish("lena@example.org", true), {
+            startImmediately: true,
+          });
 
-      const leaving = yield* Effect.forkChild(Account.abandon("lena@example.org"), {
-        startImmediately: true,
-      });
+          const leaving = yield* Effect.forkChild(Account.leave("lena@example.org"), {
+            startImmediately: true,
+          });
 
-      yield* Deferred.succeed(dialog, "closed");
-      yield* Fiber.await(finishing);
-      yield* Fiber.join(leaving);
+          yield* Deferred.succeed(dialog, "closed");
+          yield* Fiber.await(finishing);
+          yield* Fiber.join(leaving);
 
-      assert.deepStrictEqual(yield* Ref.get(revoked), ["token-lena"]);
-      assert.isTrue(Option.isNone(yield* sessions.current));
-    }).pipe(Effect.provide(withPasskeyDialog)),
+          return {
+            revoked: yield* Ref.get(revoked),
+            signedIn: Option.map(yield* sessions.current, (signed) => signed.accountId),
+          };
+        }).pipe(Effect.provide(withPasskeyDialog(Device.layer({ name: "phone", publicComputer }))));
+
+      assert.deepStrictEqual(
+        [yield* leaveAfterClosedDialog(false), yield* leaveAfterClosedDialog(true)],
+        [
+          { revoked: [], signedIn: Option.some("lena") },
+          { revoked: ["token-lena"], signedIn: Option.none() },
+        ],
+      );
+    }),
   );
 
   // The reset code only sets the password; the device then signs in with it like any other.

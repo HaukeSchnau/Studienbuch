@@ -1,24 +1,26 @@
-import { useAtom } from "@effect/atom-react";
+import { useAtom, useAtomSet } from "@effect/atom-react";
+import { AuthHeading } from "@stu/ui/AuthHeading";
 import { Button } from "@stu/ui/Button";
-import { Card } from "@stu/ui/Card";
 import { Field } from "@stu/ui/Field";
-import { Keyboard } from "react-native";
+import { Link } from "@stu/ui/Link";
+import * as Option from "effect/Option";
+import { useRouter } from "expo-router";
+import { Keyboard, StyleSheet, View } from "react-native";
 
-import { HeroScreen } from "../../ui/HeroScreen.tsx";
 import { PublicComputerChoice } from "../keys/PublicComputerChoice.tsx";
-import {
-  AppTile,
-  OtherWay,
-  PasskeyLead,
-  ProblemText,
-  reasonOf,
-  useCredentials,
-} from "./AccountForm.tsx";
+import { Form, Or, OtherWay, ProblemText, reasonOf, useCredentials } from "./AccountForm.tsx";
 import { AccountState } from "./AccountState.ts";
+import { Steps } from "./Steps.ts";
 
-/** "Anmelden": a passkey first, email and password below. */
+/**
+ * "Anmelden", in the old web's order: email and password, "Passwort vergessen?", then "oder" and
+ * the passkey.
+ */
 export function SignInScreen() {
+  const router = useRouter();
   const { email, setEmail, password, setPassword, passwordField, toPassword } = useCredentials();
+  const keepTyped = useAtomSet(Steps.forgotten);
+  const keepSentTo = useAtomSet(Steps.resetSentTo);
 
   const [passkey, signInWithPasskey] = useAtom(AccountState.signInWithPasskey, {
     mode: "promiseExit",
@@ -26,26 +28,26 @@ export function SignInScreen() {
 
   const [withPassword, signIn] = useAtom(AccountState.signIn, { mode: "promiseExit" });
 
+  // "Passwort vergessen?" starts with the address typed here, from its first step.
+  const forgot = () => {
+    keepTyped(Option.some(email.trim()));
+    keepSentTo(Option.none());
+    router.push("/passwort-vergessen");
+  };
+
   const submit = async () => {
     Keyboard.dismiss();
     await signIn({ email, password });
   };
 
   return (
-    <HeroScreen title="Anmelden" subtitle="Schön, dass du da bist." aside={<AppTile />}>
-      <Card padded>
-        <PasskeyLead>Mit deinem Passkey bist du in Sekunden drin, ganz ohne Passwort.</PasskeyLead>
-        <Button
-          label="Mit Passkey anmelden"
-          block
-          busy={passkey.waiting}
-          onPress={() => void signInWithPasskey()}
-        />
-        <ProblemText reason={reasonOf(passkey)} />
-      </Card>
-      <Card padded title="Mit E-Mail und Passwort">
+    <>
+      <AuthHeading>Anmelden</AuthHeading>
+      <Form>
+        {/* Switching reloads the tab, so it comes before anything is typed. */}
         <PublicComputerChoice />
         <Field
+          pill
           label="E-Mail-Adresse"
           value={email}
           onChangeText={setEmail}
@@ -60,6 +62,7 @@ export function SignInScreen() {
           onSubmitEditing={toPassword}
         />
         <Field
+          pill
           ref={passwordField}
           label="Passwort"
           value={password}
@@ -74,14 +77,43 @@ export function SignInScreen() {
         />
         <ProblemText reason={reasonOf(withPassword)} />
         <Button
-          kind="quiet"
-          label="Anmelden"
+          kind="action"
+          label={withPassword.waiting ? "Anmeldung läuft …" : "Anmelden"}
           block
           busy={withPassword.waiting}
           onPress={() => void submit()}
         />
-      </Card>
-      <OtherWay question="Noch kein Konto?" label="Konto anlegen" href="/konto-anlegen" />
-    </HeroScreen>
+      </Form>
+      <View style={styles.forgot}>
+        <Link label="Passwort vergessen?" variant="subhead" onPress={forgot} />
+      </View>
+      <Or />
+      <Button
+        kind="secondary"
+        label="Mit Passkey anmelden"
+        block
+        busy={passkey.waiting}
+        onPress={() => void signInWithPasskey()}
+      />
+      {Option.match(reasonOf(passkey), {
+        onNone: () => null,
+        onSome: (reason) => (
+          <View style={styles.passkeyProblem}>
+            <ProblemText reason={Option.some(reason)} />
+          </View>
+        ),
+      })}
+      <OtherWay
+        question="Zugangscode von deiner Schule?"
+        label="Zugang aktivieren"
+        href="/aktivieren"
+      />
+    </>
   );
 }
+
+const styles = StyleSheet.create({
+  // mt-4, centred
+  forgot: { alignItems: "center", marginTop: 4 },
+  passkeyProblem: { marginTop: 12 },
+});

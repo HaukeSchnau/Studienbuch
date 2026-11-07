@@ -13,9 +13,9 @@ export interface CodeFieldProps {
 }
 
 /**
- * The code from the mail in six boxes. A plain text field lies under them and takes every touch
- * through them, so typing, pasting and the keyboard's one-time-code suggestion work as in any
- * field, while the boxes, on the card's colour, cover its text.
+ * The code from the mail in six of the old web's grey fields, the next one ringed in blue. A plain
+ * text field lies under them and takes every touch through them, so typing, pasting and the
+ * keyboard's one-time-code suggestion work as in any field, while the boxes cover its text.
  */
 export function CodeField({ value, onChangeText }: CodeFieldProps) {
   const { color } = Theme.useTheme();
@@ -52,9 +52,8 @@ export function CodeField({ value, onChangeText }: CodeFieldProps) {
               style={[
                 styles.box,
                 {
-                  backgroundColor: color.canvas,
-                  borderColor: active ? color.accent : color.hairline,
-                  borderWidth: active ? 2 : 1,
+                  backgroundColor: color.fieldFill,
+                  boxShadow: active ? `0 0 0 3px ${color.fieldRing}` : "none",
                 },
               ]}
             >
@@ -72,7 +71,7 @@ const styles = StyleSheet.create({
   box: {
     flex: 1,
     height: 56,
-    borderRadius: 14,
+    borderRadius: Tokens.radius.field,
     alignItems: "center",
     justifyContent: "center",
   },

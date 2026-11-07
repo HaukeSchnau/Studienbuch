@@ -1,62 +1,122 @@
-import { useAtom } from "@effect/atom-react";
+import { useAtom, useAtomSet, useAtomValue } from "@effect/atom-react";
 import { Accounts } from "@stu/api/Accounts";
+import { AuthHeading } from "@stu/ui/AuthHeading";
 import { Button } from "@stu/ui/Button";
-import { Card } from "@stu/ui/Card";
+import { Field } from "@stu/ui/Field";
 import { Link } from "@stu/ui/Link";
+import * as Exit from "effect/Exit";
 import * as Option from "effect/Option";
-import { useLocalSearchParams } from "expo-router";
+import * as AsyncResult from "effect/reactivity/AsyncResult";
+import * as Atom from "effect/reactivity/Atom";
+import { Redirect, useRouter } from "expo-router";
 import { useState } from "react";
 import { Keyboard, StyleSheet, View } from "react-native";
 
-import { HeroScreen } from "../../ui/HeroScreen.tsx";
-import { Text } from "@stu/ui/Text";
-import { PasskeyLead, ProblemText, reasonOf } from "./AccountForm.tsx";
+import { Account } from "./Account.ts";
+import {
+  Done,
+  Form,
+  OtherWay,
+  PasskeyLead,
+  ProblemText,
+  reasonOf,
+  Strong,
+  useCredentials,
+} from "./AccountForm.tsx";
 import { AccountState } from "./AccountState.ts";
 import { CodeField, codeLength } from "./CodeField.tsx";
+import { Steps } from "./Steps.ts";
 
 /**
- * "E-Mail bestätigen": the six digits from the mail, then a passkey if the person wants one. The
- * offer shows only for the address on screen, so on a shared device the next person never sees
- * the previous one's.
+ * "Schau in dein Postfach": the six digits from the mail for the sign-up waiting for its code, also
+ * after a reload or a restart. A confirmed address goes on to "Geschafft!"; back from there finds
+ * this step empty while that session is kept or ends.
  */
 export function ConfirmEmailScreen() {
-  const { email = "" } = useLocalSearchParams<{ email?: string }>();
-  const confirmed = AccountState.useConfirmedFor(email);
+  const confirmed = AccountState.useConfirmed();
 
-  AccountState.useAbandonOnLeave(email);
-
-  return Option.isSome(confirmed) ? <PasskeyOffer email={email} /> : <CodeEntry email={email} />;
+  return AsyncResult.match(useAtomValue(AccountState.signingUp), {
+    onInitial: () => null,
+    onFailure: () => <Redirect href="/aktivieren" />,
+    onSuccess: ({ value }) =>
+      Option.match(value, {
+        onSome: (waiting) => <CodeEntry key={waiting.email} waiting={waiting} />,
+        onNone: () => (Option.isSome(confirmed) ? null : <Redirect href="/aktivieren" />),
+      }),
+  });
 }
 
-function CodeEntry({ email }: { readonly email: string }) {
-  const code = useCode();
-  const [result, confirm] = useAtom(AccountState.confirmEmail);
+function CodeEntry({ waiting }: { readonly waiting: Account.SigningUp }) {
+  const router = useRouter();
+  const { email } = waiting;
+  const [result, confirm] = useAtom(AccountState.confirmEmail, { mode: "promiseExit" });
+  const forget = useAtomSet(AccountState.confirmEmail);
+  const code = useCode(() => forget(Atom.Reset));
+  const { password, setPassword } = useCredentials();
   const [resent, sendCode] = useAtom(AccountState.sendCode);
-  const complete = code.value.length === codeLength;
+  const cancel = useAtomSet(AccountState.cancelSignUp);
+  const keepReservation = useAtomSet(Steps.reservation);
 
-  const submit = () => {
+  // After a reload or a restart the device no longer holds the password it signed up with.
+  const asksPassword = Option.isNone(waiting.password);
+  const complete = code.value.length === codeLength && (!asksPassword || password.length > 0);
+
+  const submit = async () => {
+    if (!complete) return;
+
     Keyboard.dismiss();
-    confirm({ email, code: code.value });
+
+    const exit = await confirm({
+      email,
+      code: code.value,
+      password: asksPassword ? password : undefined,
+    });
+
+    if (Exit.isSuccess(exit)) {
+      keepReservation(Option.none());
+      router.push("/geschafft");
+    }
+  };
+
+  // Another address takes the same code's reservation back to "Konto erstellen".
+  const otherAddress = () => {
+    keepReservation(Option.some(waiting.reservation));
+    router.dismissTo("/konto-erstellen");
+    cancel();
   };
 
   return (
-    <HeroScreen title="E-Mail bestätigen" subtitle="Fast geschafft.">
-      <Card padded>
-        <Text variant="callout">
-          Wir haben einen Code an{" "}
-          <Text variant="callout" style={styles.strong}>
-            {email}
-          </Text>{" "}
-          geschickt. Er gilt {Accounts.codeMinutes} Minuten.
-        </Text>
+    <>
+      <Done title="Schau in dein Postfach">
+        Wir haben einen Code an <Strong>{email}</Strong> geschickt. Er gilt {Accounts.codeMinutes}{" "}
+        Minuten.
+      </Done>
+      <Form>
         <CodeField value={code.value} onChangeText={code.set} />
+        {asksPassword ? (
+          <Field
+            pill
+            label="Passwort"
+            hint={Account.sentence["password-needed"]}
+            value={password}
+            onChangeText={setPassword}
+            autoComplete="current-password"
+            textContentType="password"
+            secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="go"
+            onSubmitEditing={() => void submit()}
+          />
+        ) : null}
         <ProblemText reason={reasonOf(result)} />
         <Button
+          kind="action"
           label="Bestätigen"
           block
           disabled={!complete}
           busy={result.waiting}
-          onPress={submit}
+          onPress={() => void submit()}
         />
         <View style={styles.center}>
           <Link
@@ -67,50 +127,87 @@ function CodeEntry({ email }: { readonly email: string }) {
           />
         </View>
         <ProblemText reason={reasonOf(resent)} />
-      </Card>
-    </HeroScreen>
+        <Button
+          kind="secondary"
+          label="Andere E-Mail-Adresse verwenden"
+          block
+          onPress={otherAddress}
+        />
+      </Form>
+      <OtherWay
+        label="Abbrechen"
+        href="/aktivieren"
+        back
+        onPress={() => {
+          keepReservation(Option.none());
+          cancel();
+        }}
+      />
+    </>
   );
 }
 
+/**
+ * "Geschafft!": the confirmed session waits here for a passkey or "Später". Leaving any other way
+ * counts as "Später", except on a public computer, where it ends the session.
+ */
+export function PasskeyOfferScreen() {
+  return Option.match(AccountState.useConfirmed(), {
+    onNone: () => <Redirect href="/aktivieren" />,
+    onSome: ({ email }) => <PasskeyOffer key={email} email={email} />,
+  });
+}
+
 function PasskeyOffer({ email }: { readonly email: string }) {
-  const [result, finish] = useAtom(AccountState.finish);
+  const [result, finish] = useAtom(AccountState.finish, { mode: "promiseExit" });
+
+  AccountState.useLaterOnLeave(email);
 
   return (
-    <HeroScreen title="Geschafft!" subtitle="Dein Konto ist bereit.">
-      <Card padded title="Passkey anlegen?">
+    <>
+      <AuthHeading>Geschafft!</AuthHeading>
+      <Form>
         <PasskeyLead>
           Mit einem Passkey meldest du dich künftig mit Face ID, deinem Fingerabdruck oder der
           Geräte-PIN an. Ein Passwort brauchst du dann nicht mehr.
         </PasskeyLead>
         <ProblemText reason={reasonOf(result)} />
         <Button
+          kind="action"
           label="Passkey anlegen"
           block
           busy={result.waiting}
-          onPress={() => finish({ email, withPasskey: true })}
+          onPress={() => void finish({ email, withPasskey: true })}
         />
         <Button
-          kind="quiet"
+          kind="secondary"
           label="Später"
           block
-          onPress={() => finish({ email, withPasskey: false })}
+          onPress={() => void finish({ email, withPasskey: false })}
         />
-      </Card>
-    </HeroScreen>
+      </Form>
+    </>
   );
 }
 
-/** The code as typed, digits only and at most six, so a pasted "145 838" becomes "145838". */
-export function useCode() {
+/**
+ * The code as typed, digits only and at most six, so a pasted "145 838" becomes "145838".
+ * `onEdit` runs when it changes, so an answer about the old code goes.
+ */
+export function useCode(onEdit: () => void) {
   const [value, setValue] = useState("");
 
   return {
     value,
-    set: (text: string) => setValue(text.replaceAll(/\D/gu, "").slice(0, codeLength)),
+    set: (text: string) => {
+      const next = text.replaceAll(/\D/gu, "").slice(0, codeLength);
+
+      if (next !== value) onEdit();
+      setValue(next);
+    },
   };
 }
 
 const styles = StyleSheet.create({
-  strong: { fontWeight: "700" },
   center: { alignItems: "center" },
 });
