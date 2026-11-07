@@ -31,13 +31,16 @@
     "@types/react": "catalog:",
     "react": "catalog:",
     "react-native": "catalog:",
+    "react-native-reanimated": "catalog:",
     "react-native-svg": "catalog:",
+    "react-native-worklets": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
   },
   "peerDependencies": {
     "react": "*",
     "react-native": "*",
+    "react-native-reanimated": "*",
     "react-native-svg": "*"
   }
 }
