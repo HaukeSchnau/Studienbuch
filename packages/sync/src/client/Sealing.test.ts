@@ -39,6 +39,13 @@ const device = (driver: Devices.Driver, seed: string, holdsKey = true) =>
 
 const bytes = (fill: number) => new Uint8Array(32).fill(fill);
 
+/** Unlocks the device's engine with Lena's keys of `rootKey` at `generation`. */
+const unlockWith = (rootKey: Uint8Array, generation: number) =>
+  Effect.gen(function* () {
+    const keys = yield* AccountKey.derive(Redacted.make(rootKey), Devices.actor, generation);
+    yield* (yield* SyncClient.Service).unlock(keys);
+  });
+
 const onEachDriver = <E>(body: (driver: Devices.Driver) => Effect.Effect<void, E>) =>
   Effect.forEach(Devices.drivers, body, { discard: true });
 
@@ -167,7 +174,7 @@ const behind = (driver: Devices.Driver, served: Effect.Effect<Option.Option<Keyr
 /** Holds generation 1's root key and the wrapper's seed, as device A does. */
 const atGeneration1 = Effect.gen(function* () {
   yield* (yield* Ports.DeviceSecrets).set("device-seed", bytes(9));
-  yield* (yield* SyncClient.Service).unlock(bytes(1), 1);
+  yield* unlockWith(bytes(1), 1);
 });
 
 const boxGenerations = (requests: ReadonlyArray<Protocol.PushRequest>) =>
@@ -512,8 +519,6 @@ describe("Seal", () => {
 
         yield* Effect.provide(
           Effect.gen(function* () {
-            const sync = yield* SyncClient.Service;
-
             yield* replicate(
               Scripted.scripted({
                 pull: [
@@ -532,7 +537,7 @@ describe("Seal", () => {
             expect(yield* replicate(locked.remote), driver).toBe("retry");
             expect(locked.pushes, driver).toEqual([]);
 
-            yield* sync.unlock(Devices.rootKey, 0);
+            yield* unlockWith(Devices.rootKey, 0);
             expect(
               (yield* notes).map((note) => note.id),
               driver,
@@ -601,7 +606,7 @@ describe("Seal", () => {
             Effect.gen(function* () {
               const sql = yield* SqlClient.SqlClient;
               yield* (yield* Ports.DeviceSecrets).set("device-seed", bytes(9));
-              yield* (yield* SyncClient.Service).unlock(bytes(1), 1);
+              yield* unlockWith(bytes(1), 1);
 
               yield* replicate(
                 Scripted.scripted({

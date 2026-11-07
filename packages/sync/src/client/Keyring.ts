@@ -110,10 +110,12 @@ export const make = Effect.fnUntraced(function* (actor: string) {
   });
 
   // A 32-byte key derives for any account id the server accepted, so a failure is a defect.
-  const derive = Effect.fnUntraced(function* (rootKey: Uint8Array, at: number) {
-    const keys = yield* AccountKey.derive(Redacted.make(rootKey), actor, at);
-
+  const withRecord = Effect.fnUntraced(function* (keys: AccountKey.Keys) {
     return { keys, record: yield* AccountKey.record(keys, "first") } satisfies Account;
+  }, Effect.orDie);
+
+  const derive = Effect.fnUntraced(function* (rootKey: Uint8Array, at: number) {
+    return yield* withRecord(yield* AccountKey.derive(Redacted.make(rootKey), actor, at));
   }, Effect.orDie);
 
   /** The account's keys, or `None` while the device holds no root key ("Notizbuch entsperren"). */
@@ -133,12 +135,20 @@ export const make = Effect.fnUntraced(function* (actor: string) {
     return cached;
   });
 
-  /** Keeps a root key the device just got, as after unlocking or a demo sign-in. */
-  const unlock = Effect.fnUntraced(function* (rootKey: Uint8Array, at: number) {
+  /**
+   * Keeps the keys of a root key the device just got, as after unlocking or a demo sign-in. The
+   * caller derived them already, so this derives nothing.
+   */
+  const unlock = Effect.fnUntraced(function* (keys: AccountKey.Keys) {
     const sql = yield* SqlClient.SqlClient;
-    yield* secrets.set("root-key", rootKey);
-    yield* sql`update sync_meta set key_generation = ${at} where id = 1`;
-    cached = Option.some(yield* derive(rootKey, at));
+
+    if (keys.accountId !== actor) {
+      return yield* Effect.die(`Keys of ${keys.accountId} can't unlock ${actor}'s device`);
+    }
+
+    yield* secrets.set("root-key", Redacted.value(keys.rootKey));
+    yield* sql`update sync_meta set key_generation = ${keys.generation} where id = 1`;
+    cached = Option.some(yield* withRecord(keys));
   });
 
   /**
