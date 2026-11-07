@@ -1,5 +1,8 @@
 import { useAtom } from "@effect/atom-react";
 import { Accounts } from "@stu/api/Accounts";
+import { Button } from "@stu/ui/Button";
+import { Card } from "@stu/ui/Card";
+import { Link } from "@stu/ui/Link";
 import * as Option from "effect/Option";
 import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
@@ -10,7 +13,6 @@ import { Text } from "@stu/ui/Text";
 import { PasskeyLead, ProblemText, reasonOf } from "./AccountForm.tsx";
 import { AccountState } from "./AccountState.ts";
 import { CodeField, codeLength } from "./CodeField.tsx";
-import { Button, Link, Section } from "./SharedUi.tsx";
 
 /**
  * "E-Mail bestätigen": the six digits from the mail, then a passkey if the person wants one. The
@@ -39,7 +41,7 @@ function CodeEntry({ email }: { readonly email: string }) {
 
   return (
     <HeroScreen title="E-Mail bestätigen" subtitle="Fast geschafft.">
-      <Section>
+      <Card padded>
         <Text variant="callout">
           Wir haben einen Code an{" "}
           <Text variant="callout" style={styles.strong}>
@@ -58,13 +60,14 @@ function CodeEntry({ email }: { readonly email: string }) {
         />
         <View style={styles.center}>
           <Link
+            variant="subhead"
             label={resent._tag === "Success" ? "Code ist unterwegs" : "Neuen Code schicken"}
             busy={resent.waiting}
             onPress={() => sendCode(email)}
           />
         </View>
         <ProblemText reason={reasonOf(resent)} />
-      </Section>
+      </Card>
     </HeroScreen>
   );
 }
@@ -74,7 +77,7 @@ function PasskeyOffer({ email }: { readonly email: string }) {
 
   return (
     <HeroScreen title="Geschafft!" subtitle="Dein Konto ist bereit.">
-      <Section title="Passkey anlegen?">
+      <Card padded title="Passkey anlegen?">
         <PasskeyLead>
           Mit einem Passkey meldest du dich künftig mit Face ID, deinem Fingerabdruck oder der
           Geräte-PIN an. Ein Passwort brauchst du dann nicht mehr.
@@ -92,7 +95,7 @@ function PasskeyOffer({ email }: { readonly email: string }) {
           block
           onPress={() => finish({ email, withPasskey: false })}
         />
-      </Section>
+      </Card>
     </HeroScreen>
   );
 }
