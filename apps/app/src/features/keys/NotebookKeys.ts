@@ -126,9 +126,13 @@ const wrap = Effect.fn("NotebookKeys.wrap")(function* (
   kind: Wrapper.Kind,
   secret: Redacted.Redacted<Uint8Array>,
   keys: AccountKey.Keys,
-  where: { readonly place?: Wrapper.Method["place"]; readonly credentialId?: string } = {},
+  where: {
+    readonly place?: Wrapper.Method["place"];
+    readonly credentialId?: string;
+    readonly id?: string;
+  } = {},
 ) {
-  const id = yield* Ids.random;
+  const id = where.id ?? (yield* Ids.random);
   const method = { id, kind, place: where.place ?? "", credentialId: where.credentialId ?? "" };
 
   return new Keys.Sealed(yield* Effect.orDie(Wrapper.create(method, secret, keys)));
@@ -170,26 +174,27 @@ const current = Effect.gen(function* () {
 
 /**
  * Makes sure the server holds this device's generation 0 and device wrapper, after a lost answer
- * or a restore. It publishes the device's own record and never adopts another chain: a server that
- * answers `ChainExists` keeps its chain, and this device keeps its key. M1 has generation 0 only.
+ * or a restore, and answers whether the account's key chain is this device's. It publishes only the
+ * device's own record and never adopts another chain. M1 has generation 0 only.
  */
 export const reconcile = Effect.gen(function* () {
   const rootKey = yield* heldRootKey;
   const seed = yield* heldSeed;
 
-  if (Option.isNone(rootKey)) return;
+  if (Option.isNone(rootKey)) return true;
   const server = yield* KeyServer.Service;
   const state = yield* server.state.pipe(Effect.catchTags({ ...fromServer }));
 
   if (state.records.length === 0) {
-    if (Option.isNone(seed)) return;
+    if (Option.isNone(seed)) return true;
     const keys = yield* Effect.orDie(AccountKey.derive(rootKey.value, yield* accountId, 0));
     const wrapper = yield* wrap("device", seed.value, keys);
 
     return yield* server.init(yield* firstRecord(keys), wrapper).pipe(
+      Effect.as(true),
       Effect.catchTags({
         ...fromServer,
-        "Keys.ChainExists": () => Effect.logWarning("The server holds another key chain"),
+        "Keys.ChainExists": () => Effect.succeed(false),
         "Keys.Invalid": Effect.die,
       }),
     );
@@ -197,9 +202,9 @@ export const reconcile = Effect.gen(function* () {
 
   const keys = yield* ownKeys(rootKey.value, state.records);
 
-  if (Option.isNone(keys)) return yield* Effect.logWarning("This device's key isn't the newest");
+  if (Option.isNone(keys)) return false;
 
-  if (Option.isNone(seed)) return;
+  if (Option.isNone(seed)) return true;
   const own = yield* Effect.orDie(Wrapper.derive("device", seed.value, keys.value.accountId));
 
   const listed = state.wrappers.some(
@@ -207,7 +212,7 @@ export const reconcile = Effect.gen(function* () {
       statement.kind === Wrapper.kindByte.device && sameBytes(statement.publicKey, own.publicKey),
   );
 
-  if (listed) return;
+  if (listed) return true;
 
   yield* server.addWrapper(yield* wrap("device", seed.value, keys.value)).pipe(
     Effect.catchTags({
@@ -218,18 +223,66 @@ export const reconcile = Effect.gen(function* () {
       "Keys.NotFresh": Effect.die,
     }),
   );
+
+  return true;
+});
+
+/** A first device's new root key, its device seed and its wrapper's id, until the server took them. */
+interface Pending {
+  readonly rootKey: Redacted.Redacted<Uint8Array>;
+  readonly seed: Redacted.Redacted<Uint8Array>;
+  readonly wrapperId: string;
+}
+
+const textDecoder = new TextDecoder();
+const textEncoder = new TextEncoder();
+
+// `pending-key` holds R(32) || seed(32) || UTF-8 of the wrapper's id.
+const heldPending = Effect.map(
+  Effect.flatMap(Ports.DeviceSecrets, (secrets) => secrets.get("pending-key")),
+  Option.flatMap((bytes) =>
+    bytes.length > 2 * rootKeyLength
+      ? Option.some<Pending>({
+          rootKey: Redacted.make(bytes.slice(0, rootKeyLength)),
+          seed: Redacted.make(bytes.slice(rootKeyLength, 2 * rootKeyLength)),
+          wrapperId: textDecoder.decode(bytes.slice(2 * rootKeyLength)),
+        })
+      : Option.none(),
+  ),
+);
+
+const newPending = Effect.gen(function* () {
+  const suite = yield* CryptoSuite.Service;
+
+  const pending: Pending = {
+    rootKey: Redacted.make(yield* suite.randomBytes(rootKeyLength)),
+    seed: Redacted.make(yield* suite.randomBytes(rootKeyLength)),
+    wrapperId: yield* Ids.random,
+  };
+
+  yield* (yield* Ports.DeviceSecrets).set(
+    "pending-key",
+    new Uint8Array([
+      ...Redacted.value(pending.rootKey),
+      ...Redacted.value(pending.seed),
+      ...textEncoder.encode(pending.wrapperId),
+    ]),
+  );
+
+  return pending;
 });
 
 /**
  * The first device of an account makes the root key and its own device wrapper, and keeps them
- * only once the server published them. Another device that got there first wins, and this one
- * is then locked like any new device.
+ * as `pending-key` until the server took them, so a lost answer sends the same record and wrapper
+ * again. Another device that got there first wins, and this one is then locked like any new one.
  */
 const start = Effect.gen(function* () {
-  const suite = yield* CryptoSuite.Service;
-  const keys = yield* Effect.orDie(AccountKey.generate(yield* accountId, 0));
-  const seed = Redacted.make(yield* suite.randomBytes(rootKeyLength));
-  const wrapper = yield* wrap("device", seed, keys);
+  const secrets = yield* Ports.DeviceSecrets;
+  const held = yield* heldPending;
+  const pending = Option.isSome(held) ? held.value : yield* newPending;
+  const keys = yield* Effect.orDie(AccountKey.derive(pending.rootKey, yield* accountId, 0));
+  const wrapper = yield* wrap("device", pending.seed, keys, { id: pending.wrapperId });
 
   const published = yield* (yield* KeyServer.Service).init(yield* firstRecord(keys), wrapper).pipe(
     Effect.as(true),
@@ -239,11 +292,14 @@ const start = Effect.gen(function* () {
     }),
   );
 
-  if (!published) return Status.Locked();
-  yield* (yield* Ports.DeviceSecrets).set("device-seed", Redacted.value(seed));
-  yield* (yield* Keyring).unlock(keys);
+  if (published) {
+    yield* secrets.set("device-seed", Redacted.value(pending.seed));
+    yield* (yield* Keyring).unlock(keys);
+  }
 
-  return Status.Unlocked();
+  yield* secrets.remove("pending-key");
+
+  return published ? Status.Unlocked() : Status.Locked();
 });
 
 /**
@@ -265,9 +321,12 @@ export const status = Effect.gen(function* () {
 
   if (Option.isNone(records)) return Status.Offline();
 
-  if (records.value.length > 0) return Status.Locked();
+  // A first device whose init answer was lost finds its own record there, and sends it again.
+  if (records.value.length > 0 && Option.isNone(yield* heldPending)) return Status.Locked();
 
-  if ((yield* Device.Service).publicComputer) return Status.NotHere();
+  if (records.value.length === 0 && (yield* Device.Service).publicComputer) {
+    return Status.NotHere();
+  }
 
   return yield* start.pipe(
     Effect.catchTags({ "KeyServer.Unreachable": offline, "Keys.SignedOut": offline }),
@@ -401,17 +460,31 @@ export const usePasskey = Effect.fn("NotebookKeys.usePasskey")(function* (
   );
 });
 
-/**
- * "Notfallkarte erstellen": a new code, its wrapper on the server, and the code's text to show
- * once. The text exists only in memory and only after the server stored the wrapper.
- */
-export const createRecoveryCode = Effect.gen(function* () {
+/** A new Notfallkarte: its code's text, shown once, and its wrapper for the server. */
+export interface Card {
+  readonly text: Redacted.Redacted;
+  readonly wrapper: Keys.Sealed;
+}
+
+/** "Notfallkarte erstellen": a new code and its wrapper, in memory only. */
+export const newRecoveryCode = Effect.gen(function* () {
   const { keys } = yield* current;
   const code = yield* RecoveryCode.generate;
 
-  yield* add(yield* wrap("code", code.bytes, keys, { place: "card" }));
+  return {
+    text: code.text,
+    wrapper: yield* wrap("code", code.bytes, keys, { place: "card" }),
+  } satisfies Card;
+});
 
-  return code.text;
+/**
+ * Sends a card's wrapper and answers its text, which the screen shows once. After a lost answer
+ * the same card goes out again, so the code shown is the one the server holds.
+ */
+export const sendRecoveryCode = Effect.fn("NotebookKeys.sendRecoveryCode")(function* (card: Card) {
+  yield* add(card.wrapper);
+
+  return card.text;
 });
 
 /** One way back into the notebook, as "Notizbuch-Schlüssel" lists it. */
@@ -432,9 +505,12 @@ const kinds: ReadonlyArray<Wrapper.Kind> = ["device", "prf", "code"];
 
 /**
  * What the server holds now, so a method lost in a restore shows as missing. Only methods the
- * newest generation endorses count, so the server can't make the notebook look safer than it is.
+ * newest generation endorses count, so the server can't make the notebook look safer than it is,
+ * and a card whose code the student hasn't seen yet (`unseen`, wrapper ids) doesn't count either.
  */
-export const summary = Effect.gen(function* () {
+export const summary = Effect.fn("NotebookKeys.summary")(function* (
+  unseen: ReadonlySet<string> = new Set(),
+) {
   const { keys, state } = yield* current;
   const newest = state.records.at(-1);
   const seed = yield* heldSeed;
@@ -459,7 +535,7 @@ export const summary = Effect.gen(function* () {
         }),
       ));
 
-    if (kind === undefined || !endorsed) continue;
+    if (kind === undefined || !endorsed || unseen.has(statement.id)) continue;
 
     const thisDevice = Option.exists(ownDevice, (own) => sameBytes(own, statement.publicKey));
 

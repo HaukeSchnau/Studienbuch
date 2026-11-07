@@ -39,6 +39,21 @@ const fakeServer = Effect.gen(function* () {
   const seals = yield* Ref.make(Option.none<ReadonlyArray<Keys.Sealed>>());
   // A stale read: `state` answers no records while `init` still sees them.
   const hideRecords = yield* Ref.make(false);
+  // The next `init` or `addWrapper` takes effect, and its answer is lost on the way back.
+  const loseAnswer = yield* Ref.make(false);
+
+  const answer = <A, E>(effect: Effect.Effect<A, E>) =>
+    Effect.flatMap(effect, (value) =>
+      Effect.flatMap(Ref.getAndSet(loseAnswer, false), (lost) =>
+        lost ? Effect.fail(new KeyServer.Unreachable()) : Effect.succeed(value),
+      ),
+    );
+
+  // As `KeyStore` keeps them: one wrapper per id, so sending one again changes nothing.
+  const withWrapper = (wrappers: ReadonlyArray<Keys.Sealed>, wrapper: Keys.Sealed) =>
+    wrappers.some(({ statement }) => statement.id === wrapper.statement.id)
+      ? wrappers
+      : [...wrappers, wrapper];
 
   const server = KeyServer.Service.of({
     state: Effect.map(
@@ -52,20 +67,30 @@ const fakeServer = Effect.gen(function* () {
         }),
     ),
     init: (record, wrapper) =>
-      Effect.flatMap(Ref.get(stored), ({ records, wrappers }) => {
-        const [zero] = records;
+      Effect.flatMap(
+        Ref.get(stored),
+        ({ records, wrappers }): ReturnType<KeyServer.Service["Service"]["init"]> => {
+          const [zero] = records;
 
-        if (zero !== undefined && !samePublicKeys(zero, record)) {
-          return Effect.fail(new Keys.ChainExists());
-        }
+          if (zero !== undefined && !samePublicKeys(zero, record)) {
+            return Effect.fail(new Keys.ChainExists());
+          }
 
-        return Ref.set(stored, { records: [record], wrappers: [...wrappers, wrapper] });
-      }),
+          return answer(
+            Ref.set(stored, {
+              records: zero === undefined ? [record] : records,
+              wrappers: withWrapper(wrappers, wrapper),
+            }),
+          );
+        },
+      ),
     addWrapper: (wrapper) =>
-      Ref.update(stored, ({ records, wrappers }) => ({
-        records,
-        wrappers: [...wrappers, wrapper],
-      })),
+      answer(
+        Ref.update(stored, ({ records, wrappers }) => ({
+          records,
+          wrappers: withWrapper(wrappers, wrapper),
+        })),
+      ),
     fetchSeals: (method) =>
       Effect.gen(function* () {
         const { records, wrappers } = yield* Ref.get(stored);
@@ -83,10 +108,13 @@ const fakeServer = Effect.gen(function* () {
       }),
   });
 
-  return { server, stored, seals, hideRecords };
+  return { server, stored, seals, hideRecords, loseAnswer };
 });
 
 type FakeServer = Effect.Success<typeof fakeServer>;
+
+/** "Notfallkarte erstellen" with an answer that arrives. */
+const createCard = Effect.flatMap(NotebookKeys.newRecoveryCode, NotebookKeys.sendRecoveryCode);
 
 /** One device of Lena's: its own secrets, a keyring that keeps what it unlocked, and the server. */
 const device = (server: FakeServer, publicComputer = false) =>
@@ -158,7 +186,7 @@ describe("NotebookKeys", () => {
         const laptop = yield* device(server);
 
         const first = yield* phone.run(NotebookKeys.status);
-        const code = Redacted.value(yield* phone.run(NotebookKeys.createRecoveryCode));
+        const code = Redacted.value(yield* phone.run(createCard));
         const locked = yield* laptop.run(NotebookKeys.status);
 
         const typo = yield* reasonOf(
@@ -205,7 +233,7 @@ describe("NotebookKeys", () => {
         const phone = yield* device(server);
         const laptop = yield* device(server);
         yield* phone.run(NotebookKeys.status);
-        const code = yield* phone.run(NotebookKeys.createRecoveryCode);
+        const code = yield* phone.run(createCard);
         const { wrappers } = yield* Ref.get(server.stored);
         const card = wrappers.find(({ statement }) => statement.kind === Wrapper.kindByte.code);
 
@@ -274,6 +302,7 @@ describe("NotebookKeys", () => {
         );
       }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
   );
+
   it.effect(
     "a device that holds its key publishes its own generation 0 again, and never takes another chain, listed or answered as ChainExists",
     () =>
@@ -286,16 +315,17 @@ describe("NotebookKeys", () => {
 
         // A restore lost the chain, so the phone publishes its own again, from its own key.
         yield* Ref.set(server.stored, { records: [], wrappers: [] });
-        yield* phone.run(NotebookKeys.reconcile);
+        const ownAgain = yield* phone.run(NotebookKeys.reconcile);
         const [republished] = (yield* Ref.get(server.stored)).records;
 
-        // Another device's chain got there first. The phone keeps its key and adopts nothing.
+        // Another device's chain got there first. The phone keeps its key, adopts nothing and
+        // says its key doesn't match the account's.
         const other = yield* device(server);
         yield* Ref.set(server.stored, { records: [], wrappers: [] });
         yield* other.run(NotebookKeys.status);
-        yield* phone.run(NotebookKeys.reconcile);
+        const listed = yield* phone.run(NotebookKeys.reconcile);
         yield* Ref.set(server.hideRecords, true);
-        yield* phone.run(NotebookKeys.reconcile);
+        const answered = yield* phone.run(NotebookKeys.reconcile);
         yield* Ref.set(server.hideRecords, false);
 
         assert.isTrue(
@@ -306,9 +336,16 @@ describe("NotebookKeys", () => {
             held: Option.getOrUndefined(yield* phone.rootKey),
             unlocks: (yield* Ref.get(phone.unlocked)).length,
             status: (yield* phone.run(NotebookKeys.status))._tag,
-            stale: yield* reasonOf(phone.run(NotebookKeys.createRecoveryCode)),
+            stale: yield* reasonOf(phone.run(createCard)),
+            matches: [ownAgain, listed, answered],
           },
-          { held: Option.getOrUndefined(held), unlocks: 1, status: "Unlocked", stale: "stale" },
+          {
+            held: Option.getOrUndefined(held),
+            unlocks: 1,
+            status: "Unlocked",
+            stale: "stale",
+            matches: [true, false, false],
+          },
         );
       }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
   );
@@ -320,9 +357,9 @@ describe("NotebookKeys", () => {
         const server = yield* fakeServer;
         const phone = yield* device(server);
         yield* phone.run(NotebookKeys.status);
-        const alone = yield* phone.run(NotebookKeys.summary);
-        yield* phone.run(NotebookKeys.createRecoveryCode);
-        const withCard = yield* phone.run(NotebookKeys.summary);
+        const alone = yield* phone.run(NotebookKeys.summary());
+        yield* phone.run(createCard);
+        const withCard = yield* phone.run(NotebookKeys.summary());
         const { records, wrappers } = yield* Ref.get(server.stored);
         const [own, card] = wrappers;
 
@@ -339,7 +376,7 @@ describe("NotebookKeys", () => {
         const method = { id: "planted", kind: "code", place: "card", credentialId: "" } as const;
         const planted = new Keys.Sealed(yield* Wrapper.create(method, code, stranger));
         yield* Ref.set(server.stored, { records, wrappers: [own, planted] });
-        const restored = yield* phone.run(NotebookKeys.summary);
+        const restored = yield* phone.run(NotebookKeys.summary());
 
         assert.deepStrictEqual(
           [alone, withCard, restored].map(({ secured, methods }) => ({
@@ -362,7 +399,7 @@ describe("NotebookKeys", () => {
       const first = yield* kiosk.run(NotebookKeys.status);
       const phone = yield* device(server);
       yield* phone.run(NotebookKeys.status);
-      const code = Redacted.value(yield* phone.run(NotebookKeys.createRecoveryCode));
+      const code = Redacted.value(yield* phone.run(createCard));
       yield* kiosk.run(NotebookKeys.unlockWithCode(code));
 
       const seed = yield* kiosk.run(
@@ -443,7 +480,7 @@ describe("NotebookKeys", () => {
       );
 
       yield* Ref.set(server.stored, { records: [record0, record1], wrappers: renewed });
-      const stale = yield* reasonOf(phone.run(NotebookKeys.createRecoveryCode));
+      const stale = yield* reasonOf(phone.run(createCard));
       yield* phone.run(NotebookKeys.usePasskey("cred-1", output));
       const latest = (yield* Ref.get(phone.unlocked)).at(-1);
 
@@ -451,10 +488,77 @@ describe("NotebookKeys", () => {
         {
           stale,
           renewed: latest !== undefined && AccountKey.matches(latest, record1),
-          secured: (yield* phone.run(NotebookKeys.summary)).secured,
+          secured: (yield* phone.run(NotebookKeys.summary())).secured,
         },
         { stale: "stale", renewed: true, secured: true },
       );
     }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
+  );
+
+  it.effect(
+    "a first device whose init answer was lost unlocks on its next try with the key the server took",
+    () =>
+      Effect.gen(function* () {
+        const server = yield* fakeServer;
+        const phone = yield* device(server);
+        yield* Ref.set(server.loseAnswer, true);
+        const lost = yield* phone.run(NotebookKeys.status);
+        const heldWhileLost = yield* phone.rootKey;
+        const again = yield* phone.run(NotebookKeys.status);
+        const { records, wrappers } = yield* Ref.get(server.stored);
+        const [record] = records;
+        const [opened] = yield* Ref.get(phone.unlocked);
+
+        assert.deepStrictEqual(
+          {
+            lost: lost._tag,
+            heldWhileLost: Option.isNone(heldWhileLost),
+            again: again._tag,
+            records: records.length,
+            devices: wrappers.length,
+          },
+          { lost: "Offline", heldWhileLost: true, again: "Unlocked", records: 1, devices: 1 },
+        );
+        assert.isTrue(
+          opened !== undefined && record !== undefined && AccountKey.matches(opened, record),
+        );
+      }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
+  );
+
+  it.effect(
+    "a Notfallkarte whose answer was lost goes out again unchanged, and only then shows its code",
+    () =>
+      Effect.gen(function* () {
+        const server = yield* fakeServer;
+        const phone = yield* device(server);
+        const laptop = yield* device(server);
+        yield* phone.run(NotebookKeys.status);
+        const card = yield* phone.run(NotebookKeys.newRecoveryCode);
+        yield* Ref.set(server.loseAnswer, true);
+        const lost = yield* reasonOf(phone.run(NotebookKeys.sendRecoveryCode(card)));
+        const unseen = new Set([card.wrapper.statement.id]);
+        const beforeShown = yield* phone.run(NotebookKeys.summary(unseen));
+        const shown = Redacted.value(yield* phone.run(NotebookKeys.sendRecoveryCode(card)));
+        yield* laptop.run(NotebookKeys.unlockWithCode(shown));
+
+        const codes = (yield* Ref.get(server.stored)).wrappers.filter(
+          ({ statement }) => statement.kind === Wrapper.kindByte.code,
+        );
+
+        assert.deepStrictEqual(
+          {
+            lost,
+            securedBeforeShown: beforeShown.secured,
+            codes: codes.length,
+            opened: Option.getOrUndefined(yield* laptop.rootKey),
+          },
+          {
+            lost: "offline",
+            securedBeforeShown: false,
+            codes: 1,
+            opened: Option.getOrUndefined(yield* phone.rootKey),
+          },
+        );
+      }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
   );
 });

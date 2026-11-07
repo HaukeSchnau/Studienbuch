@@ -14,8 +14,11 @@ import type * as Stream from "effect/Stream";
 
 export * as Ports from "./Ports.ts";
 
-/** The secrets a device keeps outside its database. */
-export const SecretName = Schema.Literals(["root-key", "device-seed"]);
+/**
+ * The secrets a device keeps outside its database. `pending-key` is a first device's new root key
+ * while the server hasn't confirmed it; the engine never reads it.
+ */
+export const SecretName = Schema.Literals(["root-key", "device-seed", "pending-key"]);
 
 export type SecretName = typeof SecretName.Type;
 

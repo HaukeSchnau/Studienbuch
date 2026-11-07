@@ -36,6 +36,7 @@ const signIn = Effect.fn("Test.signIn")(function* (accountId: string) {
   const sessions = yield* DeviceSessions.Service;
 
   yield* secrets.set("root-key", new Uint8Array([accountId.length]));
+  yield* secrets.set("pending-key", new Uint8Array([accountId.length]));
   yield* sessions.set(accountId, Redacted.make(`token-${accountId}`));
 });
 
@@ -45,6 +46,7 @@ const what = Effect.fn("Test.what")(function* (accountId: string) {
 
   return {
     rootKey: Option.isSome(yield* secrets.get("root-key")),
+    pendingKey: Option.isSome(yield* secrets.get("pending-key")),
     session: (yield* sessions.all).some((session) => session.accountId === accountId),
   };
 });
@@ -64,8 +66,12 @@ it.effect("signing one account out leaves the other's secrets and session alone"
     yield* Forgetting.forget("tom", (accountId) => Effect.sync(() => void removed.push(accountId)));
 
     assert.deepStrictEqual(removed, ["tom"]);
-    assert.deepStrictEqual(yield* what("tom"), { rootKey: false, session: false });
-    assert.deepStrictEqual(yield* what("lena"), { rootKey: true, session: true });
+    assert.deepStrictEqual(yield* what("tom"), {
+      rootKey: false,
+      pendingKey: false,
+      session: false,
+    });
+    assert.deepStrictEqual(yield* what("lena"), { rootKey: true, pendingKey: true, session: true });
   }).pipe(Effect.provide(platform)),
 );
 
@@ -76,7 +82,7 @@ it.effect("a sign-out that stopped halfway finishes at the next start", () =>
     const stopped = yield* Effect.exit(Forgetting.forget("tom", () => Effect.fail(new Crash())));
 
     assert.isTrue(stopped._tag === "Failure");
-    assert.deepStrictEqual(yield* what("tom"), { rootKey: true, session: true });
+    assert.deepStrictEqual(yield* what("tom"), { rootKey: true, pendingKey: true, session: true });
 
     const removed: Array<string> = [];
 
@@ -84,6 +90,10 @@ it.effect("a sign-out that stopped halfway finishes at the next start", () =>
     yield* Forgetting.resume((accountId) => Effect.sync(() => void removed.push(accountId)));
 
     assert.deepStrictEqual(removed, ["tom"]);
-    assert.deepStrictEqual(yield* what("tom"), { rootKey: false, session: false });
+    assert.deepStrictEqual(yield* what("tom"), {
+      rootKey: false,
+      pendingKey: false,
+      session: false,
+    });
   }).pipe(Effect.provide(platform)),
 );

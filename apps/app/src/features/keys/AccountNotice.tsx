@@ -7,16 +7,21 @@ import * as Option from "effect/Option";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import { useRouter } from "expo-router";
 import type { ReactNode } from "react";
-import { StyleSheet, View } from "react-native";
+import { Linking, StyleSheet, View } from "react-native";
 import { SafeAreaInsetsContext, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AccountState } from "../account/AccountState.ts";
 import { KeysState } from "./KeysState.ts";
 
+// The address on the landing page (apps/web, `Site.email`). Both move to one place with the first
+// shared contact screen.
+const support = `mailto:info@urbs.one?subject=${encodeURIComponent("Mein Notizbuch passt nicht zu meinem Konto")}`;
+
 /**
  * Wraps the signed-in tabs. It starts the account's engine and its notebook key, and above the tabs
  * says what keeps the account from syncing or from its notebook, with the way out: a session that
- * ended goes to "Anmelden", a locked notebook to "Notizbuch entsperren".
+ * ended goes to "Anmelden", a locked notebook to "Notizbuch entsperren", a key the account doesn't
+ * know to support.
  */
 export function AccountNotice({ children }: { readonly children: ReactNode }) {
   const account = KeysState.useAccountId();
@@ -44,6 +49,7 @@ function Notice({
   );
 
   const held = Option.getOrUndefined(KeysState.useHeld(accountId));
+  const mismatch = useAtomValue(KeysState.mismatch(accountId));
   const republish = useAtomRefresh(KeysState.republish(accountId));
 
   useAtomMount(KeysState.republish(accountId));
@@ -61,19 +67,25 @@ function Notice({
             action: "Entsperren",
             go: () => router.push("/notizbuch-entsperren"),
           }
-        : held === "keys-behind"
+        : mismatch
           ? {
-              text: "Dein Notizbuch hat auf einem anderen Gerät einen neuen Schlüssel bekommen. Entsperre es hier noch einmal, dann kommen deine neuen Einträge an.",
-              action: "Entsperren",
-              go: () => router.push("/notizbuch-entsperren"),
+              text: "Dein Notizbuch passt nicht zu deinem Konto. Deine neuen Einträge bleiben auf diesem Gerät. Schreib uns, dann helfen wir dir.",
+              action: "Hilfe holen",
+              go: () => void Linking.openURL(support),
             }
-          : held === "no-key-record"
+          : held === "keys-behind"
             ? {
-                text: "Deine neuen Einträge warten, bis der Server deinen Schlüssel wieder hat. Dieses Gerät schickt ihn gerade.",
-                action: "Erneut senden",
-                go: republish,
+                text: "Dein Notizbuch hat auf einem anderen Gerät einen neuen Schlüssel bekommen. Entsperre es hier noch einmal, dann kommen deine neuen Einträge an.",
+                action: "Entsperren",
+                go: () => router.push("/notizbuch-entsperren"),
               }
-            : undefined;
+            : held === "no-key-record"
+              ? {
+                  text: "Deine neuen Einträge warten, bis der Server deinen Schlüssel wieder hat. Dieses Gerät schickt ihn gerade.",
+                  action: "Erneut senden",
+                  go: republish,
+                }
+              : undefined;
 
   // One tree either way, so the tabs keep their state when the notice comes or goes.
   return (

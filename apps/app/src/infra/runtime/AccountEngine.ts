@@ -42,7 +42,15 @@ const forApp = (accountId: string) =>
     Layer.provideMerge(Layer.mergeAll(CryptoSuite.layer, Layer.fresh(Reactivity.layer))),
   );
 
-type Running = Layer.Success<ReturnType<typeof forApp>>;
+/**
+ * The scope of the account's running engine. Work that belongs to the account, such as publishing
+ * its keys, forks into it, so sign-out stops it with the engine.
+ */
+export class EngineScope extends Context.Service<EngineScope, Scope.Scope>()(
+  "AccountEngine.EngineScope",
+) {}
+
+type Running = Layer.Success<ReturnType<typeof forApp>> | EngineScope;
 
 type Failure = Layer.Error<ReturnType<typeof forApp>>;
 
@@ -93,10 +101,12 @@ export const engines = Layer.effect(Engines)(
             if (known !== undefined) return known.context;
             const scope = yield* Scope.make();
 
-            const context = yield* Layer.buildWithScope(forApp(accountId), scope).pipe(
+            const built = yield* Layer.buildWithScope(forApp(accountId), scope).pipe(
               Effect.provide(device),
               Effect.onError(() => Scope.close(scope, Exit.void)),
             );
+
+            const context = Context.add(built, EngineScope, scope);
 
             running.set(accountId, { scope, context });
 

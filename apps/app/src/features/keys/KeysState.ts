@@ -63,6 +63,12 @@ export const useAccountId = (): Option.Option<string> =>
     (signed) => signed.accountId,
   );
 
+/**
+ * The device holds a root key that the account's key chain on the server doesn't derive, so what it
+ * seals now would be refused. Only support can sort that out in M1.
+ */
+export const mismatch = Atom.family((_accountId: string) => Atom.make(false).pipe(Atom.keepAlive));
+
 /** Why the passkey of the last sign-in couldn't open the notebook, for "Notizbuch entsperren". */
 export const prfProblem = Atom.make(Option.none<NotebookKeys.Reason>()).pipe(Atom.keepAlive);
 
@@ -101,8 +107,17 @@ export const status = Atom.family((accountId: string) =>
 
       const now = Option.isSome(offered) ? yield* NotebookKeys.status : before;
 
-      // The device's own wrapper and generation 0 reach the server after the screen moved on.
-      if (now._tag === "Unlocked") yield* Effect.forkDetach(Effect.ignore(NotebookKeys.reconcile));
+      // The device's own wrapper and generation 0 reach the server after the screen moved on,
+      // in the engine's scope, so sign-out stops it.
+      if (now._tag === "Unlocked") {
+        const flag = (matches: boolean) =>
+          Effect.sync(() => get.set(mismatch(accountId), !matches));
+
+        yield* Effect.forkIn(
+          Effect.ignore(Effect.flatMap(NotebookKeys.reconcile, flag)),
+          yield* AccountEngine.EngineScope,
+        );
+      }
 
       return now;
     }),
@@ -138,11 +153,27 @@ export const republish = Atom.family((accountId: string) =>
 export const useHeld = (accountId: string) =>
   Option.flatten(AsyncResult.value(useAtomValue(held(accountId))));
 
+/**
+ * A Notfallkarte whose wrapper didn't reach the server for sure, in memory only. "Notfallkarte
+ * erstellen" sends this one again, so the code shown is always the one the server holds.
+ */
+const unsentCard = Atom.family((_accountId: string) =>
+  Atom.make(Option.none<NotebookKeys.Card>()).pipe(Atom.keepAlive),
+);
+
 /** "Notizbuch-Schlüssel": the methods the server holds, and whether one survives this device. */
 export const summary = Atom.family((accountId: string) =>
   // After the status, which starts a new account's key when this screen is the first to ask.
   runtime(accountId).atom((get) =>
-    Effect.andThen(get.result(status(accountId)), NotebookKeys.summary),
+    Effect.andThen(get.result(status(accountId)), () =>
+      NotebookKeys.summary(
+        new Set(
+          Option.toArray(
+            Option.map(get(unsentCard(accountId)), (card) => card.wrapper.statement.id),
+          ),
+        ),
+      ),
+    ),
   ),
 );
 
@@ -185,7 +216,26 @@ export const withPassword = Atom.family((accountId: string) =>
  */
 export const createRecoveryCode = Atom.family((accountId: string) =>
   runtime(accountId).fn<void>()((_, get) =>
-    Effect.tap(NotebookKeys.createRecoveryCode, () => refresh(accountId, get)),
+    Effect.gen(function* () {
+      const waiting = get(unsentCard(accountId));
+      const card = Option.isSome(waiting) ? waiting.value : yield* NotebookKeys.newRecoveryCode;
+
+      get.set(unsentCard(accountId), Option.some(card));
+
+      const text = yield* NotebookKeys.sendRecoveryCode(card).pipe(
+        Effect.tapError((refused) =>
+          // A card for an older key generation can't go out any more.
+          refused._tag === "NotebookKeys.Problem" && refused.reason === "stale"
+            ? Effect.sync(() => get.set(unsentCard(accountId), Option.none()))
+            : Effect.void,
+        ),
+      );
+
+      get.set(unsentCard(accountId), Option.none());
+      yield* refresh(accountId, get);
+
+      return text;
+    }),
   ),
 );
 
