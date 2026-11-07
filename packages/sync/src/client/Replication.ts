@@ -7,16 +7,20 @@
 import * as Clock from "effect/Clock";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
+import * as Ref from "effect/Ref";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import type * as SqlError from "effect/sql/SqlError";
 import type { Sync } from "../definition/Sync.ts";
+import type { Command } from "../protocol/Command.ts";
 import { Ids } from "../protocol/Ids.ts";
 import type { Protocol } from "../protocol/Protocol.ts";
 import { DeviceSchema } from "./DeviceSchema.ts";
+import type { Keyring } from "./Keyring.ts";
 import { Outbox } from "./Outbox.ts";
 import { Rebase } from "./Rebase.ts";
+import { Sealing } from "./Sealing.ts";
 
 export * as Replication from "./Replication.ts";
 
@@ -81,6 +85,18 @@ export interface Device {
   readonly renumbered: (renumbered: Renumbered) => Effect.Effect<void>;
   /** Wipes the device: data, outbox and keys. */
   readonly wipe: Effect.Effect<void, SqlError.SqlError>;
+  /** Opens key boxes and sealed rows as pages arrive. */
+  readonly opener: Rebase.Opener;
+  readonly keyring: Keyring.Keyring;
+  /** After a pull: opens boxes that waited for the account's keys, and picks up a renewed key. */
+  readonly afterPull: Effect.Effect<void, SqlError.SqlError>;
+  /**
+   * Whether every `Seal` waits for the account's keys to change on the device: the server holds no
+   * key record for the account, or the renewal `KeysBehind` asked for didn't come.
+   */
+  readonly sealsHeld: Ref.Ref<boolean>;
+  /** Fetches the device's own seal and unlocks with it, if it reaches `generation`. */
+  readonly renewTo: (generation: number) => Effect.Effect<boolean, SqlError.SqlError>;
 }
 
 export interface Renumbered {
@@ -93,10 +109,17 @@ type Step =
   | "done"
   | "again"
   | "stale"
+  | "keys-behind"
   | "retry"
   | "revoked?"
   | "renumber-after-pull"
   | Exclude<Outcome, "idle" | "retry">;
+
+/** Where a round's push stands: what the server confirmed, and the generation it asked for. */
+interface Fence {
+  pushedUpTo: number;
+  keysBehind: number | null;
+}
 
 export const make = (device: Device) => {
   const { definition, actor } = device;
@@ -125,11 +148,14 @@ export const make = (device: Device) => {
   const renumber = Effect.gen(function* () {
     const to = yield* Ids.random;
 
+    // The drafts of sealed commands name earlier commands by their old ids, so they run again.
     const { renumbered } = yield* device.commit(
-      Effect.map(renumberTo(to), (renumbered) => ({
-        renumbered,
-        tables: [DeviceSchema.keys.outbox],
-      })),
+      Effect.gen(function* () {
+        const renumbered = yield* renumberTo(to);
+        const replayed = yield* Rebase.replay(definition, actor);
+
+        return { renumbered, tables: [...replayed, DeviceSchema.keys.outbox] };
+      }),
     );
 
     yield* device.renumbered(renumbered);
@@ -167,21 +193,52 @@ export const make = (device: Device) => {
    * round starts again at the first command the device hasn't settled, and sends nothing newer
    * than what the server confirms.
    */
-  const push = Effect.fnUntraced(function* (remote: Remote, fence: { pushedUpTo: number }) {
+  const push = Effect.fnUntraced(function* (remote: Remote, fence: Fence) {
+    const held = yield* Ref.get(device.sealsHeld);
+
     for (;;) {
       const meta = yield* Outbox.meta;
       const waiting = yield* Outbox.after(fence.pushedUpTo, pushBatch);
-      const firstSeal = waiting.findIndex((command) => command.mode === "Seal");
-      const sendable = firstSeal === -1 ? waiting : waiting.slice(0, firstSeal);
 
-      if (sendable.length === 0) return waiting.length === 0 ? "done" : "retry";
+      if (waiting.length === 0) return "done";
+
+      // Spaces whose epoch 0 a command of this batch opens: later ones in it need no box. A batch
+      // the server didn't take carries no box for the next one.
+      const opening = new Set<string>();
+
+      // A sealed command seals only now, under the space's current key epoch. One that can't yet,
+      // on a locked device or without its space's key, holds back every command after it.
+      const commands: Array<Command.Any> = [];
+
+      for (const command of waiting) {
+        if (command.mode === "Mutate") {
+          commands.push(Outbox.asMutate(command));
+          continue;
+        }
+
+        if (held) break;
+
+        if (command.sealed !== null) {
+          for (const box of command.sealed.boxes) opening.add(box.space);
+          commands.push(command.sealed);
+          continue;
+        }
+
+        const sealed = yield* Sealing.seal(command, actor, device.keyring, opening);
+
+        if (sealed === "locked" || sealed === "key-missing" || sealed === "held") break;
+        yield* Outbox.keepSealed(sealed);
+        commands.push(sealed);
+      }
+
+      if (commands.length === 0) return "retry";
 
       const result = yield* Effect.result(
         remote.push({
           clientId: meta.clientId,
           syncEpoch: meta.syncEpoch,
           contract: definition.contract,
-          commands: sendable.map(Outbox.asMutate),
+          commands,
         }),
       );
 
@@ -233,6 +290,20 @@ export const make = (device: Device) => {
 
       if (response.outcomes.some((outcome) => outcome._tag === "Stale")) return "stale";
 
+      for (const outcome of response.outcomes) {
+        if (outcome._tag === "NoKeyRecord") {
+          yield* Ref.set(device.sealsHeld, true);
+
+          return "retry";
+        }
+
+        if (outcome._tag === "KeysBehind") {
+          fence.keysBehind = outcome.generation;
+
+          return "keys-behind";
+        }
+      }
+
       if (response.lastMutationId <= fence.pushedUpTo) return "retry";
       fence.pushedUpTo = response.lastMutationId;
     }
@@ -251,7 +322,7 @@ export const make = (device: Device) => {
       Effect.gen(function* () {
         const meta = yield* Outbox.meta;
         yield* Outbox.setSyncEpoch(response.syncEpoch);
-        const tables = yield* Rebase.applyPull(response, now);
+        const tables = yield* Rebase.applyPull(response, now, device.opener);
         const last = response.lastMutationId;
 
         // Only the last page carries a last mutation id. One above the device's own means the
@@ -264,10 +335,14 @@ export const make = (device: Device) => {
             ? Option.none<Outbox.Settled>()
             : Option.some(yield* Outbox.settle(last, response.refusals, now));
 
+        // The server took nothing after `last`, so what the push sent of those seals again.
+        const unsent = last !== null && !ahead && (yield* Outbox.forgetSealedAfter(last));
+
         const refused = Option.exists(settled, (each) => each.refused.length > 0);
 
         const changed =
           meta.replayDue ||
+          unsent ||
           tables.size > 0 ||
           Option.isSome(renumbered) ||
           Option.exists(settled, (each) => each.applied.length > 0) ||
@@ -361,7 +436,11 @@ export const make = (device: Device) => {
 
       yield* apply(result.success);
 
-      if (!result.success.more) return "done";
+      if (!result.success.more) {
+        yield* device.afterPull;
+
+        return "done";
+      }
 
       // Another page that moves no cursor would be asked for forever.
       const moved = new Map(before.map((cursor) => [cursor.space, cursor.version]));
@@ -379,7 +458,11 @@ export const make = (device: Device) => {
   /** One round over `remote`. Fails only when the connection does. */
   const round = Effect.fnUntraced(function* (remote: Remote) {
     for (let pass = 0; pass < maxPasses; pass++) {
-      const fence = { pushedUpTo: (yield* Outbox.meta).settledMutationId };
+      const fence: Fence = {
+        pushedUpTo: (yield* Outbox.meta).settledMutationId,
+        keysBehind: null,
+      };
+
       const pushed: Step = yield* flagged("pushing", push(remote, fence));
 
       if (pushed === "update-required") return pushed;
@@ -399,6 +482,15 @@ export const make = (device: Device) => {
       }
 
       if (pushed === "stale") continue;
+
+      // The server took the account's keys as renewed past this device's. The pull dropped what
+      // the push sent, and the device's own seal brings the newer keys to seal it again with.
+      if (pushed === "keys-behind") {
+        if (fence.keysBehind !== null && (yield* device.renewTo(fence.keysBehind))) continue;
+        yield* Ref.set(device.sealsHeld, true);
+
+        return "retry";
+      }
 
       if (pushed === "retry" || pushed === "revoked?" || pulled === "retry") return "retry";
 

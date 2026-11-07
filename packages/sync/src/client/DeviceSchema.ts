@@ -5,9 +5,8 @@
  * one directly: the server fills `base_row`, the outbox fills `pending_row`.
  *
  * ```ts
- * // The schema file drizzle-kit reads. Each entity is a named export, the engine's tables included.
- * export const { sync_meta, sync_space, sync_outbox, sync_settled_command, sync_rejected_command,
- *   base_row, pending_row, sync_row_view, Homework } = DeviceSchema.make([Homework.Row]);
+ * // The schema file drizzle-kit reads next to `EngineTables.ts`. Each entity is a named export.
+ * export const { base_row, pending_row, sync_row_view, Homework } = DeviceSchema.make([Homework.Row]);
  * // A typed read:
  * db.select().from(Homework).where(eq(Homework.courseId, courseId)).orderBy(Homework.dueOn)
  * ```
@@ -187,9 +186,6 @@ const indexesOn = (rowTable: string, tables: ReadonlyArray<Sync.Any>) =>
     ),
   );
 
-// The engine's own tables start with `sync_`: SQLite compares names without case, so a synced
-// table named `Space` or `Outbox` would otherwise collide with them.
-
 /**
  * The `Reactivity` keys of the engine's own tables, which their queries follow. Synced tables use
  * their names as keys.
@@ -199,78 +195,6 @@ export const keys = {
   refusals: "sync_rejected_command",
   spaces: "sync_space",
 } as const;
-
-/**
- * The device's own state, one row: the client id the server knows it by, the restore epoch of its
- * last pull, the last mutation id it gave a command and the last one it settled. `replay_due` is 1
- * after a page changed base rows the overlay hasn't been replayed on yet.
- */
-const sync_meta = sqliteTable("sync_meta", {
-  id: integer().primaryKey(),
-  client_id: text().notNull(),
-  sync_epoch: text(),
-  last_mutation_id: integer().notNull(),
-  settled_mutation_id: integer().notNull(),
-  replay_due: integer().notNull().default(0),
-});
-
-/**
- * The spaces the account reads, as the last pull listed them. `version` is the device's cursor,
- * `null` until the space's first patch, and `synced_at` the epoch milliseconds of that pull.
- */
-const sync_space = sqliteTable("sync_space", {
-  id: text().primaryKey(),
-  kind: text().notNull(),
-  role: text().notNull(),
-  version: integer(),
-  key_epoch: integer(),
-  synced_at: integer(),
-});
-
-/**
- * Commands the server hasn't settled, in plaintext: the mutator's name, version and arguments as
- * canonical JSON, and when the user acted. Only the push seals a `Seal` command.
- */
-const sync_outbox = sqliteTable("sync_outbox", {
-  mutation_id: integer().primaryKey(),
-  name: text().notNull(),
-  version: integer().notNull(),
-  args: text().notNull(),
-  at: integer().notNull(),
-  mode: text({ enum: ["Mutate", "Seal"] }).notNull(),
-});
-
-/**
- * Commands the server applied, kept for 7 days after `settled_at`, so that after a restore of the
- * server's database (`Sync.EpochChanged`) the device can send them again.
- */
-const sync_settled_command = sqliteTable("sync_settled_command", {
-  mutation_id: integer().primaryKey(),
-  name: text().notNull(),
-  version: integer().notNull(),
-  args: text().notNull(),
-  at: integer().notNull(),
-  mode: text({ enum: ["Mutate", "Seal"] }).notNull(),
-  settled_at: integer().notNull(),
-});
-
-/**
- * Commands the server refused, with its reason as JSON, until the user dismisses or redoes them.
- * Keyed by the client id they were sent under, because a new client id numbers again from 1.
- */
-const sync_rejected_command = sqliteTable(
-  "sync_rejected_command",
-  {
-    client_id: text().notNull(),
-    mutation_id: integer().notNull(),
-    name: text().notNull(),
-    version: integer().notNull(),
-    args: text().notNull(),
-    at: integer().notNull(),
-    reason: text().notNull(),
-  },
-  (row) => [primaryKey({ columns: [row.client_id, row.mutation_id] })],
-);
 
 export const make = <const Tables extends ReadonlyArray<Sync.Any>>(tables: Tables) => {
   const base_row = sqliteTable(
@@ -319,15 +243,5 @@ export const make = <const Tables extends ReadonlyArray<Sync.Any>>(tables: Table
     [T in Tables[number] as T["name"]]: ReturnType<typeof view<T>>;
   };
 
-  return {
-    sync_meta,
-    sync_space,
-    sync_outbox,
-    sync_settled_command,
-    sync_rejected_command,
-    base_row,
-    pending_row,
-    sync_row_view,
-    ...views,
-  };
+  return { base_row, pending_row, sync_row_view, ...views };
 };
