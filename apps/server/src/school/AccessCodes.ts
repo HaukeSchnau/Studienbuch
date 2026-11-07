@@ -138,6 +138,15 @@ const open = (code: Locked, now: Date) =>
 
 const spent = (code: Locked) => code.maxUses !== null && code.uses >= code.maxUses;
 
+interface Held extends Locked {
+  readonly expires: Date;
+  readonly spentAt: Date | null;
+}
+
+/** Whether a reservation may still sign up or confirm an account. */
+const usable = (held: Held, now: Date) =>
+  held.spentAt === null && held.expires > now && open(held, now) && !spent(held);
+
 /**
  * Answers a reservation's token with the school's name, for the sign-up that follows. A code that
  * is unknown, revoked, expired or spent to its limit is unavailable. Redeeming holds no use, so
@@ -172,6 +181,27 @@ export const reserve = Effect.fn("AccessCodes.reserve")(function* (typed: string
   `;
 
   return { token, schoolName: code.schoolName ?? "", kind: code.kind, expiresAt };
+});
+
+/**
+ * The code of a reservation that may still sign up or confirm an account, with its use limit,
+ * which bounds how many accounts the code signs up wherever they come from.
+ */
+export const codeOf = Effect.fn("AccessCodes.codeOf")(function* (token: string) {
+  const sql = yield* SqlClient.SqlClient;
+  const now = at(yield* DateTime.now);
+
+  const [held] = yield* sql<Held>`
+    select c.id, c.school_id as "schoolId", c.kind, c.max_uses as "maxUses", c.uses,
+      c.expires_at as "expiresAt", c.revoked_at as "revokedAt",
+      r.expires_at as expires, r.spent_at as "spentAt"
+    from access_reservation r join access_code c on c.id = r.code_id
+    where r.token_hash = ${yield* digest(token)}
+  `;
+
+  return held === undefined || !usable(held, now)
+    ? Option.none()
+    : Option.some({ id: held.id, maxUses: held.maxUses });
 });
 
 /**
@@ -251,13 +281,7 @@ export const admitConfirmed = Effect.fn("AccessCodes.admitConfirmed")(function* 
       const [held] =
         tokenHash === null || signedUp.length === 0
           ? []
-          : yield* sql<
-              Locked & {
-                readonly reservation: string;
-                readonly expires: Date;
-                readonly spentAt: Date | null;
-              }
-            >`
+          : yield* sql<Held & { readonly reservation: string }>`
               select r.id as reservation, r.expires_at as expires, r.spent_at as "spentAt", c.id,
                 c.school_id as "schoolId", c.kind, c.max_uses as "maxUses", c.uses,
                 c.expires_at as "expiresAt", c.revoked_at as "revokedAt"
@@ -267,15 +291,7 @@ export const admitConfirmed = Effect.fn("AccessCodes.admitConfirmed")(function* 
               for update of r, c
             `;
 
-      if (
-        held === undefined ||
-        held.spentAt !== null ||
-        held.expires <= now ||
-        !open(held, now) ||
-        spent(held)
-      ) {
-        return Option.none<Access.Admission>();
-      }
+      if (held === undefined || !usable(held, now)) return Option.none<Access.Admission>();
 
       const school = School.Id.make(held.schoolId);
 

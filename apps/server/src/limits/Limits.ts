@@ -23,40 +23,47 @@ export const client = (forwardedFor: string | null | undefined) => {
   return last === "" ? "unknown" : last;
 };
 
-interface Count {
+export interface Count {
   readonly count: number;
   readonly resetAt: number;
 }
 
-/** Counts per key in fixed windows, each starting at the key's first count. */
-export const make = (window: Duration.Input) => {
+/**
+ * Counts per key in fixed windows, each starting at the key's first count. A key that starts a
+ * window moves to the back, so the map runs in the order windows end, and a count drops old keys
+ * from the front until it meets one still counting.
+ */
+export const make = (window: Duration.Input, counts = new Map<string, Count>()) => {
   const length = Duration.toMillis(window);
-  const counts = new Map<string, Count>();
 
-  const current = (key: string, now: number) => {
+  const live = (key: string, now: number) => {
     const found = counts.get(key);
 
-    return found === undefined || found.resetAt <= now
-      ? { count: 0, resetAt: now + length }
-      : found;
+    return found !== undefined && found.resetAt > now ? found : undefined;
   };
 
   /** Seconds until `key` may count again, or none while it is under `limit`. */
   const blocked = (key: string, limit: number, now: number) => {
-    const found = current(key, now);
+    const found = live(key, now);
 
-    return found.count >= limit
+    return found !== undefined && found.count >= limit
       ? Option.some(Math.ceil((found.resetAt - now) / 1000))
       : Option.none<number>();
   };
 
   const add = (key: string, now: number) => {
-    const found = current(key, now);
-    counts.set(key, { count: found.count + 1, resetAt: found.resetAt });
+    const found = live(key, now);
 
-    // Old windows go, so the map holds only keys of the last window.
-    if (counts.size > 10_000) {
-      for (const [each, value] of counts) if (value.resetAt <= now) counts.delete(each);
+    if (found === undefined) {
+      counts.delete(key);
+      counts.set(key, { count: 1, resetAt: now + length });
+    } else {
+      counts.set(key, { count: found.count + 1, resetAt: found.resetAt });
+    }
+
+    for (const [each, value] of counts) {
+      if (value.resetAt > now) break;
+      counts.delete(each);
     }
   };
 
@@ -70,6 +77,14 @@ export const make = (window: Duration.Input) => {
       if (Option.isNone(wait)) add(key, now);
 
       return wait;
+    },
+    /** Takes back a count for an attempt that turned out not to count. */
+    giveBack: (key: string, now: number) => {
+      const found = live(key, now);
+
+      if (found !== undefined && found.count > 0) {
+        counts.set(key, { count: found.count - 1, resetAt: found.resetAt });
+      }
     },
   };
 };

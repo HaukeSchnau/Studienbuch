@@ -82,17 +82,23 @@ export interface Callbacks {
   readonly log: (level: "debug" | "info" | "success" | "warn" | "error", message: string) => void;
 }
 
-// Routes `limited` limits instead of Better Auth, each with a ceiling per client address. A sign-up
-// spends its reservation's budget of three, and a code request or a password counts per address.
-// A code is bounded by Better Auth's five tries per code and by the mail caps.
+// Routes `limited` limits instead of Better Auth, each with a ceiling per client address. A code
+// request and a password count per address, and a code gets Better Auth's five tries.
 const limitedRoutes = new Set([
   "/sign-up/email",
   "/sign-in/email",
+  "/change-password",
   "/send-verification-email",
   "/email-otp/verify-email",
   "/email-otp/request-password-reset",
   "/email-otp/reset-password",
 ]);
+
+// A sign-up or confirmation that carries a reservation of a code with a use limit counts against
+// the code instead of the client: three sign-ups per use, wherever they come from.
+const reservedRoutes = new Set(["/sign-up/email", "/email-otp/verify-email"]);
+
+const passwordRoutes = new Set(["/sign-in/email", "/change-password"]);
 
 /** Better Auth's configuration without its database. `AuthTables.test.ts` reads its tables. */
 export const options = (settings: Settings, callbacks: Callbacks) =>
@@ -258,6 +264,9 @@ export const options = (settings: Settings, callbacks: Callbacks) =>
     // email-otp` is Better Auth's deprecated copy of `/email-otp/request-password-reset`. A token
     // never leaves its device, so `/list-sessions` waits for the device list.
     disabledPaths: [
+      // Each would check a password past `limited`, and the app uses neither.
+      "/verify-password",
+      "/delete-user",
       "/verify-email",
       "/update-user",
       "/list-sessions",
@@ -397,8 +406,23 @@ const keyedHash = (secret: Redacted.Redacted, value: string) =>
 /** Code mails per address and hour, for confirmation codes and for reset codes. */
 const mailsPerHour = 5;
 
-/** Wrong passwords per address in `Limits.clientWindow`, after which its sign-in waits. */
-const failedSignIns = 10;
+/** Wrong passwords per address in `Limits.clientWindow`, after which its password checks wait. */
+const wrongPasswords = 10;
+
+// What Better Auth answers a wrong password with, at sign-in and when changing it.
+const wrongPasswordCodes = new Set(["INVALID_EMAIL_OR_PASSWORD", "INVALID_PASSWORD"]);
+
+const isWrongPassword = (response: Response) =>
+  response.status === 400 || response.status === 401
+    ? response
+        .clone()
+        .json()
+        .then(
+          (body) =>
+            Option.exists(decodeErrorCode(body), ({ code }) => wrongPasswordCodes.has(code)),
+          () => false,
+        )
+    : Promise.resolve(false);
 
 // Better Auth's answer to a code request, which a capped one gets too, so it tells nothing.
 const codeRequests = new Map<string, object>([
@@ -593,11 +617,74 @@ const make = Effect.gen(function* () {
 
   // Kept in this process like the revocations below.
   const clients = Limits.make(Limits.clientWindow);
+  const codes = Limits.make(Limits.clientWindow);
   const mails = Limits.make("1 hour");
-  const signIns = Limits.make(Limits.clientWindow);
+  const passwords = Limits.make(Limits.clientWindow);
 
-  // A school's network shares one client address, so a client gets a ceiling per route, and an
-  // email address its own caps: a few code mails an hour, and a few wrong passwords.
+  // The count a request takes: its code's for a sign-up or confirmation with a reservation of a
+  // code with a use limit, and its client's ceiling for anything else.
+  const ceiling = (route: string, request: Request, now: number) => {
+    const reservation = reservedRoutes.has(route)
+      ? request.headers.get(Access.reservationHeader)
+      : null;
+
+    const byClient = () =>
+      clients.take(
+        `${route} ${Limits.client(request.headers.get("x-forwarded-for"))}`,
+        Limits.perClient,
+        now,
+      );
+
+    if (reservation === null) return Promise.resolve(byClient());
+
+    return run(AccessCodes.codeOf(reservation)).then((code) =>
+      Option.isSome(code) && code.value.maxUses !== null
+        ? codes.take(
+            `${route} ${code.value.id}`,
+            AccessCodes.signUpBudget * code.value.maxUses,
+            now,
+          )
+        : byClient(),
+    );
+  };
+
+  // The account a password check is for: the address at sign-in, the session's when changing it.
+  const passwordOf = (route: string, request: Request) =>
+    route === "/sign-in/email"
+      ? addressIn(request)
+      : auth.api
+          .getSession({ headers: request.headers })
+          .then((found) =>
+            Option.map(Option.fromNullishOr(found), ({ user }) => user.email.toLowerCase()),
+          );
+
+  // A password check counts before it runs, so parallel guesses can't all pass the count, and a
+  // check that wasn't a wrong password gives its count back.
+  const checkingPassword = (
+    route: string,
+    request: Request,
+    now: number,
+    next: (request: Request) => Promise<Response>,
+  ) =>
+    passwordOf(route, request).then((address) => {
+      if (Option.isNone(address)) return next(request);
+
+      const wait = passwords.take(address.value, wrongPasswords, now);
+
+      if (Option.isSome(wait)) return tooMany(wait.value);
+
+      return next(request).then((response) =>
+        isWrongPassword(response).then((wrong) => {
+          if (!wrong) passwords.giveBack(address.value, now);
+
+          return response;
+        }),
+      );
+    });
+
+  // A school's network shares one client address, so a client gets a ceiling per route, a code
+  // with a use limit its own count, and an email address its caps: a few code mails an hour, and
+  // a few wrong passwords.
   const limited = (
     request: Request,
     next: (request: Request) => Promise<Response>,
@@ -607,33 +694,24 @@ const make = Effect.gen(function* () {
     if (!limitedRoutes.has(route)) return next(request);
 
     const now = Effect.runSyncWith(services)(Clock.currentTimeMillis);
-    const client = Limits.client(request.headers.get("x-forwarded-for"));
-    const ceiling = clients.take(`${route} ${client}`, Limits.perClient, now);
 
-    if (Option.isSome(ceiling)) return Promise.resolve(tooMany(ceiling.value));
-
-    const answer = codeRequests.get(route);
-
-    if (answer === undefined && route !== "/sign-in/email") return next(request);
-
-    return addressIn(request).then((address) => {
-      if (Option.isNone(address)) return next(request);
-
-      if (answer !== undefined) {
-        return Option.isSome(mails.take(`${route} ${address.value}`, mailsPerHour, now))
-          ? Response.json(answer)
-          : next(request);
-      }
-
-      const wait = signIns.blocked(address.value, failedSignIns, now);
-
+    return ceiling(route, request, now).then((wait) => {
       if (Option.isSome(wait)) return tooMany(wait.value);
 
-      return next(request).then((response) => {
-        if (response.status === 401) signIns.add(address.value, now);
+      const answer = codeRequests.get(route);
 
-        return response;
-      });
+      if (answer !== undefined) {
+        return addressIn(request).then((address) =>
+          Option.isSome(address) &&
+          Option.isSome(mails.take(`${route} ${address.value}`, mailsPerHour, now))
+            ? Response.json(answer)
+            : next(request),
+        );
+      }
+
+      return passwordRoutes.has(route)
+        ? checkingPassword(route, request, now, next)
+        : next(request);
     });
   };
 

@@ -494,6 +494,8 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
               ["POST", "/email-otp/check-verification-otp"],
               ["POST", "/sign-in/email-otp"],
               ["POST", "/forget-password/email-otp"],
+              ["POST", "/verify-password"],
+              ["POST", "/delete-user"],
             ] as const,
             ([method, path]) =>
               Effect.map(
@@ -502,7 +504,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
               ),
           );
 
-          assert.deepStrictEqual(statuses, [404, 404, 404, 404, 404, 404]);
+          assert.deepStrictEqual(statuses, [404, 404, 404, 404, 404, 404, 404, 404]);
         }),
       );
 
@@ -1066,9 +1068,11 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
               (answer) => answer.status,
             );
 
+          // At once, so a guess counts before its password is checked.
           const wrong = yield* Effect.forEach(
-            Array.from({ length: 10 }, (_, index) => `falsch-geraten-${index}`),
+            Array.from({ length: 30 }, (_, index) => `falsch-geraten-${index}`),
             (guess) => signIn(email, guess),
+            { concurrency: "unbounded" },
           );
 
           const right = yield* signIn(email, password);
@@ -1079,8 +1083,97 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
           const later = yield* signIn(email, password);
 
           assert.deepStrictEqual(
-            { wrong: new Set(wrong), right, elsewhere, sameClient, later },
-            { wrong: new Set([401]), right: 429, elsewhere: 429, sameClient: 200, later: 200 },
+            {
+              wrong: [401, 429].map((status) => wrong.filter((each) => each === status).length),
+              right,
+              elsewhere,
+              sameClient,
+              later,
+            },
+            { wrong: [10, 20], right: 429, elsewhere: 429, sameClient: 200, later: 200 },
+          );
+        }),
+      );
+
+      it.effect("counts a wrong current password like a wrong one at sign-in", () =>
+        Effect.gen(function* () {
+          const email = "lena.changing@example.org";
+          const token = yield* signUp(email);
+
+          const change = (currentPassword: string) =>
+            Effect.map(
+              call("POST", "/change-password", {
+                token,
+                body: { currentPassword, newPassword: "ganz-neu-4567" },
+              }),
+              (answer) => answer.status,
+            );
+
+          const wrong = yield* Effect.forEach(
+            Array.from({ length: 10 }, (_, index) => `falsch-geraten-${index}`),
+            change,
+          );
+
+          const right = yield* change(password);
+          const signIn = yield* call("POST", "/sign-in/email", { body: { email, password } });
+
+          assert.deepStrictEqual(
+            { wrong: new Set(wrong), right, signIn: signIn.status },
+            { wrong: new Set([400]), right: 429, signIn: 429 },
+          );
+        }),
+      );
+
+      // A code with a use limit bounds its sign-ups, so a year group behind its school's one
+      // address isn't held to the client's ceiling.
+      it.effect("lets a year group of 180 behind one address sign up and confirm", () =>
+        Effect.gen(function* () {
+          const sql = yield* SqlClient.SqlClient;
+          const from = "198.51.100.40";
+
+          const { code } = yield* AccessCodes.mint({
+            school,
+            kind: "student",
+            maxUses: Option.some(180),
+          });
+
+          const students = Array.from(
+            { length: 180 },
+            (_, index) => `jahrgang8.${index}@example.org`,
+          );
+
+          const answers = yield* Effect.forEach(
+            students,
+            (email) =>
+              Effect.gen(function* () {
+                const { token: held } = yield* AccessCodes.reserve(code);
+
+                const signedUp = yield* call("POST", "/sign-up/email", {
+                  from,
+                  body: { email, password, name: "" },
+                  reservation: held,
+                });
+
+                const confirmed = yield* call("POST", "/email-otp/verify-email", {
+                  from,
+                  body: { email, otp: yield* codeFor(email), password },
+                  reservation: held,
+                });
+
+                return `${signedUp.status} ${confirmed.status}`;
+              }),
+            { concurrency: 10 },
+          );
+
+          const [admitted] = yield* sql<{ readonly count: number }>`
+            select count(*)::int as count from school_access a
+            join auth_user u on u.id = a.account_id
+            where u.email like 'jahrgang8.%' and a.school_id = ${school}
+          `;
+
+          assert.deepStrictEqual(
+            { answers: new Set(answers), admitted: admitted?.count },
+            { answers: new Set(["200 200"]), admitted: 180 },
           );
         }),
       );
