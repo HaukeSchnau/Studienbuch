@@ -259,6 +259,50 @@ describe("Account", () => {
     }).pipe(Effect.provide(withPasskeyDialog)),
   );
 
+  // The reset code only sets the password; the device then signs in with it like any other.
+  it.effect("resets a forgotten password, then signs in with the new one", () =>
+    Effect.gen(function* () {
+      const calls = yield* Ref.make<ReadonlyArray<string>>([]);
+      const sessions = yield* SessionStore.Service;
+
+      yield* Account.resetPassword(" lena@example.org", "145 838", "ganz-neu-4567").pipe(
+        Effect.provide(
+          AuthApiTesting.layer({
+            resetPassword: (email, code, password) =>
+              Ref.update(calls, (made) => [...made, `reset ${email} ${code} ${password}`]),
+            signIn: (email, password) =>
+              Effect.as(
+                Ref.update(calls, (made) => [...made, `sign-in ${email} ${password}`]),
+                signedIn("lena", "token-lena"),
+              ),
+          }),
+        ),
+      );
+
+      assert.deepStrictEqual(yield* Ref.get(calls), [
+        "reset lena@example.org 145838 ganz-neu-4567",
+        "sign-in lena@example.org ganz-neu-4567",
+      ]);
+      assert.deepStrictEqual(
+        Option.map(yield* sessions.current, (signed) => signed.accountId),
+        Option.some("lena"),
+      );
+
+      const spent = yield* Effect.flip(
+        Account.resetPassword("lena@example.org", "000000", "ganz-neu-4567").pipe(
+          Effect.provide(
+            AuthApiTesting.layer({
+              resetPassword: () =>
+                Effect.fail(new AuthApi.Refused({ status: 403, code: "TOO_MANY_ATTEMPTS" })),
+            }),
+          ),
+        ),
+      );
+
+      assert.strictEqual(spent.reason, "code-spent");
+    }).pipe(Effect.provide(store)),
+  );
+
   it.effect("says the server failed rather than that the device is offline", () =>
     Effect.gen(function* () {
       const reasonFor = (error: AuthApi.Refused | AuthApi.Unreachable | AuthApi.ServerFailed) =>

@@ -6,6 +6,7 @@ import { Ports } from "@stu/sync/server";
 import { Postgres18 } from "@stu/sync/testing";
 import { desc, eq } from "drizzle-orm";
 import * as ConfigProvider from "effect/ConfigProvider";
+import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Base64Url from "effect/encoding/Base64Url";
@@ -16,6 +17,7 @@ import * as HttpClientRequest from "effect/http/HttpClientRequest";
 import * as HttpRouter from "effect/http/HttpRouter";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import * as Queue from "effect/Queue";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
@@ -30,6 +32,24 @@ import { Auth } from "./Auth.ts";
 import { AuthTables } from "./AuthTables.ts";
 
 const publicUrl = "http://localhost:3000";
+
+/** Every mail the server hands to `Mail`, also the ones it sends in the background. */
+class Outbox extends Context.Service<Outbox, Queue.Queue<Mail.Message>>()("Test.Outbox") {}
+
+const watchedMail = Layer.effect(Mail.Service)(
+  Effect.gen(function* () {
+    const mail = yield* Mail.Service;
+    const outbox = yield* Outbox;
+
+    return Mail.Service.of({
+      send: (message) => Effect.tap(mail.send(message), () => Queue.offer(outbox, message)),
+    });
+  }),
+).pipe(
+  Layer.provide(Mail.layer),
+  Layer.provideMerge(Layer.effect(Outbox)(Queue.unbounded<Mail.Message>())),
+);
+
 const migrations = NodeURL.fileURLToPath(new URL("../../migrations/", import.meta.url));
 
 /**
@@ -60,7 +80,7 @@ const server = (environment: string, overrides: Record<string, string> = {}) =>
       return HttpRouter.serve(Auth.route, { disableLogger: true, disableListenLog: true }).pipe(
         Layer.provideMerge(NodeHttpServer.layerTest),
         Layer.provideMerge(Auth.layer),
-        Layer.provideMerge(Mail.layer),
+        Layer.provideMerge(watchedMail),
         Layer.provideMerge(Database.layer),
         Layer.provideMerge(Deployment.layer),
         Layer.provide(ConfigProvider.layer(ConfigProvider.fromEnv({ env }))),
@@ -74,6 +94,8 @@ interface CallOptions {
   readonly challenge?: string;
   /** A browser's own origin by default. Native apps send none (`null`). */
   readonly origin?: string | null;
+  /** The client's address. A new one for each call by default. */
+  readonly from?: string;
 }
 
 /**
@@ -87,7 +109,7 @@ const call = Effect.fnUntraced(function* (
   options: CallOptions = {},
 ) {
   const client = yield* HttpClient.HttpClient;
-  const address = `10.${crypto.getRandomValues(new Uint8Array(3)).join(".")}`;
+  const address = options.from ?? `10.${crypto.getRandomValues(new Uint8Array(3)).join(".")}`;
 
   let request = HttpClientRequest.make(method)(`${Accounts.path}${path}`, {
     headers: { "x-forwarded-for": address },
@@ -167,6 +189,19 @@ const codeFor = Effect.fnUntraced(function* (email: string) {
     .orderBy(desc(MailTables.capturedMail.sentAt));
 
   return /\b(?<code>\d{6})\b/u.exec(mail?.text ?? "")?.groups?.code ?? "no code";
+});
+
+/** The six digits of the next reset mail to `email`, which the server sends in the background. */
+const resetCodeFor = Effect.fnUntraced(function* (email: string) {
+  const outbox = yield* Outbox;
+
+  const mail = yield* Queue.take(outbox).pipe(
+    Effect.repeat({
+      until: (message) => message.to === email && message.subject.includes("Passwort"),
+    }),
+  );
+
+  return /\b(?<code>\d{6})\b/u.exec(mail.text)?.groups?.code ?? "no code";
 });
 
 /** Signs up, enters the mailed code, and returns the signed token the device keeps. */
@@ -268,6 +303,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
               ["GET", "/verify-email?token=x"],
               ["POST", "/email-otp/check-verification-otp"],
               ["POST", "/sign-in/email-otp"],
+              ["POST", "/forget-password/email-otp"],
             ] as const,
             ([method, path]) =>
               Effect.map(
@@ -276,7 +312,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
               ),
           );
 
-          assert.deepStrictEqual(statuses, [404, 404, 404, 404, 404]);
+          assert.deepStrictEqual(statuses, [404, 404, 404, 404, 404, 404]);
         }),
       );
 
@@ -349,6 +385,150 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
             Option.toArray(Option.map(other, (found) => found.sessionId)),
           );
           assert.isTrue(Option.isNone(yield* resolver.resolve(bearer(second.token ?? ""))));
+        }),
+      );
+
+      // A thief who knows the old password is signed out everywhere once the owner resets it.
+      it.effect(
+        "resets a forgotten password by mailed code and ends every session of the account",
+        () =>
+          Effect.gen(function* () {
+            const resolver = yield* Ports.SessionResolver;
+            const email = "lena.forgot@example.org";
+            const first = yield* signUp(email);
+
+            const second = yield* call("POST", "/sign-in/email", { body: { email, password } });
+
+            const sessions = [
+              yield* resolver.resolve(bearer(first)),
+              yield* resolver.resolve(bearer(second.token ?? "")),
+            ];
+
+            const revoked = yield* revocations(2);
+
+            const requested = yield* call("POST", "/email-otp/request-password-reset", {
+              body: { email },
+            });
+
+            assert.strictEqual(requested.status, 200);
+
+            const reset = yield* call("POST", "/email-otp/reset-password", {
+              body: { email, otp: yield* resetCodeFor(email), password: "ganz-neu-4567" },
+            });
+
+            assert.strictEqual(reset.status, 200);
+            assert.deepStrictEqual(
+              [...(yield* Fiber.join(revoked))].sort(),
+              sessions
+                .flatMap(Option.toArray)
+                .map((found) => found.sessionId)
+                .sort(),
+            );
+            assert.isTrue(Option.isNone(yield* resolver.resolve(bearer(first))));
+
+            const [old, renewed] = [
+              yield* call("POST", "/sign-in/email", { body: { email, password } }),
+              yield* call("POST", "/sign-in/email", { body: { email, password: "ganz-neu-4567" } }),
+            ];
+
+            assert.deepStrictEqual([old.status, renewed.status], [401, 200]);
+          }),
+      );
+
+      // The answer, and how long it takes, must not tell whether an address has an account.
+      it.effect("answers an unknown address as it answers a known one, and mails nobody", () =>
+        Effect.gen(function* () {
+          yield* signUp("lena.known@example.org");
+
+          const [known, unknown] = [
+            yield* call("POST", "/email-otp/request-password-reset", {
+              body: { email: "lena.known@example.org" },
+            }),
+            yield* call("POST", "/email-otp/request-password-reset", {
+              body: { email: "nobody.here@example.org" },
+            }),
+          ];
+
+          assert.deepStrictEqual([known.status, known.json], [unknown.status, unknown.json]);
+          assert.match(yield* resetCodeFor("lena.known@example.org"), /^\d{6}$/u);
+          assert.strictEqual(yield* mailCount("nobody.here@example.org"), 0);
+
+          const guessed = yield* call("POST", "/email-otp/reset-password", {
+            body: { email: "nobody.here@example.org", otp: "000000", password: "ganz-neu-4567" },
+          });
+
+          assert.strictEqual(guessed.status, 400);
+          assert.deepStrictEqual(yield* decodeCode(guessed.json), { code: "INVALID_OTP" });
+        }),
+      );
+
+      // A mailed code never signs a device in by itself (#35): the reset code sets a password,
+      // and the device signs in with it.
+      it.effect("confirms an unconfirmed address with a reset code, but signs nobody in", () =>
+        Effect.gen(function* () {
+          const email = "lena.unconfirmed@example.org";
+
+          yield* call("POST", "/sign-up/email", { body: { email, password, name: "" } });
+          yield* call("POST", "/email-otp/request-password-reset", { body: { email } });
+
+          const code = yield* resetCodeFor(email);
+
+          const asConfirmation = yield* call("POST", "/email-otp/verify-email", {
+            body: { email, otp: code },
+          });
+
+          const reset = yield* call("POST", "/email-otp/reset-password", {
+            body: { email, otp: code, password: "ganz-neu-4567" },
+          });
+
+          const sql = yield* SqlClient.SqlClient;
+
+          const [sessions] = yield* sql<{ readonly count: number }>`
+            select count(*)::int as count from auth_session s
+            join auth_user u on u.id = s."userId" where u.email = ${email}
+          `;
+
+          assert.deepStrictEqual(
+            {
+              asConfirmation: [asConfirmation.status, asConfirmation.token],
+              reset: [reset.status, reset.token, reset.cookies],
+              sessions: sessions?.count,
+            },
+            {
+              asConfirmation: [400, undefined],
+              reset: [200, undefined, null],
+              sessions: 0,
+            },
+          );
+
+          const signedIn = yield* call("POST", "/sign-in/email", {
+            body: { email, password: "ganz-neu-4567" },
+          });
+
+          assert.strictEqual(signedIn.status, 200);
+        }),
+      );
+
+      it.effect("limits reset codes per client as it limits sign-up codes", () =>
+        Effect.gen(function* () {
+          const statuses = (path: string, from: string) =>
+            Effect.forEach([1, 2, 3, 4], (attempt) =>
+              Effect.map(
+                call("POST", path, { from, body: { email: `lena.limit${attempt}@example.org` } }),
+                (answer) => answer.status,
+              ),
+            );
+
+          assert.deepStrictEqual(
+            [
+              yield* statuses("/send-verification-email", "192.0.2.10"),
+              yield* statuses("/email-otp/request-password-reset", "192.0.2.11"),
+            ],
+            [
+              [200, 200, 200, 429],
+              [200, 200, 200, 429],
+            ],
+          );
         }),
       );
 

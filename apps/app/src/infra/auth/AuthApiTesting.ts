@@ -14,6 +14,8 @@ export const layer = (calls: Partial<AuthApi.Service["Service"]>) =>
     signUp: unexpected("signUp"),
     signIn: unexpected("signIn"),
     sendCode: unexpected("sendCode"),
+    requestPasswordReset: unexpected("requestPasswordReset"),
+    resetPassword: unexpected("resetPassword"),
     confirmEmail: unexpected("confirmEmail"),
     session: unexpected("session"),
     signOut: unexpected("signOut"),

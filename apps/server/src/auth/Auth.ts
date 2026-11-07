@@ -10,6 +10,7 @@ import * as Config from "effect/Config";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
+import * as FiberSet from "effect/FiberSet";
 import * as Cookies from "effect/http/Cookies";
 import * as Headers from "effect/http/Headers";
 import * as HttpEffect from "effect/http/HttpEffect";
@@ -48,6 +49,8 @@ export interface Settings {
 
 export interface Callbacks {
   readonly sendCode: (email: string, code: string) => Promise<void>;
+  /** Hands the reset mail over and returns at once, so a known address answers as fast as an unknown one. */
+  readonly sendResetCode: (email: string, code: string) => void;
   readonly sessionDeleted: (sessionId: string) => void;
   readonly log: (level: "debug" | "info" | "success" | "warn" | "error", message: string) => void;
 }
@@ -87,6 +90,8 @@ export const options = (settings: Settings, callbacks: Callbacks) =>
       requireEmailVerification: true,
       disableSignUp: !settings.signUp,
       minPasswordLength: Accounts.minPasswordLength,
+      // A forgotten password may be a stolen one, so the reset ends every session of the account.
+      revokeSessionsOnPasswordReset: true,
     },
     emailVerification: {
       sendOnSignUp: true,
@@ -123,9 +128,10 @@ export const options = (settings: Settings, callbacks: Callbacks) =>
         delete: { after: (session) => Promise.resolve(callbacks.sessionDeleted(session.id)) },
       },
     },
-    // Flows Studienbuch doesn't offer. A code reaches only an address that isn't confirmed yet,
-    // through `/send-verification-email`, and confirming it signs the device in. A session's token
-    // never leaves the device it belongs to, so `/list-sessions` waits for the device list.
+    // Flows Studienbuch doesn't offer. A verification code reaches only an unconfirmed address,
+    // through `/send-verification-email`; a reset code only sets a password. `/forget-password/
+    // email-otp` is Better Auth's deprecated copy of `/email-otp/request-password-reset`. A token
+    // never leaves its device, so `/list-sessions` waits for the device list.
     disabledPaths: [
       "/verify-email",
       "/update-user",
@@ -133,9 +139,7 @@ export const options = (settings: Settings, callbacks: Callbacks) =>
       "/email-otp/send-verification-otp",
       "/email-otp/check-verification-otp",
       "/sign-in/email-otp",
-      "/email-otp/request-password-reset",
       "/forget-password/email-otp",
-      "/email-otp/reset-password",
       "/email-otp/request-email-change",
       "/email-otp/change-email",
     ],
@@ -149,8 +153,14 @@ export const options = (settings: Settings, callbacks: Callbacks) =>
         expiresIn: Accounts.codeMinutes * 60,
         allowedAttempts: 5,
         storeOTP: "hashed",
+        // Better Auth mails a reset code only to an address with an account, and answers an
+        // unknown one the same way.
         sendVerificationOTP: ({ email, otp, type }) =>
-          type === "email-verification" ? callbacks.sendCode(email, otp) : Promise.resolve(),
+          type === "email-verification"
+            ? callbacks.sendCode(email, otp)
+            : type === "forget-password"
+              ? Promise.resolve(callbacks.sendResetCode(email, otp))
+              : Promise.resolve(),
       }),
       passkey({
         rpID: settings.rpId,
@@ -202,6 +212,21 @@ const codeMail = (to: string, code: string): Mail.Message => ({
   ].join("\n"),
 });
 
+const resetMail = (to: string, code: string): Mail.Message => ({
+  to,
+  subject: `${code} ist dein Code für ein neues Passwort`,
+  text: [
+    "Hallo,",
+    "",
+    "wir haben eine Anfrage bekommen, dein Studienbuch-Passwort zurückzusetzen.",
+    `Dein Code ist ${code}.`,
+    "",
+    `Gib ihn in der App ein und setze ein neues Passwort. Er gilt ${Accounts.codeMinutes} Minuten.`,
+    "",
+    "Wenn du das nicht angefordert hast, kannst du diese Mail ignorieren. Dein Passwort bleibt dann unverändert.",
+  ].join("\n"),
+});
+
 export class Service extends Context.Service<
   Service,
   {
@@ -246,6 +271,9 @@ const make = Effect.gen(function* () {
   const services = yield* Effect.context();
   const deleted = yield* PubSub.unbounded<string>();
 
+  // Reset mails go out after the answer; the layer's scope waits for them or ends them.
+  const background = yield* FiberSet.makeRuntime();
+
   // Better Auth's own pool, beside Effect's client: auth queries are rare (stack.md).
   const pool = yield* Effect.acquireRelease(
     Effect.sync(() => new Pool({ connectionString: Redacted.value(databaseUrl), max: 4 })),
@@ -266,6 +294,14 @@ const make = Effect.gen(function* () {
                 ),
               ),
           ),
+        sendResetCode: (email, code) => {
+          background(
+            mail.send(resetMail(email, code)).pipe(
+              Effect.catchCause((cause) => Effect.logError("A reset code wasn't sent", cause)),
+              Effect.provideContext(services),
+            ),
+          );
+        },
         sessionDeleted: (sessionId) => {
           PubSub.publishUnsafe(deleted, sessionId);
         },
