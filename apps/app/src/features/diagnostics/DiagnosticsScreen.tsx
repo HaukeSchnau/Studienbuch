@@ -18,7 +18,10 @@ import { ServerInfo } from "./ServerInfo.ts";
 import { StatusRow, type StatusRowProps } from "./StatusRow.tsx";
 import { SignOutButton } from "../account/SignOutButton.tsx";
 
-/** "Moin!": what runs on this device, and whether its server, crypto and storage work. */
+/**
+ * "Dieses Gerät", behind the overview: what runs on this device, and whether its server, crypto and
+ * storage work. Signing out sits here until "Mein Profil" exists.
+ */
 export function DiagnosticsScreen() {
   const server = useAtomValue(ServerInfo.info);
   const selfTest = useAtomValue(CryptoSelfTest.outcomes);
@@ -38,8 +41,8 @@ export function DiagnosticsScreen() {
 
   return (
     <HeroScreen
-      title="Moin!"
-      subtitle="Das läuft auf diesem Gerät:"
+      title="Dieses Gerät"
+      subtitle="Das läuft hier:"
       refresh={{ refreshing: server.waiting || selfTest.waiting, onRefresh: refresh }}
     >
       <Card>

@@ -1,1 +1,1 @@
-export { DiagnosticsScreen as default } from "../../../features/diagnostics/DiagnosticsScreen.tsx";
+export { OverviewScreen as default } from "../../../features/overview/OverviewScreen.tsx";
