@@ -24,6 +24,11 @@
     "./Text": "./src/Text.tsx",
     "./Theme": "./src/Theme.ts",
     "./Tokens": "./src/Tokens.ts",
+    "./useAnnounce": "./src/useAnnounce.ts",
+    "./useFocusOnMount": {
+      "react-native": "./src/useFocusOnMount.ts",
+      "default": "./src/useFocusOnMount.web.ts"
+    },
     "./useStableCallback": "./src/useStableCallback.ts",
     "./Vector": {
       "react-native": "./src/Vector.tsx",

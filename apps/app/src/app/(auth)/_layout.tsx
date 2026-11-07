@@ -1,30 +1,23 @@
-import { Stack } from "expo-router";
-import { Platform } from "react-native";
+import { Slot } from "expo-router";
 
 import { SignedOut } from "../../features/account/AccountGates.tsx";
+import { AuthShell } from "../../ui/AuthShell.tsx";
 
-export const unstable_settings = { anchor: "anmelden" };
+// The code comes first, as on the old web: a link straight to a later step still has "Willkommen"
+// to go back to.
+export const unstable_settings = { anchor: "aktivieren" };
 
-// The hero carries each title. On iOS the header only adds a back button over it. Android has the
-// system back gesture, and the web browser history; a header there would sit on the title, because
-// only iOS insets the scroll view below a transparent header.
+/**
+ * Every step before an account is signed in shares one card, so moving from one to the next
+ * changes the card's content and the card grows or shrinks to fit (the old web's AuthShell and the
+ * Flutter app's setup).
+ */
 export default function AuthLayout() {
   return (
     <SignedOut>
-      <Stack
-        screenOptions={{
-          headerShown: Platform.OS === "ios",
-          headerTransparent: true,
-          headerTitle: "",
-          headerTintColor: "#FFFFFF",
-          headerBackButtonDisplayMode: "minimal",
-        }}
-      >
-        <Stack.Screen name="anmelden" options={{ headerShown: false }} />
-        <Stack.Screen name="konto-anlegen" />
-        <Stack.Screen name="e-mail-bestaetigen" />
-        <Stack.Screen name="passkey-test" />
-      </Stack>
+      <AuthShell>
+        <Slot />
+      </AuthShell>
     </SignedOut>
   );
 }
