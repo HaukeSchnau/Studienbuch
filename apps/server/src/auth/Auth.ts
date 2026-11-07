@@ -621,9 +621,10 @@ const make = Effect.gen(function* () {
   const mails = Limits.make("1 hour");
   const passwords = Limits.make(Limits.clientWindow);
 
-  // Redeeming is free, so a code gives back three counts per use in a window, and one client
-  // can't sign up and mail past the ceiling with it. A code without a limit gives none back.
-  const giveBackFor = (route: string, client: string, request: Request, now: number) => {
+  // Redeeming is free and a sign-up of a known address mails nothing, so a code gives each client
+  // three counts back per use in a window: no client mails past the ceiling with it, and none can
+  // spend another's. A code without a limit gives none back.
+  const giveBackFor = (client: string, request: Request, now: number) => {
     const reservation = request.headers.get(Access.reservationHeader);
 
     if (reservation === null) return Promise.resolve();
@@ -633,7 +634,7 @@ const make = Effect.gen(function* () {
 
       const limit = AccessCodes.signUpBudget * code.value.maxUses;
 
-      if (Option.isNone(codes.take(`${route} ${code.value.id}`, limit, now))) {
+      if (Option.isNone(codes.take(`${client} ${code.value.id}`, limit, now))) {
         clients.giveBack(client, now);
       }
     });
@@ -705,9 +706,7 @@ const make = Effect.gen(function* () {
     if (!reservedRoutes.has(route)) return next(request);
 
     return next(request).then((response) =>
-      response.status === 200
-        ? giveBackFor(route, client, request, now).then(() => response)
-        : response,
+      response.status === 200 ? giveBackFor(client, request, now).then(() => response) : response,
     );
   };
 

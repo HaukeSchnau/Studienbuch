@@ -949,29 +949,32 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
             (_, index) => `klasse7b.${index}@example.org`,
           );
 
-          const answers = yield* Effect.forEach(students, (email) =>
-            Effect.gen(function* () {
-              const held = yield* reservation;
+          const answers = yield* Effect.forEach(
+            students,
+            (email) =>
+              Effect.gen(function* () {
+                const held = yield* reservation;
 
-              const signedUp = yield* call("POST", "/sign-up/email", {
-                from,
-                body: { email, password, name: "" },
-                reservation: held,
-              });
+                const signedUp = yield* call("POST", "/sign-up/email", {
+                  from,
+                  body: { email, password, name: "" },
+                  reservation: held,
+                });
 
-              const confirmed = yield* call("POST", "/email-otp/verify-email", {
-                from,
-                body: { email, otp: yield* codeFor(email), password },
-                reservation: held,
-              });
+                const confirmed = yield* call("POST", "/email-otp/verify-email", {
+                  from,
+                  body: { email, otp: yield* codeFor(email), password },
+                  reservation: held,
+                });
 
-              const signedIn = yield* call("POST", "/sign-in/email", {
-                from,
-                body: { email, password },
-              });
+                const signedIn = yield* call("POST", "/sign-in/email", {
+                  from,
+                  body: { email, password },
+                });
 
-              return `${signedUp.status} ${confirmed.status} ${signedIn.status}`;
-            }),
+                return `${signedUp.status} ${confirmed.status} ${signedIn.status}`;
+              }),
+            { concurrency: 10 },
           );
 
           const [admitted] = yield* sql<{ readonly count: number }>`
@@ -1218,11 +1221,12 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
         }),
       );
 
-      // Redeeming is free, so a code's sign-ups give their client's count back only up to three
-      // per use, and a code can't mail past the ceiling from one client.
-      it.effect("gives back at most three sign-ups per use of a code", () =>
+      // Redeeming is free and a sign-up of a known address mails nothing, so a code gives each
+      // client back three sign-ups per use: one client can't mail past the ceiling with it, nor
+      // spend another client's give-backs.
+      it.effect("gives each client back at most three sign-ups per use of a code", () =>
         Effect.gen(function* () {
-          const from = "198.51.100.52";
+          const known = "lena.bekannt@example.org";
 
           const { code } = yield* AccessCodes.mint({
             school,
@@ -1230,25 +1234,53 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
             maxUses: Option.some(4),
           });
 
-          const statuses = yield* Effect.forEach(
-            Array.from({ length: 12 + Limits.perClient + 1 }, (_, index) => index),
-            (index) =>
+          yield* signUp(known);
+
+          const signUps = (client: string, emails: ReadonlyArray<string>) =>
+            Effect.forEach(emails, (email) =>
               Effect.gen(function* () {
                 const { token } = yield* AccessCodes.reserve(code);
 
                 const answer = yield* call("POST", "/sign-up/email", {
-                  from,
-                  body: { email: `fremd.${index}@example.org`, password, name: "" },
+                  from: client,
+                  body: { email, password, name: "" },
                   reservation: token,
                 });
 
                 return answer.status;
               }),
+            );
+
+          const counted = (statuses: ReadonlyArray<number>) =>
+            [200, 429].map((status) => statuses.filter((each) => each === status).length);
+
+          const from = "198.51.100.52";
+
+          // Another client spends its own twelve give-backs on the known address.
+          const griefer = yield* signUps(
+            "198.51.100.53",
+            Array.from({ length: 12 }, () => known),
           );
 
+          // Failures fill all but one of this client's ceiling: sign-ups without a code.
+          yield* Effect.forEach(
+            Array.from({ length: Limits.perClient - 1 }, (_, index) => index),
+            (index) =>
+              call("POST", "/sign-up/email", {
+                from,
+                body: { email: `ohne.code.${index}@example.org`, password, name: "" },
+              }),
+          );
+
+          const ownCode = yield* signUps(
+            from,
+            Array.from({ length: 14 }, (_, index) => `fremd.${index}@example.org`),
+          );
+
+          // Twelve give the last count back, the thirteenth keeps it, and the fourteenth waits.
           assert.deepStrictEqual(
-            [200, 429].map((status) => statuses.filter((each) => each === status).length),
-            [12 + Limits.perClient, 1],
+            { griefer: counted(griefer), ownCode: counted(ownCode) },
+            { griefer: [12, 0], ownCode: [13, 1] },
           );
         }),
       );
