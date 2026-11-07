@@ -31,6 +31,7 @@ import * as SubscriptionRef from "effect/SubscriptionRef";
 
 import { AuthApi } from "../../infra/auth/AuthApi.ts";
 import { SessionStore } from "../../infra/auth/SessionStore.ts";
+import { TabOwner } from "../../infra/device/TabOwner.ts";
 import { Layers } from "../../infra/runtime/Layers.ts";
 import { Schema as Device } from "../../infra/sqlite/Schema.ts";
 import { LabAccounts } from "./LabAccounts.ts";
@@ -219,6 +220,7 @@ export class NotAdmitted extends Schema.TaggedError<
 /** Starts the device's engine in the background. Its scope ends the device. */
 export const make = Effect.fn("LabDevice.make")(function* (spec: Spec) {
   const faults = yield* Faults.make;
+  const deviceName = `sync-lab-${spec.id}`;
   const accounts = yield* LabAccounts.Service;
 
   const device = yield* Layer.build(
@@ -227,9 +229,7 @@ export const make = Effect.fn("LabDevice.make")(function* (spec: Spec) {
       AuthApi.layer,
       CryptoSuite.layer,
       Layer.fresh(Reactivity.layer),
-    ).pipe(
-      Layer.provideMerge(Layers.device({ name: `sync-lab-${spec.id}`, publicComputer: false })),
-    ),
+    ).pipe(Layer.provideMerge(Layers.device({ name: deviceName, publicComputer: false }))),
   );
 
   const engine = yield* SubscriptionRef.make<Engine>(Engine.Starting());
@@ -302,15 +302,19 @@ export const make = Effect.fn("LabDevice.make")(function* (spec: Spec) {
     scope = Option.none();
   });
 
+  // Asks the session store rather than the engine, so a device whose engine failed to start
+  // forgets its account too. Only the tab that owns the device may: another tab's Lab would delete
+  // the database this one uses (ADR 0014).
   const forget = Effect.gen(function* () {
-    const current = yield* SubscriptionRef.get(engine);
+    const store = yield* SessionStore.Service;
 
+    yield* TabOwner.own(deviceName);
     yield* stop;
 
-    if (current._tag === "Running") {
-      yield* Layers.forget(current.accountId);
-      yield* (yield* SessionStore.Service).forget;
-    }
+    const signed = yield* store.current;
+
+    if (Option.isSome(signed)) yield* Layers.forget(signed.value.accountId);
+    yield* store.forget;
   }).pipe(Effect.provide(device));
 
   yield* Effect.addFinalizer(() => stop);
