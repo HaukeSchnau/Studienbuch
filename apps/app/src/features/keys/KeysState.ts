@@ -165,15 +165,7 @@ const unsentCard = Atom.family((_accountId: string) =>
 export const summary = Atom.family((accountId: string) =>
   // After the status, which starts a new account's key when this screen is the first to ask.
   runtime(accountId).atom((get) =>
-    Effect.andThen(get.result(status(accountId)), () =>
-      NotebookKeys.summary(
-        new Set(
-          Option.toArray(
-            Option.map(get(unsentCard(accountId)), (card) => card.wrapper.statement.id),
-          ),
-        ),
-      ),
-    ),
+    Effect.andThen(get.result(status(accountId)), NotebookKeys.summary),
   ),
 );
 
@@ -229,10 +221,11 @@ export const createRecoveryCode = Atom.family((accountId: string) =>
             ? Effect.sync(() => get.set(unsentCard(accountId), Option.none()))
             : Effect.void,
         ),
+        // The summary leaves the card out until its code showed, either way.
+        Effect.ensuring(refresh(accountId, get)),
       );
 
       get.set(unsentCard(accountId), Option.none());
-      yield* refresh(accountId, get);
 
       return text;
     }),

@@ -468,15 +468,41 @@ export interface Card {
   readonly wrapper: Keys.Sealed;
 }
 
-/** "Notfallkarte erstellen": a new code and its wrapper, in memory only. */
+const UnseenCards = Schema.fromJsonString(Schema.Array(Schema.String));
+const decodeUnseen = Schema.decodeEffect(UnseenCards);
+const encodeUnseen = Schema.encodeEffect(UnseenCards);
+
+/**
+ * The ids of cards whose code never showed. The ids aren't secret, and they outlive a restart,
+ * which forgets the code, so such a card never counts.
+ */
+const unseenCards = Effect.flatMap(
+  Effect.flatMap(Ports.DeviceSecrets, (secrets) => secrets.get("unseen-cards")),
+  Option.match({
+    onNone: () => Effect.succeed<ReadonlyArray<string>>([]),
+    // Only this module writes it, so a value that doesn't parse is a defect.
+    onSome: (bytes) => Effect.orDie(decodeUnseen(textDecoder.decode(bytes))),
+  }),
+);
+
+const keepUnseen = Effect.fn("NotebookKeys.keepUnseen")(function* (ids: ReadonlyArray<string>) {
+  const secrets = yield* Ports.DeviceSecrets;
+
+  if (ids.length === 0) return yield* secrets.remove("unseen-cards");
+  const text = yield* Effect.orDie(encodeUnseen(ids));
+
+  yield* secrets.set("unseen-cards", textEncoder.encode(text));
+});
+
+/** "Notfallkarte erstellen": a new code and its wrapper, unseen until the server took it. */
 export const newRecoveryCode = Effect.gen(function* () {
   const { keys } = yield* current;
   const code = yield* RecoveryCode.generate;
+  const wrapper = yield* wrap("code", code.bytes, keys, { place: "card" });
 
-  return {
-    text: code.text,
-    wrapper: yield* wrap("code", code.bytes, keys, { place: "card" }),
-  } satisfies Card;
+  yield* keepUnseen([...(yield* unseenCards), wrapper.statement.id]);
+
+  return { text: code.text, wrapper } satisfies Card;
 });
 
 /**
@@ -485,6 +511,9 @@ export const newRecoveryCode = Effect.gen(function* () {
  */
 export const sendRecoveryCode = Effect.fn("NotebookKeys.sendRecoveryCode")(function* (card: Card) {
   yield* add(card.wrapper);
+
+  const id = card.wrapper.statement.id;
+  yield* keepUnseen((yield* unseenCards).filter((each) => each !== id));
 
   return card.text;
 });
@@ -508,11 +537,10 @@ const kinds: ReadonlyArray<Wrapper.Kind> = ["device", "prf", "code"];
 /**
  * What the server holds now, so a method lost in a restore shows as missing. Only methods the
  * newest generation endorses count, so the server can't make the notebook look safer than it is,
- * and a card whose code the student hasn't seen yet (`unseen`, wrapper ids) doesn't count either.
+ * and a card whose code never showed doesn't count either.
  */
-export const summary = Effect.fn("NotebookKeys.summary")(function* (
-  unseen: ReadonlySet<string> = new Set(),
-) {
+export const summary = Effect.gen(function* () {
+  const unseen = new Set(yield* unseenCards);
   const { keys, state } = yield* current;
   const newest = state.records.at(-1);
   const seed = yield* heldSeed;

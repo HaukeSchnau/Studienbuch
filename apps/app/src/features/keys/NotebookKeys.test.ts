@@ -366,9 +366,9 @@ describe("NotebookKeys", () => {
         const server = yield* fakeServer;
         const phone = yield* device(server);
         yield* phone.run(NotebookKeys.status);
-        const alone = yield* phone.run(NotebookKeys.summary());
+        const alone = yield* phone.run(NotebookKeys.summary);
         yield* phone.run(createCard);
-        const withCard = yield* phone.run(NotebookKeys.summary());
+        const withCard = yield* phone.run(NotebookKeys.summary);
         const { records, wrappers } = yield* Ref.get(server.stored);
         const [own, card] = wrappers;
 
@@ -385,7 +385,7 @@ describe("NotebookKeys", () => {
         const method = { id: "planted", kind: "code", place: "card", credentialId: "" } as const;
         const planted = new Keys.Sealed(yield* Wrapper.create(method, code, stranger));
         yield* Ref.set(server.stored, { records, wrappers: [own, planted] });
-        const restored = yield* phone.run(NotebookKeys.summary());
+        const restored = yield* phone.run(NotebookKeys.summary);
 
         assert.deepStrictEqual(
           [alone, withCard, restored].map(({ secured, methods }) => ({
@@ -497,7 +497,7 @@ describe("NotebookKeys", () => {
         {
           stale,
           renewed: latest !== undefined && AccountKey.matches(latest, record1),
-          secured: (yield* phone.run(NotebookKeys.summary())).secured,
+          secured: (yield* phone.run(NotebookKeys.summary)).secured,
         },
         { stale: "stale", renewed: true, secured: true },
       );
@@ -545,8 +545,8 @@ describe("NotebookKeys", () => {
         const card = yield* phone.run(NotebookKeys.newRecoveryCode);
         yield* Ref.set(server.loseAnswer, true);
         const lost = yield* reasonOf(phone.run(NotebookKeys.sendRecoveryCode(card)));
-        const unseen = new Set([card.wrapper.statement.id]);
-        const beforeShown = yield* phone.run(NotebookKeys.summary(unseen));
+        // As after a restart, which forgets the card: its id stays on the device.
+        const beforeShown = yield* phone.run(NotebookKeys.summary);
         const shown = Redacted.value(yield* phone.run(NotebookKeys.sendRecoveryCode(card)));
         yield* laptop.run(NotebookKeys.unlockWithCode(shown));
 
