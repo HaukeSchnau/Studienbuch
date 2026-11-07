@@ -1,5 +1,5 @@
 import { CivilTime, Course, Enrollment, Homework, School, Studienbuch } from "@stu/core";
-import { CryptoSuite } from "@stu/e2ee";
+import { AccountKey, CryptoSuite } from "@stu/e2ee";
 import { Ids } from "@stu/sync";
 import {
   DeviceDatabase,
@@ -21,6 +21,7 @@ import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Predicate from "effect/Predicate";
 import * as Reactivity from "effect/reactivity/Reactivity";
+import * as Redacted from "effect/Redacted";
 import * as Schema from "effect/Schema";
 import * as Scope from "effect/Scope";
 import * as Semaphore from "effect/Semaphore";
@@ -275,7 +276,8 @@ export const make = Effect.fn("LabDevice.make")(function* (spec: Spec) {
         // A device that just signed in keeps the key as after a demo sign-in. After a crash it
         // holds it already, and a wipe signs in again.
         if (Option.isSome(rootKey)) {
-          yield* Context.get(services, SyncClient.Service).unlock(rootKey.value, 0);
+          const keys = yield* AccountKey.derive(Redacted.make(rootKey.value), accountId, 0);
+          yield* Context.get(services, SyncClient.Service).unlock(keys);
         }
 
         return { accountId, services: Context.merge(device, services) };

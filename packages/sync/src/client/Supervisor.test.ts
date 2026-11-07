@@ -417,6 +417,38 @@ describe("Supervisor rounds", () => {
   );
 
   it.effect(
+    "coming back after the wait ran out starts the ladder over, as lifting the latch does",
+    () =>
+      Effect.gen(function* () {
+        for (const leave of ["network", "latch"] as const) {
+          const device = yield* harness([]);
+
+          // Failures in a row climb the ladder to waits of a minute and more.
+          for (let second = 0; second < 120; second++) yield* TestClock.adjust("1 second");
+
+          const away = (gone: boolean) =>
+            leave === "network"
+              ? SubscriptionRef.set(device.lifecycle, { foreground: true, online: !gone })
+              : SubscriptionRef.set(device.offline, gone);
+
+          // Away for longer than any wait, so the wait runs out before the device is back.
+          yield* away(true);
+          yield* TestClock.adjust(Supervisor.maxBackoff);
+          yield* TestClock.adjust(Supervisor.maxBackoff);
+
+          const before = device.attempts.length;
+          yield* away(false);
+          yield* TestClock.adjust(0);
+          expect(device.attempts.length, leave).toBe(before + 1);
+
+          // That attempt fails, and the next one waits as after a first failure.
+          yield* TestClock.adjust(Supervisor.ceiling(1));
+          expect(device.attempts.length, leave).toBe(before + 2);
+        }
+      }).pipe(Random.withSeed("lena"), Effect.scoped),
+  );
+
+  it.effect(
     "going to the background during a backoff wakes nothing, nor does losing the network",
     () =>
       Effect.gen(function* () {

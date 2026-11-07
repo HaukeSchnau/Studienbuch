@@ -9,6 +9,7 @@
  * const { confirmed } = yield* sync.mutate(Homework.create, { notebook, id, courseId, title, dueOn })
  * ```
  */
+import type { AccountKey } from "@stu/e2ee";
 import { CryptoSuite, SealedRow } from "@stu/e2ee";
 import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";
@@ -19,7 +20,6 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Reactivity from "effect/reactivity/Reactivity";
-import * as Redacted from "effect/Redacted";
 import * as Schema from "effect/Schema";
 import * as Semaphore from "effect/Semaphore";
 import * as SqlClient from "effect/sql/SqlClient";
@@ -134,13 +134,12 @@ export interface Interface {
    */
   readonly setOffline: (offline: boolean) => Effect.Effect<void>;
   /**
-   * Keeps the account's root key of `generation`, as after unlocking with a passkey or the
-   * Notfallkarte, a demo sign-in or publishing the account's record (`Keys.init`). It opens the
-   * boxes and rows that waited for it, and sends the `Seal` commands that waited.
+   * Keeps the account's keys (`AccountKey.derive` of its root key), as after unlocking with a
+   * passkey or the Notfallkarte, a demo sign-in or publishing the account's record (`Keys.init`).
+   * It opens the boxes and rows that waited for them, and sends the `Seal` commands that waited.
    */
   readonly unlock: (
-    rootKey: Uint8Array,
-    generation: number,
+    keys: AccountKey.Keys,
   ) => Effect.Effect<void, Ports.SecretsUnavailable | SqlError.SqlError>;
   /**
    * One round of push and pull over a connection. The connection supervisor runs it after each
@@ -501,13 +500,8 @@ export const make = Effect.fnUntraced(function* (
     }),
   );
 
-  const unlock = Effect.fn("SyncClient.unlock")(function* (
-    rootKey: Uint8Array,
-    generation: number,
-  ) {
-    yield* withSuite(keyring.unlock(rootKey, generation)).pipe(
-      Effect.provideService(SqlClient.SqlClient, sql),
-    );
+  const unlock = Effect.fn("SyncClient.unlock")(function* (keys: AccountKey.Keys) {
+    yield* withSuite(keyring.unlock(keys)).pipe(Effect.provideService(SqlClient.SqlClient, sql));
     yield* reopenAll;
 
     // Sealed commands that waited for a key can go out now.
@@ -539,7 +533,7 @@ export const make = Effect.fnUntraced(function* (
       const keys = yield* withSuite(keyring.renewed(fetched.value));
 
       if (Option.isNone(keys) || keys.value.generation < generation) return false;
-      yield* unlock(Redacted.value(keys.value.rootKey), keys.value.generation);
+      yield* unlock(keys.value);
 
       return true;
     },

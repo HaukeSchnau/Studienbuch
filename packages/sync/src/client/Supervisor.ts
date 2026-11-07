@@ -431,8 +431,16 @@ export const run = Effect.fnUntraced(function* (options: Options) {
 
   for (;;) {
     yield* options.report("offline");
-    yield* waitFor(ready);
+
+    // Becoming ready is the network coming back, the latch lifting or a new token: the ladder
+    // starts over, as a wakeup during a backoff starts it over.
+    if (!ready(yield* SubscriptionRef.get(conditions))) {
+      yield* waitFor(ready);
+      failures = 0;
+    }
+
     yield* options.report("connecting");
+
     // A wakeup from before this attempt doesn't end it.
     yield* Queue.clear(wakeups);
 
