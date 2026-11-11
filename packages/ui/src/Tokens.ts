@@ -3,7 +3,8 @@
 export * as Tokens from "./Tokens.ts";
 
 const light = {
-  canvas: "#F9F9F9",
+  // The old web's very pale green, behind every screen (design-language.md, decision of 2026-11-11).
+  canvas: "#EEF5ED",
   surface: "#FFFFFF",
   raised: "#FFFFFF",
   // Navy: body text, and the tint of every shadow.
@@ -29,14 +30,17 @@ const light = {
   // The brand green: hero fill and illustrations. Only large text sits on it.
   hero: "#33A42B",
   heroEdge: "#3B7FD9",
+  // The hand-drawn underline under a greeting on the hero.
+  heroUnderline: "#CFE3FF",
   // The homework panel. Only large text sits on it.
   panel: "#3B7FD9",
   panelCard: "#203755",
   panelTitle: "#3CC233",
   // A due date that has passed, on a panel card.
   panelDue: "#FF9C9C",
-  // The darker wave across the panel, legacy's AufgabenClipper.
-  panelFold: "rgba(0, 0, 0, 0.1)",
+  // The darker wave across the panel, legacy's AufgabenClipper (the panel under 10 % black). It
+  // reaches the panel's bottom, so it is also the colour below it.
+  panelFold: "#3572C3",
   // The decorative blobs, drawn at 45 % opacity. Landing page, onboarding and empty states only.
   blobGreen: "#6DB868",
   blobBlue: "#76A6E5",
@@ -51,7 +55,7 @@ export type ColorName = keyof typeof light;
 export type Palette = Readonly<Record<ColorName, string>>;
 
 const dark = {
-  canvas: "#090F17",
+  canvas: "#0F1C16",
   surface: "#131A24",
   raised: "#1B232E",
   ink: "#E7ECF2",
@@ -70,11 +74,12 @@ const dark = {
   warningTint: "#33240C",
   hero: "#1F6D18",
   heroEdge: "#5B9AED",
+  heroUnderline: "#A9CBFA",
   panel: "#1B3A63",
   panelCard: "#0E1B2D",
   panelTitle: "#65C55B",
   panelDue: "#FF9C9C",
-  panelFold: "rgba(0, 0, 0, 0.18)",
+  panelFold: "#163051",
   blobGreen: "#1F5A1B",
   blobBlue: "#1E4170",
   fieldFill: "rgba(255, 255, 255, 0.07)",

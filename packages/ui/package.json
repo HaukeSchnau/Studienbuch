@@ -20,14 +20,22 @@
     "./Link": "./src/Link.tsx",
     "./Pill": "./src/Pill.tsx",
     "./RevisionCard": "./src/RevisionCard.tsx",
+    "./SubjectArt": "./src/SubjectArt.ts",
+    "./SubjectBlob": "./src/SubjectBlob.tsx",
     "./SuccessTick": "./src/SuccessTick.tsx",
     "./Text": "./src/Text.tsx",
     "./Theme": "./src/Theme.ts",
+    "./TickBox": "./src/TickBox.tsx",
     "./Tokens": "./src/Tokens.ts",
     "./useAnnounce": "./src/useAnnounce.ts",
     "./useFocusOnMount": {
       "react-native": "./src/useFocusOnMount.ts",
       "default": "./src/useFocusOnMount.web.ts"
+    },
+    "./useLaggedToggle": "./src/useLaggedToggle.ts",
+    "./useReducedMotion": {
+      "react-native": "./src/useReducedMotion.ts",
+      "default": "./src/useReducedMotion.web.ts"
     },
     "./useStableCallback": "./src/useStableCallback.ts",
     "./Vector": {
