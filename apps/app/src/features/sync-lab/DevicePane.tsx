@@ -1,7 +1,7 @@
 import { useAtom, useAtomSet, useAtomValue } from "@effect/atom-react";
 import { Due } from "@stu/domain-ui/homework/Due";
 import { RefusalText } from "@stu/domain-ui/refusal/RefusalText";
-import { SubjectColor } from "@stu/domain-ui/subject/SubjectColor";
+import { SubjectLook } from "@stu/domain-ui/subject/SubjectLook";
 import { Card } from "@stu/ui/Card";
 import { Text } from "@stu/ui/Text";
 import { Theme } from "@stu/ui/Theme";
@@ -230,7 +230,7 @@ export function DevicePane({ id }: { readonly id: LabDevice.Id }) {
                         styles.dot,
                         {
                           backgroundColor:
-                            Tokens.subject[SubjectColor.ofCourse(homework.course)].fill,
+                            Tokens.subject[SubjectLook.ofCourse(homework.course).slot].fill,
                         },
                       ]}
                     />

@@ -11,6 +11,8 @@
     "./AuthBackdrop": "./src/AuthBackdrop.tsx",
     "./AuthCard": "./src/AuthCard.tsx",
     "./AuthHeading": "./src/AuthHeading.tsx",
+    "./Blob": "./src/Blob.tsx",
+    "./Blobs": "./src/Blobs.ts",
     "./Button": "./src/Button.tsx",
     "./Card": "./src/Card.tsx",
     "./Checkbox": "./src/Checkbox.tsx",
@@ -23,12 +25,14 @@
     "./SuccessTick": "./src/SuccessTick.tsx",
     "./Text": "./src/Text.tsx",
     "./Theme": "./src/Theme.ts",
+    "./TickBox": "./src/TickBox.tsx",
     "./Tokens": "./src/Tokens.ts",
     "./useAnnounce": "./src/useAnnounce.ts",
     "./useFocusOnMount": {
       "react-native": "./src/useFocusOnMount.ts",
       "default": "./src/useFocusOnMount.web.ts"
     },
+    "./useLingeringOrder": "./src/useLingeringOrder.ts",
     "./useStableCallback": "./src/useStableCallback.ts",
     "./Vector": {
       "react-native": "./src/Vector.tsx",

@@ -1,14 +1,20 @@
 import type { ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 
+import { Blob } from "./Blob.tsx";
+import { Drift } from "./Drift.tsx";
 import { Text } from "./Text.tsx";
 import { Theme } from "./Theme.ts";
 import { Tokens } from "./Tokens.ts";
+import { Underline } from "./Underline.tsx";
+import { useLastLine } from "./useLastLine.ts";
 import { useLayout } from "./useLayout.ts";
 import { Vector } from "./Vector.tsx";
 
 export interface HeroProps {
   readonly title: string;
+  /** Draws the pen's underline under the title, as under "Moin, Lena!". */
+  readonly underline?: boolean;
   readonly subtitle?: string | undefined;
   /** Short facts in white pills under the title, such as "KW 44". */
   readonly chips?: ReadonlyArray<string>;
@@ -25,17 +31,20 @@ export interface HeroProps {
    * can tell when the status bar has left the colour.
    */
   readonly onColourEnd?: ((y: number) => void) | undefined;
+  /** The colour of the screen the hero lies on, which the swoosh is cut in. `canvas` by default. */
+  readonly canvas?: string | undefined;
   /** Content that starts on the band, such as cards. Whatever follows the hero starts below it. */
   readonly children?: ReactNode;
 }
 
 /**
- * The green header with legacy's swoosh. The colour is one area, and the swoosh is painted over its
- * bottom in the canvas colour, so no seam can open between header and band at any width. That
- * needs the hero on `color.canvas`. Text and content sit in the content column.
+ * The green header with legacy's swoosh and two darker blobs that breathe slowly. The colour is one
+ * area, and the swoosh is painted over its bottom in the screen's colour, so no seam can open
+ * between header and band at any width. Text and content sit in the content column.
  */
 export function Hero({
   title,
+  underline = false,
   subtitle,
   chips = [],
   status,
@@ -43,10 +52,12 @@ export function Hero({
   toolbar,
   top,
   onColourEnd,
+  canvas,
   children,
 }: HeroProps) {
   const { color } = Theme.useTheme();
   const swoosh = useSwoosh();
+  const words = useLastLine();
   // The area extends this far below the text, where the band sits.
   const below = swoosh.band + edge - swoosh.lift;
 
@@ -64,7 +75,15 @@ export function Hero({
           onColourEnd?.(y + height - bandFor(width) - edge);
         }}
       >
-        <Swoosh band={swoosh.band} line={color.heroEdge} canvas={color.canvas} />
+        <View style={styles.blobs}>
+          <Drift motion="breathe" seconds={18} style={styles.blobStart}>
+            <Blob form="twin" color={color.heroBlob} size={270} />
+          </Drift>
+          <Drift motion="breathe" seconds={24} offset={0.3} style={styles.blobEnd}>
+            <Blob form="pinch" color={color.heroBlob} size={230} />
+          </Drift>
+        </View>
+        <Swoosh band={swoosh.band} line={color.heroEdge} canvas={canvas ?? color.canvas} />
         {toolbar === undefined ? null : (
           <View style={[styles.column, styles.toolbar]}>
             <View style={styles.toolbarGroup}>{toolbar.start}</View>
@@ -73,9 +92,19 @@ export function Hero({
         )}
         <View style={[styles.column, styles.heading]} onLayout={swoosh.onHeading}>
           <View style={styles.text} onLayout={swoosh.onText}>
-            <Text variant="display" accessibilityRole="header" style={styles.onHero}>
-              {title}
-            </Text>
+            <View {...words.container}>
+              <Text
+                {...words.text}
+                variant="display"
+                accessibilityRole="header"
+                style={styles.onHero}
+              >
+                {title}
+              </Text>
+              {underline && words.line !== undefined ? (
+                <Underline line={words.line} color={color.heroPen} />
+              ) : null}
+            </View>
             {/* Bold, because white on the light hero green passes only as large bold text. */}
             {subtitle === undefined ? null : (
               <Text variant="title3" weight="bold" style={styles.onHero}>
@@ -229,6 +258,10 @@ function Swoosh({
 
 const styles = StyleSheet.create({
   area: { position: "relative" },
+  blobs: { ...StyleSheet.absoluteFill, overflow: "hidden", pointerEvents: "none" },
+  // Where direction D's home puts them on a 390-point phone: one behind the title, one top right.
+  blobStart: { position: "absolute", left: -120, top: -20 },
+  blobEnd: { position: "absolute", right: -90, top: -90 },
   swoosh: { position: "absolute", left: 0, right: 0, bottom: -1 },
   column: { width: "100%", maxWidth: Tokens.layout.contentMaxWidth, alignSelf: "center" },
   toolbar: {

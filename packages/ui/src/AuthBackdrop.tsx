@@ -23,7 +23,7 @@ export function AuthBackdrop({ children }: AuthBackdropProps) {
   const large = useWindowDimensions().width >= wide;
 
   return (
-    <View style={[styles.canvas, { backgroundColor: color.accentTint }]}>
+    <View style={[styles.canvas, { backgroundColor: color.appCanvas }]}>
       {/* A layer of their own, so a focused field never scrolls the page sideways to them. */}
       <View style={styles.blobs}>
         <Drift

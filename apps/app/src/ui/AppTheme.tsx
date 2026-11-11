@@ -31,8 +31,8 @@ export function AppTheme({ children }: { readonly children: ReactNode }) {
         fonts,
         colors: {
           primary: color.accent,
-          background: color.canvas,
-          card: color.canvas,
+          background: color.appCanvas,
+          card: color.appCanvas,
           text: color.ink,
           border: color.hairline,
           notification: color.danger,

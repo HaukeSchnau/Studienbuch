@@ -4,6 +4,9 @@ export * as Tokens from "./Tokens.ts";
 
 const light = {
   canvas: "#F9F9F9",
+  // The app's background: the old web's very pale green. The landing page and the console stay on
+  // `canvas`.
+  appCanvas: "#EEF5ED",
   surface: "#FFFFFF",
   raised: "#FFFFFF",
   // Navy: body text, and the tint of every shadow.
@@ -29,13 +32,19 @@ const light = {
   // The brand green: hero fill and illustrations. Only large text sits on it.
   hero: "#33A42B",
   heroEdge: "#3B7FD9",
+  // The blobs inside the hero, darker than it, so white text over them only gains contrast.
+  heroBlob: "#2C9425",
+  // The pen's underline under the hero's title.
+  heroPen: "#CFE3FF",
   // The homework panel. Only large text sits on it.
   panel: "#3B7FD9",
   panelCard: "#203755",
   panelTitle: "#3CC233",
   // A due date that has passed, on a panel card.
   panelDue: "#FF9C9C",
-  // The darker wave across the panel, legacy's AufgabenClipper.
+  // Names and dates on a panel card, quieter than white.
+  panelSoft: "#C9D6E8",
+  // The darker blob in the panel, where legacy's AufgabenClipper drew a wave.
   panelFold: "rgba(0, 0, 0, 0.1)",
   // The decorative blobs, drawn at 45 % opacity. Landing page, onboarding and empty states only.
   blobGreen: "#6DB868",
@@ -52,6 +61,7 @@ export type Palette = Readonly<Record<ColorName, string>>;
 
 const dark = {
   canvas: "#090F17",
+  appCanvas: "#15291A",
   surface: "#131A24",
   raised: "#1B232E",
   ink: "#E7ECF2",
@@ -70,10 +80,13 @@ const dark = {
   warningTint: "#33240C",
   hero: "#1F6D18",
   heroEdge: "#5B9AED",
+  heroBlob: "#195C13",
+  heroPen: "#A9CBFA",
   panel: "#1B3A63",
   panelCard: "#0E1B2D",
   panelTitle: "#65C55B",
   panelDue: "#FF9C9C",
+  panelSoft: "#A9B9CF",
   panelFold: "rgba(0, 0, 0, 0.18)",
   blobGreen: "#1F5A1B",
   blobBlue: "#1E4170",

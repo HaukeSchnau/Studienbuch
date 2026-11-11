@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "prepare": "effect-tsgo patch --oxlint",
+    "art:generate": "node tools/subject-art/generate.ts && vp fmt packages/domain-ui/src/subject/SubjectDrawings.ts",
     "check:changed": "node tools/check-changed/check-changed.ts",
     "nix:update-hash": "nix/update-pnpm-hash.sh"
   },

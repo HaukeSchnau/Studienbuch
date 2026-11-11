@@ -1,11 +1,11 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Tokens } from "@stu/ui/Tokens";
 
-import { SubjectColor } from "./SubjectColor.ts";
+import { SubjectLook } from "./SubjectLook.ts";
 
-const subject = (name: string, shortName = "") => SubjectColor.ofSubject({ name, shortName });
+const subject = (name: string, shortName = "") => SubjectLook.ofSubject({ name, shortName }).slot;
 
-describe("SubjectColor", () => {
+describe("SubjectLook", () => {
   it.each([
     ["Mathematik", "Mathe", "MA"],
     ["Politik-Wirtschaft", "Politik / Wirtschaft", "PoWi"],
@@ -35,9 +35,9 @@ describe("SubjectColor", () => {
   });
 
   it("colours a course without a subject by the letters its name starts with", () => {
-    expect(SubjectColor.ofCourse("MA-E1")).toBe(subject("Mathematik"));
-    expect(SubjectColor.ofCourse("de-gk2")).toBe(subject("Deutsch"));
-    expect(SubjectColor.ofCourse("11bi3")).toBe(subject("Biologie"));
+    expect(SubjectLook.ofCourse("MA-E1").slot).toBe(subject("Mathematik"));
+    expect(SubjectLook.ofCourse("de-gk2").slot).toBe(subject("Deutsch"));
+    expect(SubjectLook.ofCourse("11bi3").slot).toBe(subject("Biologie"));
   });
 
   it.each(["Ethik", "Evangelische Religion", "Katholische Religion", "Religion (kath.)"])(
@@ -62,7 +62,7 @@ describe("SubjectColor", () => {
       ].map((known) => subject(known));
 
       expect(own).not.toContain(subject(name));
-      expect(own).not.toContain(SubjectColor.ofCourse(name));
+      expect(own).not.toContain(SubjectLook.ofCourse(name).slot);
     },
   );
 
@@ -71,6 +71,18 @@ describe("SubjectColor", () => {
 
     expect(Object.keys(Tokens.subject)).toContain(slot);
     expect(subject("astronomie")).toBe(slot);
-    expect(SubjectColor.ofCourse("Astronomie")).toBe(slot);
+    expect(SubjectLook.ofCourse("Astronomie").slot).toBe(slot);
+  });
+
+  it("draws a known subject and spells an unknown one", () => {
+    expect(SubjectLook.ofSubject({ name: "Mathe", shortName: "M" })).toMatchObject({
+      art: "ma",
+      letters: "M",
+    });
+    expect(SubjectLook.ofSubject({ name: "Astronomie", shortName: "" })).toMatchObject({
+      art: undefined,
+      letters: "Ast",
+    });
+    expect(SubjectLook.ofCourse("PW-G2")).toMatchObject({ art: undefined, letters: "PW" });
   });
 });
