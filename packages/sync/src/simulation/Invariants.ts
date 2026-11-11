@@ -4,11 +4,13 @@
  */
 import { sha256 } from "@noble/hashes/sha2.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
+import { SealedRow } from "@stu/e2ee";
 import * as Effect from "effect/Effect";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import { Outbox } from "../client/Outbox.ts";
+import { Sealing } from "../client/Sealing.ts";
 import { SqliteTx } from "../client/SqliteTx.ts";
 import { Sync } from "../definition/Sync.ts";
 import { Refusal } from "../protocol/Refusal.ts";
@@ -27,6 +29,7 @@ export type Name =
   | "convergence"
   | "nothing-lost"
   | "exactly-once"
+  | "overwrite"
   | "liveness";
 
 export interface Violation {
@@ -64,7 +67,8 @@ class Replayed extends Schema.TaggedError<Replayed, { readonly brand: unique sym
 /**
  * The device's rows as its base rows and its outbox give them: the overlay emptied, then every
  * waiting command run again in order, each in a savepoint so a command that fails now leaves
- * nothing, as the engine's rebase does (m1-plan, choice 5).
+ * nothing, as the engine's rebase does (m1-plan, choice 5). A sealed command not yet sent fails
+ * on a row the device holds unopened, whose content it never read.
  */
 const replayed = Effect.fn("Invariants.replayed")(function* (
   definition: Sync.Definition,
@@ -77,9 +81,19 @@ const replayed = Effect.fn("Invariants.replayed")(function* (
 
     if (mutator === undefined) return;
     const invocation = yield* Sync.invoke(mutator, command.version, command.args);
-    const tx = yield* SqliteTx.make({ actor, writes: mutator.writes });
+    const { tx, written } = yield* SqliteTx.tracked({ actor, writes: mutator.writes });
 
     yield* Effect.provideService(invocation.run, Tx.Service, tx);
+
+    if (command.mode !== "Seal" || command.sealed !== null) return;
+
+    for (const row of written()) {
+      const parked = yield* sql`
+        select 1 from sync_sealed_row where space = ${row.space} and id = ${row.id} and tbl is null
+      `;
+
+      if (parked.length > 0) return yield* new Sealing.Unreadable({ space: row.space, id: row.id });
+    }
   });
 
   // One transaction, so the engine running beside the check commits nothing between the reads.
@@ -233,6 +247,8 @@ const Sealed = Schema.Struct({
   space: Schema.String,
   id: Schema.String,
   version: Schema.Finite,
+  /** Its envelope's row format, where the place keeps the envelope. */
+  format: Schema.NullOr(Schema.Finite),
   ct: Schema.NullOr(Schema.Uint8Array),
 });
 
@@ -249,7 +265,10 @@ export const deviceSealed = Effect.gen(function* () {
   const sql = yield* SqlClient.SqlClient;
 
   return yield* decodeSealed(
-    yield* sql`select space, id, version, ct from sync_sealed_row order by space, id`,
+    yield* sql`
+      select space, id, version, envelope ->> '$.format' as format, ct from sync_sealed_row
+      order by space, id
+    `,
   );
 }).pipe(Effect.orDie);
 
@@ -259,7 +278,8 @@ export const serverSealed = Effect.fn("Invariants.serverSealed")(function* (acco
 
   return yield* decodeSealed(
     yield* sql`
-      select r.space_id as space, r.id, r.version::float8 as version, r.ct
+      select r.space_id as space, r.id, r.version::float8 as version,
+        (r.envelope ->> 'format')::float8 as format, r.ct
       from sync_row r join space_member m on m.space_id = r.space_id
       where m.account_id = ${account} and r.tbl = '' and r.ct is not null
       order by r.space_id, r.id
@@ -269,8 +289,8 @@ export const serverSealed = Effect.fn("Invariants.serverSealed")(function* (acco
 
 /**
  * Every device holds each sealed row of its account's spaces at the server's version, and opened
- * it. The server's ciphertext compares by version only, as an opened row keeps none. A row the
- * device holds unopened, as ciphertext, never counts as converged.
+ * it, as an opened row keeps no ciphertext to compare. Only a row in a newer format than this
+ * build's may stay unopened, and then its ciphertext must hash as the server's does.
  */
 export const sealedConverged = (
   place: string,
@@ -287,6 +307,15 @@ export const sealedConverged = (
 
     if (mine?.ct === null && mine.version === theirs?.version) return [];
 
+    const newer =
+      mine !== undefined &&
+      theirs !== undefined &&
+      mine.ct !== null &&
+      (mine.format ?? 0) > SealedRow.format &&
+      sealedValue(mine) === sealedValue(theirs);
+
+    if (newer) return [];
+
     const held =
       mine === undefined ? "nothing" : `${sealedValue(mine)}${mine.ct === null ? "" : " unopened"}`;
 
@@ -299,6 +328,39 @@ export const sealedConverged = (
     ];
   });
 };
+
+/** A sealed row a build one format ahead wrote, at the version it wrote. */
+export interface Newer {
+  readonly space: string;
+  readonly id: string;
+  readonly version: number;
+}
+
+/**
+ * A row a newer build wrote stays until a newer build writes it again. A device of this build never
+ * read it, so its write would replace content it couldn't see (`SyncClient.Unreadable`).
+ */
+export const newerKept = Effect.fn("Invariants.newerKept")(function* (rows: ReadonlyArray<Newer>) {
+  const sql = yield* SqlClient.SqlClient;
+  const found: Array<Violation> = [];
+
+  for (const row of rows) {
+    const [now] = yield* sql<{ readonly version: number }>`
+      select version::float8 as version from sync_row
+      where space_id = ${row.space} and tbl = '' and id = ${row.id}
+    `;
+
+    if (now?.version !== row.version) {
+      found.push({
+        invariant: "overwrite",
+        place: "postgres sync_row",
+        detail: `${row.space} ${row.id}: a newer build wrote v${row.version}, now ${now === undefined ? "gone" : `v${now.version}`}`,
+      });
+    }
+  }
+
+  return found;
+}, Effect.orDie);
 
 /** A device's opened rows of the `encrypted` tables, as its screens read them. */
 export const openedRows = Effect.fn("Invariants.openedRows")(function* (

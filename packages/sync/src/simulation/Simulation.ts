@@ -3,6 +3,7 @@
  * invariants. On PGlite a workload sends the same frames and logs the same lines on every run. On
  * PostgreSQL 18 it does the same things, but concurrent answers may arrive in another order.
  */
+import { CryptoSuite, SealedRow } from "@stu/e2ee";
 import * as Arbitrary from "effect/Arbitrary";
 import * as Cause from "effect/Cause";
 import * as Duration from "effect/Duration";
@@ -21,6 +22,7 @@ import { Outbox } from "../client/Outbox.ts";
 import { SyncClient } from "../client/SyncClient.ts";
 import { Faults } from "../lab/Faults.ts";
 import type { Listener } from "../server/Listener.ts";
+import { Pokes } from "../server/Pokes.ts";
 import { Spaces } from "../server/Spaces.ts";
 import { SyncWriter } from "../server/SyncWriter.ts";
 import { Invariants } from "./Invariants.ts";
@@ -174,7 +176,19 @@ export const Lock = Schema.TaggedStruct("Lock", { device: Device });
 /** The device gets the account's keys, as from a passkey or the Notfallkarte. */
 export const Unlock = Schema.TaggedStruct("Unlock", { device: Device });
 
-const noteSteps = [Add, Rename, Toggle, Remove, Lock, Unlock] as const;
+/** The device sets the notebook's profile, which every device writes under one id. */
+export const Name = Schema.TaggedStruct("Name", { device: Device });
+
+/**
+ * Another device of the account, on a build one row format ahead, writes the notebook's profile:
+ * every device here holds it unopened, and must not write over it. Nothing happens to a notebook
+ * without a key epoch yet.
+ */
+export const NewerFormat = Schema.TaggedStruct("NewerFormat", {
+  account: Schema.Literals(World.accountIds),
+});
+
+const noteSteps = [Add, Rename, Toggle, Remove, Name, Lock, Unlock] as const;
 
 const readableSteps = [
   Choose,
@@ -193,6 +207,7 @@ const readableSteps = [
   OfferDuringPulls,
   Dismiss,
   Admit,
+  NewerFormat,
   Backup,
   Restore,
   Wait,
@@ -206,7 +221,7 @@ export type Step = typeof Step.Type;
 export const Workload = Schema.Struct({
   /** Seeds `Random` for everything in the run: ids, client ids, the restore epoch's id. */
   seed: Schema.Int,
-  steps: Schema.Array(Step).check(Schema.isMaxLength(50)),
+  steps: Schema.Array(Step).check(Schema.isMaxLength(60)),
 });
 
 export type Workload = typeof Workload.Type;
@@ -333,6 +348,62 @@ const offer = (change: { readonly course: string; readonly offered: boolean }) =
     ),
   );
 
+const encodeEnvelope = Schema.encodeEffect(
+  Schema.fromJsonString(Schema.toCodecJson(SealedRow.Envelope)),
+);
+
+/**
+ * The notebook's profile as a build one row format ahead writes it, under the notebook's key epoch.
+ * This server refuses a format it doesn't know, so the row goes in as a newer server would store
+ * it, with a poke. `None` for a notebook without a key epoch.
+ */
+const newerProfile = Effect.fnUntraced(function* (account: World.Account) {
+  const sql = yield* SqlClient.SqlClient;
+  const notebook = World.accounts[account];
+
+  const ct = Uint8Array.from(
+    yield* Effect.all(Array.from({ length: 64 }, () => Random.nextIntBetween(0, 255))),
+  );
+
+  return yield* sql.withTransaction(
+    Effect.gen(function* () {
+      const [space] = yield* sql<{ readonly epoch: number | null }>`
+        select key_epoch as epoch from space where id = ${notebook} for no key update
+      `;
+
+      if (space === undefined || space.epoch === null) return Option.none<Invariants.Newer>();
+
+      const [bumped] = yield* sql<{ readonly version: number }>`
+        update space set version = version + 1 where id = ${notebook}
+        returning version::float8 as version
+      `;
+
+      if (bumped === undefined)
+        return yield* Effect.die(`The locked space ${notebook} disappeared`);
+
+      const envelope = yield* encodeEnvelope(
+        new SealedRow.Envelope({
+          format: SealedRow.format + 1,
+          suite: CryptoSuite.id,
+          keyEpoch: space.epoch,
+          author: account,
+        }),
+      );
+
+      yield* sql`
+        insert into sync_row (space_id, tbl, id, version, envelope, ct)
+        values (${notebook}, '', ${notebook}, ${bumped.version}, ${envelope}::jsonb, ${ct})
+        on conflict (space_id, tbl, id) do update set version = excluded.version, data = null,
+          envelope = excluded.envelope, ct = excluded.ct, written_by_client = null,
+          written_by_mutation = null
+      `;
+      yield* Pokes.notify({ spaces: [{ space: notebook, version: bumped.version }], accounts: [] });
+
+      return Option.some({ space: notebook, id: notebook, version: bumped.version });
+    }),
+  );
+});
+
 /** The tables whose rows only devices read. */
 const encrypted = Planner.schema.tables.flatMap((table) =>
   table.class === "encrypted" ? [table.name] : [],
@@ -430,6 +501,9 @@ export const run = (workload: Workload) =>
     const marker = () => Leaks.marker(markers++);
 
     const faults = noFaults();
+
+    /** The rows a newer build wrote, by space and id, at the version it wrote last. */
+    const newer = new Map<string, Invariants.Newer>();
 
     /** Each device's client id and the last mutation id it settled, as the last check read them. */
     const clients = new Map<World.DeviceId, Client>();
@@ -595,6 +669,23 @@ export const run = (workload: Workload) =>
                 ? sync.mutate(Planner.toggle, { notebook, id, done: step.done })
                 : sync.mutate(Planner.remove, { notebook, id }),
           );
+        }
+
+        case "Name": {
+          const on = yield* device(step.device);
+
+          return yield* mutate(on, (sync) =>
+            sync.mutate(Planner.name, { notebook: on.notebook, name: marker() }),
+          );
+        }
+
+        case "NewerFormat": {
+          const written = yield* world.server(newerProfile(step.account)).pipe(Effect.orDie);
+
+          if (Option.isNone(written)) return "no key epoch yet";
+          newer.set(`${written.value.space} ${written.value.id}`, written.value);
+
+          return `wrote v${written.value.version}`;
         }
 
         case "Lock": {
@@ -870,6 +961,7 @@ export const run = (workload: Workload) =>
       }
 
       found.push(...(yield* world.server(Invariants.plaintextInPostgres(tables))));
+      found.push(...(yield* world.server(Invariants.newerKept([...newer.values()]))));
 
       for (const leak of yield* world.server(Leaks.sealedRows).pipe(Effect.orDie)) {
         found.push({ invariant: "plaintext", place: leak.place, detail: leak.excerpt });
