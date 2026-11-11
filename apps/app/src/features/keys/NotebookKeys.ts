@@ -12,13 +12,14 @@ import * as Redacted from "effect/Redacted";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 
+import { SessionStore } from "../../infra/auth/SessionStore.ts";
 import { Device } from "../../infra/device/Device.ts";
 import { KeyServer } from "./KeyServer.ts";
 
-// The notebook's root key on this device (recovery.md, sections 1 and 2): the first device makes
-// it, a new device unlocks with a passkey's PRF output or a Notfallkarte, and "Notizbuch-
-// Schlüssel" adds methods. The device accepts a key only after `Wrapper.recover` checked the
-// anchor, every chain link and the newest generation's endorsement, so the server can't plant one.
+// The notebook's root key on this device (recovery.md, sections 1 and 2). A recovered key counts
+// only after `Wrapper.recover` checked the anchor, every chain link and the newest endorsement. A
+// key straight from the server (`Demo.rootKey`) counts only for an account the user signed in to
+// with a password at a demo address (ADR 0027), so the server can't plant a key on any other.
 
 export * as NotebookKeys from "./NotebookKeys.ts";
 
@@ -304,10 +305,18 @@ const start = Effect.gen(function* () {
   return published ? Status.Unlocked() : Status.Locked();
 });
 
+/** The user signed in to this account with a password at a demo account's address. */
+const demoSignIn = Effect.gen(function* () {
+  const account = yield* accountId;
+  const signed = yield* (yield* SessionStore.Service).current;
+
+  return Option.exists(signed, (each) => each.accountId === account && each.demo);
+});
+
 /**
- * A demo account's root key, which the server derives (ADR 0027), kept as a first device keeps its
- * own. The device takes it only if it derives the account's newest record, and keeps no device
- * seed, so the account stays without a device wrapper and its next device asks again.
+ * A demo account's root key, which the server derives (ADR 0027). The device takes it only if it
+ * derives the account's newest record. It keeps no device seed, so it publishes no wrapper, and
+ * every device of the account asks again.
  */
 const demoUnlock = Effect.fn("NotebookKeys.demoUnlock")(function* (
   records: ReadonlyArray<AccountKey.Record>,
@@ -347,15 +356,11 @@ export const status = Effect.gen(function* () {
   );
 
   if (Option.isNone(state)) return Status.Offline();
-  const { records, wrappers } = state.value;
+  const { records } = state.value;
 
   // A first device whose init answer was lost finds its own record there, and sends it again.
   if (records.length > 0 && Option.isNone(yield* heldPending)) {
-    // Every account's first device publishes its device wrapper with the record, except a demo
-    // account's, whose record the seed published. So only such an account asks for a demo key.
-    const anyDevice = wrappers.some(({ statement }) => statement.kind === Wrapper.kindByte.device);
-
-    if (anyDevice) return Status.Locked();
+    if (!(yield* demoSignIn)) return Status.Locked();
 
     return yield* demoUnlock(records).pipe(
       Effect.catchTags({ "KeyServer.Unreachable": offline, "Keys.SignedOut": offline }),

@@ -25,6 +25,8 @@ export * as SessionStore from "./SessionStore.ts";
 export interface Signed {
   readonly accountId: string;
   readonly token: Option.Option<Redacted.Redacted>;
+  /** Signed in with a password at a demo account's address (`Demo.isDemoAddress`). */
+  readonly demo: boolean;
 }
 
 export class Service extends Context.Service<
@@ -33,7 +35,9 @@ export class Service extends Context.Service<
     readonly current: Effect.Effect<Option.Option<Signed>>;
     /** The account now, then each change. */
     readonly changes: Stream.Stream<Option.Option<Signed>>;
-    readonly signedIn: (signedIn: AuthApi.SignedIn) => Effect.Effect<void, Keychain.Unavailable>;
+    readonly signedIn: (
+      session: DeviceSessions.Session,
+    ) => Effect.Effect<void, Keychain.Unavailable>;
     /**
      * The server ended the session. The device stops using the token until the account signs in
      * again. The stored token stays, so after a restart the server says so once more.
@@ -50,7 +54,7 @@ export const layer = Layer.effect(Service)(
 
     const stored = Option.map(
       Option.fromIterable(yield* sessions.all),
-      ({ accountId, token }): Signed => ({ accountId, token: Option.some(token) }),
+      ({ accountId, token, demo }): Signed => ({ accountId, token: Option.some(token), demo }),
     );
 
     const ref = yield* SubscriptionRef.make(stored);
@@ -58,12 +62,12 @@ export const layer = Layer.effect(Service)(
     return {
       current: SubscriptionRef.get(ref),
       changes: SubscriptionRef.changes(ref),
-      signedIn: ({ accountId, token }) =>
+      signedIn: ({ accountId, token, demo }) =>
         sessions
-          .set(accountId, token)
+          .set({ accountId, token, demo })
           .pipe(
             Effect.andThen(
-              SubscriptionRef.set(ref, Option.some({ accountId, token: Option.some(token) })),
+              SubscriptionRef.set(ref, Option.some({ accountId, token: Option.some(token), demo })),
             ),
           ),
       ended: SubscriptionRef.update(

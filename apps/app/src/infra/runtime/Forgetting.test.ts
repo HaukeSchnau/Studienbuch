@@ -37,7 +37,7 @@ const signIn = Effect.fn("Test.signIn")(function* (accountId: string) {
 
   yield* secrets.set("root-key", new Uint8Array([accountId.length]));
   yield* secrets.set("pending-key", new Uint8Array([accountId.length]));
-  yield* sessions.set(accountId, Redacted.make(`token-${accountId}`));
+  yield* sessions.set({ accountId, token: Redacted.make(`token-${accountId}`), demo: false });
 });
 
 const what = Effect.fn("Test.what")(function* (accountId: string) {

@@ -20,6 +20,8 @@ export * as DeviceSessions from "./DeviceSessions.ts";
 export interface Session {
   readonly accountId: string;
   readonly token: Redacted.Redacted;
+  /** Signed in with a password at a demo account's address (`Demo.isDemoAddress`). */
+  readonly demo: boolean;
 }
 
 export class Service extends Context.Service<
@@ -27,58 +29,74 @@ export class Service extends Context.Service<
   {
     /** Every account signed in on this device. */
     readonly all: Effect.Effect<ReadonlyArray<Session>, Keychain.Unavailable>;
-    readonly set: (
-      accountId: string,
-      token: Redacted.Redacted,
-    ) => Effect.Effect<void, Keychain.Unavailable>;
+    readonly set: (session: Session) => Effect.Effect<void, Keychain.Unavailable>;
     /** Removing an account that has no session succeeds. */
     readonly remove: (accountId: string) => Effect.Effect<void, Keychain.Unavailable>;
   }
 >()("DeviceSessions.Service") {}
 
 const Tokens = Schema.fromJsonString(Schema.Record(Schema.String, Schema.String));
-
-const decodeTokens = Schema.decodeEffect(Tokens);
-const encodeTokens = Schema.encodeEffect(Tokens);
+const AccountIds = Schema.fromJsonString(Schema.Array(Schema.String));
 
 export const layer = Layer.effect(Service)(
   Effect.gen(function* () {
     const store = yield* Keychain.Store;
     const device = yield* Device.Service;
     const server = yield* Ports.Server;
-    const entry = `sessions.${Names.device(server.origin, device.name)}`;
+    const name = Names.device(server.origin, device.name);
 
-    // Only `write` stores here, so a value that doesn't parse is a defect.
-    const read = store.get(entry).pipe(
-      Effect.flatMap(
-        Option.match({
-          onNone: () => Effect.succeed<Record<string, string>>({}),
-          onSome: (text) => decodeTokens(text).pipe(Effect.orDie),
-        }),
-      ),
-    );
+    // Only `set` and `remove` write an entry, so a value that doesn't parse is a defect.
+    const entry = <A>(key: string, schema: Schema.Codec<A, string>, empty: A) => {
+      const decode = Schema.decodeEffect(schema);
+      const encode = Schema.encodeEffect(schema);
 
-    const write = (tokens: Record<string, string>) =>
-      Effect.flatMap(encodeTokens(tokens).pipe(Effect.orDie), (text) => store.set(entry, text));
+      return {
+        read: store.get(key).pipe(
+          Effect.flatMap(
+            Option.match({
+              onNone: () => Effect.succeed(empty),
+              onSome: (text) => decode(text).pipe(Effect.orDie),
+            }),
+          ),
+        ),
+        write: (value: A) =>
+          Effect.flatMap(encode(value).pipe(Effect.orDie), (text) => store.set(key, text)),
+      };
+    };
 
-    // `set` and `remove` read, change and write the whole entry, one at a time.
+    const tokens = entry<Record<string, string>>(`sessions.${name}`, Tokens, {});
+    // An entry of its own, so the app one release back still reads the tokens.
+    const demoAccounts = entry<ReadonlyArray<string>>(`demo-sessions.${name}`, AccountIds, []);
+
+    // `set` and `remove` read, change and write whole entries, one at a time.
     const writer = yield* Semaphore.make(1);
 
+    const set = Effect.fn("DeviceSessions.set")(function* ({ accountId, token, demo }: Session) {
+      const others = (yield* demoAccounts.read).filter((id) => id !== accountId);
+
+      yield* demoAccounts.write(demo ? [...others, accountId] : others);
+      yield* tokens.write({ ...(yield* tokens.read), [accountId]: Redacted.value(token) });
+    }, Semaphore.withPermit(writer));
+
+    const remove = Effect.fn("DeviceSessions.remove")(function* (accountId: string) {
+      const kept = Object.entries(yield* tokens.read).filter(([id]) => id !== accountId);
+
+      yield* tokens.write(Object.fromEntries(kept));
+      yield* demoAccounts.write((yield* demoAccounts.read).filter((id) => id !== accountId));
+    }, Semaphore.withPermit(writer));
+
     return Service.of({
-      all: Effect.map(read, (tokens) =>
-        Object.entries(tokens).map(([accountId, token]) => ({
+      all: Effect.gen(function* () {
+        const demo = new Set(yield* demoAccounts.read);
+
+        return Object.entries(yield* tokens.read).map(([accountId, token]) => ({
           accountId,
           token: Redacted.make(token),
-        })),
-      ),
-      set: (accountId, token) =>
-        Effect.flatMap(read, (tokens) =>
-          write({ ...tokens, [accountId]: Redacted.value(token) }),
-        ).pipe(Semaphore.withPermit(writer)),
-      remove: (accountId) =>
-        Effect.flatMap(read, (tokens) =>
-          write(Object.fromEntries(Object.entries(tokens).filter(([id]) => id !== accountId))),
-        ).pipe(Semaphore.withPermit(writer)),
+          demo: demo.has(accountId),
+        }));
+      }),
+      set,
+      remove,
     });
   }),
 );

@@ -11,7 +11,9 @@ import * as Redacted from "effect/Redacted";
 import * as Ref from "effect/Ref";
 import * as Stream from "effect/Stream";
 
+import { SessionStore } from "../../infra/auth/SessionStore.ts";
 import { Device } from "../../infra/device/Device.ts";
+import { DeviceSessions } from "../../infra/keychain/DeviceSessions.ts";
 import { Keychain } from "../../infra/keychain/Keychain.ts";
 import { MemoryKeychain } from "../../infra/keychain/MemoryKeychain.ts";
 import { KeyServer } from "./KeyServer.ts";
@@ -132,8 +134,14 @@ type FakeServer = Effect.Success<typeof fakeServer>;
 /** "Notfallkarte erstellen" with an answer that arrives. */
 const createCard = Effect.flatMap(NotebookKeys.newRecoveryCode, NotebookKeys.sendRecoveryCode);
 
+/** How Lena signed in on a device: `demo` at a demo account's address with a password. */
+interface Setup {
+  readonly publicComputer?: boolean;
+  readonly demo?: boolean;
+}
+
 /** One device of Lena's: its own secrets, a keyring that keeps what it unlocked, and the server. */
-const device = (server: FakeServer, publicComputer = false) =>
+const device = (server: FakeServer, { publicComputer = false, demo = false }: Setup = {}) =>
   Effect.gen(function* () {
     const unlocked = yield* Ref.make<ReadonlyArray<AccountKey.Keys>>([]);
 
@@ -156,8 +164,14 @@ const device = (server: FakeServer, publicComputer = false) =>
       ended: Effect.void,
     });
 
+    const signedIn = SessionStore.layer.pipe(
+      Layer.provide(DeviceSessions.layer),
+      Layer.provide(Layer.succeed(Ports.Server)({ origin: new URL("https://one.example") })),
+    );
+
     const context = yield* Layer.build(
-      Layer.mergeAll(keyring, session, Device.layer({ name: "test", publicComputer })).pipe(
+      Layer.mergeAll(keyring, session, signedIn).pipe(
+        Layer.provideMerge(Device.layer({ name: "test", publicComputer })),
         Layer.provideMerge(Keychain.secrets("test")),
         Layer.provideMerge(MemoryKeychain.layer()),
         Layer.provideMerge(Layer.succeed(KeyServer.Service)(server.server)),
@@ -170,6 +184,7 @@ const device = (server: FakeServer, publicComputer = false) =>
         E,
         | NotebookKeys.Keyring
         | Ports.Session
+        | SessionStore.Service
         | Ports.DeviceSecrets
         | Device.Service
         | KeyServer.Service
@@ -177,11 +192,19 @@ const device = (server: FakeServer, publicComputer = false) =>
       >,
     ) => Effect.provide(effect, context);
 
+    yield* run(
+      Effect.flatMap(SessionStore.Service, (store) =>
+        store.signedIn({ accountId: account, token: Redacted.make("token"), demo }),
+      ),
+    );
+
     const rootKey = run(
       Effect.flatMap(Ports.DeviceSecrets, (secrets) => secrets.get("root-key")),
     ).pipe(Effect.map(Option.map((bytes) => [...bytes].join(","))));
 
-    return { run, unlocked, rootKey };
+    const seed = run(Effect.flatMap(Ports.DeviceSecrets, (secrets) => secrets.get("device-seed")));
+
+    return { run, unlocked, rootKey, seed };
   });
 
 /** The reason a key operation was refused, or the tag of any other failure. */
@@ -242,7 +265,7 @@ describe("NotebookKeys", () => {
   );
 
   it.effect(
-    "a demo account's devices unlock with the key the server derives for it, and an ordinary account's new device never asks for one",
+    "a demo account's devices unlock with the key the server derives for it, and publish no wrapper",
     () =>
       Effect.gen(function* () {
         // As the demo seed publishes it (ADR 0027): generation 0 and no wrapper.
@@ -252,52 +275,71 @@ describe("NotebookKeys", () => {
         const record = yield* AccountKey.record(keys, "first");
         yield* Ref.set(demo.stored, { records: [record], wrappers: [] });
         yield* Ref.set(demo.demoKey, Option.some(rootKey));
-        const tablet = yield* device(demo);
-        const phone = yield* device(demo);
+        const tablet = yield* device(demo, { demo: true });
+        const phone = yield* device(demo, { demo: true });
         const tabletStatus = yield* tablet.run(NotebookKeys.status);
         yield* tablet.run(NotebookKeys.reconcile);
         const phoneStatus = yield* phone.run(NotebookKeys.status);
+        yield* phone.run(NotebookKeys.reconcile);
 
-        // An account without a device wrapper that isn't a demo account, and a demo key that
-        // doesn't derive the account's record.
+        // A server that answers `NotDemo`, then a demo key that doesn't derive the record.
         const other = yield* fakeServer;
         yield* Ref.set(other.stored, { records: [record], wrappers: [] });
-        const kiosk = yield* device(other);
-        const notDemo = yield* kiosk.run(NotebookKeys.status);
+        const laptop = yield* device(other, { demo: true });
+        const refused = yield* laptop.run(NotebookKeys.status);
         yield* Ref.set(other.demoKey, Option.some(Redacted.make(new Uint8Array(32).fill(6))));
-        const planted = yield* kiosk.run(NotebookKeys.status);
-
-        const ordinary = yield* fakeServer;
-        const first = yield* device(ordinary);
-        const second = yield* device(ordinary);
-        yield* first.run(NotebookKeys.status);
-        const secondStatus = yield* second.run(NotebookKeys.status);
+        const wrongKey = yield* laptop.run(NotebookKeys.status);
 
         assert.deepStrictEqual(
           {
             tablet: tabletStatus._tag,
             phone: phoneStatus._tag,
             kept: Option.getOrUndefined(yield* phone.rootKey),
-            notDemo: notDemo._tag,
-            planted: planted._tag,
-            kioskKey: Option.isNone(yield* kiosk.rootKey),
-            second: secondStatus._tag,
-            asked: yield* Effect.forEach([demo, other, ordinary], (each) =>
-              Ref.get(each.demoAsked),
-            ),
+            seeds: [Option.isNone(yield* tablet.seed), Option.isNone(yield* phone.seed)],
+            wrappers: (yield* Ref.get(demo.stored)).wrappers.length,
+            refused: refused._tag,
+            wrongKey: wrongKey._tag,
+            laptopKey: Option.isNone(yield* laptop.rootKey),
+            asked: [yield* Ref.get(demo.demoAsked), yield* Ref.get(other.demoAsked)],
           },
           {
             tablet: "Unlocked",
             phone: "Unlocked",
             kept: [...Redacted.value(rootKey)].join(","),
-            notDemo: "Locked",
-            planted: "Locked",
-            kioskKey: true,
-            second: "Locked",
-            asked: [2, 2, 0],
+            seeds: [true, true],
+            wrappers: 0,
+            refused: "Locked",
+            wrongKey: "Locked",
+            laptopKey: true,
+            asked: [2, 2],
           },
         );
       }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
+  );
+
+  // A dishonest server derives a record from a root key of its own, hides the account's device
+  // wrappers and answers `Demo.rootKey` with that key.
+  it.effect("takes a key from the server only after a sign-in at a demo address", () =>
+    Effect.gen(function* () {
+      const rootKey = Redacted.make(new Uint8Array(32).fill(7));
+      const lenas = yield* AccountKey.derive(rootKey, account, 0);
+      const own = yield* AccountKey.record(lenas, "first");
+
+      const ordinary = yield* fakeServer;
+      yield* Ref.set(ordinary.stored, { records: [own], wrappers: [] });
+      yield* Ref.set(ordinary.demoKey, Option.some(rootKey));
+      const notDemo = yield* device(ordinary);
+      const planted = yield* notDemo.run(NotebookKeys.status);
+
+      assert.deepStrictEqual(
+        {
+          planted: planted._tag,
+          notDemoKey: Option.isNone(yield* notDemo.rootKey),
+          asked: yield* Ref.get(ordinary.demoAsked),
+        },
+        { planted: "Locked", notDemoKey: true, asked: 0 },
+      );
+    }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
   );
 
   it.effect(
@@ -470,7 +512,7 @@ describe("NotebookKeys", () => {
   it.effect("a public computer starts no notebook key and keeps no device seed", () =>
     Effect.gen(function* () {
       const server = yield* fakeServer;
-      const kiosk = yield* device(server, true);
+      const kiosk = yield* device(server, { publicComputer: true });
       const first = yield* kiosk.run(NotebookKeys.status);
       const phone = yield* device(server);
       yield* phone.run(NotebookKeys.status);

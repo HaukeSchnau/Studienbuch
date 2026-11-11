@@ -13,6 +13,16 @@ export const Persona = Schema.Literals(["lena", "tom"]);
 
 export type Persona = typeof Persona.Type;
 
+/** The domain of the demo accounts' addresses, a domain of ours. */
+export const emailDomain = "demo.studienbuch.app";
+
+/**
+ * A demo account's address, as typed. A device asks for the root key only after a sign-in with
+ * one, since it can't take the server's word that an account is a demo account.
+ */
+export const isDemoAddress = (email: string) =>
+  email.trim().toLowerCase().endsWith(`@${emailDomain}`);
+
 const RootKeyBytes = Schema.Uint8Array.check(Schema.isBetweenLength(32, 32));
 
 /**

@@ -1,5 +1,6 @@
 import { Access } from "@stu/api/Access";
 import { Accounts } from "@stu/api/Accounts";
+import { Demo } from "@stu/api/Demo";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
@@ -142,18 +143,24 @@ const refuseOtherAccount = Effect.fn("Account.refuseOtherAccount")(function* (
   }
 });
 
-/** Keeps a new session, so the device is signed in, unless another account holds the device. */
-export const keep = Effect.fn("Account.keep")(function* (signedIn: AuthApi.SignedIn) {
+/**
+ * Keeps a new session, so the device is signed in, unless another account holds the device.
+ * `demo` marks a password sign-in at a demo account's address (`SessionStore.Signed`).
+ */
+export const keep = Effect.fn("Account.keep")(function* (signedIn: AuthApi.SignedIn, demo = false) {
   const store = yield* SessionStore.Service;
 
   yield* refuseOtherAccount(signedIn);
-  yield* store.signedIn(signedIn).pipe(Effect.mapError(() => new Problem({ reason: "failed" })));
+  yield* store
+    .signedIn({ ...signedIn, demo })
+    .pipe(Effect.mapError(() => new Problem({ reason: "failed" })));
 });
 
 export const signIn = Effect.fn("Account.signIn")(function* (email: string, password: string) {
   const api = yield* AuthApi.Service;
+  const signedIn = yield* api.signIn(email.trim(), password).pipe(Effect.mapError(problem));
 
-  yield* keep(yield* api.signIn(email.trim(), password).pipe(Effect.mapError(problem)));
+  yield* keep(signedIn, Demo.isDemoAddress(email));
 });
 
 /**
