@@ -26,10 +26,7 @@ interface Domains {
 // Alchemy reads the environment once it has imported this module.
 process.env.FLEET_SERVICES_URL ??= Platform.controller;
 
-/**
- * What Calder hands every deploy (`.calder/ci.ts`). The service reads them only once Alchemy plans
- * it, because `alchemy destroy` evaluates this stack too and Calder hands it no artifacts.
- */
+/** What Calder hands every deploy and plan (`.calder/ci.ts`). */
 const release: Platform.Release = {
   revision: Config.String("CALDER_REVISION"),
   bundle: Config.String("CALDER_BUNDLE"),
@@ -114,14 +111,14 @@ export default Alchemy.Stack(
   "Studienbuch",
   {
     providers: Layer.mergeAll(Fleet.providers(), Cloudflare.providers()),
-    state: Cloudflare.state(),
+    // The fleet's state store. Only Alchemy beta.85 or newer may use it: older versions can replace
+    // its key.
+    state: Cloudflare.state({ workerName: "alchemy-state-store-fleet" }),
   },
   Effect.gen(function* () {
     const stage = yield* Alchemy.Stage;
-    // `alchemy state` evaluates the stack at a placeholder stage to find its state store, and Calder
-    // reads each deploy's outputs that way, so a stage that isn't Studienbuch's declares nothing.
     return yield* Option.match(Environments.of(stage), {
-      onNone: () => Effect.succeed({}),
+      onNone: () => Effect.die(`${stage} is not one of Studienbuch's stages`),
       onSome: deploy,
     });
   }),
