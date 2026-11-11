@@ -1,5 +1,6 @@
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import type { Access } from "@stu/api/Access";
+import { SyncClient } from "@stu/sync/client";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
@@ -35,6 +36,30 @@ export const current = runtime
 
 /** What the gates show: see `Account.access`. A build without a server renders, never throws. */
 export const useAccess = () => Account.access(useAtomValue(current));
+
+/**
+ * The commands of `accountId` that the server hasn't settled, as its engine counts them. Reading it
+ * starts the engine. When the engine can't start, nothing else can open the account's database
+ * either, so the count stays unknown.
+ */
+const unsentOf = Atom.family((accountId: string) =>
+  Atom.runtime(AccountEngine.app(accountId)).atom(
+    Stream.unwrap(Effect.map(SyncClient.Service, (sync) => sync.status.changes)).pipe(
+      Stream.map((status) => status.waiting),
+      Stream.changes,
+    ),
+  ),
+);
+
+/** The unsent commands of the account on this device for "Abmelden", 0 when it holds none. */
+export const unsent = Atom.make((get) =>
+  AsyncResult.flatMap(get(current), (signed) =>
+    Option.match(signed, {
+      onNone: () => AsyncResult.success(0),
+      onSome: ({ accountId }) => get(unsentOf(accountId)),
+    }),
+  ),
+);
 
 /** The confirmed session waiting for its passkey offer, then every change. */
 const confirmed = runtime
