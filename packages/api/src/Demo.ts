@@ -13,6 +13,8 @@ export const Persona = Schema.Literals(["lena", "tom"]);
 
 export type Persona = typeof Persona.Type;
 
+const RootKeyBytes = Schema.Uint8Array.check(Schema.isBetweenLength(32, 32));
+
 /**
  * A new session of the persona's account, as the signed bearer token a sign-in returns, and the
  * account's root key of generation 0, which a device keeps as a first device keeps its own.
@@ -22,14 +24,14 @@ export class Session extends Schema.Class<Session, { readonly brand: unique symb
 )({
   account: Schema.String,
   token: Schema.String,
-  rootKey: Schema.Uint8Array,
+  rootKey: RootKeyBytes,
 }) {}
 
 /** The calling demo account's root key of generation 0. */
 export class RootKey extends Schema.Class<RootKey, { readonly brand: unique symbol }>(
   "Demo.RootKey",
 )({
-  rootKey: Schema.Uint8Array,
+  rootKey: RootKeyBytes,
 }) {}
 
 /** The server is no development or preview server. */
