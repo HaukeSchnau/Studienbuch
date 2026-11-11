@@ -33,8 +33,13 @@ const temporal = {
 
 export default defineConfig({
   fmt: {
-    // Vendored as upstream wrote it, so the next re-vendor is a plain copy.
-    ignorePatterns: ["tools/oxlint/anti-slop/**"],
+    ignorePatterns: [
+      // Vendored as upstream wrote it, so the next re-vendor is a plain copy.
+      "tools/oxlint/anti-slop/**",
+      // One self-contained page of 250 KB with its fonts inlined. Reformatting it would bury every
+      // edit in a diff of the whole file.
+      "docs/architecture/atlas.html",
+    ],
     sortPackageJson: {},
   },
   test: {

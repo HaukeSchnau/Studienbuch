@@ -392,12 +392,18 @@ importers:
       '@effect/tsgo':
         specifier: 'catalog:'
         version: 0.62.0
+      '@effect/vitest':
+        specifier: 'catalog:'
+        version: 4.0.7(effect@4.0.7)(vitest@5.0.5)
       '@oxlint/plugins':
         specifier: 'catalog:'
         version: 1.89.0
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
+      effect:
+        specifier: 'catalog:'
+        version: 4.0.7
       knip:
         specifier: 'catalog:'
         version: 6.43.0
