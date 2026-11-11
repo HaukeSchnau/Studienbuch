@@ -9,13 +9,17 @@ export * as Device from "./Device.ts";
 export interface Options {
   /** `VirtualDevice.current` for the app's own device. The Sync Lab names its own. */
   readonly name: string;
-  /**
-   * "Öffentlicher Computer" (D44): secrets and the database stay in memory, so closing the tab
-   * forgets the account and everything it wrote.
-   */
-  readonly publicComputer: boolean;
 }
 
 export class Service extends Context.Service<Service, Options>()("Device.Service") {}
 
 export const layer = (options: Options) => Layer.succeed(Service)(options);
+
+/**
+ * "Öffentlicher Computer" (D44) for the account signed in here: its secrets and database stay in
+ * memory, so closing the tab or signing out forgets it and everything it wrote. Its session chose
+ * it at sign-in (`SessionStore.Signed`), and `Layers.account` provides it.
+ */
+export class PublicComputer extends Context.Service<PublicComputer, boolean>()(
+  "Device.PublicComputer",
+) {}

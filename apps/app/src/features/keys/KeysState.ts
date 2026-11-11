@@ -13,6 +13,7 @@ import * as Stream from "effect/Stream";
 
 import { ApiProtocol } from "../../infra/api/ApiProtocol.ts";
 import { SessionStore } from "../../infra/auth/SessionStore.ts";
+import { Device } from "../../infra/device/Device.ts";
 import { Passkeys } from "../../infra/passkeys/Passkeys.ts";
 import { layer as authenticator } from "../../infra/passkeys/platform.ts";
 import { AccountEngine } from "../../infra/runtime/AccountEngine.ts";
@@ -196,7 +197,7 @@ export const unlockWithCode = Atom.family((accountId: string) =>
 export const withPasskey = Atom.family((accountId: string) =>
   runtime(accountId).fn<void>()((_, get) =>
     Effect.gen(function* () {
-      const used = yield* Account.signInWithPasskey();
+      const used = yield* Account.signInWithPasskey(yield* Device.PublicComputer);
 
       yield* NotebookKeys.usePasskey(used.credentialId, used.prf);
       yield* refresh(accountId, get);
@@ -207,7 +208,10 @@ export const withPasskey = Atom.family((accountId: string) =>
 /** The password confirmation that makes the sign-in fresh, where the account has no passkey. */
 export const withPassword = Atom.family((accountId: string) =>
   runtime(accountId).fn<{ readonly email: string; readonly password: string }>()(
-    ({ email, password }) => Account.signIn(email, password),
+    ({ email, password }) =>
+      Effect.flatMap(Device.PublicComputer, (publicComputer) =>
+        Account.signIn(email, password, publicComputer),
+      ),
   ),
 );
 

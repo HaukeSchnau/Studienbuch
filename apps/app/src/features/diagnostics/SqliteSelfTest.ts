@@ -2,6 +2,7 @@ import { Ports } from "@stu/sync/client";
 import { Replay } from "@stu/sync/conformance";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as Option from "effect/Option";
 import * as Atom from "effect/reactivity/Atom";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
@@ -10,6 +11,7 @@ import { VirtualDevice } from "../../infra/device/VirtualDevice.ts";
 import { MemoryKeychain } from "../../infra/keychain/MemoryKeychain.ts";
 import { Layers } from "../../infra/runtime/Layers.ts";
 import { layer as open } from "../../infra/sqlite/database.ts";
+import { AccountState } from "../account/AccountState.ts";
 
 // The SQLite build this device runs: expo-sqlite with SQLCipher on Hermes, the wasm build in its
 // worker in a browser. The conformance cases of packages/sync must end here as in the tests, or a
@@ -53,16 +55,24 @@ const signedIn = Effect.gen(function* () {
   return yield* created;
 });
 
-/** How many tables, views and indexes an account's database got, once it is deleted again. */
-export const accountDatabase = Atom.runtime(Layers.app).atom(
+/**
+ * How many tables, views and indexes an account's database got, once it is deleted again. It
+ * opens where the signed-in account keeps its own, so on a public computer in memory.
+ */
+export const accountDatabase = Atom.runtime(Layers.app).atom((get) =>
   Effect.gen(function* () {
+    const publicComputer = Option.exists(
+      yield* get.result(AccountState.current),
+      (signed) => signed.publicComputer,
+    );
+
     const count = yield* Effect.scoped(
-      Effect.flatMap(Layer.build(Layers.account(accountId)), (context) =>
+      Effect.flatMap(Layer.build(Layers.account(accountId, publicComputer)), (context) =>
         Effect.provide(signedIn, context),
       ),
     );
 
-    yield* Layers.forget(accountId);
+    if (!publicComputer) yield* Layers.forget(accountId);
 
     return count;
   }).pipe(Effect.timed),

@@ -171,7 +171,12 @@ const device = (server: FakeServer, { publicComputer = false, demo = false }: Se
 
     const context = yield* Layer.build(
       Layer.mergeAll(keyring, session, signedIn).pipe(
-        Layer.provideMerge(Device.layer({ name: "test", publicComputer })),
+        Layer.provideMerge(
+          Layer.mergeAll(
+            Device.layer({ name: "test" }),
+            Layer.succeed(Device.PublicComputer)(publicComputer),
+          ),
+        ),
         Layer.provideMerge(Keychain.secrets("test")),
         Layer.provideMerge(MemoryKeychain.layer()),
         Layer.provideMerge(Layer.succeed(KeyServer.Service)(server.server)),
@@ -186,7 +191,7 @@ const device = (server: FakeServer, { publicComputer = false, demo = false }: Se
         | Ports.Session
         | SessionStore.Service
         | Ports.DeviceSecrets
-        | Device.Service
+        | Device.PublicComputer
         | KeyServer.Service
         | CryptoSuite.Service
       >,
@@ -194,7 +199,7 @@ const device = (server: FakeServer, { publicComputer = false, demo = false }: Se
 
     yield* run(
       Effect.flatMap(SessionStore.Service, (store) =>
-        store.signedIn({ accountId: account, token: Redacted.make("token"), demo }),
+        store.signedIn({ accountId: account, token: Redacted.make("token"), demo }, publicComputer),
       ),
     );
 

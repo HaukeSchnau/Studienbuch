@@ -1,35 +1,42 @@
+import { useAtom } from "@effect/atom-react";
 import { Icon } from "@stu/ui/Icon";
 import { Text } from "@stu/ui/Text";
 import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
 import { Pressable, StyleSheet, View } from "react-native";
 
-import { publicComputer, setPublicComputer } from "../../infra/device/publicComputer.ts";
+import { publicComputer } from "../../infra/device/publicComputer.ts";
+import { AccountState } from "../account/AccountState.ts";
 
 /**
- * "Öffentlicher Computer" (D44): the tab keeps nothing, and the notebook unlocks again on every
- * visit. Switching reloads the tab, so it sits above the fields, before anything is typed.
+ * "Öffentlicher Computer" (D44): the account that signs in next keeps nothing on this computer,
+ * and the notebook unlocks again on every visit. An account the device holds already stays where
+ * it is, so the choice shows only while the device holds none.
  */
 export function PublicComputerChoice() {
   const { color } = Theme.useTheme();
+  const [checked, setChecked] = useAtom(publicComputer);
+  const access = AccountState.useAccess();
+
+  if (access !== "signed-out") return null;
 
   return (
     <Pressable
       accessibilityRole="checkbox"
-      aria-checked={publicComputer}
-      onPress={() => setPublicComputer(!publicComputer)}
+      aria-checked={checked}
+      onPress={() => setChecked(!checked)}
       style={styles.row}
     >
       <View
         style={[
           styles.box,
           {
-            borderColor: publicComputer ? color.accent : color.inkSoft,
-            backgroundColor: publicComputer ? color.accent : "transparent",
+            borderColor: checked ? color.accent : color.inkSoft,
+            backgroundColor: checked ? color.accent : "transparent",
           },
         ]}
       >
-        {publicComputer ? <Icon name="check" color={color.onAccent} size={16} /> : null}
+        {checked ? <Icon name="check" color={color.onAccent} size={16} /> : null}
       </View>
       <View style={styles.grow}>
         <Text variant="callout" weight="semibold">
