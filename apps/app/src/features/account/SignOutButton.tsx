@@ -1,4 +1,4 @@
-import { useAtomSet } from "@effect/atom-react";
+import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import * as Option from "effect/Option";
 
 import { Button } from "@stu/ui/Button";
@@ -6,28 +6,19 @@ import { confirm } from "../../ui/confirm.ts";
 import { Account } from "./Account.ts";
 import { AccountState } from "./AccountState.ts";
 
-export interface SignOutButtonProps {
-  /** Changes in the outbox that the server hasn't confirmed yet. */
-  readonly pending: number;
-}
-
 /**
- * "Abmelden": asks first when changes would be lost, then forgets this device's account. It shows
- * only while the device holds an account, live or ended.
+ * "Abmelden": asks first unless the engine counted no unsent change, then forgets this device's
+ * account. It shows only while the device holds an account, live or ended.
  */
-export function SignOutButton({ pending }: SignOutButtonProps) {
+export function SignOutButton() {
   const access = AccountState.useAccess();
+  const unsent = useAtomValue(AccountState.unsent);
   const signOut = useAtomSet(AccountState.signOut);
 
   const press = async () => {
-    const proceed = await Option.match(Account.unsentWarning(pending), {
+    const proceed = await Option.match(Account.unsentWarning(unsent), {
       onNone: () => Promise.resolve(true),
-      onSome: (warning) =>
-        confirm(
-          "Abmelden?",
-          `${warning} Wenn du dich jetzt abmeldest, sind sie weg.`,
-          "Trotzdem abmelden",
-        ),
+      onSome: (warning) => confirm("Abmelden?", warning, "Trotzdem abmelden"),
     });
 
     if (proceed) signOut();
