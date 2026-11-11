@@ -1,0 +1,6 @@
+# The stack is its own pnpm project, outside the root workspace, so the deploy step installs only
+# Alchemy and the providers, and an Alchemy bump never rebuilds the release bundle.
+
+# Cloudflare's local runtime, which only `alchemy dev` uses.
+allowBuilds:
+  workerd: false
