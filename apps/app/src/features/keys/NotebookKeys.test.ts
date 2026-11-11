@@ -290,6 +290,13 @@ describe("NotebookKeys", () => {
         yield* Ref.set(other.demoKey, Option.some(Redacted.make(new Uint8Array(32).fill(6))));
         const wrongKey = yield* laptop.run(NotebookKeys.status);
 
+        // The demo key, and a record of another account that it derives.
+        const tomsKeys = yield* AccountKey.derive(rootKey, "tom", 0);
+        const toms = yield* AccountKey.record(tomsKeys, "first");
+        yield* Ref.set(other.stored, { records: [toms], wrappers: [] });
+        yield* Ref.set(other.demoKey, Option.some(rootKey));
+        const otherAccount = yield* laptop.run(NotebookKeys.status);
+
         assert.deepStrictEqual(
           {
             tablet: tabletStatus._tag,
@@ -299,6 +306,7 @@ describe("NotebookKeys", () => {
             wrappers: (yield* Ref.get(demo.stored)).wrappers.length,
             refused: refused._tag,
             wrongKey: wrongKey._tag,
+            otherAccount: otherAccount._tag,
             laptopKey: Option.isNone(yield* laptop.rootKey),
             asked: [yield* Ref.get(demo.demoAsked), yield* Ref.get(other.demoAsked)],
           },
@@ -310,8 +318,9 @@ describe("NotebookKeys", () => {
             wrappers: 0,
             refused: "Locked",
             wrongKey: "Locked",
+            otherAccount: "Locked",
             laptopKey: true,
-            asked: [2, 2],
+            asked: [2, 3],
           },
         );
       }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),

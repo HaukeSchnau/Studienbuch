@@ -142,18 +142,19 @@ const wrap = Effect.fn("NotebookKeys.wrap")(function* (
 const firstRecord = (keys: AccountKey.Keys) => Effect.orDie(AccountKey.record(keys, "first"));
 
 /**
- * The keys of the newest record, if this device's root key derives them. A device whose key the
- * newest generation doesn't match never writes under it.
+ * The keys of the newest record, if this device's root key derives them for the signed-in account.
+ * A device whose key the newest generation doesn't match never writes under it.
  */
 const ownKeys = Effect.fn("NotebookKeys.ownKeys")(function* (
   rootKey: Redacted.Redacted<Uint8Array>,
   records: ReadonlyArray<AccountKey.Record>,
 ) {
+  const account = yield* accountId;
   const newest = records.at(-1);
 
-  if (newest === undefined) return Option.none<AccountKey.Keys>();
+  if (newest === undefined || newest.accountId !== account) return Option.none<AccountKey.Keys>();
 
-  const keys = yield* Effect.orDie(AccountKey.derive(rootKey, newest.accountId, newest.generation));
+  const keys = yield* Effect.orDie(AccountKey.derive(rootKey, account, newest.generation));
 
   return AccountKey.matches(keys, newest) ? Option.some(keys) : Option.none();
 });
