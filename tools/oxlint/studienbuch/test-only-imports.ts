@@ -8,12 +8,16 @@ const TEST_ONLY = new Set(["@stu/e2ee/testing"]);
 
 const TEST_FILE = /\.(?:test|spec)\.tsx?$|\.setup\.ts$/u;
 
+// `@stu/sync/testing` is test code too: the simulation and its helpers, which only tests import.
+const TEST_ENTRY = /\/packages\/sync\/src\/(?:testing\.ts$|testing\/|simulation\/)/u;
+
 /** Test doubles stay in tests. */
 export default defineRule({
   meta: {
     type: "problem",
     docs: {
-      description: "Allow test-only entries such as `@stu/e2ee/testing` in test files only.",
+      description:
+        "Allow test-only entries such as `@stu/e2ee/testing` in test files and `@stu/sync/testing` only.",
     },
     messages: {
       testOnly:
@@ -21,7 +25,7 @@ export default defineRule({
     },
   },
   create(context) {
-    if (TEST_FILE.test(context.filename)) return {};
+    if (TEST_FILE.test(context.filename) || TEST_ENTRY.test(context.filename)) return {};
 
     const check = (source: ESTree.Node) => {
       if (isStringLiteral(source) && TEST_ONLY.has(source.value)) {
