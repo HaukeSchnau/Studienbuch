@@ -1,86 +1,126 @@
-import { useAtomValue } from "@effect/atom-react";
-import { Card } from "@stu/ui/Card";
-import { Link } from "@stu/ui/Link";
-import { Text } from "@stu/ui/Text";
+import { useAtom, useAtomSet, useAtomValue } from "@effect/atom-react";
+import { DateText } from "@stu/domain-ui/calendar/DateText";
+import { HomeworkPanel } from "@stu/domain-ui/homework/HomeworkPanel";
+import { RefusalCard } from "@stu/domain-ui/refusal/RefusalCard";
+import { Arrive } from "@stu/ui/Arrive";
+import { Pill } from "@stu/ui/Pill";
 import { Theme } from "@stu/ui/Theme";
+import { Tokens } from "@stu/ui/Tokens";
 import * as Option from "effect/Option";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
-import { Link as RouteLink } from "expo-router";
+import * as Atom from "effect/reactivity/Atom";
+import * as Schema from "effect/Schema";
+import { useRouter } from "expo-router";
 import { StyleSheet, View } from "react-native";
 
 import { HeroScreen } from "../../ui/HeroScreen.tsx";
+import { HomeworkState } from "../homework/HomeworkState.ts";
+import { Refused } from "../homework/Refused.ts";
 import { KeysState } from "../keys/KeysState.ts";
-import { OnboardingState } from "../onboarding/OnboardingState.ts";
+import { OfflineChip } from "./OfflineChip.tsx";
+import { OverviewState } from "./OverviewState.ts";
 
 /**
- * "Übersicht", the first screen after the first start: "Moin, Lena!" in the hero, as in the Flutter
- * app. The homework panel (M1-WP-13) comes below the greeting; until then the way to this device's
- * diagnostics sits there.
+ * "Übersicht", the Flutter app's home: "Moin, Lena!" with today's date in the green hero, and the
+ * blue homework panel below. From M2, "Heute" and "Morgen" come between the two. A refused change
+ * waits as a card on the hero's band until the student picks what happens to it.
  */
 export function OverviewScreen() {
   return Option.match(KeysState.useAccountId(), {
-    onNone: () => <Overview name={Option.none()} school={Option.none()} />,
+    onNone: () => <HeroScreen title="Moin!" subtitle="Schön, dass du da bist." />,
     onSome: (accountId) => <AccountOverview accountId={accountId} />,
   });
 }
 
 function AccountOverview({ accountId }: { readonly accountId: string }) {
+  const router = useRouter();
   const { color } = Theme.useTheme();
-  const reading = AsyncResult.value(useAtomValue(OnboardingState.reading(accountId)));
-
-  const snapshot = Option.flatMap(reading, (value) =>
-    value._tag === "Ready" ? Option.some(value.snapshot) : Option.none(),
-  );
+  const overview = useAtomValue(OverviewState.overview(accountId));
+  const [toggled, toggle] = useAtom(HomeworkState.setDone(accountId));
+  const redo = useAtomSet(HomeworkState.redo(accountId));
+  const dismiss = useAtomSet(HomeworkState.dismiss(accountId));
 
   // Until the notebook is read, the canvas alone: a greeting without the name would flash first.
-  if (Option.isNone(reading))
+  if (Option.isNone(overview)) {
     return <View style={[styles.blank, { backgroundColor: color.canvas }]} />;
+  }
 
-  return (
-    <Overview
-      name={Option.flatMap(snapshot, (notebook) =>
-        Option.fromNullishOr(notebook.profile.displayName),
-      )}
-      school={Option.map(snapshot, (notebook) => notebook.schoolName)}
-    />
-  );
-}
+  const { name, today, locked, offline, panel } = overview.value;
 
-function Overview({
-  name,
-  school,
-}: {
-  readonly name: Option.Option<string>;
-  readonly school: Option.Option<string>;
-}) {
+  const setDone = (id: string, done: boolean) =>
+    Option.map(panel, ({ notebook }) => toggle({ notebook, id, doneOn: done ? today : undefined }));
+
+  const notToggled = Option.filter(AsyncResult.error(toggled), Schema.is(HomeworkState.NotToggled));
+
   return (
     <HeroScreen
       title={Option.match(name, { onNone: () => "Moin!", onSome: (first) => `Moin, ${first}!` })}
-      subtitle={Option.getOrElse(
-        Option.filter(school, (each) => each !== ""),
-        () => "Schön, dass du da bist.",
-      )}
+      underline
+      subtitle={DateText.long(today)}
+      status={Option.match(offline, {
+        onNone: () => null,
+        onSome: ({ waiting }) => <OfflineChip waiting={waiting} />,
+      })}
+      // The way to this device and to signing out, until Mein Profil holds them.
+      aside={
+        <Pill
+          label="Dieses Gerät"
+          icon="person"
+          iconOnly
+          onPress={() => router.push("/diagnose")}
+        />
+      }
+      footer={{
+        color: color.panelFold,
+        children: (
+          <Arrive delay={220} style={styles.grow}>
+            <HomeworkPanel
+              items={Option.getOrUndefined(Option.map(panel, (p) => p.items))}
+              locked={locked ? { onUnlock: () => router.push("/notizbuch-entsperren") } : undefined}
+              onToggle={setDone}
+              style={styles.grow}
+            />
+          </Arrive>
+        ),
+      }}
     >
-      {/* M1-WP-13: the homework panel goes here, first under the greeting. */}
-      <DeviceCard />
+      <Arrive delay={110} style={styles.band}>
+        {Option.match(panel, {
+          onNone: () => null,
+          onSome: ({ refusals }) =>
+            refusals.map(({ rejected, change }) => (
+              <RefusalCard
+                key={`${rejected.clientId} ${String(rejected.mutationId)}`}
+                change={change}
+                reason={rejected.reason}
+                onRetry={() => redo(rejected)}
+                onDismiss={() => dismiss(rejected)}
+              />
+            )),
+        })}
+        {Option.match(notToggled, {
+          onNone: () => null,
+          onSome: (failed) => (
+            <RefusalCard
+              change={Refused.tick(
+                failed.done,
+                Option.getOrUndefined(
+                  Option.flatMap(panel, (p) => Option.fromNullishOr(p.titles.get(failed.id))),
+                ),
+              )}
+              reason={{ _tag: failed.reason }}
+              onRetry={() => setDone(failed.id, failed.done)}
+              onDismiss={() => toggle(Atom.Reset)}
+            />
+          ),
+        })}
+      </Arrive>
     </HeroScreen>
   );
 }
 
-/** The way to "Dieses Gerät", which the overview was before the first start existed. */
-function DeviceCard() {
-  const { color } = Theme.useTheme();
-
-  return (
-    <Card padded title="Dieses Gerät">
-      <Text style={{ color: color.inkSoft }}>
-        Verbindung, Verschlüsselung und Speicher prüfen. Dort meldest du dich auch ab.
-      </Text>
-      <RouteLink href="/diagnose" asChild>
-        <Link label="Öffnen" variant="subhead" />
-      </RouteLink>
-    </Card>
-  );
-}
-
-const styles = StyleSheet.create({ blank: { flex: 1 } });
+const styles = StyleSheet.create({
+  blank: { flex: 1 },
+  band: { gap: Tokens.space.lg },
+  grow: { flexGrow: 1 },
+});
