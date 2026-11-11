@@ -1,4 +1,4 @@
-import { SubjectColor } from "@stu/domain-ui/subject/SubjectColor";
+import { SubjectMark } from "@stu/domain-ui/subject/SubjectMark";
 import { Text } from "@stu/ui/Text";
 import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
@@ -80,9 +80,9 @@ export function CourseTiles({ electives, chosen, onToggle }: CourseTilesProps) {
       {electives.map((elective) => {
         const on = chosen.has(elective.courseId);
 
-        const slot = Option.match(elective.subject, {
-          onNone: () => SubjectColor.ofCourse(elective.course),
-          onSome: SubjectColor.ofSubject,
+        const { slot } = Option.match(elective.subject, {
+          onNone: () => SubjectMark.ofCourse(elective.course),
+          onSome: SubjectMark.ofSubject,
         });
 
         const short = Option.match(elective.subject, {
