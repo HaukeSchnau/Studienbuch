@@ -1,4 +1,5 @@
 import { useAtomValue } from "@effect/atom-react";
+import { Demo } from "@stu/api/Demo";
 import { Keys } from "@stu/api/Keys";
 import { Ports, SyncClient } from "@stu/sync/client";
 import * as Effect from "effect/Effect";
@@ -30,7 +31,7 @@ const unreachable = { RpcClientError: () => Effect.fail(new KeyServer.Unreachabl
 /** `KeyServer` over HTTP, with the token of the engine's session at each call. */
 const keyServer = Layer.effect(KeyServer.Service)(
   Effect.gen(function* () {
-    const client = yield* RpcClient.make(Keys.Rpcs);
+    const client = yield* RpcClient.make(Keys.Rpcs.merge(Demo.Rpcs));
 
     return KeyServer.Service.of({
       state: client["Keys.state"]().pipe(Effect.catchTags({ ...unreachable })),
@@ -40,6 +41,14 @@ const keyServer = Layer.effect(KeyServer.Service)(
         client["Keys.addWrapper"]({ wrapper }).pipe(Effect.catchTags({ ...unreachable })),
       fetchSeals: (method) =>
         client["Keys.fetchSeals"]({ method }).pipe(Effect.catchTags({ ...unreachable })),
+      demoRootKey: client["Demo.rootKey"]().pipe(
+        Effect.map(({ rootKey }) => Option.some(Redacted.make(rootKey))),
+        Effect.catchTags({
+          ...unreachable,
+          "Demo.NotDemo": () => Effect.succeedNone,
+          "Demo.SignedOut": () => Effect.fail(new Keys.SignedOut()),
+        }),
+      ),
     });
   }),
 ).pipe(

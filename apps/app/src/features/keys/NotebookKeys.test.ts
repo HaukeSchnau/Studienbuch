@@ -43,6 +43,9 @@ const fakeServer = Effect.gen(function* () {
   const loseAnswer = yield* Ref.make(false);
   // The key the account's notebook was sealed with, which the server knows by its key boxes.
   const sealedWith = yield* Ref.make(Option.none<AccountKey.Record>());
+  // The root key the server derives for a demo account, and how often a device asked for it.
+  const demoKey = yield* Ref.make(Option.none<Redacted.Redacted<Uint8Array>>());
+  const demoAsked = yield* Ref.make(0);
 
   const answer = <A, E>(effect: Effect.Effect<A, E>) =>
     Effect.flatMap(effect, (value) =>
@@ -115,9 +118,13 @@ const fakeServer = Effect.gen(function* () {
 
         return new Keys.Seals({ records, wrappers: answered });
       }),
+    demoRootKey: Effect.andThen(
+      Ref.update(demoAsked, (count) => count + 1),
+      Ref.get(demoKey),
+    ),
   });
 
-  return { server, stored, seals, hideRecords, loseAnswer, sealedWith };
+  return { server, stored, seals, hideRecords, loseAnswer, sealedWith, demoKey, demoAsked };
 });
 
 type FakeServer = Effect.Success<typeof fakeServer>;
@@ -230,6 +237,65 @@ describe("NotebookKeys", () => {
         );
         assert.isTrue(
           opened !== undefined && record !== undefined && AccountKey.matches(opened, record),
+        );
+      }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
+  );
+
+  it.effect(
+    "a demo account's devices unlock with the key the server derives for it, and an ordinary account's new device never asks for one",
+    () =>
+      Effect.gen(function* () {
+        // As the demo seed publishes it (ADR 0027): generation 0 and no wrapper.
+        const demo = yield* fakeServer;
+        const rootKey = Redacted.make(new Uint8Array(32).fill(5));
+        const keys = yield* AccountKey.derive(rootKey, account, 0);
+        const record = yield* AccountKey.record(keys, "first");
+        yield* Ref.set(demo.stored, { records: [record], wrappers: [] });
+        yield* Ref.set(demo.demoKey, Option.some(rootKey));
+        const tablet = yield* device(demo);
+        const phone = yield* device(demo);
+        const tabletStatus = yield* tablet.run(NotebookKeys.status);
+        yield* tablet.run(NotebookKeys.reconcile);
+        const phoneStatus = yield* phone.run(NotebookKeys.status);
+
+        // An account without a device wrapper that isn't a demo account, and a demo key that
+        // doesn't derive the account's record.
+        const other = yield* fakeServer;
+        yield* Ref.set(other.stored, { records: [record], wrappers: [] });
+        const kiosk = yield* device(other);
+        const notDemo = yield* kiosk.run(NotebookKeys.status);
+        yield* Ref.set(other.demoKey, Option.some(Redacted.make(new Uint8Array(32).fill(6))));
+        const planted = yield* kiosk.run(NotebookKeys.status);
+
+        const ordinary = yield* fakeServer;
+        const first = yield* device(ordinary);
+        const second = yield* device(ordinary);
+        yield* first.run(NotebookKeys.status);
+        const secondStatus = yield* second.run(NotebookKeys.status);
+
+        assert.deepStrictEqual(
+          {
+            tablet: tabletStatus._tag,
+            phone: phoneStatus._tag,
+            kept: Option.getOrUndefined(yield* phone.rootKey),
+            notDemo: notDemo._tag,
+            planted: planted._tag,
+            kioskKey: Option.isNone(yield* kiosk.rootKey),
+            second: secondStatus._tag,
+            asked: yield* Effect.forEach([demo, other, ordinary], (each) =>
+              Ref.get(each.demoAsked),
+            ),
+          },
+          {
+            tablet: "Unlocked",
+            phone: "Unlocked",
+            kept: [...Redacted.value(rootKey)].join(","),
+            notDemo: "Locked",
+            planted: "Locked",
+            kioskKey: true,
+            second: "Locked",
+            asked: [2, 2, 0],
+          },
         );
       }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
   );

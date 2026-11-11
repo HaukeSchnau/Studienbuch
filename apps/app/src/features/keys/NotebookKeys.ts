@@ -305,6 +305,31 @@ const start = Effect.gen(function* () {
 });
 
 /**
+ * A demo account's root key, which the server derives (ADR 0027), kept as a first device keeps its
+ * own. The device takes it only if it derives the account's newest record, and keeps no device
+ * seed, so the account stays without a device wrapper and its next device asks again.
+ */
+const demoUnlock = Effect.fn("NotebookKeys.demoUnlock")(function* (
+  records: ReadonlyArray<AccountKey.Record>,
+) {
+  const rootKey = yield* (yield* KeyServer.Service).demoRootKey;
+
+  if (Option.isNone(rootKey)) return Status.Locked();
+
+  const keys = yield* ownKeys(rootKey.value, records);
+
+  if (Option.isNone(keys)) {
+    yield* Effect.logWarning("The demo key doesn't derive the account's key record");
+
+    return Status.Locked();
+  }
+
+  yield* (yield* Keyring).unlock(keys.value);
+
+  return Status.Unlocked();
+});
+
+/**
  * Where this device stands. A device without a key asks the server, and the first device of an
  * account starts the notebook's key right away.
  */
@@ -313,20 +338,31 @@ export const status = Effect.gen(function* () {
 
   const offline = () => Effect.succeed(Status.Offline());
 
-  const records = yield* (yield* KeyServer.Service).state.pipe(
-    Effect.map((state) => Option.some(state.records)),
+  const state = yield* (yield* KeyServer.Service).state.pipe(
+    Effect.asSome,
     Effect.catchTags({
       "KeyServer.Unreachable": () => Effect.succeedNone,
       "Keys.SignedOut": () => Effect.succeedNone,
     }),
   );
 
-  if (Option.isNone(records)) return Status.Offline();
+  if (Option.isNone(state)) return Status.Offline();
+  const { records, wrappers } = state.value;
 
   // A first device whose init answer was lost finds its own record there, and sends it again.
-  if (records.value.length > 0 && Option.isNone(yield* heldPending)) return Status.Locked();
+  if (records.length > 0 && Option.isNone(yield* heldPending)) {
+    // Every account's first device publishes its device wrapper with the record, except a demo
+    // account's, whose record the seed published. So only such an account asks for a demo key.
+    const anyDevice = wrappers.some(({ statement }) => statement.kind === Wrapper.kindByte.device);
 
-  if (records.value.length === 0 && (yield* Device.Service).publicComputer) {
+    if (anyDevice) return Status.Locked();
+
+    return yield* demoUnlock(records).pipe(
+      Effect.catchTags({ "KeyServer.Unreachable": offline, "Keys.SignedOut": offline }),
+    );
+  }
+
+  if (records.length === 0 && (yield* Device.Service).publicComputer) {
     return Status.NotHere();
   }
 
