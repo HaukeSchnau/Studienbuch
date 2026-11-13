@@ -1,5 +1,6 @@
 /**
- * How homework's dates show: list order, overdue, dimmed, and the due dates the form offers.
+ * How homework's dates show: list order, overdue, dimmed, how long done homework stays in reach,
+ * and the due dates the form offers.
  * `Homework` exposes the same rules. This module imports neither Sync nor Effect Schema, so the
  * landing page renders homework without loading the mutators.
  */
@@ -33,6 +34,17 @@ export const isOverdue = (homework: Listed, today: CivilTime.PlainDate): boolean
 /** Done, or open for more than 7 days past its due date. The list greys it out. */
 export const isDimmed = (homework: Listed, today: CivilTime.PlainDate): boolean =>
   homework.doneOn !== undefined || CivilDate.order(CivilDate.addDays(homework.dueOn, 7), today) < 0;
+
+/**
+ * Open, or done until 7 days after the later of its due date and the day it was ticked, so a card
+ * ticked by mistake stays in reach to undo, however late it was ticked (D72).
+ */
+export const isInReach = (homework: Listed, today: CivilTime.PlainDate): boolean =>
+  homework.doneOn === undefined ||
+  Order.isLessThanOrEqualTo(CivilDate.order)(
+    today,
+    CivilDate.addDays(Order.max(CivilDate.order)(homework.dueOn, homework.doneOn), 7),
+  );
 
 /**
  * The due dates the form offers: today to 365 days ahead. No mutator checks them, because a

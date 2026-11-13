@@ -53,17 +53,13 @@ export const make = (source: Source, today: CivilTime.PlainDate): Item => ({
 
 /**
  * What the Übersicht's panel shows, in list order: all open homework, however late, and done
- * homework until seven days after its due date, so a ticked card stays in reach for a while (D72).
+ * homework while it is in reach (`HomeworkDates.isInReach`).
  */
 export const panel = (
   homework: ReadonlyArray<Source>,
   today: CivilTime.PlainDate,
 ): ReadonlyArray<Item> =>
   Arr.sort(
-    homework.filter(
-      (each) =>
-        each.doneOn === undefined ||
-        !HomeworkDates.isDimmed({ id: each.id, dueOn: each.dueOn }, today),
-    ),
+    homework.filter((each) => HomeworkDates.isInReach(each, today)),
     HomeworkDates.order,
   ).map((each) => make(each, today));
