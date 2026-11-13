@@ -21,7 +21,7 @@ const homework = (id: string, dueOn: string, doneOn?: string): HomeworkItem.Sour
 });
 
 describe("HomeworkItem", () => {
-  it("shows open homework by due date, then done homework until a week after its due date", () => {
+  it("shows open homework by due date, then done homework until a week after its due date or its tick", () => {
     const shown = HomeworkItem.panel(
       [
         homework("next-week", "2026-11-04"),
@@ -29,6 +29,8 @@ describe("HomeworkItem", () => {
         homework("done-a-week-ago", "2026-10-21", "2026-10-21"),
         homework("done-eight-days-ago", "2026-10-20", "2026-10-20"),
         homework("forgotten", "2026-10-01"),
+        homework("forgotten-done-today", "2026-10-02", "2026-10-28"),
+        homework("forgotten-done-eight-days-ago", "2026-10-03", "2026-10-20"),
         homework("today", "2026-10-28"),
       ],
       today,
@@ -38,6 +40,7 @@ describe("HomeworkItem", () => {
       ["forgotten", true, true],
       ["today", false, false],
       ["next-week", false, false],
+      ["forgotten-done-today", false, true],
       ["done-a-week-ago", false, true],
       ["done-early", false, true],
     ]);
