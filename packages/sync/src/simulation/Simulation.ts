@@ -188,7 +188,7 @@ export const NewerFormat = Schema.TaggedStruct("NewerFormat", {
   account: Schema.Literals(World.accountIds),
 });
 
-const noteSteps = [Add, Rename, Toggle, Remove, Name, Lock, Unlock] as const;
+const noteSteps = [Add, Rename, Toggle, Remove, Name, NewerFormat, Lock, Unlock] as const;
 
 const readableSteps = [
   Choose,
@@ -207,7 +207,6 @@ const readableSteps = [
   OfferDuringPulls,
   Dismiss,
   Admit,
-  NewerFormat,
   Backup,
   Restore,
   Wait,

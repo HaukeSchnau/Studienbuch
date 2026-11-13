@@ -41,8 +41,8 @@ const tour: Simulation.Workload = {
     Simulation.Rename.make({ device: "a", pick: 0 }),
     Simulation.Toggle.make({ device: "b", pick: 1, done: true }),
     Simulation.Remove.make({ device: "b", pick: 0 }),
-    // Lena's phone on the next build writes the profile a set. b holds it unopened, so it can't
-    // set it.
+    // Lena's phone on the next build writes over the profile that a set. b holds it unopened, so
+    // it can't set it.
     Simulation.Name.make({ device: "a" }),
     Simulation.Sync.make({ device: "a" }),
     Simulation.NewerFormat.make({ account: "lena" }),
