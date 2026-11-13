@@ -1,12 +1,16 @@
 import { describe, expect, it } from "@effect/vitest";
-import { AccountKey, SealedRow, SpaceKey, Wrapper } from "@stu/e2ee";
+import { AccountKey, CryptoSuite, SealedRow, SpaceKey, Wrapper } from "@stu/e2ee";
 import { TestCrypto } from "@stu/e2ee/testing";
+import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
+import * as Exit from "effect/Exit";
+import * as Fiber from "effect/Fiber";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Redacted from "effect/Redacted";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
+import * as TestClock from "effect/testing/TestClock";
 import { Command } from "../protocol/Command.ts";
 import { Protocol } from "../protocol/Protocol.ts";
 import { DeviceDatabase } from "./DeviceDatabase.ts";
@@ -16,6 +20,7 @@ import { NotesDevice } from "./fixture/NotesDevice.ts";
 import { Scripted } from "./fixture/Scripted.ts";
 import { Keyring } from "./Keyring.ts";
 import { Outbox } from "./Outbox.ts";
+import { Rebase } from "./Rebase.ts";
 import { Replication } from "./Replication.ts";
 import { Ports } from "./Ports.ts";
 import { SyncClient } from "./SyncClient.ts";
@@ -138,6 +143,42 @@ const staleFirst: Scripted.PushAnswer = (request) =>
       .slice(0, 1)
       .map((command) => Protocol.Stale.make({ mutationId: command.mutationId })),
   });
+
+/**
+ * Device A's suite, whose first `aead.seal` after `arm` waits for `release` and completes `reached`
+ * when it starts waiting: a push held between reading the outbox and keeping what it sealed.
+ */
+const sealGate = Effect.gen(function* () {
+  const reached = yield* Deferred.make<void>();
+  const released = yield* Deferred.make<void>();
+  let armed = false;
+
+  const hold = Effect.suspend(() => {
+    if (!armed) return Effect.void;
+    armed = false;
+
+    return Effect.andThen(Deferred.succeed(reached, undefined), Deferred.await(released));
+  });
+
+  const layer = Layer.effect(
+    CryptoSuite.Service,
+    Effect.map(CryptoSuite.Service, (suite) =>
+      CryptoSuite.Service.of({
+        ...suite,
+        aead: { ...suite.aead, seal: (...args) => Effect.andThen(hold, suite.aead.seal(...args)) },
+      }),
+    ),
+  ).pipe(Layer.provide(TestCrypto.layer("a")));
+
+  return {
+    layer,
+    arm: Effect.sync(() => {
+      armed = true;
+    }),
+    reached: Deferred.await(reached),
+    release: Deferred.succeed(released, undefined),
+  };
+});
 
 /** The server answers the push's first command `answer` and stops there. */
 const stopFirst =
@@ -481,6 +522,142 @@ describe("Seal", () => {
               (yield* Outbox.rejected).map((each) => each.reason._tag),
               driver,
             ).toEqual(["Tx.RowMissing"]);
+          }),
+          a,
+        );
+      }).pipe(Effect.scoped),
+    ),
+  );
+
+  it.effect("a database error in a replay rolls the page back instead of refusing the entry", () =>
+    onEachDriver((driver) =>
+      Effect.gen(function* () {
+        const a = yield* Layer.build(device(driver, "a"));
+
+        yield* Effect.provide(
+          Effect.gen(function* () {
+            const sql = yield* SqlClient.SqlClient;
+            yield* established;
+            yield* rename("n1", "Mathe neu");
+
+            // The disk is full while the next page replays the rename the server didn't take.
+            yield* sql`
+              create temp trigger full before insert on pending_row
+              begin select raise(abort, 'database or disk is full'); end
+            `;
+
+            const server = Scripted.scripted({
+              push: [Scripted.retryFirst, Scripted.applyAll],
+              pull: [
+                Scripted.page({ spaces: notebook(1, 0), lastMutationId: 1 }),
+                Scripted.page({ spaces: notebook(2, 0), lastMutationId: 2 }),
+              ],
+            });
+
+            const full = yield* Effect.exit(replicate(server.remote));
+            yield* sql`drop trigger full`;
+            yield* replicate(server.remote);
+
+            expect(Exit.isFailure(full), driver).toBe(true);
+            expect(
+              server.pushes.map((request) =>
+                Option.map(sealOf(request), (seal) => seal.writes.length),
+              ),
+              driver,
+            ).toEqual([Option.some(1), Option.some(1)]);
+            expect(yield* Outbox.rejected, driver).toEqual([]);
+          }),
+          a,
+        );
+      }).pipe(Effect.scoped),
+    ),
+  );
+
+  it.effect("a replay while the push seals never sends an entry without the rows it now has", () =>
+    onEachDriver((driver) =>
+      Effect.gen(function* () {
+        const gate = yield* sealGate;
+
+        const a = yield* Layer.build(
+          SyncClient.layer(Notes.schema).pipe(
+            Layer.provideMerge(
+              Layer.mergeAll(Devices.session, Devices.unlocked, gate.layer, Devices.disconnected),
+            ),
+            Layer.provideMerge(Devices.database(driver)),
+          ),
+        );
+
+        yield* Effect.provide(
+          Effect.gen(function* () {
+            const sql = yield* SqlClient.SqlClient;
+            const { seal } = yield* established;
+            const [write] = seal.writes;
+
+            if (write === undefined || write.ct === null) return yield* Effect.die("No write");
+            const envelope = yield* encodeJson(yield* encodeEnvelope(write.envelope));
+            yield* create("n2", "Bio");
+            yield* rename("n1", "Mathe neu");
+
+            // What a locked device does with n1, whose key it lacks, and what unlocking does once
+            // the key arrives: the row parks or opens, and the outbox replays on it.
+            const n1 = (opens: boolean) =>
+              sql.withTransaction(
+                Effect.gen(function* () {
+                  if (opens) {
+                    yield* sql`
+                      insert into base_row (space, tbl, id, version, data)
+                      values ('nb-lena', 'Note', 'n1', 1, '{"title":"Geheimnis 4711"}')
+                    `;
+                    yield* sql`
+                      update sync_sealed_row set tbl = 'Note', envelope = null, ct = null
+                      where id = 'n1'
+                    `;
+                  } else {
+                    yield* sql`delete from base_row where tbl = 'Note' and id = 'n1'`;
+                    yield* sql`
+                      update sync_sealed_row set tbl = null, envelope = ${envelope}, ct = ${write.ct}
+                      where id = 'n1'
+                    `;
+                  }
+
+                  yield* Rebase.replay(Notes.schema, Devices.actor);
+                }),
+              );
+
+            yield* n1(false);
+
+            const server = Scripted.scripted({
+              push: [Scripted.applyAll],
+              pull: [Scripted.page({ spaces: notebook(3, 0), lastMutationId: 3 })],
+            });
+
+            // The push holds while it seals n2. Meanwhile n1 opens, as when the user unlocks then,
+            // and runs until it is done or waits for the push.
+            yield* gate.arm;
+            const round = yield* Effect.forkChild(replicate(server.remote));
+            yield* gate.reached;
+
+            const opening = yield* Effect.forkChild(
+              Effect.andThen(Effect.sleep("1 second"), n1(true)),
+            );
+
+            yield* TestClock.adjust("1 second");
+            yield* gate.release;
+            yield* Fiber.join(round);
+            yield* Fiber.join(opening);
+
+            const renamed = server.pushes[0]?.commands.find((command) => command.mutationId === 3);
+
+            // The push read the rename refused and sends it without rows, so it settles refused.
+            expect(
+              {
+                writes: renamed?._tag === "Seal" ? renamed.writes.length : null,
+                refused: (yield* Outbox.rejected).map(
+                  (each) => `${each.mutationId} ${each.reason._tag}`,
+                ),
+              },
+              driver,
+            ).toEqual({ writes: 0, refused: ["3 Tx.RowMissing"] });
           }),
           a,
         );

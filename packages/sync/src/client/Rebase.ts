@@ -12,7 +12,7 @@ import * as Option from "effect/Option";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
-import type * as SqlError from "effect/sql/SqlError";
+import * as SqlError from "effect/sql/SqlError";
 import { Sync } from "../definition/Sync.ts";
 import { Protocol } from "../protocol/Protocol.ts";
 import { Refusal } from "../protocol/Refusal.ts";
@@ -358,7 +358,8 @@ const decodeReason = Schema.decodeUnknownEffect(Refusal.Reason);
 /**
  * Clears the overlay and runs every waiting command again, one savepoint each, so one that fails
  * loses only its own effect and stays queued. A sealed one keeps its rows as drafts for the push,
- * or its refusal, which is the verdict the server can't give. Returns the tables touched.
+ * or its refusal, which is the verdict the server can't give. A `SqlError` fails the whole replay
+ * instead. Returns the tables touched.
  */
 export const replay = Effect.fnUntraced(function* (definition: Sync.Definition, actor: string) {
   const sql = yield* SqlClient.SqlClient;
@@ -421,6 +422,12 @@ export const replay = Effect.fnUntraced(function* (definition: Sync.Definition, 
         }),
       ),
     );
+
+    // The database failing is no verdict on the command: the caller's transaction rolls back, and
+    // the round runs again.
+    const failure = Exit.isFailure(exit) ? Cause.findErrorOption(exit.cause) : Option.none();
+
+    if (Option.isSome(failure) && SqlError.isSqlError(failure.value)) return yield* failure.value;
 
     if (sent) {
       if (Exit.isSuccess(exit)) for (const row of exit.value.rows) tables.add(row.table);
