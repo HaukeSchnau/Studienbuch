@@ -2,7 +2,7 @@
 
 What a reviewer agent checks in a Studienbuch PR, beyond what `vp check` and CI already prove. AGENTS.md holds the rules for writing the code. This file lists what lint and CI can't check. When a rule moves, change both.
 
-CI (`.calder/ci.ts`) runs format, lint, knip, a typecheck of every project, every test except the app's browser tests (those that need PostgreSQL against a real PostgreSQL 18) and the flake checks, over the whole repository. A PR's preview deploys before they finish, so a preview that works says nothing about the checks; read their status in Calder's comment.
+CI (`.calder/ci.ts`) runs format, lint, knip, the atlas's path check, a typecheck of every project, every test except the app's browser tests (those that need PostgreSQL against a real PostgreSQL 18) and the flake checks, over the whole repository. A PR's preview deploys before they finish, so a preview that works says nothing about the checks; read their status in Calder's comment.
 
 ## Reporting
 
@@ -27,6 +27,17 @@ Still report:
 - Any change that lets untrusted code run on m1 or a build box, such as a job that builds a fork's PR or a PR from the GitHub mirror.
 
 srv-2 is different. Previews, beta and later prod share it, and separate users, database roles, credential directories and memory limits keep them apart (D33). A change that lets a preview reach beta's data or credentials is a finding.
+
+## Architecture and Effect
+
+AGENTS.md's "Architecture" and "Effect" sections hold the rules. `studienbuch/import-boundaries` enforces the package boundaries it knows, and `vp run check:atlas` proves only that the paths the atlas names exist. Review checks the rest:
+
+- Read the diff's new imports against the [atlas](../architecture/atlas.html). A dependency the atlas doesn't draw, or one that points against its direction, is a finding.
+- A PR that adds a module, moves a responsibility or adds a data flow and leaves the atlas as it was is a finding. So is a box or arrow the atlas still draws after the PR removed its code.
+- Logic that already lives in another module, copied or reimplemented beside it, is a finding. Name the module that owns it.
+- A module that takes on a second job, such as a feature that also decodes a wire format or a route handler that holds a domain rule, is a finding. Name where the second job belongs.
+- Code that does by hand what an Effect module does is a finding: a validator or JSON shape check instead of `Schema`, a retry loop or timer instead of `Schedule`, polling instead of `Stream`, a memo map instead of `Cache` or `RcMap`, `process.env` instead of `Config`, cleanup in `finally` instead of a `Scope`, `console` instead of `Effect.log` and spans. Name the module and check it in the installed source.
+- A convention the PR sets that a lint rule could keep, with no rule in `tools/oxlint/`, is a finding.
 
 ## Sync and conformance
 

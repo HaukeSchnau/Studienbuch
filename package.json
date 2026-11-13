@@ -5,13 +5,16 @@
   "type": "module",
   "scripts": {
     "prepare": "effect-tsgo patch --oxlint",
+    "check:atlas": "node tools/check-atlas/check-atlas.ts",
     "check:changed": "node tools/check-changed/check-changed.ts",
     "nix:update-hash": "nix/update-pnpm-hash.sh"
   },
   "devDependencies": {
     "@effect/tsgo": "catalog:",
+    "@effect/vitest": "catalog:",
     "@oxlint/plugins": "catalog:",
     "@types/node": "catalog:",
+    "effect": "catalog:",
     "knip": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:"

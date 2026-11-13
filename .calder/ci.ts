@@ -6,12 +6,13 @@ import { flake } from "./flake.ts";
 const shell = flake.devShells.ci;
 const install = Pnpm.install({ shell });
 
-// The checks of `tools/check-changed`, over the whole repository: format, type-aware lint, knip, a
-// typecheck of every project and every test.
+// The checks of `tools/check-changed`, over the whole repository: format, type-aware lint, knip, the
+// atlas's paths, a typecheck of every project and every test.
 
 const fmt = Task.make("fmt", { shell, setup: install, run: cmd`vp fmt --check` });
 const lint = Task.make("lint", { shell, setup: install, run: cmd`vp lint` });
 const knip = Task.make("knip", { shell, setup: install, run: cmd`knip` });
+const atlas = Task.make("atlas", { shell, setup: install, run: cmd`vp run check:atlas` });
 
 /**
  * Every project, which check:changed takes to be a directory under apps, packages or tools with its
@@ -133,7 +134,7 @@ const deployChecks = [
 ];
 
 const checks = [
-  ...[fmt, lint, knip, typecheck, ...tests, ...deployChecks].map(Step.timeout("15 minutes")),
+  ...[fmt, lint, knip, atlas, typecheck, ...tests, ...deployChecks].map(Step.timeout("15 minutes")),
   ...flakeChecks,
 ];
 

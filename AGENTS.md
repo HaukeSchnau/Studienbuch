@@ -16,7 +16,7 @@ Most users are minors. Grades, absences, homework, signatures, photos and the di
 
 ### 3. Three platforms
 
-iOS, Android and the web are one Expo app. A feature works on all three, or the PR says why not. The landing page renders real app components with demo data.
+iOS, Android and the web are one Expo app. A feature works on all three, or the PR says why not. The landing page shows the app's screens with demo data, drawn today by stand-ins in `apps/web/src/domain-ui/app/` rather than the app's own components.
 
 ### 4. Long-term maintainability
 
@@ -44,7 +44,7 @@ Places:
 
 - **dev instance**: `devenv up` in one worktree, on localhost.
 - **preview**: a PR's release build at `pr-<n>.studienbuch.schnau.dev` (Tailnet), with its own database and the demo school.
-- **beta**: `beta.studienbuch.app`, deployed from every green push to `main`, importing live from WebUntis. TestFlight and Play internal builds point at it.
+- **beta**: `beta.studienbuch.app`, deployed from every green push to `main`, with the demo school. It doesn't import from WebUntis yet. TestFlight and Play internal builds point at it.
 - **device**: one installation's local database. In a browser, `?device=a` and `?device=b` are two virtual devices, each with its own storage.
 
 The domain. UI copy is German, code is English:
@@ -79,7 +79,7 @@ The domain. UI copy is German, code is English:
 ## The five ways to hurt yourself
 
 1. **Killing by pattern.** Kill only a PID you captured at spawn, or the owner of your port from `ss -H -ltnp` after confirming `/proc/<pid>/cwd` is your worktree. Your own agent process has this worktree's path in its argv, and the host runs other agents' dev servers.
-2. **Logging beta out of WebUntis.** Two logins with one WebUntis account log each other out, and beta imports live with the school's account. Develop and test the import against the anonymized corpus. A live login from anywhere else needs Hauke's go and beta's import paused first.
+2. **Logging the school out of WebUntis.** Two logins with one WebUntis account log each other out, and beta's import will use the school's account. Develop and test the import against the anonymized corpus. A live login needs Hauke's go, and once beta imports, its import paused first.
 3. **Baking in an origin.** One web build serves every preview, beta and later prod. `EXPO_PUBLIC_API_URL` exists for native builds only, set per EAS environment.
 4. **Leaking plaintext.** Content of encrypted tables exists in plaintext only on devices. Logs, spans, error messages, the command log, Postgres, dumps and the blob store carry ids, tags and ciphertext. Real names and real student data stay out of fixtures, logs and the repository.
 5. **Changing srv-2 by hand.** Previews, beta, their databases, the app stores and EAS change only through the pipeline (Calder and the Alchemy stack). Reading status and logs is fine. Anything that writes needs Hauke's go at the time.
@@ -89,13 +89,13 @@ The domain. UI copy is German, code is English:
 The most common defect is a change that works where you tested it and is missing everywhere else. Before calling work done, walk this list and say which entries applied:
 
 - **Platforms.** iOS, Android and the web app under `/app`. A native-only API needs a web answer, and the reverse.
-- **Apps.** The Expo app, the landing page (it renders app components) and the operator console.
+- **Apps.** The Expo app, the landing page (its stand-ins mirror app screens) and the operator console.
 - **Offline.** The change works offline, survives a restart and converges after reconnecting. A refusal shows with its reason.
 - **Two devices.** The same student on two devices, or `?device=a` and `?device=b` side by side, ends in the same state.
 - **Table class.** Readable tables (school data, `Enrollment`) and encrypted tables (notebook content) take different write paths. A mutator writes one class only.
 - **Old clients.** The server deploys before clients, so the app one release back must keep working against the new server. Stored row JSON changes additively; a breaking change gets a new table name.
 - **Reverse states.** A way in needs a way out and a way to see it.
-- **Docs.** Check whether the change makes this file, an ADR or a scenario contract wrong.
+- **Docs.** Check whether the change makes this file, the atlas, an ADR or a scenario contract wrong.
 
 ## Dev environment
 
@@ -144,8 +144,9 @@ Agents work through pull requests ([ADR 0008](docs/adr/0008-agents-work-through-
 
 ## Documentation
 
-Most code changes need no documentation change. Agents can read the code.
+Most code changes need no documentation change, because agents can read the code. A change to the architecture updates the atlas.
 
+- `docs/architecture/` holds the atlas, the map of modules and data flows. [Architecture](#architecture) says when it changes.
 - `docs/adr/` holds one decision per file: the context, the decision and why, in a few sentences. Write one when a decision is hard to reverse, surprising without context, and the result of a real trade-off. A changed decision gets a new ADR that supersedes the old one.
 - `docs/product/` holds the legacy behavior catalogue and the scenario contracts. A scenario states a user-visible rule independent of any test runner; the E2E test implements it.
 - `docs/operations/` will hold procedures for running, releasing and debugging. Create it with the first one.
@@ -176,6 +177,13 @@ The layout below is the target. Packages appear as M0 builds them.
 | `tools/oxlint/`               | Local lint plugins                                                                                                                                                    |                                                                         |
 | `tools/check-changed/`        | `vp run check:changed`: the checks for the files one change touches                                                                                                   |                                                                         |
 
+## Architecture
+
+[The atlas](docs/architecture/atlas.html) is the map of modules, their boundaries and the data flows between them, drawn from the code on `main`. Read it before you add a module or move a responsibility. It is one self-contained page whose boxes, arrows and walkthroughs are data in its script.
+
+- A PR that adds a module, moves a responsibility, or adds or removes an arrow updates the atlas in the same PR. `vp run check:atlas` fails when the atlas names a path the tree lacks.
+- One job per module, its logic in one place, dependencies in the atlas's direction. A dependency against that direction, logic duplicated across modules, or a module doing two jobs is a review finding.
+
 ## Taste
 
 - Complexity belongs at the adapter boundary. Orchestration stays pure, UI stays dumb.
@@ -190,12 +198,12 @@ The layout below is the target. Packages appear as M0 builds them.
 
 ## Lint
 
-`vp check` enforces most rules of this codebase, through oxlint with type information, the Effect presets, anti-slop and our plugin in `tools/oxlint/`: no throwing, the module shape, package boundaries, mutator purity, APIs Hermes lacks, baked-in origins, directory names, deterministic tests, `Effect.fn` and `catchTags`, no platform reads in feature code, comments of at most four lines, no em dashes in copy, and a reason on every suppression. Many of the plugin's rules come from T3 Code (MIT, `tools/T3CODE-LICENSE`). When a rule fights a real need, change the rule in its own PR rather than suppressing it in passing. A convention that keeps coming up in review belongs in the plugin, not in this file.
+`vp check` enforces most rules of this codebase, through oxlint with type information, the Effect presets, anti-slop and our plugin in `tools/oxlint/`: no throwing, the module shape, package boundaries, mutator purity, APIs Hermes lacks, baked-in origins, directory names, deterministic tests, `Effect.fn` and `catchTags`, no platform reads in feature code, comments of at most four lines, no em dashes in copy, and a reason on every suppression. Many of the plugin's rules come from T3 Code (MIT, `tools/T3CODE-LICENSE`). When a rule fights a real need, change the rule in its own PR rather than suppressing it in passing. A convention that can regress gets a rule in the plugin, in the PR that sets the convention, rather than a line in this file or a comment.
 
 ## Effect
 
 - `effect` and every `@effect/*` sit at one exact version in the catalog and move together. Most modules we use are marked unstable and change in patch releases, so read the changelog on every bump.
-- Before designing Effect-heavy code, check whether Effect already supplies the schema, error, concurrency, lifecycle, scheduling, SQL, RPC or testing abstraction the problem needs.
+- Lean on Effect. Before you write schema, errors, layers, config, concurrency, lifecycle, scheduling, streams, SQL, RPC, HTTP, caching, testing or tracing code by hand, find the Effect module that does it and use that. A hand-rolled equivalent of an Effect module is a review finding.
 - The installed package source is the authority on exact behavior. `~/context/effect-ts-effect` (checked out at the pinned tag) and `~/context/effect-ts-website` hold upstream source and docs. Check APIs there rather than from memory or another release.
 
 ## Directory naming
