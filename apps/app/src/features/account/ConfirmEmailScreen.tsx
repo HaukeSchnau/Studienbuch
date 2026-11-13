@@ -12,6 +12,7 @@ import { Redirect, useRouter } from "expo-router";
 import { useState } from "react";
 import { Keyboard, StyleSheet, View } from "react-native";
 
+import { publicComputer } from "../../infra/device/publicComputer.ts";
 import { Account } from "./Account.ts";
 import {
   Done,
@@ -160,6 +161,7 @@ export function PasskeyOfferScreen() {
 
 function PasskeyOffer({ email }: { readonly email: string }) {
   const [result, finish] = useAtom(AccountState.finish, { mode: "promiseExit" });
+  const offDevice = useAtomValue(publicComputer);
 
   AccountState.useLaterOnLeave(email);
 
@@ -168,8 +170,9 @@ function PasskeyOffer({ email }: { readonly email: string }) {
       <AuthHeading>Geschafft!</AuthHeading>
       <Form>
         <PasskeyLead>
-          Mit einem Passkey meldest du dich künftig mit Face ID, deinem Fingerabdruck oder der
-          Geräte-PIN an. Ein Passwort brauchst du dann nicht mehr.
+          {offDevice
+            ? "Mit einem Passkey auf deinem Handy oder einem Sicherheitsschlüssel meldest du dich künftig ohne Passwort an. Dieser Computer speichert ihn nicht."
+            : "Mit einem Passkey meldest du dich künftig mit Face ID, deinem Fingerabdruck oder der Geräte-PIN an. Ein Passwort brauchst du dann nicht mehr."}
         </PasskeyLead>
         <ProblemText reason={reasonOf(result)} />
         <Button

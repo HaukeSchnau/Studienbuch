@@ -388,7 +388,7 @@ export const finish = Effect.fn("Account.finish")(function* (
     ).pipe(Effect.mapError(() => new Problem({ reason: "failed" })));
 
     const added = withPasskey
-      ? Option.some(yield* addPasskey(confirmed.signedIn.token))
+      ? Option.some(yield* addPasskey(confirmed.signedIn.token, publicComputer))
       : Option.none<{ readonly credentialId: string; readonly prf: Passkeys.CreatedPrf }>();
 
     yield* keep(confirmed.signedIn, publicComputer);
@@ -472,18 +472,23 @@ export const signInWithPasskey = Effect.fn("Account.signInWithPasskey")(function
 
 /**
  * Adds a passkey to the account of a session at most `Keys.freshSignInMinutes` old, and says what
- * it can do for the notebook's unlock.
+ * it can do for the notebook's unlock. On a public computer it goes on the student's phone or a
+ * security key: one this computer kept, as Windows Hello or a password manager would, would sign
+ * the next person here in as the student and open the notebook.
  */
-export const addPasskey = Effect.fn("Account.addPasskey")(function* (token: Redacted.Redacted) {
+export const addPasskey = Effect.fn("Account.addPasskey")(function* (
+  token: Redacted.Redacted,
+  publicComputer: boolean,
+) {
   const api = yield* AuthApi.Service;
   const passkeys = yield* Passkeys.Authenticator;
 
   const { options, challenge } = yield* api
-    .passkeyCreationOptions(token)
+    .passkeyCreationOptions(token, publicComputer)
     .pipe(Effect.mapError(problem));
 
   const created = yield* passkeys
-    .create(options)
+    .create(publicComputer ? { ...options, hints: ["hybrid", "security-key"] } : options)
     .pipe(Effect.catchTags({ "Passkeys.Failed": (error) => Effect.fail(passkeyProblem(error)) }));
 
   yield* api.addPasskey(token, challenge, created.credential).pipe(Effect.mapError(problem));

@@ -114,6 +114,13 @@ const credential: AuthApi.Credential = {
   clientExtensionResults: {},
 };
 
+const creation: AuthApi.CreationOptions = {
+  challenge: "challenge",
+  rp: { name: "Studienbuch" },
+  user: { id: "lena", name: "", displayName: "" },
+  pubKeyCredParams: [],
+};
+
 const withPasskeyDialog = Layer.mergeAll(
   store,
   confirmations(),
@@ -122,15 +129,7 @@ const withPasskeyDialog = Layer.mergeAll(
       Layer.mergeAll(
         AuthApiTesting.layer({
           passkeyCreationOptions: () =>
-            Effect.succeed({
-              challenge: "challenge",
-              options: {
-                challenge: "challenge",
-                rp: { name: "Studienbuch" },
-                user: { id: "lena", name: "", displayName: "" },
-                pubKeyCredParams: [],
-              },
-            }),
+            Effect.succeed({ challenge: "challenge", options: creation }),
           addPasskey: () => Effect.void,
           signOut: (token) => Ref.update(revoked, (tokens) => [...tokens, Redacted.value(token)]),
         }),
@@ -486,6 +485,59 @@ describe("Account", () => {
           signUp: yield* kept(ways.signUp),
         },
         { password: both, reset: both, passkey: both, signUp: both },
+      );
+    }),
+  );
+
+  // A passkey a shared computer kept would sign the next person there in as the student, so a public
+  // computer's new passkey goes on the student's phone or a security key.
+  it.effect("puts a public computer's new passkey on another device", () =>
+    Effect.gen(function* () {
+      const api = AuthApiTesting.layer({
+        // As Better Auth answers `authenticatorAttachment` in the query.
+        passkeyCreationOptions: (_, offDevice) =>
+          Effect.succeed({
+            challenge: "challenge",
+            options: {
+              ...creation,
+              authenticatorSelection: offDevice
+                ? { authenticatorAttachment: "cross-platform" }
+                : {},
+            },
+          }),
+        addPasskey: () => Effect.void,
+      });
+
+      const asked = (publicComputer: boolean) =>
+        Effect.gen(function* () {
+          const created = yield* Ref.make(Option.none<AuthApi.CreationOptions>());
+
+          const authenticator = Layer.succeed(Passkeys.Authenticator)({
+            create: (options) =>
+              Effect.as(Ref.set(created, Option.some(options)), {
+                credential,
+                prf: Passkeys.CreatedPrf.Unsupported(),
+              }),
+            get: () => Effect.die("no sign-in was asked for"),
+          });
+
+          yield* Effect.andThen(
+            confirmed("lena@example.org", "lena", "token-lena"),
+            Account.finish("lena@example.org", true, publicComputer),
+          ).pipe(Effect.provide(Layer.mergeAll(store, confirmations(), api, authenticator)));
+
+          return Option.map(yield* Ref.get(created), (options) => ({
+            attachment: options.authenticatorSelection?.authenticatorAttachment,
+            hints: options.hints,
+          }));
+        });
+
+      assert.deepStrictEqual(
+        [yield* asked(false), yield* asked(true)],
+        [
+          Option.some({ attachment: undefined, hints: undefined }),
+          Option.some({ attachment: "cross-platform", hints: ["hybrid", "security-key"] }),
+        ],
       );
     }),
   );

@@ -260,7 +260,7 @@ export const addPasskey = Atom.family((accountId: string) =>
 
       if (Option.isNone(token)) return yield* new NotebookKeys.Problem({ reason: "signed-out" });
 
-      const added = yield* Account.addPasskey(token.value);
+      const added = yield* Account.addPasskey(token.value, yield* Device.PublicComputer);
 
       const output = yield* Passkeys.CreatedPrf.$match(added.prf, {
         Output: ({ output: bytes }) => Effect.succeedSome(Redacted.make(bytes)),

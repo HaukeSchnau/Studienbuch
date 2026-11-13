@@ -88,6 +88,9 @@ export const CreationOptions = Schema.Struct({
       userVerification: Schema.optional(Requirement),
     }),
   ),
+  hints: Schema.optional(
+    Schema.Array(Schema.Literals(["security-key", "client-device", "hybrid"])),
+  ),
   attestation: Schema.optional(Schema.Literals(["none", "indirect", "direct", "enterprise"])),
 });
 
@@ -171,8 +174,13 @@ export class Service extends Context.Service<
       challenge: string,
       credential: Credential,
     ) => Effect.Effect<SignedIn, Failure>;
+    /**
+     * Options for a new passkey of the session's account. `offDevice` asks for one on another
+     * device, a phone or a security key, never in this device's own authenticator.
+     */
     readonly passkeyCreationOptions: (
       token: Redacted.Redacted,
+      offDevice: boolean,
     ) => Effect.Effect<Ceremony<CreationOptions>, Failure>;
     readonly addPasskey: (
       token: Redacted.Redacted,
@@ -291,10 +299,12 @@ export const layer = Layer.effect(Service)(
           ),
           signedIn,
         ),
-      passkeyCreationOptions: (token) =>
+      passkeyCreationOptions: (token, offDevice) =>
         ceremony(
           HttpClientRequest.bearerToken(
-            HttpClientRequest.get("/passkey/generate-register-options"),
+            HttpClientRequest.get("/passkey/generate-register-options", {
+              urlParams: offDevice ? { authenticatorAttachment: "cross-platform" } : {},
+            }),
             token,
           ),
           creationOptions,

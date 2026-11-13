@@ -183,6 +183,7 @@ const decodeRegistrationOptions = Schema.decodeUnknownEffect(
   Schema.Struct({
     challenge: Schema.String,
     authenticatorSelection: Schema.Struct({
+      authenticatorAttachment: Schema.optional(Schema.String),
       residentKey: Schema.String,
       userVerification: Schema.String,
     }),
@@ -1403,6 +1404,27 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
               accountOf(yield* resolver.resolve(bearer(token))),
             );
           }),
+      );
+      // The app on a public computer asks for this, so the passkey can't stay on that computer.
+      it.effect("offers a passkey on another device, a phone or a security key, when asked", () =>
+        Effect.gen(function* () {
+          const token = yield* signUp("lena.elsewhere@example.org");
+
+          const offered = yield* call(
+            "GET",
+            "/passkey/generate-register-options?authenticatorAttachment=cross-platform",
+            { token },
+          );
+
+          assert.deepStrictEqual(
+            (yield* decodeRegistrationOptions(offered.json)).authenticatorSelection,
+            {
+              authenticatorAttachment: "cross-platform",
+              residentKey: "required",
+              userVerification: "required",
+            },
+          );
+        }),
       );
       it.effect(
         "adds a passkey only within ten minutes of a sign-in, and a new passkey signs nobody in",
