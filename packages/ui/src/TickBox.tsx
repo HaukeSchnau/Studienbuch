@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { Tokens } from "./Tokens.ts";
+import { useKeptFocus } from "./useKeptFocus.ts";
 import { Vector } from "./Vector.tsx";
 import { Wipe } from "./Wipe.tsx";
 
@@ -12,20 +13,41 @@ export interface TickBoxProps {
   /** The pen's colour, white on the homework panel's navy cards. */
   readonly color: string;
   readonly size?: number;
+  /**
+   * The same while a list moves the box's item, such as the homework's id. A box ticked from the
+   * keyboard then keeps the focus when the list moves it.
+   */
+  readonly focusKey?: string;
 }
 
 /**
  * A box drawn by hand, ticked with one pen stroke that draws itself (brand direction D's "done by
  * you"). The touch area is the larger platform minimum around it.
  */
-export function TickBox({ checked, onChange, label, color, size = 30 }: TickBoxProps) {
+export function TickBox({ checked, onChange, label, color, size = 30, focusKey }: TickBoxProps) {
+  const { ref, onUsed } = useKeptFocus(focusKey);
+
+  const toggle = () => {
+    onUsed();
+    onChange(!checked);
+  };
+
   return (
     <Pressable
+      ref={ref}
       accessibilityRole="checkbox"
       aria-checked={checked}
       accessibilityLabel={label}
       hitSlop={(Tokens.layout.minTarget - size) / 2}
-      onPress={() => onChange(!checked)}
+      onPress={toggle}
+      // react-native-web presses only buttons with Space, and a checkbox ticks with it as well. Its
+      // keydown would scroll the page.
+      onKeyDown={(event) => {
+        if (event.nativeEvent.key === " ") event.preventDefault();
+      }}
+      onKeyUp={(event) => {
+        if (event.nativeEvent.key === " ") toggle();
+      }}
       style={({ pressed }) => [
         styles.box,
         { width: size, height: size },

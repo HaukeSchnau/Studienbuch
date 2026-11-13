@@ -5,6 +5,7 @@ import { Tokens } from "@stu/ui/Tokens";
 import { useLayout } from "@stu/ui/useLayout";
 import { useLingeringOrder } from "@stu/ui/useLingeringOrder";
 import { Vector } from "@stu/ui/Vector";
+import * as Arr from "effect/Array";
 import type { ReactNode } from "react";
 import {
   ScrollView,
@@ -85,9 +86,9 @@ export function HomeworkPanel({ items, locked, onToggle, style }: HomeworkPanelP
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.grid}
           >
-            {rows(shown).map((row) => (
-              <View key={row.key} style={styles.row}>
-                {row.items.map((item) => (
+            {columns(shown).map((column) => (
+              <View key={column[0].id} style={styles.gridColumn}>
+                {column.map((item) => (
                   <HomeworkCard
                     key={item.id}
                     item={item}
@@ -104,14 +105,12 @@ export function HomeworkPanel({ items, locked, onToggle, style }: HomeworkPanelP
   );
 }
 
-/** Flutter's grid: one row up to three cards, else two, filled column by column. */
-const rows = (items: ReadonlyArray<HomeworkItem.Item>) =>
-  items.length < 4
-    ? [{ key: "top", items }]
-    : [
-        { key: "top", items: items.filter((_, index) => index % 2 === 0) },
-        { key: "bottom", items: items.filter((_, index) => index % 2 === 1) },
-      ];
+/**
+ * Flutter's grid: one row up to three cards, else two rows filled column by column. Columns, not
+ * rows, so screen readers and Tab follow the list's order.
+ */
+const columns = (items: ReadonlyArray<HomeworkItem.Item>) =>
+  Arr.chunksOf(items, items.length < 4 ? 1 : 2);
 
 // A ticked card stays in its place this long, for its pen stroke and a second thought, before it
 // moves to the done ones at the end.
@@ -170,8 +169,8 @@ const styles = StyleSheet.create({
   },
   column: { width: "100%", maxWidth: Tokens.layout.contentMaxWidth, alignSelf: "center" },
   title: { color: onPanel, paddingHorizontal: inset + Tokens.space.xs },
-  grid: { flexDirection: "column", gap, paddingHorizontal: inset, paddingTop: Tokens.space.lg },
-  row: { flexDirection: "row", gap },
+  grid: { flexDirection: "row", gap, paddingHorizontal: inset, paddingTop: Tokens.space.lg },
+  gridColumn: { gap },
   wrap: {
     flexDirection: "row",
     flexWrap: "wrap",

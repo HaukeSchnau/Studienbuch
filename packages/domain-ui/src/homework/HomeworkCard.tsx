@@ -40,6 +40,7 @@ export function HomeworkCard({ item, onToggle, width }: HomeworkCardProps) {
           onChange={(done) => onToggle(item.id, done)}
           label={`${item.subject}: ${item.title}`}
           color={onPanel}
+          focusKey={item.id}
         />
       </View>
       <Text
