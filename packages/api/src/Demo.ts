@@ -13,6 +13,23 @@ export const Persona = Schema.Literals(["lena", "tom"]);
 
 export type Persona = typeof Persona.Type;
 
+/** The domain of the demo accounts' addresses, a domain of ours. */
+export const emailDomain = "demo.studienbuch.app";
+
+/** Each persona's account id. It is fixed, so every seed finds the account again. */
+export const accounts: Readonly<Record<Persona, string>> = { lena: "demo-lena", tom: "demo-tom" };
+
+/**
+ * A password sign-in typed at a demo account's address that the server answered with a persona's
+ * account. A device asks for the root key only after one, since it can't take the server's word
+ * that an account is a demo account.
+ */
+export const isDemoSignIn = (email: string, accountId: string) =>
+  email.trim().toLowerCase().endsWith(`@${emailDomain}`) &&
+  Object.values(accounts).includes(accountId);
+
+const RootKeyBytes = Schema.Uint8Array.check(Schema.isBetweenLength(32, 32));
+
 /**
  * A new session of the persona's account, as the signed bearer token a sign-in returns, and the
  * account's root key of generation 0, which a device keeps as a first device keeps its own.
@@ -22,14 +39,14 @@ export class Session extends Schema.Class<Session, { readonly brand: unique symb
 )({
   account: Schema.String,
   token: Schema.String,
-  rootKey: Schema.Uint8Array,
+  rootKey: RootKeyBytes,
 }) {}
 
 /** The calling demo account's root key of generation 0. */
 export class RootKey extends Schema.Class<RootKey, { readonly brand: unique symbol }>(
   "Demo.RootKey",
 )({
-  rootKey: Schema.Uint8Array,
+  rootKey: RootKeyBytes,
 }) {}
 
 /** The server is no development or preview server. */

@@ -4,7 +4,7 @@
  * from the school year the seed runs in, so two seeds in one year write the same rows under the
  * same ids. Names are invented.
  */
-import type { Demo } from "@stu/api/Demo";
+import { Demo } from "@stu/api/Demo";
 import { CivilTime, Course, CourseOffering, Notebook, School, type Term } from "@stu/core";
 import * as Effect from "effect/Effect";
 import { Schools } from "../school/Schools.ts";
@@ -86,20 +86,20 @@ export interface Persona {
 }
 
 /**
- * Their addresses are under `demo.studienbuch.app`, a domain of ours. The seed creates the accounts
+ * Their addresses are under `Demo.emailDomain`, a domain of ours. The seed creates the accounts
  * before a sign-up could claim an address, and fails rather than adopt an account that has one.
  * The account and notebook ids are fixed, so every seed finds them again.
  */
 export const personas: Readonly<Record<Demo.Persona, Persona>> = {
   lena: {
-    account: "demo-lena",
-    email: "lena@demo.studienbuch.app",
+    account: Demo.accounts.lena,
+    email: `lena@${Demo.emailDomain}`,
     notebook: Notebook.Id.make("demo-lena"),
     courses: (["ma", "de", "en", "bi", "ge", "ku", "sp"] as const).map(course),
   },
   tom: {
-    account: "demo-tom",
-    email: "tom@demo.studienbuch.app",
+    account: Demo.accounts.tom,
+    email: `tom@${Demo.emailDomain}`,
     notebook: Notebook.Id.make("demo-tom"),
     courses: (["ma", "de", "en", "ch", "pw", "mu", "sp"] as const).map(course),
   },
