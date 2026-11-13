@@ -52,7 +52,7 @@ export function OnboardingScreen({ accountId, reading }: OnboardingScreenProps) 
         />
       )}
       <View style={styles.signOut}>
-        <SignOutButton pending={0} />
+        <SignOutButton />
       </View>
     </AuthShell>
   );

@@ -13,7 +13,7 @@ import { MemoryKeychain } from "../keychain/MemoryKeychain.ts";
 import { AuthApiTesting } from "./AuthApiTesting.ts";
 import { SessionStore } from "./SessionStore.ts";
 
-const lena = { accountId: "lena", token: Redacted.make("token-1") };
+const lena = { accountId: "lena", token: Redacted.make("token-1"), demo: true };
 
 const device = Layer.mergeAll(
   Device.layer({ name: "phone", publicComputer: false }),
@@ -34,24 +34,30 @@ const tokenOf = (signed: Option.Option<SessionStore.Signed>) =>
   );
 
 describe("SessionStore", () => {
-  it.effect("keeps the account across restarts, and forgets it at sign-out", () =>
-    Effect.gen(function* () {
-      yield* restarted(Effect.flatMap(SessionStore.Service, (store) => store.signedIn(lena)));
+  it.effect(
+    "keeps the account and its demo sign-in across restarts, and forgets it at sign-out",
+    () =>
+      Effect.gen(function* () {
+        yield* restarted(Effect.flatMap(SessionStore.Service, (store) => store.signedIn(lena)));
 
-      const afterRestart = yield* restarted(
-        Effect.flatMap(SessionStore.Service, (store) => store.current),
-      );
+        const afterRestart = yield* restarted(
+          Effect.flatMap(SessionStore.Service, (store) => store.current),
+        );
 
-      assert.deepStrictEqual(tokenOf(afterRestart), Option.some("token-1"));
+        assert.deepStrictEqual(tokenOf(afterRestart), Option.some("token-1"));
+        assert.deepStrictEqual(
+          Option.map(afterRestart, (signed) => signed.demo),
+          Option.some(true),
+        );
 
-      yield* restarted(Effect.flatMap(SessionStore.Service, (store) => store.forget));
+        yield* restarted(Effect.flatMap(SessionStore.Service, (store) => store.forget));
 
-      assert.isTrue(
-        Option.isNone(
-          yield* restarted(Effect.flatMap(SessionStore.Service, (store) => store.current)),
-        ),
-      );
-    }).pipe(Effect.provide(MemoryKeychain.layer())),
+        assert.isTrue(
+          Option.isNone(
+            yield* restarted(Effect.flatMap(SessionStore.Service, (store) => store.current)),
+          ),
+        );
+      }).pipe(Effect.provide(MemoryKeychain.layer())),
   );
 
   it.effect("ends the engine's session when the server forgot it while the app was away", () =>

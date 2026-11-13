@@ -247,7 +247,7 @@ export const make = Effect.fn("LabDevice.make")(function* (spec: Spec) {
     }
 
     const account = yield* accounts.signIn(spec.persona);
-    yield* store.signedIn(account);
+    yield* store.signedIn({ accountId: account.accountId, token: account.token, demo: false });
 
     return { accountId: account.accountId, rootKey: Option.some(account.rootKey) };
   });

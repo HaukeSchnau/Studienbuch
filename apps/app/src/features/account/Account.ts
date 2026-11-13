@@ -1,5 +1,6 @@
 import { Access } from "@stu/api/Access";
 import { Accounts } from "@stu/api/Accounts";
+import { Demo } from "@stu/api/Demo";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
@@ -142,18 +143,24 @@ const refuseOtherAccount = Effect.fn("Account.refuseOtherAccount")(function* (
   }
 });
 
-/** Keeps a new session, so the device is signed in, unless another account holds the device. */
-export const keep = Effect.fn("Account.keep")(function* (signedIn: AuthApi.SignedIn) {
+/**
+ * Keeps a new session, so the device is signed in, unless another account holds the device.
+ * `demo` marks a demo account's password sign-in (`Demo.isDemoSignIn`).
+ */
+export const keep = Effect.fn("Account.keep")(function* (signedIn: AuthApi.SignedIn, demo = false) {
   const store = yield* SessionStore.Service;
 
   yield* refuseOtherAccount(signedIn);
-  yield* store.signedIn(signedIn).pipe(Effect.mapError(() => new Problem({ reason: "failed" })));
+  yield* store
+    .signedIn({ ...signedIn, demo })
+    .pipe(Effect.mapError(() => new Problem({ reason: "failed" })));
 });
 
 export const signIn = Effect.fn("Account.signIn")(function* (email: string, password: string) {
   const api = yield* AuthApi.Service;
+  const signedIn = yield* api.signIn(email.trim(), password).pipe(Effect.mapError(problem));
 
-  yield* keep(yield* api.signIn(email.trim(), password).pipe(Effect.mapError(problem)));
+  yield* keep(signedIn, Demo.isDemoSignIn(email, signedIn.accountId));
 });
 
 /**
@@ -490,8 +497,8 @@ export const passkeyOutput = Effect.fn("Account.passkeyOutput")(function* (crede
 /**
  * Signs this device out: `forget` deletes the account's database, secrets and session
  * (`Layers.forget`), then the server ends the session. Offline the device still forgets
- * everything, and the session runs out on the server. The caller asks first when the outbox isn't
- * empty (`unsentWarning`).
+ * everything, and the session runs out on the server. The caller asks first unless the outbox is
+ * known to be empty (`unsentWarning`).
  */
 export const signOut = Effect.fn("Account.signOut")(function* <E, R>(
   forget: (accountId: string) => Effect.Effect<void, E, R>,
@@ -512,15 +519,27 @@ export const signOut = Effect.fn("Account.signOut")(function* <E, R>(
   );
 });
 
-/** What signing out would lose: "3 Änderungen sind noch nicht übertragen", or none. */
-export const unsentWarning = (pending: number): Option.Option<string> =>
-  pending === 0
-    ? Option.none()
-    : Option.some(
-        pending === 1
-          ? "1 Änderung ist noch nicht übertragen."
-          : `${pending} Änderungen sind noch nicht übertragen.`,
-      );
+/**
+ * What signing out would lose, from the engine's count of unsent commands: none only when it
+ * counted 0. While the engine starts, or when it didn't start, the device can't know.
+ */
+export const unsentWarning = (
+  unsent: AsyncResult.AsyncResult<number, unknown>,
+): Option.Option<string> => {
+  if (!AsyncResult.isSuccess(unsent)) {
+    return Option.some(
+      "Dieses Gerät kann gerade nicht prüfen, ob alle Änderungen übertragen sind. Wenn du dich jetzt abmeldest, sind nicht übertragene Änderungen weg.",
+    );
+  }
+
+  if (unsent.value === 0) return Option.none();
+
+  return Option.some(
+    unsent.value === 1
+      ? "1 Änderung ist noch nicht übertragen. Wenn du dich jetzt abmeldest, ist sie weg."
+      : `${unsent.value} Änderungen sind noch nicht übertragen. Wenn du dich jetzt abmeldest, sind sie weg.`,
+  );
+};
 
 /**
  * What the device can show: an account with a live session, one whose session ended (its data

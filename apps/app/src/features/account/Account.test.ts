@@ -160,7 +160,7 @@ describe("Account", () => {
       yield* Effect.gen(function* () {
         const sessions = yield* SessionStore.Service;
 
-        yield* sessions.signedIn(signedIn("lena", "token-lena"));
+        yield* sessions.signedIn({ ...signedIn("lena", "token-lena"), demo: false });
         yield* sessions.ended;
 
         const refused = yield* Effect.flip(Account.signIn("tom@example.org", "geheim-genug"));
@@ -312,7 +312,7 @@ describe("Account", () => {
       yield* Effect.gen(function* () {
         const sessions = yield* SessionStore.Service;
 
-        yield* sessions.signedIn(signedIn("lena", "token-lena"));
+        yield* sessions.signedIn({ ...signedIn("lena", "token-lena"), demo: false });
         yield* Account.signOut((accountId) =>
           Ref.update(forgotten, (accounts) => [...accounts, accountId]),
         );
@@ -469,6 +469,64 @@ describe("Account", () => {
     }).pipe(Effect.provide(store)),
   );
 
+  // A server could call any account a demo account to hand over a key it knows (ADR 0027), so
+  // only the address typed here, answered with a persona's account, makes one.
+  it.effect(
+    "keeps a session as a demo account's only after a persona's password sign-in at a demo address",
+    () =>
+      Effect.gen(function* () {
+        const sessions = yield* SessionStore.Service;
+
+        const demo = Effect.map(
+          sessions.current,
+          Option.map((signed) => signed.demo),
+        );
+
+        yield* Account.signIn(" Lena@Demo.Studienbuch.App ", "review-passwort");
+        const typed = yield* demo;
+        yield* Account.signIn("lena@notdemo.studienbuch.app", "review-passwort");
+        const lookalike = yield* demo;
+        yield* Account.signIn("lena@demo.studienbuch.app", "review-passwort");
+        yield* Account.signInWithPasskey();
+        const passkey = yield* demo;
+        yield* sessions.forget;
+        yield* Account.signIn("lena@demo.studienbuch.app", "echtes-konto");
+        const realAccount = yield* demo;
+
+        assert.deepStrictEqual(
+          { typed, lookalike, passkey, realAccount },
+          {
+            typed: Option.some(true),
+            lookalike: Option.some(false),
+            passkey: Option.some(false),
+            realAccount: Option.some(false),
+          },
+        );
+      }).pipe(
+        Effect.provide(
+          Layer.mergeAll(
+            store,
+            AuthApiTesting.layer({
+              // A dishonest server answers one password with an ordinary account.
+              signIn: (_email, password) =>
+                Effect.succeed(
+                  signedIn(password === "echtes-konto" ? "lena" : "demo-lena", "token-password"),
+                ),
+              passkeySignInOptions: Effect.succeed({
+                options: { challenge: "challenge" },
+                challenge: "challenge",
+              }),
+              passkeySignIn: () => Effect.succeed(signedIn("demo-lena", "token-passkey")),
+            }),
+            Layer.succeed(Passkeys.Authenticator)({
+              create: () => Effect.die("no passkey was created"),
+              get: () => Effect.succeed({ credential, prf: Option.none() }),
+            }),
+          ),
+        ),
+      ),
+  );
+
   it.effect("says the server failed rather than that the device is offline", () =>
     Effect.gen(function* () {
       const reasonFor = (error: AuthApi.Refused | AuthApi.Unreachable | AuthApi.ServerFailed) =>
@@ -494,7 +552,7 @@ describe("Account", () => {
   it("tells a signed-in device from one whose session ended or that can't hold an account", () => {
     const signed = (token: Option.Option<string>) =>
       AsyncResult.success(
-        Option.some({ accountId: "lena", token: Option.map(token, Redacted.make) }),
+        Option.some({ accountId: "lena", token: Option.map(token, Redacted.make), demo: false }),
       );
 
     assert.deepStrictEqual(
@@ -507,5 +565,17 @@ describe("Account", () => {
       ].map(Account.access),
       ["loading", "unavailable", "signed-out", "signed-in", "ended"],
     );
+  });
+
+  // Signing out deletes the outbox. Only a count the engine read lets it go without asking.
+  it("asks before signing out unless the engine counted no unsent change", () => {
+    const asks = [
+      AsyncResult.success(0),
+      AsyncResult.success(1),
+      AsyncResult.initial(),
+      AsyncResult.fail("AccountDatabase.Unavailable"),
+    ].map((unsent) => Option.isSome(Account.unsentWarning(unsent)));
+
+    assert.deepStrictEqual(asks, [false, true, true, true]);
   });
 });
