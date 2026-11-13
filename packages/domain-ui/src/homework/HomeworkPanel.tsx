@@ -1,4 +1,3 @@
-import { Button } from "@stu/ui/Button";
 import { Text } from "@stu/ui/Text";
 import { Theme } from "@stu/ui/Theme";
 import { TickedBox } from "@stu/ui/TickBox";
@@ -22,8 +21,11 @@ import type { HomeworkItem } from "./HomeworkItem.ts";
 export interface HomeworkPanelProps {
   /** The homework to show, `undefined` while the device still reads it. */
   readonly items: ReadonlyArray<HomeworkItem.Item> | undefined;
-  /** Set while this device has no key to the notebook. The panel offers to unlock instead. */
-  readonly locked?: { readonly onUnlock: () => void } | undefined;
+  /**
+   * The device has no key to the notebook. The panel says so, and the app's notice above the
+   * screen offers to unlock.
+   */
+  readonly locked?: boolean;
   /** Ticks a homework done, or opens it again. */
   readonly onToggle: (id: string, done: boolean) => void;
   /** The app runs the panel to the screen's bottom. */
@@ -60,11 +62,10 @@ export function HomeworkPanel({ items, locked, onToggle, style }: HomeworkPanelP
         <Text variant="title1" accessibilityRole="header" aria-level={2} style={styles.title}>
           Hausaufgaben
         </Text>
-        {locked !== undefined ? (
+        {locked === true ? (
           <Notice
             title="Dein Notizbuch ist gesperrt"
             text="Deine Hausaufgaben sind verschlüsselt. Entsperr dein Notizbuch, dann stehen sie hier."
-            action={{ label: "Entsperren", onPress: locked.onUnlock }}
           />
         ) : items === undefined ? null : shown.length === 0 ? (
           <Notice
@@ -136,12 +137,10 @@ function Notice({
   title,
   text,
   picture,
-  action,
 }: {
   readonly title: string;
   readonly text: string;
   readonly picture?: ReactNode;
-  readonly action?: { readonly label: string; readonly onPress: () => void };
 }) {
   const { color } = Theme.useTheme();
 
@@ -157,11 +156,6 @@ function Notice({
       <Text variant="subhead" style={[styles.noticeText, { color: color.panelSoft }]}>
         {text}
       </Text>
-      {action === undefined ? null : (
-        <View style={styles.noticeAction}>
-          <Button small kind="quiet" icon="lock" label={action.label} onPress={action.onPress} />
-        </View>
-      )}
     </View>
   );
 }
@@ -196,5 +190,4 @@ const styles = StyleSheet.create({
   },
   noticeTitle: { color: onPanel, textAlign: "center", marginTop: Tokens.space.sm },
   noticeText: { textAlign: "center" },
-  noticeAction: { marginTop: Tokens.space.md },
 });

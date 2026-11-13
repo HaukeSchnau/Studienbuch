@@ -75,8 +75,8 @@ function AccountOverview({ accountId }: { readonly accountId: string }) {
         children: (
           <Arrive delay={220} style={styles.grow}>
             <HomeworkPanel
-              items={Option.getOrUndefined(Option.map(panel, (p) => p.items))}
-              locked={locked ? { onUnlock: () => router.push("/notizbuch-entsperren") } : undefined}
+              items={Option.getOrUndefined(panel)?.items}
+              locked={locked}
               onToggle={setDone}
               style={styles.grow}
             />
