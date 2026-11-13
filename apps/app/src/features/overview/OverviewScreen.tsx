@@ -57,10 +57,7 @@ function AccountOverview({ accountId }: { readonly accountId: string }) {
       title={Option.match(name, { onNone: () => "Moin!", onSome: (first) => `Moin, ${first}!` })}
       underline
       subtitle={DateText.long(today)}
-      status={Option.match(offline, {
-        onNone: () => null,
-        onSome: ({ waiting }) => <OfflineChip waiting={waiting} />,
-      })}
+      status={<OfflineChip offline={offline} />}
       // The way to this device and to signing out, until Mein Profil holds them.
       aside={
         <Pill

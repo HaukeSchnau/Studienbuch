@@ -1,7 +1,6 @@
 import type { CivilTime, Notebook } from "@stu/core";
 import { HomeworkItem } from "@stu/domain-ui/homework/HomeworkItem";
 import { type Outbox, SyncClient } from "@stu/sync/client";
-import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
@@ -9,10 +8,13 @@ import * as Atom from "effect/reactivity/Atom";
 import * as Stream from "effect/Stream";
 
 import { AccountEngine } from "../../infra/runtime/AccountEngine.ts";
+import { Account } from "../account/Account.ts";
+import { AccountState } from "../account/AccountState.ts";
 import { HomeworkState } from "../homework/HomeworkState.ts";
 import { Refused } from "../homework/Refused.ts";
 import { KeysState } from "../keys/KeysState.ts";
 import { OnboardingState } from "../onboarding/OnboardingState.ts";
+import { Offline } from "./Offline.ts";
 
 // What the Übersicht shows, put together from the account's atoms, so its screen only draws.
 
@@ -24,7 +26,10 @@ export interface Overview {
   readonly today: CivilTime.PlainDate;
   /** The device doesn't hold the notebook's key: it is `Locked`, or `Offline` or `NotHere`. */
   readonly locked: boolean;
-  /** `Some` with the changes that wait for the server while the device has no connection. */
+  /**
+   * `Some` with the changes that wait for the server while the device has no connection. Not while
+   * the session has ended, which the account's notice says instead.
+   */
   readonly offline: Option.Option<{ readonly waiting: number }>;
   /** `None` until the device has read the notebook, or when the account has none. */
   readonly panel: Option.Option<Panel>;
@@ -44,19 +49,14 @@ export interface Panel {
 
 const runtime = Atom.family((accountId: string) => Atom.runtime(AccountEngine.app(accountId)));
 
-/**
- * Whether the engine is offline, and how many changes wait for the server. The engine passes
- * through "offline" between its attempts to connect, so the flag follows only after 2 seconds.
- */
+/** Whether the engine is offline (`Offline.shown`), and how many changes wait for the server. */
 const connection = Atom.family((accountId: string) =>
   runtime(accountId).atom(
     Stream.unwrap(
       Effect.map(SyncClient.Service, (sync) =>
         Stream.zipLatest(
-          sync.status.changes.pipe(
-            Stream.map((status) => status.connection !== "online"),
-            Stream.changes,
-            Stream.debounce(Duration.seconds(2)),
+          Offline.shown(
+            sync.status.changes.pipe(Stream.map((status) => status.connection !== "online")),
           ),
           sync.status.changes.pipe(
             Stream.map((status) => status.waiting),
@@ -90,10 +90,12 @@ export const overview = Atom.family((accountId: string) =>
 
     if (Option.isNone(onboarding) || Option.isNone(today)) return Option.none();
 
-    const offline = Option.flatMap(
+    const disconnected = Option.filter(
       AsyncResult.value(get(connection(accountId))),
-      ([disconnected, waiting]) => (disconnected ? Option.some({ waiting }) : Option.none()),
+      ([offline]) => offline,
     );
+
+    const ended = Account.access(get(AccountState.current)) === "ended";
 
     // `None` until the device knows where it stands with the notebook's key.
     const unlocked = Option.map(
@@ -108,7 +110,7 @@ export const overview = Atom.family((accountId: string) =>
           : Option.none(),
       today: today.value,
       locked: Option.contains(unlocked, false),
-      offline,
+      offline: ended ? Option.none() : Option.map(disconnected, ([, waiting]) => ({ waiting })),
       panel: Option.map(reading, (value) => {
         const titles = new Map(value.homework.map((each) => [each.id, each.title]));
 
@@ -119,7 +121,7 @@ export const overview = Atom.family((accountId: string) =>
                 // Online, a change settles within a second, so its marker would only flicker.
                 value.homework.map((each) => ({
                   ...each,
-                  waiting: each.waiting && Option.isSome(offline),
+                  waiting: each.waiting && Option.isSome(disconnected),
                 })),
                 today.value,
               )
