@@ -25,8 +25,8 @@ it.effect("keeps both sessions when two accounts sign in at once", () =>
 
     yield* Effect.all(
       [
-        sessions.set("lena", Redacted.make("token-lena")),
-        sessions.set("tom", Redacted.make("token-tom")),
+        sessions.set({ accountId: "lena", token: Redacted.make("token-lena"), demo: false }),
+        sessions.set({ accountId: "tom", token: Redacted.make("token-tom"), demo: false }),
       ],
       { concurrency: "unbounded" },
     );

@@ -56,7 +56,7 @@ export function DiagnosticsScreen() {
         <StatusRow {...cryptoRow(selfTest)} onPress={() => router.push("/selbsttest")} />
         <StatusRow {...storageRow(storage, persistence)} />
       </Card>
-      <SignOutButton pending={0} />
+      <SignOutButton />
     </HeroScreen>
   );
 }
