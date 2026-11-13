@@ -13,6 +13,7 @@ import { AccountState } from "../account/AccountState.ts";
 import { HomeworkState } from "../homework/HomeworkState.ts";
 import { Refused } from "../homework/Refused.ts";
 import { KeysState } from "../keys/KeysState.ts";
+import { NotebookKeys } from "../keys/NotebookKeys.ts";
 import { OnboardingState } from "../onboarding/OnboardingState.ts";
 import { Offline } from "./Offline.ts";
 
@@ -24,7 +25,10 @@ export interface Overview {
   /** The first name from the encrypted profile, which a locked device can't read. */
   readonly name: Option.Option<string>;
   readonly today: CivilTime.PlainDate;
-  /** The device doesn't hold the notebook's key: it is `Locked`, or `Offline` or `NotHere`. */
+  /**
+   * The device doesn't hold the notebook's key: it is `Locked`, `Offline` or `NotHere`, or its status
+   * failed (`NotebookKeys.unlocked`).
+   */
   readonly locked: boolean;
   /**
    * `Some` with the changes that wait for the server while the device has no connection. Not while
@@ -97,11 +101,7 @@ export const overview = Atom.family((accountId: string) =>
 
     const ended = Account.access(get(AccountState.current)) === "ended";
 
-    // `None` until the device knows where it stands with the notebook's key.
-    const unlocked = Option.map(
-      AsyncResult.value(get(KeysState.status(accountId))),
-      (status) => status._tag === "Unlocked",
-    );
+    const unlocked = NotebookKeys.unlocked(get(KeysState.status(accountId)));
 
     return Option.some({
       name:

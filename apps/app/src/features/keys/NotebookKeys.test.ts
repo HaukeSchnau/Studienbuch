@@ -7,6 +7,7 @@ import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Redacted from "effect/Redacted";
 import * as Ref from "effect/Ref";
 import * as Stream from "effect/Stream";
@@ -221,6 +222,25 @@ const reasonOf = <A, R>(
   );
 
 describe("NotebookKeys", () => {
+  it("a status that failed counts as locked, and only a loading one as not known yet", () => {
+    const unlocked = NotebookKeys.Status.Unlocked();
+    const refused = new Ports.SecretsUnavailable({ secret: "root-key" });
+
+    for (const [status, expected] of [
+      [AsyncResult.initial(), Option.none()],
+      [AsyncResult.initial(true), Option.none()],
+      [AsyncResult.success(unlocked), Option.some(true)],
+      [AsyncResult.success(NotebookKeys.Status.Offline()), Option.some(false)],
+      [AsyncResult.fail(refused), Option.some(false)],
+      [
+        AsyncResult.fail(refused, { previousSuccess: Option.some(AsyncResult.success(unlocked)) }),
+        Option.some(true),
+      ],
+    ] as const) {
+      assert.deepStrictEqual(NotebookKeys.unlocked(status), expected);
+    }
+  });
+
   it.effect(
     "the first device starts the key, and a second device opens it with the Notfallkarte",
     () =>

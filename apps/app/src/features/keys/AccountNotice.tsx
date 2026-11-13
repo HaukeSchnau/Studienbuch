@@ -13,6 +13,7 @@ import { SafeAreaInsetsContext, useSafeAreaInsets } from "react-native-safe-area
 import { StoragePersistence } from "../../infra/offline/StoragePersistence.ts";
 import { AccountState } from "../account/AccountState.ts";
 import { KeysState } from "./KeysState.ts";
+import { NotebookKeys } from "./NotebookKeys.ts";
 
 // The address on the landing page (apps/web, `Site.email`). Both move to one place with the first
 // shared contact screen.
@@ -51,9 +52,7 @@ function Notice({
   const { color } = Theme.useTheme();
   const access = AccountState.useAccess();
 
-  const status = Option.getOrUndefined(
-    AsyncResult.value(useAtomValue(KeysState.status(accountId))),
-  );
+  const unlocked = NotebookKeys.unlocked(useAtomValue(KeysState.status(accountId)));
 
   const held = Option.getOrUndefined(KeysState.useHeld(accountId));
   const mismatch = useAtomValue(KeysState.mismatch(accountId));
@@ -72,7 +71,7 @@ function Notice({
           action: "Anmelden",
           go: () => router.push("/anmelden"),
         }
-      : status !== undefined && status._tag !== "Unlocked"
+      : Option.contains(unlocked, false)
         ? {
             text: "Dein Notizbuch ist gesperrt.",
             action: "Entsperren",
