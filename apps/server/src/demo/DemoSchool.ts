@@ -92,13 +92,13 @@ export interface Persona {
  */
 export const personas: Readonly<Record<Demo.Persona, Persona>> = {
   lena: {
-    account: "demo-lena",
+    account: Demo.accounts.lena,
     email: `lena@${Demo.emailDomain}`,
     notebook: Notebook.Id.make("demo-lena"),
     courses: (["ma", "de", "en", "bi", "ge", "ku", "sp"] as const).map(course),
   },
   tom: {
-    account: "demo-tom",
+    account: Demo.accounts.tom,
     email: `tom@${Demo.emailDomain}`,
     notebook: Notebook.Id.make("demo-tom"),
     courses: (["ma", "de", "en", "ch", "pw", "mu", "sp"] as const).map(course),

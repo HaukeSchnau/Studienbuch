@@ -16,12 +16,17 @@ export type Persona = typeof Persona.Type;
 /** The domain of the demo accounts' addresses, a domain of ours. */
 export const emailDomain = "demo.studienbuch.app";
 
+/** Each persona's account id. It is fixed, so every seed finds the account again. */
+export const accounts: Readonly<Record<Persona, string>> = { lena: "demo-lena", tom: "demo-tom" };
+
 /**
- * A demo account's address, as typed. A device asks for the root key only after a sign-in with
- * one, since it can't take the server's word that an account is a demo account.
+ * A password sign-in typed at a demo account's address that the server answered with a persona's
+ * account. A device asks for the root key only after one, since it can't take the server's word
+ * that an account is a demo account.
  */
-export const isDemoAddress = (email: string) =>
-  email.trim().toLowerCase().endsWith(`@${emailDomain}`);
+export const isDemoSignIn = (email: string, accountId: string) =>
+  email.trim().toLowerCase().endsWith(`@${emailDomain}`) &&
+  Object.values(accounts).includes(accountId);
 
 const RootKeyBytes = Schema.Uint8Array.check(Schema.isBetweenLength(32, 32));
 

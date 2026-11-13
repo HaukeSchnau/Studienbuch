@@ -470,9 +470,9 @@ describe("Account", () => {
   );
 
   // A server could call any account a demo account to hand over a key it knows (ADR 0027), so
-  // only the address typed here makes one.
+  // only the address typed here, answered with a persona's account, makes one.
   it.effect(
-    "keeps a session as a demo account's only after a password sign-in at a demo address",
+    "keeps a session as a demo account's only after a persona's password sign-in at a demo address",
     () =>
       Effect.gen(function* () {
         const sessions = yield* SessionStore.Service;
@@ -489,17 +489,29 @@ describe("Account", () => {
         yield* Account.signIn("lena@demo.studienbuch.app", "review-passwort");
         yield* Account.signInWithPasskey();
         const passkey = yield* demo;
+        yield* sessions.forget;
+        yield* Account.signIn("lena@demo.studienbuch.app", "echtes-konto");
+        const realAccount = yield* demo;
 
         assert.deepStrictEqual(
-          { typed, lookalike, passkey },
-          { typed: Option.some(true), lookalike: Option.some(false), passkey: Option.some(false) },
+          { typed, lookalike, passkey, realAccount },
+          {
+            typed: Option.some(true),
+            lookalike: Option.some(false),
+            passkey: Option.some(false),
+            realAccount: Option.some(false),
+          },
         );
       }).pipe(
         Effect.provide(
           Layer.mergeAll(
             store,
             AuthApiTesting.layer({
-              signIn: () => Effect.succeed(signedIn("demo-lena", "token-password")),
+              // A dishonest server answers one password with an ordinary account.
+              signIn: (_email, password) =>
+                Effect.succeed(
+                  signedIn(password === "echtes-konto" ? "lena" : "demo-lena", "token-password"),
+                ),
               passkeySignInOptions: Effect.succeed({
                 options: { challenge: "challenge" },
                 challenge: "challenge",

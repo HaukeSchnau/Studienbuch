@@ -145,7 +145,7 @@ const refuseOtherAccount = Effect.fn("Account.refuseOtherAccount")(function* (
 
 /**
  * Keeps a new session, so the device is signed in, unless another account holds the device.
- * `demo` marks a password sign-in at a demo account's address (`SessionStore.Signed`).
+ * `demo` marks a demo account's password sign-in (`Demo.isDemoSignIn`).
  */
 export const keep = Effect.fn("Account.keep")(function* (signedIn: AuthApi.SignedIn, demo = false) {
   const store = yield* SessionStore.Service;
@@ -160,7 +160,7 @@ export const signIn = Effect.fn("Account.signIn")(function* (email: string, pass
   const api = yield* AuthApi.Service;
   const signedIn = yield* api.signIn(email.trim(), password).pipe(Effect.mapError(problem));
 
-  yield* keep(signedIn, Demo.isDemoAddress(email));
+  yield* keep(signedIn, Demo.isDemoSignIn(email, signedIn.accountId));
 });
 
 /**
