@@ -566,4 +566,16 @@ describe("Account", () => {
       ["loading", "unavailable", "signed-out", "signed-in", "ended"],
     );
   });
+
+  // Signing out deletes the outbox. Only a count the engine read lets it go without asking.
+  it("asks before signing out unless the engine counted no unsent change", () => {
+    const asks = [
+      AsyncResult.success(0),
+      AsyncResult.success(1),
+      AsyncResult.initial(),
+      AsyncResult.fail("AccountDatabase.Unavailable"),
+    ].map((unsent) => Option.isSome(Account.unsentWarning(unsent)));
+
+    assert.deepStrictEqual(asks, [false, true, true, true]);
+  });
 });
