@@ -3,6 +3,7 @@
  * invariants. On PGlite a workload sends the same frames and logs the same lines on every run. On
  * PostgreSQL 18 it does the same things, but concurrent answers may arrive in another order.
  */
+import { CryptoSuite, SealedRow } from "@stu/e2ee";
 import * as Arbitrary from "effect/Arbitrary";
 import * as Cause from "effect/Cause";
 import * as Duration from "effect/Duration";
@@ -21,6 +22,7 @@ import { Outbox } from "../client/Outbox.ts";
 import { SyncClient } from "../client/SyncClient.ts";
 import { Faults } from "../lab/Faults.ts";
 import type { Listener } from "../server/Listener.ts";
+import { Pokes } from "../server/Pokes.ts";
 import { Spaces } from "../server/Spaces.ts";
 import { SyncWriter } from "../server/SyncWriter.ts";
 import { Invariants } from "./Invariants.ts";
@@ -29,12 +31,6 @@ import { Planner } from "./Planner.ts";
 import { World } from "./World.ts";
 
 export * as Simulation from "./Simulation.ts";
-
-/**
- * The engine sends no `Seal` yet (M1-WP-7's next PR), so a note would wait in the outbox for good
- * and hold back every later command. Note steps do nothing until it does.
- */
-export const sealing = false;
 
 const Device = Schema.Literals(World.deviceIds);
 
@@ -171,7 +167,28 @@ export const padding = Wait.make({ millis: 0 });
 
 const isPadding = (step: Step) => step._tag === "Wait" && step.millis === 0;
 
-const noteSteps = [Add, Rename, Toggle, Remove] as const;
+/**
+ * The device restarts without the account's root key, as after a start with the keychain locked:
+ * it holds back the notes it can't seal yet, and parks what it can't open, until `Unlock`.
+ */
+export const Lock = Schema.TaggedStruct("Lock", { device: Device });
+
+/** The device gets the account's keys, as from a passkey or the Notfallkarte. */
+export const Unlock = Schema.TaggedStruct("Unlock", { device: Device });
+
+/** The device sets the notebook's profile, which every device writes under one id. */
+export const Name = Schema.TaggedStruct("Name", { device: Device });
+
+/**
+ * Another device of the account, on a build one row format ahead, writes the notebook's profile:
+ * every device here holds it unopened, and must not write over it. Nothing happens to a notebook
+ * without a key epoch yet.
+ */
+export const NewerFormat = Schema.TaggedStruct("NewerFormat", {
+  account: Schema.Literals(World.accountIds),
+});
+
+const noteSteps = [Add, Rename, Toggle, Remove, Name, NewerFormat, Lock, Unlock] as const;
 
 const readableSteps = [
   Choose,
@@ -203,21 +220,20 @@ export type Step = typeof Step.Type;
 export const Workload = Schema.Struct({
   /** Seeds `Random` for everything in the run: ids, client ids, the restore epoch's id. */
   seed: Schema.Int,
-  steps: Schema.Array(Step).check(Schema.isMaxLength(40)),
+  steps: Schema.Array(Step).check(Schema.isMaxLength(60)),
 });
 
 export type Workload = typeof Workload.Type;
 
-/**
- * What random workloads draw from: at least 15 steps, so each reaches its faults. Until the engine
- * seals, a note step would only fill a workload with steps that do nothing, so they stay out.
- */
+/** What random workloads draw from: at least 15 steps, so each reaches its faults. */
 const Generated = Schema.Struct({
   seed: Schema.Int,
-  // `Choose` three times over: it is the one command, and most faults act on what commands send.
-  steps: Schema.Array(
-    Schema.Union([...(sealing ? noteSteps : []), Choose, Choose, ...readableSteps]),
-  ).check(Schema.isMinLength(15), Schema.isMaxLength(40)),
+  // `Choose` three times over: it is the one readable command, and most faults act on what
+  // commands send.
+  steps: Schema.Array(Schema.Union([...noteSteps, Choose, Choose, ...readableSteps])).check(
+    Schema.isMinLength(15),
+    Schema.isMaxLength(40),
+  ),
 });
 
 /**
@@ -331,6 +347,67 @@ const offer = (change: { readonly course: string; readonly offered: boolean }) =
     ),
   );
 
+const encodeEnvelope = Schema.encodeEffect(
+  Schema.fromJsonString(Schema.toCodecJson(SealedRow.Envelope)),
+);
+
+/**
+ * The notebook's profile as a build one row format ahead writes it, under the notebook's key epoch.
+ * This server refuses a format it doesn't know, so the row goes in as a newer server would store
+ * it, with a poke. `None` for a notebook without a key epoch.
+ */
+const newerProfile = Effect.fnUntraced(function* (account: World.Account) {
+  const sql = yield* SqlClient.SqlClient;
+  const notebook = World.accounts[account];
+
+  const ct = Uint8Array.from(
+    yield* Effect.all(Array.from({ length: 64 }, () => Random.nextIntBetween(0, 255))),
+  );
+
+  return yield* sql.withTransaction(
+    Effect.gen(function* () {
+      const [space] = yield* sql<{ readonly epoch: number | null }>`
+        select key_epoch as epoch from space where id = ${notebook} for no key update
+      `;
+
+      if (space === undefined || space.epoch === null) return Option.none<Invariants.Newer>();
+
+      const [bumped] = yield* sql<{ readonly version: number }>`
+        update space set version = version + 1 where id = ${notebook}
+        returning version::float8 as version
+      `;
+
+      if (bumped === undefined)
+        return yield* Effect.die(`The locked space ${notebook} disappeared`);
+
+      const envelope = yield* encodeEnvelope(
+        new SealedRow.Envelope({
+          format: SealedRow.format + 1,
+          suite: CryptoSuite.id,
+          keyEpoch: space.epoch,
+          author: account,
+        }),
+      );
+
+      yield* sql`
+        insert into sync_row (space_id, tbl, id, version, envelope, ct)
+        values (${notebook}, '', ${notebook}, ${bumped.version}, ${envelope}::jsonb, ${ct})
+        on conflict (space_id, tbl, id) do update set version = excluded.version, data = null,
+          envelope = excluded.envelope, ct = excluded.ct, written_by_client = null,
+          written_by_mutation = null
+      `;
+      yield* Pokes.notify({ spaces: [{ space: notebook, version: bumped.version }], accounts: [] });
+
+      return Option.some({ space: notebook, id: notebook, version: bumped.version });
+    }),
+  );
+});
+
+/** The tables whose rows only devices read. */
+const encrypted = Planner.schema.tables.flatMap((table) =>
+  table.class === "encrypted" ? [table.name] : [],
+);
+
 /** Where the membership rule reads a notebook's chosen courses. */
 const choice = { table: Planner.Choice.name, id: Planner.choiceId, kind: Planner.Course.name };
 
@@ -350,6 +427,20 @@ const describe = <A, E extends { readonly _tag: string }>(
   });
 
 const queued = (mutation: SyncClient.Mutation) => `queued #${mutation.mutationId}`;
+
+interface Client {
+  readonly id: string;
+  readonly settled: number;
+}
+
+/** The mutation id a fired forge went out under, which its event names last. */
+const forgedId = (event: Faults.Event) => {
+  const id = / on mutation (\d+)$/u.exec(event.detail)?.[1];
+
+  return id === undefined
+    ? Effect.die(`A forge's event names no mutation id: ${event.detail}`)
+    : Effect.succeed(Number(id));
+};
 
 export const run = (workload: Workload) =>
   Effect.gen(function* () {
@@ -405,9 +496,44 @@ export const run = (workload: Workload) =>
     let markers = 0;
     let framesChecked = 0;
     let linesChecked = 0;
+    const deviceLinesChecked = new Map<World.DeviceId, number>();
     const marker = () => Leaks.marker(markers++);
 
     const faults = noFaults();
+
+    /** The rows a newer build wrote, by space and id, at the version it wrote last. */
+    const newer = new Map<string, Invariants.Newer>();
+
+    /** Each device's client id and the last mutation id it settled, as the last check read them. */
+    const clients = new Map<World.DeviceId, Client>();
+
+    /**
+     * The newest mutation id the server held under a client id when a device was restored into it
+     * with fewer settled. The restored device may make other commands under the ids up to it.
+     */
+    const restoredBehind = new Map<string, number>();
+
+    const clientOf = (on: World.Device) =>
+      on
+        .sql(
+          Effect.map(Outbox.meta, (meta): Client => ({
+            id: meta.clientId,
+            settled: meta.settledMutationId,
+          })),
+        )
+        .pipe(Effect.orDie);
+
+    /** The mutation ids each device's fired forges went out under, since its client id changed. */
+    const forgedIds = new Map<World.DeviceId, ReadonlyArray<number>>();
+
+    /**
+     * Whether the device may have sent two different commands under one id of `client` that it
+     * hasn't settled, which makes the server refuse the id: its own after one the server took
+     * before a restore, or its own and a forge's in either order.
+     */
+    const renumberCalledFor = (on: World.DeviceId, client: Client) =>
+      (restoredBehind.get(client.id) ?? 0) > client.settled ||
+      (forgedIds.get(on) ?? []).some((id) => id > client.settled);
 
     /** Arms a fault on `on` and counts it, unless one of its kind was armed already. */
     const arm = Effect.fn("Simulation.arm")(function* (
@@ -435,6 +561,10 @@ export const run = (workload: Workload) =>
           if (!isCounted(event.fault)) continue;
           faults[event.fault].fired += 1;
           trace.push(`  ${each.id} fired ${event.fault}: ${event.detail}`);
+
+          if (event.fault === "forge") {
+            forgedIds.set(each.id, [...(forgedIds.get(each.id) ?? []), yield* forgedId(event)]);
+          }
         }
       }
     });
@@ -516,7 +646,6 @@ export const run = (workload: Workload) =>
         case "Rename":
         case "Toggle":
         case "Remove": {
-          if (!sealing) return "skipped until the engine seals";
           const on = yield* device(step.device);
           const notebook = on.notebook;
 
@@ -539,6 +668,40 @@ export const run = (workload: Workload) =>
                 ? sync.mutate(Planner.toggle, { notebook, id, done: step.done })
                 : sync.mutate(Planner.remove, { notebook, id }),
           );
+        }
+
+        case "Name": {
+          const on = yield* device(step.device);
+
+          return yield* mutate(on, (sync) =>
+            sync.mutate(Planner.name, { notebook: on.notebook, name: marker() }),
+          );
+        }
+
+        case "NewerFormat": {
+          const written = yield* world.server(newerProfile(step.account)).pipe(Effect.orDie);
+
+          if (Option.isNone(written)) return "no key epoch yet";
+          newer.set(`${written.value.space} ${written.value.id}`, written.value);
+
+          return `wrote v${written.value.version}`;
+        }
+
+        case "Lock": {
+          const on = yield* device(step.device);
+          yield* on.lock;
+          const waiting = yield* on.sql(Outbox.pending).pipe(Effect.orDie);
+          const kept = waiting.filter((command) => command.sealed !== null).length;
+
+          return `locked, ${kept} sealed ${kept === 1 ? "command" : "commands"} kept`;
+        }
+
+        case "Unlock": {
+          const on = yield* device(step.device);
+
+          if (yield* on.unlocked) return "unlocked already";
+
+          return describe(yield* on.unlock, () => "unlocked");
         }
 
         case "Choose":
@@ -730,6 +893,13 @@ export const run = (workload: Workload) =>
 
           if (!(yield* on.restore)) return "no backup";
           dismissed.set(on.id, dismissedAtBackup.get(on.id) ?? new Set());
+          yield* world.quiet;
+          const restored = yield* clientOf(on);
+          const held = yield* world.server(Invariants.lastMutationId(restored.id));
+
+          if (held > restored.settled) restoredBehind.set(restored.id, held);
+          clients.set(on.id, restored);
+          forgedIds.delete(on.id);
 
           return "restored the backup";
         }
@@ -766,6 +936,19 @@ export const run = (workload: Workload) =>
         found.push(...(yield* each.sql(Invariants.replay(place, Planner.schema, each.account))));
         found.push(...(yield* each.sql(Invariants.gapless(place))));
         found.push(...(yield* each.sql(Invariants.cursors(place))));
+
+        const now = yield* clientOf(each);
+        const known = clients.get(each.id) ?? now;
+
+        if (known.id !== now.id) {
+          if (!renumberCalledFor(each.id, known)) {
+            found.push(Invariants.newClient(place, known.id, now.id));
+          }
+
+          forgedIds.delete(each.id);
+        }
+
+        clients.set(each.id, now);
       }
 
       for (const account of World.accountIds) {
@@ -777,6 +960,11 @@ export const run = (workload: Workload) =>
       }
 
       found.push(...(yield* world.server(Invariants.plaintextInPostgres(tables))));
+      found.push(...(yield* world.server(Invariants.newerKept([...newer.values()]))));
+
+      for (const leak of yield* world.server(Leaks.sealedRows).pipe(Effect.orDie)) {
+        found.push({ invariant: "plaintext", place: leak.place, detail: leak.excerpt });
+      }
 
       const frames = world.frames();
 
@@ -797,6 +985,17 @@ export const run = (workload: Workload) =>
         found.push(...Invariants.plaintextIn("server log", line));
 
       linesChecked = lines.length;
+
+      for (const each of world.devices.values()) {
+        const logged = each.lines();
+
+        for (const line of logged.slice(deviceLinesChecked.get(each.id) ?? 0)) {
+          found.push(...Invariants.plaintextIn(`device ${each.id} log`, line, Leaks.forms));
+        }
+
+        deviceLinesChecked.set(each.id, logged.length);
+      }
+
       found.push(...hung.splice(0));
 
       return found;
@@ -824,8 +1023,15 @@ export const run = (workload: Workload) =>
 
       yield* traceEvents;
 
-      for (const each of devices)
-        trace.push(`${label} ${each.id} ${yield* syncing(each, Duration.zero)}`);
+      for (const each of devices) {
+        const state = yield* syncing(each, Duration.zero);
+        const refused = yield* each.sql(SyncClient.refusals.run()).pipe(Effect.orDie);
+        const shown = refused.map((refusal) => `#${refusal.mutationId} ${refusal.reason._tag}`);
+
+        trace.push(
+          `${label} ${each.id} ${state}${shown.length === 0 ? "" : `, refused ${shown.join(", ")}`}`,
+        );
+      }
     });
 
     /** What must hold once the world is at rest. */
@@ -858,10 +1064,36 @@ export const run = (workload: Workload) =>
         found.push(
           ...Invariants.converged(
             place,
-            yield* each.sql(Invariants.deviceRows),
+            yield* each.sql(Invariants.deviceRows(encrypted)),
             yield* world.server(Invariants.serverRows(each.account)),
           ),
         );
+
+        found.push(
+          ...Invariants.sealedConverged(
+            place,
+            yield* each.sql(Invariants.deviceSealed),
+            yield* world.server(Invariants.serverSealed(each.account)),
+          ),
+        );
+      }
+
+      // Only devices read sealed rows, so the devices of one account compare what they opened.
+      for (const account of World.accountIds) {
+        const [first, ...others] = devices.filter((each) => each.account === account);
+
+        if (first === undefined) continue;
+        const shown = yield* first.sql(Invariants.openedRows(encrypted));
+
+        for (const other of others) {
+          found.push(
+            ...Invariants.sameOpened(
+              `devices ${first.id} and ${other.id}`,
+              shown,
+              yield* other.sql(Invariants.openedRows(encrypted)),
+            ),
+          );
+        }
       }
 
       return found;
@@ -872,6 +1104,7 @@ export const run = (workload: Workload) =>
     for (const each of devices) {
       trace.push(`start ${each.id} ${yield* syncing(each)}`);
       yield* each.backup;
+      clients.set(each.id, yield* clientOf(each));
     }
 
     /** What ran over the wire and on the server, comparable across runs and databases. */
@@ -899,10 +1132,15 @@ export const run = (workload: Workload) =>
       if (violations.length > 0) return result();
     }
 
-    // Every device back online at full speed. What is armed stays armed.
+    // Every device back online at full speed and unlocked, however late. What is armed stays
+    // armed.
     for (const each of devices) {
       yield* each.faults.setOffline(false);
       yield* each.faults.setLatency(Duration.zero);
+
+      if (!(yield* each.unlocked)) {
+        trace.push(`unlock ${each.id} ${describe(yield* each.unlock, () => "unlocked")}`);
+      }
     }
 
     // Nothing pulls on a timer, so a device a poke missed stays behind and shows here.

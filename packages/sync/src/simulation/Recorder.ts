@@ -157,17 +157,20 @@ export const make = Effect.sync(() => {
     },
   });
 
+  const logs = Layer.mergeAll(
+    Logger.layer([logger]),
+    Layer.succeed(References.MinimumLogLevel)("All"),
+  );
+
   return {
     /** Everything recorded so far, one line per log entry or ended span. */
     lines: (): ReadonlyArray<string> => lines,
     /** How many statements and transactions have started and not ended. */
     sqlInFlight: () => sql,
     /** Records a runtime's logs at every level, and its spans. */
-    layer: Layer.mergeAll(
-      Logger.layer([logger]),
-      Layer.succeed(Tracer.Tracer)(tracer),
-      Layer.succeed(References.MinimumLogLevel)("All"),
-    ),
+    layer: Layer.merge(logs, Layer.succeed(Tracer.Tracer)(tracer)),
+    /** Records a runtime's logs at every level, and none of its spans. */
+    logs,
   };
 });
 

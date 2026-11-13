@@ -8,5 +8,5 @@ import { Planner } from "./Planner.ts";
 
 export * as PlannerDevice from "./PlannerDevice.ts";
 
-export const { base_row, pending_row, sync_row_view, Note, Choice, Offer, Topic } =
-  DeviceSchema.make([Planner.Note, Planner.Choice, Planner.Offer, Planner.Topic]);
+export const { base_row, pending_row, sync_row_view, Note, Profile, Choice, Offer, Topic } =
+  DeviceSchema.make([Planner.Note, Planner.Profile, Planner.Choice, Planner.Offer, Planner.Topic]);
