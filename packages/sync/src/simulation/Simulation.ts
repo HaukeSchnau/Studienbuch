@@ -598,9 +598,12 @@ export const run = (workload: Workload) =>
         }
 
         case "Lock": {
-          yield* (yield* device(step.device)).lock;
+          const on = yield* device(step.device);
+          yield* on.lock;
+          const waiting = yield* on.sql(Outbox.pending).pipe(Effect.orDie);
+          const kept = waiting.filter((command) => command.sealed !== null).length;
 
-          return "locked";
+          return `locked, ${kept} sealed ${kept === 1 ? "command" : "commands"} kept`;
         }
 
         case "Unlock": {

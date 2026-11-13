@@ -78,6 +78,11 @@ const tour: Simulation.Workload = {
   ],
 };
 
+/** A fixed case, and trace lines that show it reached the state it is named for. */
+interface Case extends Simulation.Workload {
+  readonly reaches?: ReadonlyArray<string>;
+}
+
 /**
  * Small workloads, each the shortest path to one guard, which random workloads reach only now and
  * then.
@@ -145,6 +150,8 @@ const cases = {
       Simulation.Sync.make({ device: "b" }),
       Simulation.Unlock.make({ device: "b" }),
     ],
+    // b sealed its note under its own key, and the lock came before the server's answer.
+    reaches: ['10 {"_tag":"Lock","device":"b"} locked, 1 sealed command kept'],
   },
   // The server applied the Seal. Sent again with new bytes, it would answer `ClientUnknown`.
   "a sealed push whose answer was lost goes again byte for byte": {
@@ -156,12 +163,16 @@ const cases = {
       Simulation.Add.make({ device: "a", course: "course-de" }),
       Simulation.Sync.make({ device: "a" }),
     ],
+    reaches: ["  a fired dropNextResponse: Sync.push"],
   },
-} satisfies Record<string, Simulation.Workload>;
+} satisfies Record<string, Case>;
 
 const runCases = Effect.gen(function* () {
-  for (const [name, workload] of Object.entries(cases)) {
-    expect((yield* Simulation.run(workload)).violations, name).toStrictEqual([]);
+  for (const [name, { reaches = [], ...workload }] of Object.entries<Case>(cases)) {
+    const { trace, violations } = yield* Simulation.run(workload);
+
+    expect(violations, name).toStrictEqual([]);
+    expect(trace, name).toEqual(expect.arrayContaining([...reaches]));
   }
 });
 
