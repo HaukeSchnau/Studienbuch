@@ -1024,8 +1024,15 @@ export const run = (workload: Workload) =>
 
       yield* traceEvents;
 
-      for (const each of devices)
-        trace.push(`${label} ${each.id} ${yield* syncing(each, Duration.zero)}`);
+      for (const each of devices) {
+        const state = yield* syncing(each, Duration.zero);
+        const refused = yield* each.sql(SyncClient.refusals.run()).pipe(Effect.orDie);
+        const shown = refused.map((refusal) => `#${refusal.mutationId} ${refusal.reason._tag}`);
+
+        trace.push(
+          `${label} ${each.id} ${state}${shown.length === 0 ? "" : `, refused ${shown.join(", ")}`}`,
+        );
+      }
     });
 
     /** What must hold once the world is at rest. */

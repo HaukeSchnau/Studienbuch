@@ -187,6 +187,10 @@ const cases = {
       Simulation.Offline.make({ device: "b", offline: false }),
       Simulation.Sync.make({ device: "b" }),
     ],
+    reaches: [
+      '6 {"_tag":"NewerFormat","account":"lena"} wrote v3',
+      "settled b idle, refused #1 SyncClient.Unreadable",
+    ],
   },
 } satisfies Record<string, Case>;
 
