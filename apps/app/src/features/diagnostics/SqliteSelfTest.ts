@@ -2,7 +2,6 @@ import { Ports } from "@stu/sync/client";
 import { Replay } from "@stu/sync/conformance";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import * as Option from "effect/Option";
 import * as Atom from "effect/reactivity/Atom";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
@@ -57,14 +56,11 @@ const signedIn = Effect.gen(function* () {
 
 /**
  * How many tables, views and indexes an account's database got, once it is deleted again. It
- * opens where the signed-in account keeps its own, so on a public computer in memory.
+ * opens where this device keeps an account's, so on a public computer in memory.
  */
 export const accountDatabase = Atom.runtime(Layers.app).atom((get) =>
   Effect.gen(function* () {
-    const publicComputer = Option.exists(
-      yield* get.result(AccountState.current),
-      (signed) => signed.publicComputer,
-    );
+    const publicComputer = yield* get.resultOnce(AccountState.keepsNothing);
 
     const count = yield* Effect.scoped(
       Effect.flatMap(Layer.build(Layers.account(accountId, publicComputer)), (context) =>

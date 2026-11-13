@@ -574,3 +574,20 @@ export const access = (
         onSome: (signed) => (Option.isSome(signed.token) ? "signed-in" : "ended"),
       }),
   });
+
+/**
+ * Whether the device keeps nothing on disk: as the account it holds chose at sign-in, else as the
+ * tab chose for the next one (`chosen`). A device that can't hold an account holds none.
+ */
+export const keepsNothing = (
+  current: AsyncResult.AsyncResult<Option.Option<SessionStore.Signed>, unknown>,
+  chosen: boolean,
+): AsyncResult.AsyncResult<boolean> =>
+  AsyncResult.isInitial(current)
+    ? AsyncResult.initial()
+    : AsyncResult.success(
+        Option.match(Option.flatten(AsyncResult.value(current)), {
+          onNone: () => chosen,
+          onSome: (signed) => signed.publicComputer,
+        }),
+      );

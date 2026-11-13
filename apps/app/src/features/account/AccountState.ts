@@ -36,6 +36,11 @@ export const current = runtime
   .atom(Stream.unwrap(Effect.map(SessionStore.Service, (store) => store.changes)))
   .pipe(Atom.keepAlive);
 
+/** `Account.keepsNothing` for this device. Storage outside an account follows it too. */
+export const keepsNothing = Atom.make((get) =>
+  Account.keepsNothing(get(current), get(publicComputer)),
+);
+
 /** What the gates show: see `Account.access`. A build without a server renders, never throws. */
 export const useAccess = () => Account.access(useAtomValue(current));
 

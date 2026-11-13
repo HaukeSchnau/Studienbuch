@@ -624,6 +624,26 @@ describe("Account", () => {
     );
   });
 
+  // Storage outside an account, such as "Dieses Gerät"'s, reads this. A held account's choice
+  // wins over the tab's, and a device that can't hold an account still shows its diagnostics.
+  it("keeps nothing as the held account chose, else as the tab chose", () => {
+    const held = (publicComputer: boolean) =>
+      AsyncResult.success(
+        Option.some({ accountId: "lena", token: Option.none(), demo: false, publicComputer }),
+      );
+
+    assert.deepStrictEqual(
+      [
+        Account.keepsNothing(AsyncResult.initial(), true),
+        Account.keepsNothing(AsyncResult.fail("ServerOrigin.NoServer"), true),
+        Account.keepsNothing(AsyncResult.success(Option.none()), true),
+        Account.keepsNothing(held(false), true),
+        Account.keepsNothing(held(true), false),
+      ].map(AsyncResult.value),
+      [Option.none(), Option.some(true), Option.some(true), Option.some(false), Option.some(true)],
+    );
+  });
+
   // Signing out deletes the outbox. Only a count the engine read lets it go without asking.
   it("asks before signing out unless the engine counted no unsent change", () => {
     const asks = [

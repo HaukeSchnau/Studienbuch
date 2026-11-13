@@ -8,7 +8,7 @@ import { useRouter } from "expo-router";
 import { ServerOrigin } from "../../infra/api/ServerOrigin.ts";
 import { VirtualDevice } from "../../infra/device/VirtualDevice.ts";
 import { AppLifecycle } from "../../infra/lifecycle/AppLifecycle.ts";
-import { StoragePersistence } from "../../infra/offline/StoragePersistence.ts";
+import type { StoragePersistence } from "../../infra/offline/StoragePersistence.ts";
 import { BuildInfo } from "../../infra/updates/BuildInfo.ts";
 import { Card } from "@stu/ui/Card";
 import { HeroScreen } from "../../ui/HeroScreen.tsx";
@@ -26,7 +26,7 @@ export function DiagnosticsScreen() {
   const server = useAtomValue(ServerInfo.info);
   const selfTest = useAtomValue(CryptoSelfTest.outcomes);
   const storage = useAtomValue(DeviceStorage.thisStart);
-  const persistence = AsyncResult.value(useAtomValue(StoragePersistence.state(false)));
+  const persistence = AsyncResult.value(useAtomValue(DeviceStorage.persistence));
   const lifecycle = AsyncResult.value(useAtomValue(AppLifecycle.state));
   const refreshServer = useAtomRefresh(ServerInfo.info);
   const refreshSelfTest = useAtomRefresh(CryptoSelfTest.outcomes);

@@ -1,14 +1,18 @@
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Atom from "effect/reactivity/Atom";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 
 import { excludeDatabases } from "../../infra/device/files.ts";
 import { VirtualDevice } from "../../infra/device/VirtualDevice.ts";
+import { MemoryKeychain } from "../../infra/keychain/MemoryKeychain.ts";
 import { clearedAfterInstall, layer as keychain } from "../../infra/keychain/platform.ts";
+import { StoragePersistence } from "../../infra/offline/StoragePersistence.ts";
 import { layer as open } from "../../infra/sqlite/database.ts";
+import { AccountState } from "../account/AccountState.ts";
 
 // The SQLite check: a database of this device's own counts the app's starts, so a number that
 // keeps rising across restarts proves the data survives them. It holds nothing else, so signing
@@ -71,12 +75,25 @@ const recordStart = Effect.gen(function* () {
   } satisfies Report;
 }).pipe(Effect.catchTags({ SchemaError: Effect.die }));
 
-// The database stays open for the app's lifetime.
-const database = Atom.runtime(
-  open({ device: VirtualDevice.current, name: "diagnostics", memory: false }).pipe(
-    Layer.provide(keychain),
-  ),
-).pipe(Atom.keepAlive);
+// The database stays open for the app's lifetime, in memory where the device keeps nothing.
+const startIn = Atom.family((memory: boolean) =>
+  Atom.runtime(
+    open({ device: VirtualDevice.current, name: "diagnostics", memory }).pipe(
+      Layer.provide(memory ? MemoryKeychain.layer() : keychain),
+    ),
+  )
+    .atom(recordStart)
+    .pipe(Atom.keepAlive),
+);
 
-/** This start, counted once when the app opens its database. */
-export const thisStart = database.atom(recordStart).pipe(Atom.keepAlive);
+/** This start, counted once when the app opens its database. A public computer counts in memory. */
+export const thisStart = Atom.make((get) =>
+  AsyncResult.flatMap(get(AccountState.keepsNothing), (memory) => get(startIn(memory))),
+);
+
+/** `StoragePersistence.state` for this device, which asks the browser only where it keeps data. */
+export const persistence = Atom.make((get) =>
+  AsyncResult.flatMap(get(AccountState.keepsNothing), (memory) =>
+    get(StoragePersistence.state(memory)),
+  ),
+);
