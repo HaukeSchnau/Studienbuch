@@ -41,6 +41,13 @@ const tour: Simulation.Workload = {
     Simulation.Rename.make({ device: "a", pick: 0 }),
     Simulation.Toggle.make({ device: "b", pick: 1, done: true }),
     Simulation.Remove.make({ device: "b", pick: 0 }),
+    // Lena's phone on the next build writes over the profile that a set. b holds it unopened, so
+    // it can't set it.
+    Simulation.Name.make({ device: "a" }),
+    Simulation.Sync.make({ device: "a" }),
+    Simulation.NewerFormat.make({ account: "lena" }),
+    Simulation.Sync.make({ device: "b" }),
+    Simulation.Name.make({ device: "b" }),
     Simulation.Crash.make({ device: "a" }),
     Simulation.Sync.make({ device: "a" }),
     Simulation.Offline.make({ device: "b", offline: true }),
@@ -164,6 +171,26 @@ const cases = {
       Simulation.Sync.make({ device: "a" }),
     ],
     reaches: ["  a fired dropNextResponse: Sync.push"],
+  },
+  // b sets the profile offline while a newer build writes it. Back online, b holds the newer row
+  // unopened, so its write is refused instead of replacing what it never read.
+  "an older build never writes over a row a newer build wrote": {
+    seed: 8,
+    steps: [
+      Simulation.Choose.make({ device: "a", courses: ["course-de"] }),
+      Simulation.Add.make({ device: "a", course: "course-de" }),
+      Simulation.Sync.make({ device: "a" }),
+      Simulation.Sync.make({ device: "b" }),
+      Simulation.Offline.make({ device: "b", offline: true }),
+      Simulation.Name.make({ device: "b" }),
+      Simulation.NewerFormat.make({ account: "lena" }),
+      Simulation.Offline.make({ device: "b", offline: false }),
+      Simulation.Sync.make({ device: "b" }),
+    ],
+    reaches: [
+      '6 {"_tag":"NewerFormat","account":"lena"} wrote v3',
+      "settled b idle, refused #1 SyncClient.Unreadable",
+    ],
   },
 } satisfies Record<string, Case>;
 
