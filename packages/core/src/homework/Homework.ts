@@ -199,4 +199,6 @@ export const isOverdue = HomeworkDates.isOverdue;
 
 export const isDimmed = HomeworkDates.isDimmed;
 
+export const isInReach = HomeworkDates.isInReach;
+
 export const dueDates = HomeworkDates.dueDates;

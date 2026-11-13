@@ -1,11 +1,13 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Tokens } from "@stu/ui/Tokens";
 
-import { SubjectColor } from "./SubjectColor.ts";
+import { SubjectMark } from "./SubjectMark.ts";
 
-const subject = (name: string, shortName = "") => SubjectColor.ofSubject({ name, shortName });
+const subject = (name: string, shortName = "") => SubjectMark.ofSubject({ name, shortName }).slot;
 
-describe("SubjectColor", () => {
+const course = (name: string) => SubjectMark.ofCourse(name).slot;
+
+describe("SubjectMark", () => {
   it.each([
     ["Mathematik", "Mathe", "MA"],
     ["Politik-Wirtschaft", "Politik / Wirtschaft", "PoWi"],
@@ -35,9 +37,9 @@ describe("SubjectColor", () => {
   });
 
   it("colours a course without a subject by the letters its name starts with", () => {
-    expect(SubjectColor.ofCourse("MA-E1")).toBe(subject("Mathematik"));
-    expect(SubjectColor.ofCourse("de-gk2")).toBe(subject("Deutsch"));
-    expect(SubjectColor.ofCourse("11bi3")).toBe(subject("Biologie"));
+    expect(course("MA-E1")).toBe(subject("Mathematik"));
+    expect(course("de-gk2")).toBe(subject("Deutsch"));
+    expect(course("11bi3")).toBe(subject("Biologie"));
   });
 
   it.each(["Ethik", "Evangelische Religion", "Katholische Religion", "Religion (kath.)"])(
@@ -46,6 +48,17 @@ describe("SubjectColor", () => {
       expect(subject(name)).toBe(subject("Werte und Normen"));
     },
   );
+
+  it.each([
+    ["Politik-Wirtschaft", "PW", "politics"],
+    ["Religion (kath.)", "RK", "religion"],
+    ["Mathematik (erhöhtes Niveau)", "MA", "math"],
+    ["Astronomie", "AST", undefined],
+  ])("gives %s the art of its subject, or its letters", (name, short, art) => {
+    const mark = SubjectMark.ofSubject({ name, shortName: short });
+
+    expect([mark.art, mark.letters]).toEqual([art, short]);
+  });
 
   it.each(["RK", "Sozialwissenschaften", "Gesellschaftslehre", "Technik", "Astronomie"])(
     "keeps the unknown %s off the colours of subjects that have their own",
@@ -62,7 +75,7 @@ describe("SubjectColor", () => {
       ].map((known) => subject(known));
 
       expect(own).not.toContain(subject(name));
-      expect(own).not.toContain(SubjectColor.ofCourse(name));
+      expect(own).not.toContain(course(name));
     },
   );
 
@@ -71,6 +84,6 @@ describe("SubjectColor", () => {
 
     expect(Object.keys(Tokens.subject)).toContain(slot);
     expect(subject("astronomie")).toBe(slot);
-    expect(SubjectColor.ofCourse("Astronomie")).toBe(slot);
+    expect(course("Astronomie")).toBe(slot);
   });
 });

@@ -22,8 +22,8 @@ const support = `mailto:info@urbs.one?subject=${encodeURIComponent("Mein Notizbu
 /**
  * Wraps the signed-in tabs. It starts the account's engine and its notebook key, and above the tabs
  * says what keeps the account from syncing or from its notebook, with the way out: a session that
- * ended goes to "Anmelden", a locked notebook to "Notizbuch entsperren", a key the account doesn't
- * know to support.
+ * ended goes to "Anmelden", a notebook without its key on this device to "Notizbuch entsperren"
+ * (which also says when that needs the network), a key the account doesn't know to support.
  */
 export function AccountNotice({ children }: { readonly children: ReactNode }) {
   const account = KeysState.useAccountId();
@@ -67,7 +67,7 @@ function Notice({
           action: "Anmelden",
           go: () => router.push("/anmelden"),
         }
-      : status?._tag === "Locked"
+      : status !== undefined && status._tag !== "Unlocked"
         ? {
             text: "Dein Notizbuch ist gesperrt.",
             action: "Entsperren",

@@ -4,11 +4,15 @@ import { StyleSheet, View } from "react-native";
 import { Text } from "./Text.tsx";
 import { Theme } from "./Theme.ts";
 import { Tokens } from "./Tokens.ts";
+import { Underline } from "./Underline.tsx";
+import { useLastLine } from "./useLastLine.ts";
 import { useLayout } from "./useLayout.ts";
 import { Vector } from "./Vector.tsx";
 
 export interface HeroProps {
   readonly title: string;
+  /** Draws the old web's hand-drawn line under the title's last line, as under "Moin, Lena!". */
+  readonly underline?: boolean;
   readonly subtitle?: string | undefined;
   /** Short facts in white pills under the title, such as "KW 44". */
   readonly chips?: ReadonlyArray<string>;
@@ -36,6 +40,7 @@ export interface HeroProps {
  */
 export function Hero({
   title,
+  underline = false,
   subtitle,
   chips = [],
   status,
@@ -47,6 +52,7 @@ export function Hero({
 }: HeroProps) {
   const { color } = Theme.useTheme();
   const swoosh = useSwoosh();
+  const words = useLastLine();
   // The area extends this far below the text, where the band sits.
   const below = swoosh.band + edge - swoosh.lift;
 
@@ -73,9 +79,24 @@ export function Hero({
         )}
         <View style={[styles.column, styles.heading]} onLayout={swoosh.onHeading}>
           <View style={styles.text} onLayout={swoosh.onText}>
-            <Text variant="display" accessibilityRole="header" style={styles.onHero}>
-              {title}
-            </Text>
+            <View {...words.container}>
+              <Text
+                {...words.text}
+                variant="display"
+                accessibilityRole="header"
+                style={styles.onHero}
+              >
+                {title}
+              </Text>
+              {underline && words.line !== undefined ? (
+                <Underline
+                  line={words.line}
+                  color={color.heroUnderline}
+                  delay={240}
+                  duration={560}
+                />
+              ) : null}
+            </View>
             {/* Bold, because white on the light hero green passes only as large bold text. */}
             {subtitle === undefined ? null : (
               <Text variant="title3" weight="bold" style={styles.onHero}>

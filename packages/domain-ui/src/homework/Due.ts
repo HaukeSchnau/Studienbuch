@@ -5,13 +5,9 @@
 import { HomeworkDates, type CivilTime } from "@stu/core";
 import * as PlainDateFns from "temporal-polyfill/fns/PlainDate";
 
+import { DateText } from "../calendar/DateText.ts";
+
 export * as Due from "./Due.ts";
-
-// ISO weekdays, Monday first.
-const weekdays = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
-const shortWeekdays = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
-
-const weekday = (date: CivilTime.PlainDate) => weekdays[PlainDateFns.dayOfWeek(date) - 1] ?? "";
 
 /** "9.11.", or "9.11.2027" in another year than today's. */
 const dayMonth = (date: CivilTime.PlainDate, today: CivilTime.PlainDate) =>
@@ -19,7 +15,7 @@ const dayMonth = (date: CivilTime.PlainDate, today: CivilTime.PlainDate) =>
 
 /** "Mo, 9.11." */
 const short = (date: CivilTime.PlainDate, today: CivilTime.PlainDate) =>
-  `${shortWeekdays[PlainDateFns.dayOfWeek(date) - 1] ?? ""}, ${dayMonth(date, today)}`;
+  `${DateText.shortWeekday(date)}, ${dayMonth(date, today)}`;
 
 const done = (doneOn: CivilTime.PlainDate, today: CivilTime.PlainDate) => {
   const ago = PlainDateFns.diffDays(doneOn, today);
@@ -28,7 +24,7 @@ const done = (doneOn: CivilTime.PlainDate, today: CivilTime.PlainDate) => {
     ? "Heute erledigt"
     : ago === 1
       ? "Gestern erledigt"
-      : `Erledigt am ${ago < 7 ? weekday(doneOn) : dayMonth(doneOn, today)}`;
+      : `Erledigt am ${ago < 7 ? DateText.weekday(doneOn) : dayMonth(doneOn, today)}`;
 };
 
 /** The due date as the list and the panel show it. */
@@ -40,12 +36,12 @@ export const label = (homework: HomeworkDates.Listed, today: CivilTime.PlainDate
   if (HomeworkDates.isOverdue(homework, today)) {
     if (days === -1) return "Überfällig seit gestern";
 
-    return `Überfällig seit ${days > -7 ? weekday(homework.dueOn) : dayMonth(homework.dueOn, today)}`;
+    return `Überfällig seit ${days > -7 ? DateText.weekday(homework.dueOn) : dayMonth(homework.dueOn, today)}`;
   }
 
   return days === 0
     ? "Heute fällig"
     : days === 1
       ? "Bis morgen"
-      : `Bis ${days < 7 ? weekday(homework.dueOn) : short(homework.dueOn, today)}`;
+      : `Bis ${days < 7 ? DateText.weekday(homework.dueOn) : short(homework.dueOn, today)}`;
 };
