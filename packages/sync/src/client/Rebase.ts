@@ -5,6 +5,7 @@
  * and returns the tables whose rows it changed, which the caller invalidates after the commit.
  */
 import type { SpaceKey } from "@stu/e2ee";
+import * as Arr from "effect/Array";
 import * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
@@ -12,7 +13,7 @@ import * as Option from "effect/Option";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
-import type * as SqlError from "effect/sql/SqlError";
+import * as SqlError from "effect/sql/SqlError";
 import { Sync } from "../definition/Sync.ts";
 import { Protocol } from "../protocol/Protocol.ts";
 import { Refusal } from "../protocol/Refusal.ts";
@@ -309,6 +310,24 @@ export const applyPull = Effect.fnUntraced(function* (
 });
 
 /**
+ * The database's failure in a savepoint's `cause`. When SQLite has rolled the whole transaction
+ * back, as on SQLITE_IOERR, Effect's rollback to the savepoint fails and turns every failure into a
+ * defect, so the `SqlError` can be either.
+ */
+const databaseFailure = (cause: Cause.Cause<unknown>) =>
+  Arr.findFirst(cause.reasons, (reason) => {
+    if (Cause.isFailReason(reason) && SqlError.isSqlError(reason.error)) {
+      return Option.some(reason.error);
+    }
+
+    if (Cause.isDieReason(reason) && SqlError.isSqlError(reason.defect)) {
+      return Option.some(reason.defect);
+    }
+
+    return Option.none();
+  });
+
+/**
  * The refusal a sealed command's replay ended with, encoded as the server would send it. Anything
  * the mutator's or `Tx`'s codecs don't know counts as arguments this build can't run.
  */
@@ -358,7 +377,8 @@ const decodeReason = Schema.decodeUnknownEffect(Refusal.Reason);
 /**
  * Clears the overlay and runs every waiting command again, one savepoint each, so one that fails
  * loses only its own effect and stays queued. A sealed one keeps its rows as drafts for the push,
- * or its refusal, which is the verdict the server can't give. Returns the tables touched.
+ * or its refusal, which is the verdict the server can't give. A `SqlError` fails the whole replay
+ * instead. Returns the tables touched.
  */
 export const replay = Effect.fnUntraced(function* (definition: Sync.Definition, actor: string) {
   const sql = yield* SqlClient.SqlClient;
@@ -421,6 +441,12 @@ export const replay = Effect.fnUntraced(function* (definition: Sync.Definition, 
         }),
       ),
     );
+
+    // The database failing is no verdict on the command: the caller's transaction rolls back, and
+    // the round runs again.
+    const failure = Exit.isFailure(exit) ? databaseFailure(exit.cause) : Option.none();
+
+    if (Option.isSome(failure)) return yield* failure.value;
 
     if (sent) {
       if (Exit.isSuccess(exit)) for (const row of exit.value.rows) tables.add(row.table);

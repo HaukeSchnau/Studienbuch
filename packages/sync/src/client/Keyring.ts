@@ -9,6 +9,7 @@ import * as Option from "effect/Option";
 import * as Redacted from "effect/Redacted";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
+import * as SynchronizedRef from "effect/SynchronizedRef";
 import { Ports } from "./Ports.ts";
 
 export * as Keyring from "./Keyring.ts";
@@ -97,16 +98,18 @@ export const keepOwn = Effect.fnUntraced(function* (
 
 export const make = Effect.fnUntraced(function* (actor: string) {
   const secrets = yield* Ports.DeviceSecrets;
-  let cached: Option.Option<Account> | undefined;
+  const sql = yield* SqlClient.SqlClient;
 
-  const generation = Effect.gen(function* () {
-    const sql = yield* SqlClient.SqlClient;
+  const [stored] = yield* sql<{ readonly key_generation: number }>`
+    select key_generation from sync_meta where id = 1
+  `;
 
-    const [row] = yield* sql<{ readonly key_generation: number }>`
-      select key_generation from sync_meta where id = 1
-    `;
-
-    return row?.key_generation ?? 0;
+  // The root key's generation and the keys derived from it. Deriving, unlocking and forgetting
+  // each hold the lock, so a slow derive can't undo what came after it. The lock never waits for
+  // the database, because a transaction may ask for the keys.
+  const state = yield* SynchronizedRef.make({
+    generation: stored?.key_generation ?? 0,
+    account: Option.none<Account>(),
   });
 
   // A 32-byte key derives for any account id the server accepted, so a failure is a defect.
@@ -118,10 +121,7 @@ export const make = Effect.fnUntraced(function* (actor: string) {
     return yield* withRecord(yield* AccountKey.derive(Redacted.make(rootKey), actor, at));
   }, Effect.orDie);
 
-  /** The account's keys, or `None` while the device holds no root key ("Notizbuch entsperren"). */
-  const account = Effect.gen(function* () {
-    if (cached !== undefined) return cached;
-
+  const load = Effect.fnUntraced(function* (generation: number) {
     const rootKey = yield* secrets
       .get("root-key")
       .pipe(Effect.catchTags({ "DeviceSecrets.SecretsUnavailable": () => Effect.succeedNone }));
@@ -130,25 +130,37 @@ export const make = Effect.fnUntraced(function* (actor: string) {
       return Option.none<Account>();
     }
 
-    cached = Option.some(yield* derive(rootKey.value, yield* generation));
-
-    return cached;
+    return Option.some(yield* derive(rootKey.value, generation));
   });
+
+  /** The account's keys, or `None` while the device holds no root key ("Notizbuch entsperren"). */
+  const account = SynchronizedRef.modifyEffect(state, (current) =>
+    Option.isSome(current.account)
+      ? Effect.succeed([current.account, current] as const)
+      : Effect.map(
+          load(current.generation),
+          (loaded) => [loaded, { ...current, account: loaded }] as const,
+        ),
+  );
 
   /**
    * Keeps the keys of a root key the device just got, as after unlocking or a demo sign-in. The
    * caller derived them already, so this derives nothing.
    */
   const unlock = Effect.fnUntraced(function* (keys: AccountKey.Keys) {
-    const sql = yield* SqlClient.SqlClient;
-
     if (keys.accountId !== actor) {
       return yield* Effect.die(`Keys of ${keys.accountId} can't unlock ${actor}'s device`);
     }
 
-    yield* secrets.set("root-key", Redacted.value(keys.rootKey));
+    yield* SynchronizedRef.updateEffect(
+      state,
+      Effect.fnUntraced(function* () {
+        yield* secrets.set("root-key", Redacted.value(keys.rootKey));
+
+        return { generation: keys.generation, account: Option.some(yield* withRecord(keys)) };
+      }),
+    );
     yield* sql`update sync_meta set key_generation = ${keys.generation} where id = 1`;
-    cached = Option.some(yield* withRecord(keys));
   });
 
   /**
@@ -184,10 +196,11 @@ export const make = Effect.fnUntraced(function* (actor: string) {
     );
   });
 
-  /** Forgets the cached keys, after a wipe removed the root key. */
-  const forget = Effect.sync(() => {
-    cached = undefined;
-  });
+  /** Forgets the derived keys, after a wipe removed the root key. */
+  const forget = SynchronizedRef.update(state, (current) => ({
+    ...current,
+    account: Option.none(),
+  }));
 
   /**
    * The keys in a box of `space`, if it is for this account and signed by it. M1's notebooks have

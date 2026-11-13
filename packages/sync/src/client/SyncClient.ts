@@ -501,7 +501,7 @@ export const make = Effect.fnUntraced(function* (
   );
 
   const unlock = Effect.fn("SyncClient.unlock")(function* (keys: AccountKey.Keys) {
-    yield* withSuite(keyring.unlock(keys)).pipe(Effect.provideService(SqlClient.SqlClient, sql));
+    yield* withSuite(keyring.unlock(keys));
     yield* reopenAll;
 
     // Sealed commands that waited for a key can go out now.

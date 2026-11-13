@@ -200,47 +200,64 @@ export const make = (device: Device) => {
   });
 
   /**
+   * The next batch after `pushedUpTo`, its sealed commands sealed and kept as they leave. One
+   * transaction, so a replay outside the round, as unlocking runs, changes a command before the
+   * batch reads it or after the batch kept its seal, which the replay then leaves alone.
+   */
+  const batch = Effect.fnUntraced(function* (pushedUpTo: number) {
+    const sql = yield* SqlClient.SqlClient;
+
+    return yield* sql.withTransaction(
+      Effect.gen(function* () {
+        const meta = yield* Outbox.meta;
+        const waiting = yield* Outbox.after(pushedUpTo, pushBatch);
+
+        // Spaces whose epoch 0 a command of this batch opens: later ones in it need no box. A
+        // batch the server didn't take carries no box for the next one.
+        const opening = new Set<string>();
+
+        // A sealed command seals only now, under the space's current key epoch. One that can't
+        // yet, on a locked device or without its space's key, holds back every command after it.
+        const commands: Array<Command.Any> = [];
+
+        for (const command of waiting) {
+          if (command.mode === "Mutate") {
+            commands.push(Outbox.asMutate(command));
+            continue;
+          }
+
+          if (command.sealed !== null) {
+            for (const box of command.sealed.boxes) opening.add(box.space);
+            commands.push(command.sealed);
+            continue;
+          }
+
+          const sealed = yield* Sealing.seal(command, actor, device.keyring, opening);
+
+          if (sealed === "locked" || sealed === "key-missing" || sealed === "held") break;
+          yield* Outbox.keepSealed(sealed);
+          commands.push(sealed);
+        }
+
+        return { meta, waiting: waiting.length, commands };
+      }),
+    );
+  });
+
+  /**
    * Sends the outbox from `fence.pushedUpTo` on, a batch at a time. After any failure the next
    * round starts again at the first command the device hasn't settled, and sends nothing newer
    * than what the server confirms.
    */
   const push = Effect.fnUntraced(function* (remote: Remote, fence: Fence) {
     for (;;) {
-      const meta = yield* Outbox.meta;
-      const waiting = yield* Outbox.after(fence.pushedUpTo, pushBatch);
+      const { meta, waiting, commands } = yield* batch(fence.pushedUpTo);
 
       // The server took every command up to here, held ones included.
-      if (waiting.length === 0) {
+      if (waiting === 0) {
         yield* hold(Option.none());
 
         return "done";
-      }
-
-      // Spaces whose epoch 0 a command of this batch opens: later ones in it need no box. A batch
-      // the server didn't take carries no box for the next one.
-      const opening = new Set<string>();
-
-      // A sealed command seals only now, under the space's current key epoch. One that can't yet,
-      // on a locked device or without its space's key, holds back every command after it.
-      const commands: Array<Command.Any> = [];
-
-      for (const command of waiting) {
-        if (command.mode === "Mutate") {
-          commands.push(Outbox.asMutate(command));
-          continue;
-        }
-
-        if (command.sealed !== null) {
-          for (const box of command.sealed.boxes) opening.add(box.space);
-          commands.push(command.sealed);
-          continue;
-        }
-
-        const sealed = yield* Sealing.seal(command, actor, device.keyring, opening);
-
-        if (sealed === "locked" || sealed === "key-missing" || sealed === "held") break;
-        yield* Outbox.keepSealed(sealed);
-        commands.push(sealed);
       }
 
       if (commands.length === 0) return "retry";
