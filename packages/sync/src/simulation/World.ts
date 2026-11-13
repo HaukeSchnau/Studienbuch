@@ -4,6 +4,8 @@
  * A device's database and secrets outlive its engine, so a crash interrupts the engine and its
  * calls wherever they are, and a restart resumes on the same database.
  */
+import type { AccountKey } from "@stu/e2ee";
+import { NobleCrypto } from "@stu/e2ee/testing";
 import { eq } from "drizzle-orm";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
@@ -72,6 +74,8 @@ export interface Device {
   readonly faults: Faults.Faults;
   /** The faults that fired since the last call, oldest first. */
   readonly fired: Effect.Effect<ReadonlyArray<Faults.Event>>;
+  /** Every line the engine logged so far. Its spans stay unrecorded, as the app records none. */
+  readonly lines: () => ReadonlyArray<string>;
   /** Runs an effect on the device's database. */
   readonly sql: <A, E>(effect: Effect.Effect<A, E, SqlClient.SqlClient>) => Effect.Effect<A, E>;
   /** The ids of the notes the device shows, in id order. */
@@ -105,6 +109,15 @@ export interface Device {
   readonly backup: Effect.Effect<void>;
   /** Crashes, puts the last backup's database back and starts again. `false` without a backup. */
   readonly restore: Effect.Effect<boolean>;
+  /**
+   * Crashes and starts again without the account's root key, as after a start with the keychain
+   * locked. The space keys it opened stay in its database.
+   */
+  readonly lock: Effect.Effect<void>;
+  /** Hands the engine the account's keys, as a passkey or the Notfallkarte would. */
+  readonly unlock: Effect.Effect<Exit.Exit<void, { readonly _tag: string }>>;
+  /** Whether the device holds the account's root key. */
+  readonly unlocked: Effect.Effect<boolean>;
 }
 
 /** Where a device's engine was when it stopped before a statement. */
@@ -179,13 +192,16 @@ const seedServer = Effect.gen(function* () {
   }
 });
 
-/** What outlives the engine: the database and the secrets, as on a phone's disk and keychain. */
-const devicePlatform = (before: DeviceSqlite.Before) =>
+/**
+ * What outlives the engine: the database and the secrets, as on a phone's disk and keychain, and a
+ * crypto suite whose random bytes follow `seed`.
+ */
+const devicePlatform = (before: DeviceSqlite.Before, seed: string) =>
   Layer.effectDiscard(Effect.orDie(DeviceDatabase.migrate(PlannerMigrations.migrations))).pipe(
     Layer.provideMerge(Layer.effect(SqlClient.SqlClient, DeviceSqlite.make(before))),
     Layer.provideMerge(Reactivity.layer),
     Layer.provideMerge(Devices.secrets),
-    Layer.provideMerge(Devices.crypto),
+    Layer.provideMerge(NobleCrypto.layer(seed)),
     Layer.orDie,
   );
 
@@ -255,7 +271,11 @@ const sessions = Layer.succeed(
   Ports.SessionResolver.of({ resolve: () => Effect.succeedNone, revoked: Stream.never }),
 );
 
-const makeDevice = Effect.fnUntraced(function* (id: DeviceId, network: Network.Network) {
+const makeDevice = Effect.fnUntraced(function* (
+  id: DeviceId,
+  network: Network.Network,
+  keys: AccountKey.Keys,
+) {
   const account = devices[id];
   const notebook = accounts[account];
   let statements = 0;
@@ -293,13 +313,16 @@ const makeDevice = Effect.fnUntraced(function* (id: DeviceId, network: Network.N
       return Effect.void;
     });
 
-  const platform = yield* Layer.build(devicePlatform(before));
+  const platform = yield* Layer.build(devicePlatform(before, yield* uuid));
+  const secrets = Context.get(platform, ClientPorts.DeviceSecrets);
+  yield* Effect.orDie(secrets.set("root-key", Redacted.value(keys.rootKey)));
 
   const faults = yield* Faults.make.pipe(
     Effect.provideService(Faults.Allowed, { environment: "development" }),
   );
 
   const events = yield* faults.subscribe;
+  const recorder = yield* Recorder.make;
 
   const sql = <A, E>(effect: Effect.Effect<A, E, SqlClient.SqlClient>) =>
     Effect.provide(effect, platform);
@@ -342,7 +365,7 @@ const makeDevice = Effect.fnUntraced(function* (id: DeviceId, network: Network.N
         Layer.succeedContext(platform),
       ),
     ),
-    Layer.provideMerge(Recorder.deviceTracer),
+    Layer.provideMerge(Layer.merge(Recorder.deviceTracer, recorder.logs)),
   );
 
   const start = Effect.gen(function* () {
@@ -399,6 +422,7 @@ const makeDevice = Effect.fnUntraced(function* (id: DeviceId, network: Network.N
     notebook,
     faults,
     fired: PubSub.takeUpTo(events, Number.MAX_SAFE_INTEGER),
+    lines: recorder.lines,
     sql,
     notes: Effect.gen(function* () {
       const db = yield* DeviceDatabase.make;
@@ -443,6 +467,13 @@ const makeDevice = Effect.fnUntraced(function* (id: DeviceId, network: Network.N
 
       return kill.pipe(Effect.andThen(sql(load(copy))), Effect.andThen(restart), Effect.as(true));
     }),
+    lock: kill.pipe(
+      Effect.andThen(Effect.orDie(secrets.remove("root-key"))),
+      Effect.andThen(restart),
+      Effect.asVoid,
+    ),
+    unlock: engine(Effect.flatMap(SyncClient.Service, (sync) => sync.unlock(keys))),
+    unlocked: Effect.map(Effect.orDie(secrets.get("root-key")), Option.isSome),
   };
 
   return device;
@@ -463,7 +494,7 @@ export const make = Effect.gen(function* () {
           sessions,
           Fixture.crypto,
           Fixture.accountKeys,
-          Devices.crypto,
+          NobleCrypto.layer("server"),
           Layer.succeed(Listener.Service)(yield* Listener.Service),
           Layer.succeed(SqlClient.SqlClient)(yield* SqlClient.SqlClient),
           recorder.layer,
@@ -484,6 +515,19 @@ export const make = Effect.gen(function* () {
 
   yield* Effect.provide(seedServer, server).pipe(Effect.orDie);
 
+  // Each account's generation-0 keys, as a first device published their record. The server checks
+  // key boxes against it.
+  const published = Effect.fnUntraced(function* (account: Account) {
+    yield* (yield* Fixture.Keys).publish(yield* Fixture.recordOf(account));
+
+    return yield* Fixture.keysOf(account);
+  });
+
+  const keys = yield* Effect.provide(
+    Effect.all({ lena: published("lena"), tom: published("tom") }),
+    server,
+  );
+
   const closes: Array<string> = [];
 
   const network = yield* Network.make(
@@ -498,7 +542,7 @@ export const make = Effect.gen(function* () {
       }),
   );
 
-  const all = yield* Effect.forEach(deviceIds, (id) => makeDevice(id, network));
+  const all = yield* Effect.forEach(deviceIds, (id) => makeDevice(id, network, keys[devices[id]]));
 
   return {
     devices: new Map(all.map((device) => [device.id, device])),

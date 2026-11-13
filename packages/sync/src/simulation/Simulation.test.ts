@@ -30,9 +30,16 @@ const tour: Simulation.Workload = {
     Simulation.Sync.make({ device: "a" }),
     Simulation.Restore.make({ device: "a" }),
     Simulation.Choose.make({ device: "a", courses: ["course-de"] }),
-    Simulation.Add.make({ device: "a", course: "course-ma" }),
+    Simulation.Sync.make({ device: "a" }),
+    // b starts without the account's key: its note waits, and a's arrives as ciphertext.
+    Simulation.Lock.make({ device: "b" }),
+    Simulation.Add.make({ device: "a", course: "course-de" }),
+    Simulation.Add.make({ device: "b", course: "course-de" }),
+    Simulation.Sync.make({ device: "a" }),
+    Simulation.Sync.make({ device: "b" }),
+    Simulation.Unlock.make({ device: "b" }),
     Simulation.Rename.make({ device: "a", pick: 0 }),
-    Simulation.Toggle.make({ device: "a", pick: 1, done: true }),
+    Simulation.Toggle.make({ device: "b", pick: 1, done: true }),
     Simulation.Remove.make({ device: "b", pick: 0 }),
     Simulation.Crash.make({ device: "a" }),
     Simulation.Sync.make({ device: "a" }),
@@ -50,6 +57,9 @@ const tour: Simulation.Workload = {
     Simulation.Choose.make({ device: "c", courses: ["course-de"] }),
     Simulation.Sync.make({ device: "a" }),
     Simulation.Sync.make({ device: "c" }),
+    // Tom's only device writes his notebook's first note locked, and unlocks only as the run ends.
+    Simulation.Lock.make({ device: "c" }),
+    Simulation.Add.make({ device: "c", course: "course-de" }),
     Simulation.Offer.make({ course: "course-ma", offered: false }),
     Simulation.OfferDuringPulls.make({ course: "course-bio", offered: false }),
     // The second commits new rows while a pull reads, which only its snapshot keeps out.
@@ -67,6 +77,11 @@ const tour: Simulation.Workload = {
     Simulation.Wait.make({ millis: 60_000 }),
   ],
 };
+
+/** A fixed case, and trace lines that show it reached the state it is named for. */
+interface Case extends Simulation.Workload {
+  readonly reaches?: ReadonlyArray<string>;
+}
 
 /**
  * Small workloads, each the shortest path to one guard, which random workloads reach only now and
@@ -102,11 +117,62 @@ const cases = {
       Simulation.Offline.make({ device: "a", offline: false }),
     ],
   },
-} satisfies Record<string, Simulation.Workload>;
+  // Both seal under a key of their own. The loser's must give way to the winner's.
+  "two devices of one account write the notebook's first notes at once": {
+    seed: 4,
+    steps: [
+      Simulation.Choose.make({ device: "a", courses: ["course-de"] }),
+      Simulation.Sync.make({ device: "a" }),
+      Simulation.Sync.make({ device: "b" }),
+      Simulation.Add.make({ device: "a", course: "course-de" }),
+      Simulation.Add.make({ device: "b", course: "course-de" }),
+      Simulation.Sync.make({ device: "a" }),
+      Simulation.Sync.make({ device: "b" }),
+    ],
+  },
+  // b seals under its own key, then dies with the push on its way and starts locked. It can't
+  // open a's key box, so only its own key would seal, and only b would read what it sealed.
+  "a device that loses the first write while locked waits for the winner's key": {
+    seed: 5,
+    steps: [
+      Simulation.Choose.make({ device: "a", courses: ["course-de"] }),
+      Simulation.Sync.make({ device: "a" }),
+      Simulation.Sync.make({ device: "b" }),
+      Simulation.Offline.make({ device: "b", offline: true }),
+      Simulation.Add.make({ device: "a", course: "course-de" }),
+      Simulation.Sync.make({ device: "a" }),
+      Simulation.Add.make({ device: "b", course: "course-de" }),
+      Simulation.Latency.make({ device: "b", millis: 2_000 }),
+      Simulation.Offline.make({ device: "b", offline: false }),
+      Simulation.Wait.make({ millis: 1_000 }),
+      Simulation.Lock.make({ device: "b" }),
+      Simulation.Latency.make({ device: "b", millis: 0 }),
+      Simulation.Sync.make({ device: "b" }),
+      Simulation.Unlock.make({ device: "b" }),
+    ],
+    // b sealed its note under its own key, and the lock came before the server's answer.
+    reaches: ['10 {"_tag":"Lock","device":"b"} locked, 1 sealed command kept'],
+  },
+  // The server applied the Seal. Sent again with new bytes, it would answer `ClientUnknown`.
+  "a sealed push whose answer was lost goes again byte for byte": {
+    seed: 6,
+    steps: [
+      Simulation.Choose.make({ device: "a", courses: ["course-de"] }),
+      Simulation.Sync.make({ device: "a" }),
+      Simulation.Fault.make({ device: "a", fault: "dropNextResponse" }),
+      Simulation.Add.make({ device: "a", course: "course-de" }),
+      Simulation.Sync.make({ device: "a" }),
+    ],
+    reaches: ["  a fired dropNextResponse: Sync.push"],
+  },
+} satisfies Record<string, Case>;
 
 const runCases = Effect.gen(function* () {
-  for (const [name, workload] of Object.entries(cases)) {
-    expect((yield* Simulation.run(workload)).violations, name).toStrictEqual([]);
+  for (const [name, { reaches = [], ...workload }] of Object.entries<Case>(cases)) {
+    const { trace, violations } = yield* Simulation.run(workload);
+
+    expect(violations, name).toStrictEqual([]);
+    expect(trace, name).toEqual(expect.arrayContaining([...reaches]));
   }
 });
 

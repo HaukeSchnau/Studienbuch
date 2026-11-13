@@ -2,6 +2,8 @@
  * What must hold in every simulated world. Each check returns the violations it found, empty when
  * the invariant holds, so a run collects all of them for its report instead of stopping at one.
  */
+import { sha256 } from "@noble/hashes/sha2.js";
+import { bytesToHex } from "@noble/hashes/utils.js";
 import * as Effect from "effect/Effect";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
@@ -24,6 +26,7 @@ export type Name =
   | "plaintext"
   | "convergence"
   | "nothing-lost"
+  | "exactly-once"
   | "liveness";
 
 export interface Violation {
@@ -211,17 +214,129 @@ const rowKey = (row: BaseRow) => `${row.space} ${row.tbl} ${row.id}`;
 const rowValue = (row: BaseRow) =>
   `v${row.version} ${Result.getOrElse(CanonicalJson.normalize(row.data), () => row.data)}`;
 
-/** A device's readable base rows, as the server sent them. */
-export const deviceRows = Effect.gen(function* () {
+/** A device's readable base rows, as the server sent them: none of the `encrypted` tables. */
+export const deviceRows = Effect.fn("Invariants.deviceRows")(function* (
+  encrypted: ReadonlyArray<string>,
+) {
   const sql = yield* SqlClient.SqlClient;
 
   return yield* decodeBaseRows(
     yield* sql`
-      select space, tbl, id, version, data from base_row where tbl <> ''
+      select space, tbl, id, version, data from base_row
+      where tbl not in ${sql.in(["", ...encrypted])}
       order by space, tbl, id
     `,
   );
+}, Effect.orDie);
+
+const Sealed = Schema.Struct({
+  space: Schema.String,
+  id: Schema.String,
+  version: Schema.Finite,
+  ct: Schema.NullOr(Schema.Uint8Array),
+});
+
+type Sealed = typeof Sealed.Type;
+
+const decodeSealed = Schema.decodeUnknownEffect(Schema.Array(Sealed));
+
+/** A sealed row by its version, and by its ciphertext's SHA-256 where the place keeps it. */
+const sealedValue = (row: Sealed) =>
+  `v${row.version}${row.ct === null ? "" : ` sha256 ${bytesToHex(sha256(row.ct)).slice(0, 16)}`}`;
+
+/** The sealed rows a device holds: an opened one by its version, a parked one with its ciphertext. */
+export const deviceSealed = Effect.gen(function* () {
+  const sql = yield* SqlClient.SqlClient;
+
+  return yield* decodeSealed(
+    yield* sql`select space, id, version, ct from sync_sealed_row order by space, id`,
+  );
 }).pipe(Effect.orDie);
+
+/** The server's live sealed rows in the spaces `account` reads, with their ciphertext. */
+export const serverSealed = Effect.fn("Invariants.serverSealed")(function* (account: string) {
+  const sql = yield* SqlClient.SqlClient;
+
+  return yield* decodeSealed(
+    yield* sql`
+      select r.space_id as space, r.id, r.version::float8 as version, r.ct
+      from sync_row r join space_member m on m.space_id = r.space_id
+      where m.account_id = ${account} and r.tbl = '' and r.ct is not null
+      order by r.space_id, r.id
+    `,
+  );
+}, Effect.orDie);
+
+/**
+ * Every device holds each sealed row of its account's spaces at the server's version, and opened
+ * it. The server's ciphertext compares by version only, as an opened row keeps none. A row the
+ * device holds unopened, as ciphertext, never counts as converged.
+ */
+export const sealedConverged = (
+  place: string,
+  shown: ReadonlyArray<Sealed>,
+  expected: ReadonlyArray<Sealed>,
+): ReadonlyArray<Violation> => {
+  const key = (row: Sealed) => `${row.space} ${row.id}`;
+  const want = new Map(expected.map((row) => [key(row), row]));
+  const have = new Map(shown.map((row) => [key(row), row]));
+
+  return [...new Set([...want.keys(), ...have.keys()])].flatMap((row) => {
+    const mine = have.get(row);
+    const theirs = want.get(row);
+
+    if (mine?.ct === null && mine.version === theirs?.version) return [];
+
+    const held =
+      mine === undefined ? "nothing" : `${sealedValue(mine)}${mine.ct === null ? "" : " unopened"}`;
+
+    return [
+      {
+        invariant: "convergence",
+        place,
+        detail: `sealed ${row}: has ${held}, server ${theirs === undefined ? "nothing" : sealedValue(theirs)}`,
+      } satisfies Violation,
+    ];
+  });
+};
+
+/** A device's opened rows of the `encrypted` tables, as its screens read them. */
+export const openedRows = Effect.fn("Invariants.openedRows")(function* (
+  encrypted: ReadonlyArray<string>,
+) {
+  const sql = yield* SqlClient.SqlClient;
+
+  const rows = yield* decodeBaseRows(
+    yield* sql`
+      select space, tbl, id, version, data from base_row where tbl in ${sql.in(encrypted)}
+      order by space, tbl, id
+    `,
+  );
+
+  return rows.map((row) => `${rowKey(row)} ${rowValue(row)}`);
+}, Effect.orDie);
+
+/**
+ * The devices of one account show the same opened rows at rest, version and content. Only devices
+ * read them, so this is where a row sealed under a key another device lacks shows.
+ */
+export const sameOpened = (
+  place: string,
+  shown: ReadonlyArray<string>,
+  other: ReadonlyArray<string>,
+): ReadonlyArray<Violation> => {
+  const theirs = new Set(other);
+  const mine = new Set(shown);
+
+  const differ = [
+    ...shown.flatMap((row) => (theirs.has(row) ? [] : [`only the first ${row}`])),
+    ...other.flatMap((row) => (mine.has(row) ? [] : [`only the second ${row}`])),
+  ];
+
+  return differ.length === 0
+    ? []
+    : [{ invariant: "convergence", place, detail: `opened rows differ: ${differ.join("; ")}` }];
+};
 
 /** The server's live readable rows in the spaces `account` reads, as a pull would send them. */
 export const serverRows = Effect.fn("Invariants.serverRows")(function* (account: string) {
@@ -275,6 +390,15 @@ const contentOf = (name: string | null, version: number | null, args: Schema.Jso
 
 const decodeArgs = Schema.decodeUnknownEffect(Schema.fromJsonString(Schema.Json));
 
+/** What a `Seal` says, as far as the server can tell: its rows travel as ciphertext. */
+const sealed = "a Seal";
+
+/**
+ * A `Seal` without rows or keys. Every Planner mutator writes a row, so only a device's own refusal
+ * sends one.
+ */
+const emptySeal = "an empty Seal";
+
 /**
  * A device's state at quiescence: its counters, its waiting commands, its refusals' reasons and
  * what the commands it counts as applied said.
@@ -290,7 +414,7 @@ export const settledState = Effect.gen(function* () {
   `;
 
   const refused = yield* Effect.forEach(rows, (row) =>
-    Effect.map(reasonOf(row.reason), (reason) => `${row.mutation_id} ${reason}`),
+    Effect.map(reasonOf(row.reason), (reason) => ({ mutationId: row.mutation_id, reason })),
   );
 
   // Kept for a week, and only the current client id's: renumbering forgets the old one's.
@@ -299,15 +423,20 @@ export const settledState = Effect.gen(function* () {
     readonly name: string;
     readonly version: number;
     readonly args: string;
-  }>`select mutation_id, name, version, args from sync_settled_command order by mutation_id`;
+    readonly mode: string;
+  }>`
+    select mutation_id, name, version, args, mode from sync_settled_command order by mutation_id
+  `;
 
   const applied = yield* Effect.forEach(settledRows, (row) =>
-    Effect.flatMap(decodeArgs(row.args), (args) =>
-      Effect.map(contentOf(row.name, row.version, args), (content) => ({
-        mutationId: row.mutation_id,
-        content,
-      })),
-    ),
+    row.mode === "Seal"
+      ? Effect.succeed({ mutationId: row.mutation_id, content: sealed })
+      : Effect.flatMap(decodeArgs(row.args), (args) =>
+          Effect.map(contentOf(row.name, row.version, args), (content) => ({
+            mutationId: row.mutation_id,
+            content,
+          })),
+        ),
   );
 
   return { meta, waiting, refused, applied };
@@ -326,6 +455,11 @@ export interface Processed {
    * couldn't read logs only their hash, and then this names that.
    */
   readonly content: string;
+  /**
+   * A `Seal` with no rows and no keys: what a device sends to use up the id of a command its own
+   * replay refused, which the server can't judge.
+   */
+  readonly empty: boolean;
 }
 
 /** The arguments the command log kept, when it could read them. */
@@ -333,24 +467,50 @@ const Detail = Schema.fromJsonString(Schema.Struct({ args: Schema.Json }));
 
 const decodeDetail = Schema.decodeUnknownEffect(Detail);
 
+/** What the command log keeps of a `Seal`: the rows and keys it wrote, without their content. */
+const SealDetail = Schema.fromJsonString(
+  Schema.Struct({ writes: Schema.Array(Schema.Unknown), keys: Schema.Array(Schema.Unknown) }),
+);
+
+const decodeSealDetail = Schema.decodeUnknownEffect(SealDetail);
+
 /** The server's record of one client: each command it processed, what it said and any refusal. */
 export const serverLog = Effect.fn("Invariants.serverLog")(function* (clientId: string) {
   const sql = yield* SqlClient.SqlClient;
 
   const rows = yield* sql<{
     readonly mutation_id: number;
+    readonly kind: string;
     readonly name: string | null;
     readonly version: number | null;
     readonly detail: string;
     readonly reason: string | null;
   }>`
-      select mutation_id::float8 as mutation_id, name, version, detail::text as detail,
+      select mutation_id::float8 as mutation_id, kind, name, version, detail::text as detail,
         reason::text as reason
       from command_log where client_id = ${clientId} order by mutation_id
     `;
 
   return yield* Effect.forEach(rows, (row) =>
     Effect.gen(function* () {
+      const refused = row.reason === null ? undefined : yield* reasonOf(row.reason);
+
+      if (row.kind === "Seal") {
+        const detail = yield* Effect.option(decodeSealDetail(row.detail));
+
+        const empty =
+          detail._tag === "Some" &&
+          detail.value.writes.length === 0 &&
+          detail.value.keys.length === 0;
+
+        return {
+          mutationId: row.mutation_id,
+          refused,
+          content: empty ? emptySeal : sealed,
+          empty,
+        } satisfies Processed;
+      }
+
       const detail = yield* Effect.option(decodeDetail(row.detail));
 
       const content =
@@ -358,18 +518,16 @@ export const serverLog = Effect.fn("Invariants.serverLog")(function* (clientId: 
           ? yield* contentOf(row.name, row.version, detail.value.args)
           : `${row.name}@${row.version} unreadable ${row.detail}`;
 
-      const refused = row.reason === null ? undefined : yield* reasonOf(row.reason);
-
-      return { mutationId: row.mutation_id, refused, content } satisfies Processed;
+      return { mutationId: row.mutation_id, refused, content, empty: false } satisfies Processed;
     }),
   );
 }, Effect.orDie);
 
 /**
- * Nothing is lost: the outbox is empty, the server processed every command of the device's client
- * exactly once and in order, every command the device counts as applied is one the server applied
- * with the same name and arguments, and every refusal the server recorded waits on the device with
- * the same reason, unless the user dismissed it.
+ * Nothing is lost: the outbox is empty, the server processed each of the client's commands once and
+ * in order, applied every one the device counts as applied, and recorded every refusal the device
+ * shows, with its reason, but the user's dismissed ones and the device's own verdicts on sealed
+ * commands, which went out as empty `Seal`s.
  */
 export const nothingLost = (
   place: string,
@@ -413,7 +571,25 @@ export const nothingLost = (
     )
     .join(", ");
 
-  const refusedOnDevice = device.refused.join(", ");
+  const ownVerdicts = new Set(
+    log.flatMap((entry) => (entry.empty && entry.refused === undefined ? [entry.mutationId] : [])),
+  );
+
+  const accounted = new Set(
+    [...device.applied, ...device.refused].map(({ mutationId }) => mutationId),
+  );
+
+  for (const mutationId of ownVerdicts) {
+    if (!accounted.has(mutationId) && !dismissed.has(mutationId)) {
+      violation(`#${mutationId} went out as ${emptySeal}, and the device shows no refusal of it`);
+    }
+  }
+
+  const refusedOnDevice = device.refused
+    .flatMap(({ mutationId, reason }) =>
+      ownVerdicts.has(mutationId) ? [] : [`${mutationId} ${reason}`],
+    )
+    .join(", ");
 
   if (refusedOnServer !== refusedOnDevice) {
     violation(`server refused ${refusedOnServer}, device shows ${refusedOnDevice}`);
@@ -421,6 +597,28 @@ export const nothingLost = (
 
   return found;
 };
+
+/**
+ * A device keeps its client id, so the server applies each of its commands once. A new id has the
+ * server apply what the device sends again, which only two different commands under one old id
+ * call for: one from before the device's database went back in time, or a forge's.
+ */
+export const newClient = (place: string, known: string, now: string): Violation => ({
+  invariant: "exactly-once",
+  place,
+  detail: `moved from client ${known} to ${now}, though no restore or forge put two commands under one of its ids`,
+});
+
+/** The newest mutation id the server processed under `clientId`, 0 for none. */
+export const lastMutationId = Effect.fn("Invariants.lastMutationId")(function* (clientId: string) {
+  const sql = yield* SqlClient.SqlClient;
+
+  const [row] = yield* sql<{ readonly last: number | null }>`
+    select max(mutation_id)::float8 as last from command_log where client_id = ${clientId}
+  `;
+
+  return row?.last ?? 0;
+}, Effect.orDie);
 
 /**
  * A device's cursor covers its rows: no base row is newer than its space's cursor. A pull reads

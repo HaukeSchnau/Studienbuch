@@ -5,11 +5,9 @@
  */
 import { SqliteClient as NodeSqliteClient } from "@effect/sql-sqlite-node";
 import { SqliteClient as WasmSqliteClient } from "@effect/sql-sqlite-wasm";
-import { CryptoSuite } from "@stu/e2ee";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
-import * as Random from "effect/Random";
 import * as Reactivity from "effect/reactivity/Reactivity";
 import * as Redacted from "effect/Redacted";
 import * as SqlClient from "effect/sql/SqlClient";
@@ -66,40 +64,6 @@ export const secrets = Layer.sync(Ports.DeviceSecrets, () => {
     remove: (name) => Effect.sync(() => void stored.delete(name)),
   };
 });
-
-/**
- * A `CryptoSuite` whose generator follows Effect's `Random`, for the engine's ids on a device that
- * holds no root key, as in the simulation. Its other operations die. Tests that seal take
- * `TestCrypto`, which `studienbuch/test-only-imports` keeps out of the simulation. Once the rule
- * admits the simulation, it takes `TestCrypto` too and this goes.
- */
-export const crypto = Layer.succeed(
-  CryptoSuite.Service,
-  CryptoSuite.Service.of({
-    randomBytes: (length) =>
-      Effect.map(Effect.all(Array.from({ length }, () => Random.nextIntBetween(0, 255))), (bytes) =>
-        Uint8Array.from(bytes),
-      ),
-    sha256: () => Effect.die("Not in the test suite"),
-    hmac: () => Effect.die("Not in the test suite"),
-    hkdf: () => Effect.die("Not in the test suite"),
-    aead: {
-      seal: () => Effect.die("Not in the test suite"),
-      open: () => Effect.die("Not in the test suite"),
-    },
-    sign: {
-      publicKey: () => Effect.die("Not in the test suite"),
-      sign: () => Effect.die("Not in the test suite"),
-      verify: () => Effect.die("Not in the test suite"),
-    },
-    kem: {
-      publicKey: () => Effect.die("Not in the test suite"),
-      validate: () => Effect.die("Not in the test suite"),
-      encapsulate: () => Effect.die("Not in the test suite"),
-      decapsulate: () => Effect.die("Not in the test suite"),
-    },
-  }),
-);
 
 /** The account's root key, which every one of its devices holds. */
 export const rootKey = Uint8Array.from({ length: 32 }, (_, index) => index + 1);
