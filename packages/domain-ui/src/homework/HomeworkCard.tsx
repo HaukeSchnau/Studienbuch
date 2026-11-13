@@ -34,7 +34,8 @@ export function HomeworkCard({ item, onToggle, width }: HomeworkCardProps) {
       ]}
     >
       <View style={styles.top}>
-        <SubjectMarker mark={item.mark} size={34} />
+        {/* Dark pastels hide some art on the navy, which the card keeps in dark mode too. */}
+        <SubjectMarker mark={item.mark} size={34} light />
         <TickBox
           checked={item.done}
           onChange={(done) => onToggle(item.id, done)}
