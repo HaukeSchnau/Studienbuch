@@ -14,24 +14,30 @@ import migrations from "./migrations/migrations.js";
 
 export * as AccountDatabase from "./AccountDatabase.ts";
 
-const location = Effect.fn("AccountDatabase.location")(function* (accountId: string) {
+const location = Effect.fn("AccountDatabase.location")(function* (
+  accountId: string,
+  memory: boolean,
+) {
   const device = yield* Device.Service;
   const server = yield* Ports.Server;
 
   return {
     device: device.name,
     name: Names.database(server.origin, device.name, accountId),
-    memory: device.publicComputer,
+    memory,
   } satisfies Databases.Location;
 });
 
-/** The account's database as `SqlClient`, with the device schema's migrations applied. */
-export const layer = (accountId: string) =>
-  Layer.unwrap(Effect.map(location(accountId), open)).pipe(
+/**
+ * The account's database as `SqlClient`, with the device schema's migrations applied. A public
+ * computer's lives in memory (`Device.PublicComputer`).
+ */
+export const layer = (accountId: string, memory: boolean) =>
+  Layer.unwrap(Effect.map(location(accountId, memory), open)).pipe(
     Layer.tap((context) =>
       DeviceDatabase.migrate(migrations.migrations).pipe(Effect.provide(context)),
     ),
   );
 
-/** Deletes the account's database and its key, at sign-out. Close its layer first. */
-export const remove = (accountId: string) => Effect.flatMap(location(accountId), removeFile);
+/** Deletes the account's kept database and its key, at sign-out. Close its layer first. */
+export const remove = (accountId: string) => Effect.flatMap(location(accountId, false), removeFile);

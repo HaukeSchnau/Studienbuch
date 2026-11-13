@@ -12,6 +12,7 @@ import { useEffect } from "react";
 
 import { SessionStore } from "../../infra/auth/SessionStore.ts";
 import { layer as signUpStore } from "../../infra/auth/signUpStore.ts";
+import { publicComputer } from "../../infra/device/publicComputer.ts";
 import { layer as authenticator } from "../../infra/passkeys/platform.ts";
 import { AccountEngine } from "../../infra/runtime/AccountEngine.ts";
 import { Layers } from "../../infra/runtime/Layers.ts";
@@ -19,7 +20,8 @@ import { OfferedPrf } from "../keys/OfferedPrf.ts";
 import { Account } from "./Account.ts";
 import { PasskeyCheck } from "./PasskeyCheck.ts";
 
-// The account flows as atoms for the screens, on this device's layers.
+// The account flows as atoms for the screens, on this device's layers. Each sign-in hands over the
+// tab's "Öffentlicher Computer" choice (`publicComputer`).
 
 export * as AccountState from "./AccountState.ts";
 
@@ -33,6 +35,11 @@ const runtime = Atom.runtime(
 export const current = runtime
   .atom(Stream.unwrap(Effect.map(SessionStore.Service, (store) => store.changes)))
   .pipe(Atom.keepAlive);
+
+/** `Account.keepsNothing` for this device. Storage outside an account follows it too. */
+export const keepsNothing = Atom.make((get) =>
+  Account.keepsNothing(get(current), get(publicComputer)),
+);
 
 /** What the gates show: see `Account.access`. A build without a server renders, never throws. */
 export const useAccess = () => Account.access(useAtomValue(current));
@@ -83,8 +90,14 @@ export const signingUp = runtime
   )
   .pipe(Atom.keepAlive);
 
+/**
+ * The tab's choice when a sign-in starts. Read without a dependency: a change must not run the
+ * sign-in again.
+ */
+const chosen = (get: Atom.FnContext) => get.registry.get(publicComputer);
+
 export const signIn = runtime.fn<{ readonly email: string; readonly password: string }>()(
-  ({ email, password }) => Account.signIn(email, password),
+  ({ email, password }, get) => Account.signIn(email, password, chosen(get)),
 );
 
 /** `reservation` as `Access.redeem` answered on the code screen. */
@@ -105,7 +118,7 @@ export const resetPassword = runtime.fn<{
   readonly email: string;
   readonly code: string;
   readonly password: string;
-}>()(({ email, code, password }) => Account.resetPassword(email, code, password));
+}>()(({ email, code, password }, get) => Account.resetPassword(email, code, password, chosen(get)));
 
 /** `password` only when the screen asked for it again, after a restart. */
 export const confirmEmail = runtime.fn<{
@@ -127,14 +140,14 @@ export const cancelSignUp = runtime
 /** Signs the device in with the session that confirmed `email`, with a new passkey first. */
 export const finish = runtime
   .fn<{ readonly email: string; readonly withPasskey: boolean }>()(({ email, withPasskey }, get) =>
-    Effect.tap(Account.finish(email, withPasskey), (used) =>
+    Effect.tap(Account.finish(email, withPasskey, chosen(get)), (used) =>
       Effect.sync(() => get.set(OfferedPrf.waiting, used)),
     ),
   )
   .pipe(Atom.keepAlive);
 
 const leave = runtime
-  .fn<string>()((email) => Account.leave(email))
+  .fn<string>()((email, get) => Account.leave(email, chosen(get)))
   .pipe(Atom.keepAlive);
 
 /**
@@ -149,16 +162,20 @@ export function useLaterOnLeave(email: string) {
 
 /** Signs in with a passkey, and leaves its PRF output for the notebook's unlock. */
 export const signInWithPasskey = runtime.fn<void>()((_, get) =>
-  Effect.tap(Account.signInWithPasskey(), (used) =>
+  Effect.tap(Account.signInWithPasskey(chosen(get)), (used) =>
     Effect.sync(() => get.set(OfferedPrf.waiting, Option.some(used))),
   ),
 );
 
 export const signOut = runtime
   .fn<void>()(() =>
-    // The account's engine closes first: only a closed database can be deleted.
-    Account.signOut((accountId) =>
-      Effect.andThen(AccountEngine.close(accountId), Layers.forget(accountId)),
+    // The account's engine closes first: only a closed database can be deleted. A public
+    // computer's account kept everything in its engine, so closing it forgets the account.
+    Account.signOut(({ accountId, publicComputer }) =>
+      Effect.andThen(
+        AccountEngine.close(accountId),
+        publicComputer ? Effect.void : Layers.forget(accountId),
+      ),
     ),
   )
   .pipe(Atom.keepAlive);

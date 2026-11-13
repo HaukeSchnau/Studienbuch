@@ -2,6 +2,7 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
+import * as Scope from "effect/Scope";
 
 import { Keychain } from "./Keychain.ts";
 
@@ -12,7 +13,6 @@ import { Keychain } from "./Keychain.ts";
 
 export * as IndexedDbKeychain from "./IndexedDbKeychain.ts";
 
-const databaseName = "studienbuch-keychain";
 const entries = "entries";
 
 // Never a store name: they contain no `#`.
@@ -40,43 +40,61 @@ const committed = <T>(
     transaction.addEventListener("abort", () => resume(Effect.fail(transaction.error)));
   });
 
-const open = Effect.callback<IDBDatabase, DOMException | null>((resume) => {
-  const request = indexedDB.open(databaseName, 1);
+const open = (name: string) =>
+  Effect.callback<IDBDatabase, DOMException | null>((resume) => {
+    const request = indexedDB.open(name, 1);
 
-  request.addEventListener("upgradeneeded", () => request.result.createObjectStore(entries));
-  request.addEventListener("success", () => resume(Effect.succeed(request.result)));
-  request.addEventListener("error", () => resume(Effect.fail(request.error)));
-});
+    request.addEventListener("upgradeneeded", () => request.result.createObjectStore(entries));
+    request.addEventListener("success", () => resume(Effect.succeed(request.result)));
+    request.addEventListener("error", () => resume(Effect.fail(request.error)));
+  });
 
 const text = new TextEncoder();
 const fromBytes = new TextDecoder();
 
 const isKey = (value: unknown): value is CryptoKey => value instanceof CryptoKey;
 
-const make = Effect.gen(function* () {
-  const database = yield* Effect.acquireRelease(open, (opened) =>
-    Effect.sync(() => opened.close()),
-  ).pipe(Effect.mapError(unavailable("get")));
+// A read of a database that doesn't exist finds nothing, so it doesn't create one: a tab that only
+// looked, as on a public computer, leaves nothing that shows Studienbuch was used. A browser that
+// can't list databases (Firefox before 126) opens it as before.
+const exists = (name: string) =>
+  Effect.tryPromise(() => indexedDB.databases()).pipe(
+    Effect.map((found) => found.some((database) => database.name === name)),
+    Effect.orElseSucceed(() => true),
+  );
 
-  const read = (entry: string) =>
-    committed(database, "readonly", (store): IDBRequest<unknown> => store.get(entry));
+const make = Effect.fn("IndexedDbKeychain.make")(function* (name: string) {
+  const scope = yield* Effect.scope;
 
-  const created = Effect.gen(function* () {
+  const database = yield* Effect.cached(
+    Effect.acquireRelease(open(name), (opened) => Effect.sync(() => opened.close())).pipe(
+      Scope.provide(scope),
+    ),
+  );
+
+  const existing = Effect.flatMap(exists(name), (found) =>
+    found ? Effect.asSome(database) : Effect.succeedNone,
+  );
+
+  const read = (opened: IDBDatabase, entry: string) =>
+    committed(opened, "readonly", (store): IDBRequest<unknown> => store.get(entry));
+
+  const created = Effect.fn("IndexedDbKeychain.createWrappingKey")(function* (opened: IDBDatabase) {
     const key = yield* Effect.promise(() =>
       crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]),
     );
 
     // Two tabs may start at once. Whichever adds its key first wins, and the other reads that one.
-    return yield* committed(database, "readwrite", (store) =>
-      store.add(key, wrappingKeyEntry),
-    ).pipe(
+    return yield* committed(opened, "readwrite", (store) => store.add(key, wrappingKeyEntry)).pipe(
       Effect.as(key),
-      Effect.catch(() => Effect.filterOrFail(read(wrappingKeyEntry), isKey, () => null)),
+      Effect.catch(() => Effect.filterOrFail(read(opened, wrappingKeyEntry), isKey, () => null)),
     );
   });
 
   const wrappingKey = yield* Effect.cached(
-    Effect.filterOrElse(read(wrappingKeyEntry), isKey, () => created),
+    Effect.flatMap(database, (opened) =>
+      Effect.filterOrElse(read(opened, wrappingKeyEntry), isKey, () => created(opened)),
+    ),
   );
 
   const params = (name: string, iv: Uint8Array<ArrayBuffer>): AesGcmParams => ({
@@ -86,7 +104,11 @@ const make = Effect.gen(function* () {
   });
 
   const get = Effect.fn("IndexedDbKeychain.get")(function* (name: string) {
-    const stored = yield* read(name);
+    const opened = yield* existing;
+
+    if (Option.isNone(opened)) return Option.none();
+
+    const stored = yield* read(opened.value, name);
 
     if (stored === undefined) return Option.none();
 
@@ -108,20 +130,28 @@ const make = Effect.gen(function* () {
       crypto.subtle.encrypt(params(name, iv), key, text.encode(value)),
     );
 
-    yield* committed(database, "readwrite", (store) =>
+    yield* committed(yield* database, "readwrite", (store) =>
       store.put({ iv, data: new Uint8Array(data) }, name),
     );
+  });
+
+  const remove = Effect.fn("IndexedDbKeychain.remove")(function* (name: string) {
+    const opened = yield* existing;
+
+    if (Option.isSome(opened)) {
+      yield* committed(opened.value, "readwrite", (store) => store.delete(name));
+    }
   });
 
   return Keychain.Store.of({
     get: (name) => get(name).pipe(Effect.mapError(unavailable("get"))),
     set: (name, value) => set(name, value).pipe(Effect.mapError(unavailable("set"))),
-    remove: (name) =>
-      committed(database, "readwrite", (store) => store.delete(name)).pipe(
-        Effect.mapError(unavailable("remove")),
-      ),
+    remove: (name) => remove(name).pipe(Effect.mapError(unavailable("remove"))),
   });
 });
 
+/** `Keychain.Store` in the IndexedDB database `name` of this origin. */
+export const named = (name: string) => Layer.effect(Keychain.Store)(make(name));
+
 /** `Keychain.Store` in this origin's IndexedDB. */
-export const layer = Layer.effect(Keychain.Store)(make);
+export const layer = named("studienbuch-keychain");
