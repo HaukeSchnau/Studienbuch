@@ -25,6 +25,15 @@ export function PublicComputerChoice() {
       accessibilityRole="checkbox"
       aria-checked={checked}
       onPress={() => setChecked(!checked)}
+      // react-native-web presses on Space only for role "button" (its PressResponder's
+      // `isValidKeyPress`), so Space ticks the box here, on release as a browser's checkbox does.
+      // Remove once react-native-web takes Space on a checkbox.
+      onKeyDown={(event) => {
+        if (event.nativeEvent.key === " ") event.preventDefault();
+      }}
+      onKeyUp={(event) => {
+        if (event.nativeEvent.key === " ") setChecked(!checked);
+      }}
       style={styles.row}
     >
       <View
