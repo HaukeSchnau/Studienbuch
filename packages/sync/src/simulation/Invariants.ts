@@ -394,6 +394,12 @@ const decodeArgs = Schema.decodeUnknownEffect(Schema.fromJsonString(Schema.Json)
 const sealed = "a Seal";
 
 /**
+ * A `Seal` without rows or keys. Every Planner mutator writes a row, so only a device's own refusal
+ * sends one.
+ */
+const emptySeal = "an empty Seal";
+
+/**
  * A device's state at quiescence: its counters, its waiting commands, its refusals' reasons and
  * what the commands it counts as applied said.
  */
@@ -497,7 +503,12 @@ export const serverLog = Effect.fn("Invariants.serverLog")(function* (clientId: 
           detail.value.writes.length === 0 &&
           detail.value.keys.length === 0;
 
-        return { mutationId: row.mutation_id, refused, content: sealed, empty } satisfies Processed;
+        return {
+          mutationId: row.mutation_id,
+          refused,
+          content: empty ? emptySeal : sealed,
+          empty,
+        } satisfies Processed;
       }
 
       const detail = yield* Effect.option(decodeDetail(row.detail));
@@ -563,6 +574,16 @@ export const nothingLost = (
   const ownVerdicts = new Set(
     log.flatMap((entry) => (entry.empty && entry.refused === undefined ? [entry.mutationId] : [])),
   );
+
+  const accounted = new Set(
+    [...device.applied, ...device.refused].map(({ mutationId }) => mutationId),
+  );
+
+  for (const mutationId of ownVerdicts) {
+    if (!accounted.has(mutationId) && !dismissed.has(mutationId)) {
+      violation(`#${mutationId} went out as ${emptySeal}, and the device shows no refusal of it`);
+    }
+  }
 
   const refusedOnDevice = device.refused
     .flatMap(({ mutationId, reason }) =>
