@@ -600,24 +600,25 @@ export const nothingLost = (
 
 /**
  * A device keeps its client id, so the server applies each of its commands once. A new id has the
- * server apply what the device sends again, which only a database that went back in time or a
- * command the device didn't make calls for: `allowed` counts those.
+ * server apply what the device sends again, which only two different commands under one old id
+ * call for: one from before the device's database went back in time, or a forge's.
  */
-export const sameClient = (
-  place: string,
-  known: string,
-  now: string,
-  allowed: number,
-): ReadonlyArray<Violation> =>
-  known === now || allowed > 0
-    ? []
-    : [
-        {
-          invariant: "exactly-once",
-          place,
-          detail: `moved from client ${known} to ${now}, though its database never went back in time`,
-        },
-      ];
+export const newClient = (place: string, known: string, now: string): Violation => ({
+  invariant: "exactly-once",
+  place,
+  detail: `moved from client ${known} to ${now}, though no restore or forge put two commands under one of its ids`,
+});
+
+/** The newest mutation id the server processed under `clientId`, 0 for none. */
+export const lastMutationId = Effect.fn("Invariants.lastMutationId")(function* (clientId: string) {
+  const sql = yield* SqlClient.SqlClient;
+
+  const [row] = yield* sql<{ readonly last: number | null }>`
+    select max(mutation_id)::float8 as last from command_log where client_id = ${clientId}
+  `;
+
+  return row?.last ?? 0;
+}, Effect.orDie);
 
 /**
  * A device's cursor covers its rows: no base row is newer than its space's cursor. A pull reads

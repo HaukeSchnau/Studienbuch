@@ -358,6 +358,20 @@ const describe = <A, E extends { readonly _tag: string }>(
 
 const queued = (mutation: SyncClient.Mutation) => `queued #${mutation.mutationId}`;
 
+interface Client {
+  readonly id: string;
+  readonly settled: number;
+}
+
+/** The mutation id a fired forge went out under, which its event names last. */
+const forgedId = (event: Faults.Event) => {
+  const id = / on mutation (\d+)$/u.exec(event.detail)?.[1];
+
+  return id === undefined
+    ? Effect.die(`A forge's event names no mutation id: ${event.detail}`)
+    : Effect.succeed(Number(id));
+};
+
 export const run = (workload: Workload) =>
   Effect.gen(function* () {
     const world = yield* World.make;
@@ -417,19 +431,36 @@ export const run = (workload: Workload) =>
 
     const faults = noFaults();
 
+    /** Each device's client id and the last mutation id it settled, as the last check read them. */
+    const clients = new Map<World.DeviceId, Client>();
+
     /**
-     * Each device's client id, and how many new ones it may take: one for each time its database
-     * went back in time, or a forge sent a command it didn't make.
+     * The newest mutation id the server held under a client id when a device was restored into it
+     * with fewer settled. The restored device may make other commands under the ids up to it.
      */
-    const clients = new Map<World.DeviceId, { id: string; allowed: number }>();
+    const restoredBehind = new Map<string, number>();
 
     const clientOf = (on: World.Device) =>
-      on.sql(Effect.map(Outbox.meta, (meta) => meta.clientId)).pipe(Effect.orDie);
+      on
+        .sql(
+          Effect.map(Outbox.meta, (meta): Client => ({
+            id: meta.clientId,
+            settled: meta.settledMutationId,
+          })),
+        )
+        .pipe(Effect.orDie);
 
-    const allow = (on: World.Device, id: string) =>
-      Effect.sync(() => {
-        clients.set(on.id, { id, allowed: (clients.get(on.id)?.allowed ?? 0) + 1 });
-      });
+    /** The mutation ids each device's fired forges went out under, since its client id changed. */
+    const forgedIds = new Map<World.DeviceId, ReadonlyArray<number>>();
+
+    /**
+     * Whether the device may have sent two different commands under one id of `client` that it
+     * hasn't settled, which makes the server refuse the id: its own after one the server took
+     * before a restore, or its own and a forge's in either order.
+     */
+    const renumberCalledFor = (on: World.DeviceId, client: Client) =>
+      (restoredBehind.get(client.id) ?? 0) > client.settled ||
+      (forgedIds.get(on) ?? []).some((id) => id > client.settled);
 
     /** Arms a fault on `on` and counts it, unless one of its kind was armed already. */
     const arm = Effect.fn("Simulation.arm")(function* (
@@ -458,7 +489,9 @@ export const run = (workload: Workload) =>
           faults[event.fault].fired += 1;
           trace.push(`  ${each.id} fired ${event.fault}: ${event.detail}`);
 
-          if (event.fault === "forge") yield* allow(each, clients.get(each.id)?.id ?? "");
+          if (event.fault === "forge") {
+            forgedIds.set(each.id, [...(forgedIds.get(each.id) ?? []), yield* forgedId(event)]);
+          }
         }
       }
     });
@@ -767,7 +800,13 @@ export const run = (workload: Workload) =>
 
           if (!(yield* on.restore)) return "no backup";
           dismissed.set(on.id, dismissedAtBackup.get(on.id) ?? new Set());
-          yield* allow(on, yield* clientOf(on));
+          yield* world.quiet;
+          const restored = yield* clientOf(on);
+          const held = yield* world.server(Invariants.lastMutationId(restored.id));
+
+          if (held > restored.settled) restoredBehind.set(restored.id, held);
+          clients.set(on.id, restored);
+          forgedIds.delete(on.id);
 
           return "restored the backup";
         }
@@ -806,13 +845,17 @@ export const run = (workload: Workload) =>
         found.push(...(yield* each.sql(Invariants.cursors(place))));
 
         const now = yield* clientOf(each);
-        const known = clients.get(each.id) ?? { id: now, allowed: 0 };
-        found.push(...Invariants.sameClient(place, known.id, now, known.allowed));
+        const known = clients.get(each.id) ?? now;
 
-        clients.set(each.id, {
-          id: now,
-          allowed: known.id === now ? known.allowed : Math.max(0, known.allowed - 1),
-        });
+        if (known.id !== now.id) {
+          if (!renumberCalledFor(each.id, known)) {
+            found.push(Invariants.newClient(place, known.id, now.id));
+          }
+
+          forgedIds.delete(each.id);
+        }
+
+        clients.set(each.id, now);
       }
 
       for (const account of World.accountIds) {
@@ -960,7 +1003,7 @@ export const run = (workload: Workload) =>
     for (const each of devices) {
       trace.push(`start ${each.id} ${yield* syncing(each)}`);
       yield* each.backup;
-      clients.set(each.id, { id: yield* clientOf(each), allowed: 0 });
+      clients.set(each.id, yield* clientOf(each));
     }
 
     /** What ran over the wire and on the server, comparable across runs and databases. */
@@ -1007,9 +1050,6 @@ export const run = (workload: Workload) =>
     }
 
     if (violations.length > 0) return result();
-
-    // The world was at rest, so a restore or a forge has had its new client id by now.
-    for (const [id, known] of clients) clients.set(id, { ...known, allowed: 0 });
 
     // Each app comes to the front once and runs a round, so a fault still armed fires.
     for (const each of devices) yield* each.resume;
