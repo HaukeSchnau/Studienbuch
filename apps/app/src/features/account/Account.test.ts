@@ -438,6 +438,58 @@ describe("Account", () => {
     }),
   );
 
+  // A public computer's session stays in memory however the student got in, and a kept one doesn't.
+  it.effect("hands the tab's choice to the session on every way in", () =>
+    Effect.gen(function* () {
+      const lena = Effect.succeed(signedIn("lena", "token-lena"));
+
+      const api = AuthApiTesting.layer({
+        signIn: () => lena,
+        resetPassword: () => Effect.void,
+        passkeySignInOptions: Effect.succeed({ challenge: "c", options: { challenge: "c" } }),
+        passkeySignIn: () => lena,
+      });
+
+      const authenticator = Layer.succeed(Passkeys.Authenticator)({
+        create: () => Effect.die("no passkey was created"),
+        get: () => Effect.succeed({ credential, prf: Option.none() }),
+      });
+
+      const ways = {
+        password: (choice: boolean) => Account.signIn("lena@example.org", "geheim-genug", choice),
+        reset: (choice: boolean) =>
+          Account.resetPassword("lena@example.org", "145838", "ganz-neu-4567", choice),
+        passkey: (choice: boolean) => Account.signInWithPasskey(choice),
+        signUp: (choice: boolean) =>
+          Effect.andThen(
+            confirmed("lena@example.org", "lena", "token-lena"),
+            Account.finish("lena@example.org", false, choice),
+          ),
+      };
+
+      const kept = <E, R>(way: (choice: boolean) => Effect.Effect<unknown, E, R>) =>
+        Effect.forEach([false, true], (choice) =>
+          way(choice).pipe(
+            Effect.andThen(SessionStore.Service.use((sessions) => sessions.current)),
+            Effect.map(Option.map((signed) => signed.publicComputer)),
+            Effect.provide(Layer.mergeAll(store, confirmations(), api, authenticator)),
+          ),
+        );
+
+      const both = [Option.some(false), Option.some(true)];
+
+      assert.deepStrictEqual(
+        {
+          password: yield* kept(ways.password),
+          reset: yield* kept(ways.reset),
+          passkey: yield* kept(ways.passkey),
+          signUp: yield* kept(ways.signUp),
+        },
+        { password: both, reset: both, passkey: both, signUp: both },
+      );
+    }),
+  );
+
   // The reset code only sets the password; the device then signs in with it like any other.
   it.effect("resets a forgotten password, then signs in with the new one", () =>
     Effect.gen(function* () {
