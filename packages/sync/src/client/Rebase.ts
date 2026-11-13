@@ -5,6 +5,7 @@
  * and returns the tables whose rows it changed, which the caller invalidates after the commit.
  */
 import type { SpaceKey } from "@stu/e2ee";
+import * as Arr from "effect/Array";
 import * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
@@ -309,6 +310,24 @@ export const applyPull = Effect.fnUntraced(function* (
 });
 
 /**
+ * The database's failure in a savepoint's `cause`. When SQLite has rolled the whole transaction
+ * back, as on SQLITE_IOERR, Effect's rollback to the savepoint fails and turns every failure into a
+ * defect, so the `SqlError` can be either.
+ */
+const databaseFailure = (cause: Cause.Cause<unknown>) =>
+  Arr.findFirst(cause.reasons, (reason) => {
+    if (Cause.isFailReason(reason) && SqlError.isSqlError(reason.error)) {
+      return Option.some(reason.error);
+    }
+
+    if (Cause.isDieReason(reason) && SqlError.isSqlError(reason.defect)) {
+      return Option.some(reason.defect);
+    }
+
+    return Option.none();
+  });
+
+/**
  * The refusal a sealed command's replay ended with, encoded as the server would send it. Anything
  * the mutator's or `Tx`'s codecs don't know counts as arguments this build can't run.
  */
@@ -425,9 +444,9 @@ export const replay = Effect.fnUntraced(function* (definition: Sync.Definition, 
 
     // The database failing is no verdict on the command: the caller's transaction rolls back, and
     // the round runs again.
-    const failure = Exit.isFailure(exit) ? Cause.findErrorOption(exit.cause) : Option.none();
+    const failure = Exit.isFailure(exit) ? databaseFailure(exit.cause) : Option.none();
 
-    if (Option.isSome(failure) && SqlError.isSqlError(failure.value)) return yield* failure.value;
+    if (Option.isSome(failure)) return yield* failure.value;
 
     if (sent) {
       if (Exit.isSuccess(exit)) for (const row of exit.value.rows) tables.add(row.table);

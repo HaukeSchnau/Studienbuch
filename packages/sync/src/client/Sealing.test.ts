@@ -7,12 +7,14 @@ import * as Exit from "effect/Exit";
 import * as Fiber from "effect/Fiber";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import type * as Reactivity from "effect/reactivity/Reactivity";
 import * as Redacted from "effect/Redacted";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import * as TestClock from "effect/testing/TestClock";
 import { Command } from "../protocol/Command.ts";
 import { Protocol } from "../protocol/Protocol.ts";
+import { DeviceSqlite } from "../simulation/DeviceSqlite.ts";
 import { DeviceDatabase } from "./DeviceDatabase.ts";
 import { Devices } from "./fixture/Devices.ts";
 import { Notes } from "./fixture/Notes.ts";
@@ -41,6 +43,18 @@ const engine = (seed: string, holdsKey = true, options?: SyncClient.Options) =>
 /** One of Lena's devices: the engine on its own database. */
 const device = (driver: Devices.Driver, seed: string, holdsKey = true) =>
   engine(seed, holdsKey).pipe(Layer.provideMerge(Devices.database(driver)));
+
+/**
+ * A database on a client built as expo-sqlite's and the web worker's are: without `isTransaction`.
+ * After SQLite rolls a transaction back itself, Effect's rollback to a savepoint then fails, which
+ * ends the savepoint with defects only.
+ */
+const appDatabase: Layer.Layer<SqlClient.SqlClient | Reactivity.Reactivity> = Devices.databaseOn(
+  Layer.effect(
+    SqlClient.SqlClient,
+    DeviceSqlite.make(() => Effect.void),
+  ),
+);
 
 const bytes = (fill: number) => new Uint8Array(32).fill(fill);
 
@@ -530,46 +544,54 @@ describe("Seal", () => {
   );
 
   it.effect("a database error in a replay rolls the page back instead of refusing the entry", () =>
-    onEachDriver((driver) =>
-      Effect.gen(function* () {
-        const a = yield* Layer.build(device(driver, "a"));
+    Effect.forEach(
+      [
+        ...Devices.drivers.map((driver) => [driver, Devices.database(driver)] as const),
+        ["app client", appDatabase] as const,
+      ],
+      ([driver, database]) =>
+        Effect.gen(function* () {
+          const a = yield* Layer.build(engine("a").pipe(Layer.provideMerge(database)));
 
-        yield* Effect.provide(
-          Effect.gen(function* () {
-            const sql = yield* SqlClient.SqlClient;
-            yield* established;
-            yield* rename("n1", "Mathe neu");
+          yield* Effect.provide(
+            Effect.gen(function* () {
+              const sql = yield* SqlClient.SqlClient;
+              yield* established;
+              yield* rename("n1", "Mathe neu");
 
-            // The disk is full while the next page replays the rename the server didn't take.
-            yield* sql`
-              create temp trigger full before insert on pending_row
-              begin select raise(abort, 'database or disk is full'); end
-            `;
+              // The disk is full while the next page replays the rename the server didn't take.
+              // SQLite rolls the whole transaction back, as on SQLITE_IOERR, or on SQLITE_FULL in
+              // a statement without a statement journal.
+              yield* sql`
+                create temp trigger full before insert on pending_row
+                begin select raise(rollback, 'database or disk is full'); end
+              `;
 
-            const server = Scripted.scripted({
-              push: [Scripted.retryFirst, Scripted.applyAll],
-              pull: [
-                Scripted.page({ spaces: notebook(1, 0), lastMutationId: 1 }),
-                Scripted.page({ spaces: notebook(2, 0), lastMutationId: 2 }),
-              ],
-            });
+              const server = Scripted.scripted({
+                push: [Scripted.retryFirst, Scripted.applyAll],
+                pull: [
+                  Scripted.page({ spaces: notebook(1, 0), lastMutationId: 1 }),
+                  Scripted.page({ spaces: notebook(2, 0), lastMutationId: 2 }),
+                ],
+              });
 
-            const full = yield* Effect.exit(replicate(server.remote));
-            yield* sql`drop trigger full`;
-            yield* replicate(server.remote);
+              const full = yield* Effect.exit(replicate(server.remote));
+              yield* sql`drop trigger full`;
+              yield* replicate(server.remote);
 
-            expect(Exit.isFailure(full), driver).toBe(true);
-            expect(
-              server.pushes.map((request) =>
-                Option.map(sealOf(request), (seal) => seal.writes.length),
-              ),
-              driver,
-            ).toEqual([Option.some(1), Option.some(1)]);
-            expect(yield* Outbox.rejected, driver).toEqual([]);
-          }),
-          a,
-        );
-      }).pipe(Effect.scoped),
+              expect(Exit.isFailure(full), driver).toBe(true);
+              expect(
+                server.pushes.map((request) =>
+                  Option.map(sealOf(request), (seal) => seal.writes.length),
+                ),
+                driver,
+              ).toEqual([Option.some(1), Option.some(1)]);
+              expect(yield* Outbox.rejected, driver).toEqual([]);
+            }),
+            a,
+          );
+        }).pipe(Effect.scoped),
+      { discard: true },
     ),
   );
 
