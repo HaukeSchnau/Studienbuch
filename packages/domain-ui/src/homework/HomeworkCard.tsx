@@ -3,6 +3,7 @@ import { Text } from "@stu/ui/Text";
 import { Theme } from "@stu/ui/Theme";
 import { TickBox } from "@stu/ui/TickBox";
 import { Tokens } from "@stu/ui/Tokens";
+import { useKeptFocus } from "@stu/ui/useKeptFocus";
 import { StyleSheet, useWindowDimensions, View } from "react-native";
 
 import { SubjectMarker } from "../subject/SubjectMarker.tsx";
@@ -24,9 +25,11 @@ export function HomeworkCard({ item, onToggle, width }: HomeworkCardProps) {
   const { color } = Theme.useTheme();
   const { fontScale } = useWindowDimensions();
   const size = titleSize(item.title, width - padding.left - padding.right, fontScale);
+  const { control, item: card } = useKeptFocus(item.id);
 
   return (
     <View
+      ref={card}
       style={[
         styles.card,
         { width, backgroundColor: color.panelCard },
@@ -41,7 +44,7 @@ export function HomeworkCard({ item, onToggle, width }: HomeworkCardProps) {
           onChange={(done) => onToggle(item.id, done)}
           label={`${item.subject}: ${item.title}`}
           color={onPanel}
-          focusKey={item.id}
+          kept={control}
         />
       </View>
       <Text

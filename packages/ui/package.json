@@ -31,6 +31,10 @@
       "react-native": "./src/useFocusOnMount.ts",
       "default": "./src/useFocusOnMount.web.ts"
     },
+    "./useKeptFocus": {
+      "react-native": "./src/useKeptFocus.ts",
+      "default": "./src/useKeptFocus.web.ts"
+    },
     "./useLayout": "./src/useLayout.ts",
     "./useLingeringOrder": "./src/useLingeringOrder.ts",
     "./useStableCallback": "./src/useStableCallback.ts",

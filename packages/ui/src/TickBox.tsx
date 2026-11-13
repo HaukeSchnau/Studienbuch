@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { Tokens } from "./Tokens.ts";
-import { useKeptFocus } from "./useKeptFocus.ts";
+import type { KeptFocus } from "./useKeptFocus.ts";
 import { Vector } from "./Vector.tsx";
 import { Wipe } from "./Wipe.tsx";
 
@@ -14,27 +14,26 @@ export interface TickBoxProps {
   readonly color: string;
   readonly size?: number;
   /**
-   * The same while a list moves the box's item, such as the homework's id. A box ticked from the
-   * keyboard then keeps the focus when the list moves it.
+   * `useKeptFocus` of the box's item, when a list may move it, such as a homework card. A box the
+   * keyboard reached then keeps the focus when the list moves it.
    */
-  readonly focusKey?: string;
+  readonly kept?: KeptFocus["control"];
 }
 
 /**
  * A box drawn by hand, ticked with one pen stroke that draws itself (brand direction D's "done by
  * you"). The touch area is the larger platform minimum around it.
  */
-export function TickBox({ checked, onChange, label, color, size = 30, focusKey }: TickBoxProps) {
-  const { ref, onUsed } = useKeptFocus(focusKey);
-
+export function TickBox({ checked, onChange, label, color, size = 30, kept }: TickBoxProps) {
   const toggle = () => {
-    onUsed();
+    kept?.onUsed();
     onChange(!checked);
   };
 
   return (
     <Pressable
-      ref={ref}
+      ref={kept?.ref}
+      onFocus={kept?.onFocus}
       accessibilityRole="checkbox"
       aria-checked={checked}
       accessibilityLabel={label}
