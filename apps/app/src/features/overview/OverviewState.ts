@@ -22,6 +22,7 @@ export interface Overview {
   /** The first name from the encrypted profile, which a locked device can't read. */
   readonly name: Option.Option<string>;
   readonly today: CivilTime.PlainDate;
+  /** The device doesn't hold the notebook's key: it is `Locked`, or `Offline` or `NotHere`. */
   readonly locked: boolean;
   /** `Some` with the changes that wait for the server while the device has no connection. */
   readonly offline: Option.Option<{ readonly waiting: number }>;
@@ -32,7 +33,11 @@ export interface Overview {
 /** The notebook's homework as the panel shows it, and the refused changes above it. */
 export interface Panel {
   readonly notebook: Notebook.Id;
-  readonly items: ReadonlyArray<HomeworkItem.Item>;
+  /**
+   * `undefined` until the device holds the notebook's key. Without it the homework rows stay
+   * sealed, and an empty list would say there is no homework.
+   */
+  readonly items: ReadonlyArray<HomeworkItem.Item> | undefined;
   readonly refusals: ReadonlyArray<{ readonly rejected: Outbox.Rejected; readonly change: string }>;
   readonly titles: ReadonlyMap<string, string>;
 }
@@ -90,30 +95,35 @@ export const overview = Atom.family((accountId: string) =>
       ([disconnected, waiting]) => (disconnected ? Option.some({ waiting }) : Option.none()),
     );
 
+    // `None` until the device knows where it stands with the notebook's key.
+    const unlocked = Option.map(
+      AsyncResult.value(get(KeysState.status(accountId))),
+      (status) => status._tag === "Unlocked",
+    );
+
     return Option.some({
       name:
         onboarding.value._tag === "Ready"
           ? Option.fromNullishOr(onboarding.value.snapshot.profile.displayName)
           : Option.none(),
       today: today.value,
-      locked: Option.exists(
-        AsyncResult.value(get(KeysState.status(accountId))),
-        (status) => status._tag === "Locked",
-      ),
+      locked: Option.contains(unlocked, false),
       offline,
       panel: Option.map(reading, (value) => {
         const titles = new Map(value.homework.map((each) => [each.id, each.title]));
 
         return {
           notebook: value.notebook,
-          items: HomeworkItem.panel(
-            // Online, a change settles within a second, so its marker would only flicker.
-            value.homework.map((each) => ({
-              ...each,
-              waiting: each.waiting && Option.isSome(offline),
-            })),
-            today.value,
-          ),
+          items: Option.contains(unlocked, true)
+            ? HomeworkItem.panel(
+                // Online, a change settles within a second, so its marker would only flicker.
+                value.homework.map((each) => ({
+                  ...each,
+                  waiting: each.waiting && Option.isSome(offline),
+                })),
+                today.value,
+              )
+            : undefined,
           refusals: value.refusals.map((rejected) => ({
             rejected,
             change: Refused.change(rejected, titles),
