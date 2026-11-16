@@ -52,7 +52,7 @@ export default defineConfig({
         extends: true,
         test: {
           name: "node",
-          include: ["src/**/*.test.ts", "modules/**/*.test.ts"],
+          include: ["src/**/*.test.ts", "modules/**/*.test.ts", "app.config.test.ts"],
           exclude: ["src/**/*.browser.test.ts"],
         },
       },
@@ -65,6 +65,13 @@ export default defineConfig({
         // `.web` files, the development build and `global`. expo-modules-core also re-exports names
         // from files that only declare types, which Metro never checks.
         optimizeDeps: {
+          // The SQLite worker imports these. Vite would find them only when a test starts the
+          // worker, then reload the page under that test.
+          include: [
+            "@effect/wa-sqlite",
+            "@effect/wa-sqlite/dist/wa-sqlite.mjs",
+            "@effect/wa-sqlite/src/examples/AccessHandlePoolVFS.js",
+          ],
           rolldownOptions: {
             resolve: { alias: webAlias, extensions: webExtensions },
             transform: {

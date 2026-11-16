@@ -190,6 +190,50 @@ describe("SyncClient.replicate", () => {
     ),
   );
 
+  it.effect("a pull page refreshes each table's screens once, however many rows it holds", () =>
+    onEachDevice((driver) =>
+      Effect.gen(function* () {
+        const sync = yield* SyncClient.Service;
+        const reactivity = yield* Reactivity.Reactivity;
+        yield* enrolled;
+        // It waits, so the page's replay writes Choice rows too.
+        yield* choose("ma");
+        const refreshes: Record<string, number> = {};
+
+        for (const key of ["Course", "Choice", SyncClient.keys.spaces]) {
+          reactivity.registerUnsafe([key], () => (refreshes[key] = (refreshes[key] ?? 0) + 1));
+        }
+
+        const courses = Array.from({ length: 50 }, (_, index) =>
+          Scripted.readable("Course", `k${index}`, 2, { name: `Kurs ${index}` }),
+        );
+
+        const server = Scripted.scripted({
+          push: [Scripted.retryFirst],
+          pull: [
+            Scripted.page({
+              spaces: Scripted.listed(1, 2),
+              patches: [
+                { space: "igs", reset: false, to: 2, ops: courses },
+                {
+                  space: "nb-lena",
+                  reset: false,
+                  to: 1,
+                  ops: ["de", "en", "fr"].map((course) =>
+                    Scripted.readable("Choice", course, 1, { course }),
+                  ),
+                },
+              ],
+            }),
+          ],
+        });
+
+        expect(yield* sync.replicate(server.remote), driver).toBe("retry");
+        expect(refreshes, driver).toEqual({ Course: 1, Choice: 1, [SyncClient.keys.spaces]: 1 });
+      }),
+    ),
+  );
+
   it.effect("after a lost push the device sends again from its first unsettled command", () =>
     onEachDevice((driver) =>
       Effect.gen(function* () {

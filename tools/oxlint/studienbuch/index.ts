@@ -16,6 +16,7 @@ import noFrameWaitsInBrowserTests from "./no-frame-waits-in-browser-tests.ts";
 import noGlobalProcessRuntime from "./no-global-process-runtime.ts";
 import noHermesUnsupportedApis from "./no-hermes-unsupported-apis.ts";
 import noHooklessUseFunction from "./no-hookless-use-function.ts";
+import noHandRolledLiveQuery from "./no-hand-rolled-live-query.ts";
 import noInlineSchemaCompile from "./no-inline-schema-compile.ts";
 import noJsonStringifyEquality from "./no-json-stringify-equality.ts";
 import noLiteralTimeZone from "./no-literal-time-zone.ts";
@@ -26,6 +27,7 @@ import noPollingLoopInTests from "./no-polling-loop-in-tests.ts";
 import noRawResizeObserver from "./no-raw-resize-observer.ts";
 import noRawRouterLink from "./no-raw-router-link.ts";
 import noRealTimeWaitInTests from "./no-real-time-wait-in-tests.ts";
+import noSqliteUpdateHooks from "./no-sqlite-update-hooks.ts";
 import noTestInLoop from "./no-test-in-loop.ts";
 import noTestTimeoutOrUnreasonedSkip from "./no-test-timeout-or-unreasoned-skip.ts";
 import noThrowingErrors from "./no-throwing-errors.ts";
@@ -60,6 +62,7 @@ export default definePlugin({
     "no-global-process-runtime": noGlobalProcessRuntime,
     "no-hermes-unsupported-apis": noHermesUnsupportedApis,
     "no-hookless-use-function": noHooklessUseFunction,
+    "no-hand-rolled-live-query": noHandRolledLiveQuery,
     "no-inline-schema-compile": noInlineSchemaCompile,
     "no-json-stringify-equality": noJsonStringifyEquality,
     "no-literal-time-zone": noLiteralTimeZone,
@@ -70,6 +73,7 @@ export default definePlugin({
     "no-raw-resize-observer": noRawResizeObserver,
     "no-raw-router-link": noRawRouterLink,
     "no-real-time-wait-in-tests": noRealTimeWaitInTests,
+    "no-sqlite-update-hooks": noSqliteUpdateHooks,
     "no-test-in-loop": noTestInLoop,
     "no-test-timeout-or-unreasoned-skip": noTestTimeoutOrUnreasonedSkip,
     "no-throwing-errors": noThrowingErrors,

@@ -1,7 +1,8 @@
 /**
- * A live query over the device's views: a typed Drizzle query, the tables it reads and the schema
- * of a result row. The engine invalidates a `Reactivity` key per table after every local write,
- * pull and rebase, so the query's atom runs again whenever one of its tables may have changed.
+ * A live query over the device's views: what it reads and how to run it. The engine invalidates a
+ * `Reactivity` key per table after every local write, pull and rebase, and its own queries' keys
+ * when their tables change, so the query's atom runs again whenever something it reads may have
+ * changed, and only then.
  *
  * ```ts
  * export const dueOn = SyncQuery.make({
@@ -16,18 +17,20 @@ import * as Effect from "effect/Effect";
 import * as Atom from "effect/reactivity/Atom";
 import * as Reactivity from "effect/reactivity/Reactivity";
 import * as Schema from "effect/Schema";
-import type * as SqlClient from "effect/sql/SqlClient";
+import * as SqlClient from "effect/sql/SqlClient";
+import type * as SqlError from "effect/sql/SqlError";
 import type { Sync } from "../definition/Sync.ts";
 import { DeviceDatabase } from "./DeviceDatabase.ts";
 
 export * as SyncQuery from "./SyncQuery.ts";
 
 export interface SyncQuery<Param, A, E> {
-  /** The `Reactivity` keys whose invalidation runs the query again: the names of its tables. */
+  /** The `Reactivity` keys whose invalidation runs the query again. */
   readonly keys: ReadonlyArray<string>;
-  readonly run: (param: Param) => Effect.Effect<ReadonlyArray<A>, E, SqlClient.SqlClient>;
+  readonly run: (param: Param) => Effect.Effect<A, E, SqlClient.SqlClient>;
 }
 
+/** One Drizzle select over `tables`, each row decoded with `result`. */
 export const make = <Param, Row, A, E>(options: {
   readonly tables: ReadonlyArray<Sync.Any>;
   readonly query: (
@@ -36,7 +39,7 @@ export const make = <Param, Row, A, E>(options: {
   ) => Effect.Effect<ReadonlyArray<Row>, E>;
   /** Decodes one row as the view returns it: each field in its JSON encoding. */
   readonly result: Schema.Codec<A, Row>;
-}): SyncQuery<Param, A, E | Schema.SchemaError> => {
+}): SyncQuery<Param, ReadonlyArray<A>, E | Schema.SchemaError> => {
   const decode = Schema.decodeEffect(Schema.Array(options.result));
 
   return {
@@ -47,6 +50,26 @@ export const make = <Param, Row, A, E>(options: {
       ),
   };
 };
+
+/**
+ * A screen's read over several tables and the engine's queries, in one transaction, so it never
+ * sees half of a pull. `tables` and `queries` name everything `run` reads and are its keys: a write
+ * elsewhere doesn't run it again.
+ */
+export const read = <A, E, Param = void>(options: {
+  readonly tables: ReadonlyArray<Sync.Any>;
+  readonly queries?: ReadonlyArray<SyncQuery<never, unknown, unknown>>;
+  readonly run: (param: Param) => Effect.Effect<A, E, SqlClient.SqlClient>;
+}): SyncQuery<Param, A, E | SqlError.SqlError> => ({
+  keys: [
+    ...new Set([
+      ...options.tables.map((table) => table.name),
+      ...(options.queries ?? []).flatMap((query) => query.keys),
+    ]),
+  ],
+  run: (param) =>
+    Effect.flatMap(SqlClient.SqlClient, (sql) => sql.withTransaction(options.run(param))),
+});
 
 /**
  * One atom per parameter, run on `runtime`, which provides the device's `SqlClient` and the

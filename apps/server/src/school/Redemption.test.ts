@@ -8,7 +8,7 @@ import * as RpcTest from "effect/rpc/RpcTest";
 import * as TestClock from "effect/testing/TestClock";
 import { Limits } from "../limits/Limits.ts";
 import { AccessCodes } from "./AccessCodes.ts";
-import { Fixture } from "./Fixture.ts";
+import { SchoolTesting } from "./SchoolTesting.ts";
 import { Redemption } from "./Redemption.ts";
 import { Schools } from "./Schools.ts";
 
@@ -17,7 +17,7 @@ const school = School.Id.make("am-see");
 const from = (address: string) => ({ headers: { "x-forwarded-for": address } });
 
 describe.skipIf(Postgres18.socket === null)("Redemption on PostgreSQL 18", () => {
-  layer(Fixture.database)((it) => {
+  layer(SchoolTesting.database)((it) => {
     it.effect(
       "an address gets its ceiling of wrong codes, and a code a few failures, per window",
       () =>

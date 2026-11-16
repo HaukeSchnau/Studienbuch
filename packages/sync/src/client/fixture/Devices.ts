@@ -12,7 +12,6 @@ import * as Reactivity from "effect/reactivity/Reactivity";
 import * as Redacted from "effect/Redacted";
 import * as SqlClient from "effect/sql/SqlClient";
 import * as Stream from "effect/Stream";
-import { Engines } from "../../conformance/Engines.ts";
 import { DeviceDatabase } from "../DeviceDatabase.ts";
 import { Ports } from "../Ports.ts";
 import NotesMigrations from "./migrations/migrations.js";
@@ -28,9 +27,7 @@ export const actor = "account-lena";
 
 const client = (driver: Driver) =>
   driver === "sqlite-wasm"
-    ? Layer.unwrap(
-        Effect.as(Effect.promise(Engines.installFileFetch), WasmSqliteClient.layerMemory({})),
-      )
+    ? WasmSqliteClient.layerMemory({})
     : NodeSqliteClient.layer({ filename: ":memory:" });
 
 /**

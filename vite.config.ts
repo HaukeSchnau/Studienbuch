@@ -280,6 +280,7 @@ export default defineConfig({
           "studienbuch/no-ad-hoc-state-or-effects": "error",
           "studienbuch/no-baked-origin": "error",
           "studienbuch/no-raw-resize-observer": "error",
+          "studienbuch/no-sqlite-update-hooks": "error",
           "studienbuch/platform-twin-extension": "error",
         },
       },
@@ -320,6 +321,13 @@ export default defineConfig({
         files: scope("apps/*/src/**", "packages/*/src/**"),
         excludeFiles: [...scope("packages/core/**"), "**/*.{test,spec}.{ts,tsx}"],
         rules: { "studienbuch/no-literal-time-zone": "error" },
+      },
+      {
+        // A screen's live read is a `SyncQuery`, keyed on what it reads. The Sync Lab shows every
+        // table and the engine's own state, so it follows every key.
+        files: scope("apps/app/src/{features,domain-ui}/**"),
+        excludeFiles: [...scope("apps/app/src/features/sync-lab/**"), "**/*.{test,spec}.{ts,tsx}"],
+        rules: { "studienbuch/no-hand-rolled-live-query": "error" },
       },
       {
         // Tests are deterministic: they await events and drive the TestClock (AGENTS.md, "Verifying").
