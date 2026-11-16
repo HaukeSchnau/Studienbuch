@@ -9,7 +9,7 @@ import * as Option from "effect/Option";
 import * as Redacted from "effect/Redacted";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
-import { Fixture } from "../school/Fixture.ts";
+import { SchoolTesting } from "../school/SchoolTesting.ts";
 import { KeyStore } from "./KeyStore.ts";
 
 const secret = (fill: number, length = 32) => Redacted.make(new Uint8Array(length).fill(fill));
@@ -103,13 +103,13 @@ const fetches = (account: string) =>
   ).pipe(Effect.map(([row]) => row?.count));
 
 describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18", () => {
-  layer(Layer.merge(Fixture.database, TestCrypto.layer("KeyStore.test")))((it) => {
+  layer(Layer.merge(SchoolTesting.database, TestCrypto.layer("KeyStore.test")))((it) => {
     it.effect(
       "publishes generation 0 once: the same record again changes nothing, another one is refused, and of two at once one wins",
       () =>
         Effect.gen(function* () {
           const sql = yield* SqlClient.SqlClient;
-          yield* Fixture.account("lena");
+          yield* SchoolTesting.account("lena");
           const lena = yield* firstDevice("lena", 10);
           const other = yield* firstDevice("lena", 20);
           const publish = Option.some({ wrapper: lena.device, session: "lena-0" });
@@ -120,7 +120,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
             sql.withTransaction(KeyStore.publishFirst("lena", other.record, Option.none())),
           );
 
-          yield* Fixture.account("tom");
+          yield* SchoolTesting.account("tom");
 
           const race = yield* Effect.forEach(
             [yield* firstDevice("tom", 30), yield* firstDevice("tom", 40)],
@@ -165,7 +165,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
       () =>
         Effect.gen(function* () {
           const sql = yield* SqlClient.SqlClient;
-          yield* Fixture.account("mia");
+          yield* SchoolTesting.account("mia");
           const mia = yield* firstDevice("mia", 50);
           yield* sql.withTransaction(
             KeyStore.publishFirst(
@@ -201,7 +201,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
       () =>
         Effect.gen(function* () {
           const sql = yield* SqlClient.SqlClient;
-          yield* Fixture.account("ben");
+          yield* SchoolTesting.account("ben");
           const ben = yield* firstDevice("ben", 60);
           yield* sql.withTransaction(
             KeyStore.publishFirst(
@@ -263,8 +263,8 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
       () =>
         Effect.gen(function* () {
           const sql = yield* SqlClient.SqlClient;
-          yield* Fixture.account("ida");
-          yield* Fixture.account("jan");
+          yield* SchoolTesting.account("ida");
+          yield* SchoolTesting.account("jan");
           const ida = yield* firstDevice("ida", 70);
           const phone = yield* signedIn("ida", 600);
           const laptop = yield* signedIn("ida", 1);
@@ -305,7 +305,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
       () =>
         Effect.gen(function* () {
           const sql = yield* SqlClient.SqlClient;
-          yield* Fixture.account("kai");
+          yield* SchoolTesting.account("kai");
           const kai = yield* firstDevice("kai", 80);
           const session = yield* signedIn("kai", 0);
           const first = Option.some({ wrapper: kai.device, session });
@@ -364,7 +364,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
             Effect.map(KeyStore.state(account), (state) => state.records.length);
 
           // The server lost Lea's key records, or never had them: her notebook still has its box.
-          yield* Fixture.account("lea");
+          yield* SchoolTesting.account("lea");
           const lea = yield* firstDevice("lea", 90);
           const other = yield* firstDevice("lea", 91);
           yield* sealedNotebook("lea", lea.keys, lea.record);
@@ -379,11 +379,11 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
           const [back] = (yield* KeyStore.state("lea")).records;
 
           // A key epoch without a box to compare with, and a notebook Ole only reads, block nothing.
-          yield* Fixture.account("uta");
+          yield* SchoolTesting.account("uta");
           const uta = yield* firstDevice("uta", 92);
           yield* sealedNotebook("uta", uta.keys, uta.record, { box: false });
           yield* KeyStore.publishFirst("uta", uta.record, Option.none());
-          yield* Fixture.account("ole");
+          yield* SchoolTesting.account("ole");
           const ole = yield* firstDevice("ole", 93);
           const owner = yield* firstDevice("ole", 94);
           yield* sealedNotebook("ole", owner.keys, owner.record, { role: "reader" });

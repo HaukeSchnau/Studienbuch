@@ -9,7 +9,7 @@ import * as SqlClient from "effect/sql/SqlClient";
 import { Sync } from "../definition/Sync.ts";
 import { Postgres18 } from "../testing/Postgres18.ts";
 import { Tx } from "../transaction/Tx.ts";
-import { Fixture } from "./Fixture.ts";
+import { Fixture } from "../testing/Fixture.ts";
 import { PostgresTx } from "./PostgresTx.ts";
 
 const Note = Sync.table("Note", { class: "readable", fields: { text: Schema.String } });

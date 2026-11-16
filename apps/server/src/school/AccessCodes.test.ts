@@ -8,7 +8,7 @@ import * as Fiber from "effect/Fiber";
 import * as Option from "effect/Option";
 import * as SqlClient from "effect/sql/SqlClient";
 import { AccessCodes } from "./AccessCodes.ts";
-import { Fixture } from "./Fixture.ts";
+import { SchoolTesting } from "./SchoolTesting.ts";
 import { Schools } from "./Schools.ts";
 
 const school = School.Id.make("am-see");
@@ -80,7 +80,7 @@ const signUp = (account: string, token: string) =>
     const sql = yield* SqlClient.SqlClient;
     const known = yield* sql`select 1 from auth_user where id = ${account}`;
 
-    if (known.length === 0) yield* Fixture.account(account);
+    if (known.length === 0) yield* SchoolTesting.account(account);
 
     // A sign-up's address is unconfirmed until its code comes back.
     yield* sql`update auth_user set "emailVerified" = false where id = ${account}`;
@@ -91,7 +91,7 @@ const signUp = (account: string, token: string) =>
   });
 
 describe.skipIf(Postgres18.socket === null)("AccessCodes on PostgreSQL 18", () => {
-  layer(Fixture.database)((it) => {
+  layer(SchoolTesting.database)((it) => {
     it.effect("two students confirming a single-use code at once spend it once", () =>
       Effect.gen(function* () {
         yield* Schools.publish(data);
@@ -117,7 +117,7 @@ describe.skipIf(Postgres18.socket === null)("AccessCodes on PostgreSQL 18", () =
           signedUp,
           one: one._tag === "Success" && Option.isSome(one.value),
           other: other._tag === "Success" && Option.isNone(other.value),
-          eva: yield* Fixture.memberships("eva"),
+          eva: yield* SchoolTesting.memberships("eva"),
           stored: yield* uses(minted.id),
           // Spent, so the code is gone for anyone else.
           again: (yield* Effect.exit(AccessCodes.reserve(minted.code)))._tag,
@@ -179,8 +179,10 @@ describe.skipIf(Postgres18.socket === null)("AccessCodes on PostgreSQL 18", () =
         expect({
           one: one._tag === "Success" && Option.isSome(one.value),
           other: other._tag === "Success" && Option.isNone(other.value),
-          lena: (yield* Fixture.memberships("lena")).filter((line) => line.startsWith("school")),
-          lena2: yield* Fixture.memberships("lena-2"),
+          lena: (yield* SchoolTesting.memberships("lena")).filter((line) =>
+            line.startsWith("school"),
+          ),
+          lena2: yield* SchoolTesting.memberships("lena-2"),
           stored: yield* uses(minted.id),
         }).toEqual({
           one: true,

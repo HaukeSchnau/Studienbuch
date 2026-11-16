@@ -16,14 +16,14 @@ import * as Schema from "effect/Schema";
 import * as Stream from "effect/Stream";
 import * as TestCrypto from "effect/testing/TestCrypto";
 import { Sync } from "../definition/Sync.ts";
-import { Postgres18 } from "../testing/Postgres18.ts";
+import { Listener } from "../server/Listener.ts";
+import { Ports } from "../server/Ports.ts";
+import { Spaces } from "../server/Spaces.ts";
+import { SyncServer } from "../server/SyncServer.ts";
+import { SyncWriter } from "../server/SyncWriter.ts";
 import { Tx } from "../transaction/Tx.ts";
-import { Listener } from "./Listener.ts";
-import { Ports } from "./Ports.ts";
+import { Postgres18 } from "./Postgres18.ts";
 import { ServerDatabase } from "./ServerDatabase.ts";
-import { Spaces } from "./Spaces.ts";
-import { SyncServer } from "./SyncServer.ts";
-import { SyncWriter } from "./SyncWriter.ts";
 
 export * as Fixture from "./Fixture.ts";
 
@@ -225,7 +225,7 @@ export class Sessions extends Context.Service<
     /** Makes resolving die while `down`, as Better Auth's rejected promise does. */
     readonly outage: (down: boolean) => Effect.Effect<void>;
   }
->()("@stu/sync/server/Fixture/Sessions") {}
+>()("@stu/sync/testing/Fixture/Sessions") {}
 
 export const sessions = Layer.effectContext(
   Effect.gen(function* () {
@@ -284,7 +284,7 @@ export const crypto = TestCrypto.layer("fixture").pipe(
 export class Keys extends Context.Service<
   Keys,
   { readonly publish: (record: AccountKey.Record) => Effect.Effect<void> }
->()("@stu/sync/server/Fixture/Keys") {}
+>()("@stu/sync/testing/Fixture/Keys") {}
 
 export const accountKeys = Layer.effectContext(
   Effect.sync(() => {

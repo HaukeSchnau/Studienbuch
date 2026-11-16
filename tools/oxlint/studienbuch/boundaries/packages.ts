@@ -69,6 +69,23 @@ export const packages: ReadonlyArray<Boundary> = [
     reason: "The Sync Lab runs in the app's web build and never bundles the server.",
   },
   {
+    // Everything but testing/, the simulation, and test and bench files.
+    files: [
+      "packages/sync/src/!(testing|simulation)/**/!(*.test|*.bench).ts",
+      "packages/sync/src/!(testing).ts",
+    ],
+    forbidden: [
+      "vitest{,/**}",
+      "@effect/vitest{,/**}",
+      "drizzle-kit{,/**}",
+      "@effect/sql-pg{,/**}",
+      "@effect/sql-pglite{,/**}",
+      "@electric-sql/**",
+    ],
+    reason:
+      "This code ships in the app or the server and runs on the SqlClient its host provides. Vitest, drizzle-kit, PGlite and the PostgreSQL client are development dependencies, for testing/ and the tests.",
+  },
+  {
     files: ["packages/e2ee/**"],
     forbidden: [
       ...sqlClients,
