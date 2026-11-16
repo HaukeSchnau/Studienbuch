@@ -66,6 +66,16 @@ export const Engine = Schema.Union([
 export type Engine = typeof Engine.Type;
 
 /**
+ * A sealed command the device refuses itself, because a row it writes is on the server in a form
+ * this build can't open: a newer format, or a key epoch the device holds no key for yet. A write
+ * would replace content the device never read. The server never sends it.
+ */
+export class Unreadable extends Schema.TaggedError<Unreadable, { readonly brand: unique symbol }>()(
+  "SyncClient.Unreadable",
+  { space: Ids.Id, id: Ids.Id },
+) {}
+
+/**
  * Any refusal as it travels: its tag and its encoded fields. A device decodes the tags it knows
  * and shows a general sentence for a tag from a newer server.
  */
