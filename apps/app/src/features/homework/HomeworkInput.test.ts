@@ -132,6 +132,13 @@ describe("HomeworkInput.offered", () => {
     ]);
   });
 
+  it("offers none when today's term has no course choice, not another term's courses", () => {
+    assert.deepStrictEqual(
+      HomeworkInput.offered([{ termId: "summer", courseIds: ["course-ch"] }], terms, today),
+      [],
+    );
+  });
+
   it("offers every chosen course when today falls in no term", () => {
     assert.deepStrictEqual(HomeworkInput.offered(enrollments, terms, date("2027-08-20")), [
       "course-ch",

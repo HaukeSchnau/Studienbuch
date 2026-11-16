@@ -54,23 +54,23 @@ export interface Chosen {
 }
 
 /**
- * The courses the sheet offers as Fach: those chosen for the term `today` falls in. Between terms,
- * or before the school's terms arrived, every chosen course, since `homework.create` accepts any.
+ * The courses the sheet offers as Fach: those chosen for the term `today` falls in, or none while
+ * that term has no course choice yet. Between terms, or before the school's terms arrived, every
+ * chosen course, since `homework.create` accepts any. An edit keeps its own course (`choices`).
  */
 export const offered = (
   enrollments: ReadonlyArray<Chosen>,
   terms: ReadonlyArray<Tx.Entry<Term.Row>>,
   today: CivilTime.PlainDate,
 ): ReadonlyArray<string> =>
-  Option.match(
-    Option.flatMap(Term.containing(terms, today), (term) =>
-      Arr.findFirst(enrollments, (enrollment) => enrollment.termId === term.id),
-    ),
-    {
-      onNone: () => Arr.dedupe(enrollments.flatMap((enrollment) => enrollment.courseIds)),
-      onSome: (enrollment) => enrollment.courseIds,
-    },
-  );
+  Option.match(Term.containing(terms, today), {
+    onNone: () => Arr.dedupe(enrollments.flatMap((enrollment) => enrollment.courseIds)),
+    onSome: (term) =>
+      Option.match(
+        Arr.findFirst(enrollments, (enrollment) => enrollment.termId === term.id),
+        { onNone: () => [], onSome: (enrollment) => enrollment.courseIds },
+      ),
+  });
 
 export interface Context {
   readonly today: CivilTime.PlainDate;
