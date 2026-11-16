@@ -5,11 +5,11 @@ import { Spaces, SyncServer, SyncWriter } from "@stu/sync/server";
 import { Postgres18 } from "@stu/sync/testing";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { Testing } from "../infra/database/Testing.ts";
+import { DatabaseTesting } from "../infra/database/DatabaseTesting.ts";
 import { Notebooks } from "./Notebooks.ts";
 
 const writers = SyncServer.writers(Studienbuch.schema).pipe(
-  Layer.provideMerge(Testing.prepared),
+  Layer.provideMerge(DatabaseTesting.prepared),
   Layer.provideMerge(NodeServices.layer),
 );
 

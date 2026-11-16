@@ -10,7 +10,7 @@ import * as SqlClient from "effect/sql/SqlClient";
 import * as Tracer from "effect/Tracer";
 import { Postgres18 } from "../testing/Postgres18.ts";
 import { Tx } from "../transaction/Tx.ts";
-import { Fixture } from "./Fixture.ts";
+import { Fixture } from "../testing/Fixture.ts";
 import { Pokes } from "./Pokes.ts";
 import { Spaces } from "./Spaces.ts";
 import { SyncEpoch } from "./SyncEpoch.ts";

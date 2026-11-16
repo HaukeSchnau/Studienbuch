@@ -2,6 +2,10 @@
 // needs its import to resolve.
 declare module "@effect/atom-react";
 
+declare module "@effect/sql-pg";
+
+declare module "@effect/sql-pglite";
+
 declare module "@effect/vitest";
 
 declare module "@react-navigation/native";
@@ -27,6 +31,8 @@ declare module "@stu/sync/server";
 declare module "@stu/sync/testing";
 
 declare module "@tanstack/react-router";
+
+declare module "drizzle-kit/api-postgres";
 
 declare module "effect";
 

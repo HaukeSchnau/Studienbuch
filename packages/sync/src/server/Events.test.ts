@@ -9,7 +9,7 @@ import { Protocol } from "../protocol/Protocol.ts";
 import { Postgres18 } from "../testing/Postgres18.ts";
 import { Tx } from "../transaction/Tx.ts";
 import { Events } from "./Events.ts";
-import { Fixture } from "./Fixture.ts";
+import { Fixture } from "../testing/Fixture.ts";
 import { Pokes } from "./Pokes.ts";
 import { Spaces } from "./Spaces.ts";
 import { SyncWriter } from "./SyncWriter.ts";

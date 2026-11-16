@@ -9,7 +9,7 @@ import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import { Deployment } from "../infra/config/Deployment.ts";
 import { AccessCodes } from "../school/AccessCodes.ts";
-import { Fixture } from "../school/Fixture.ts";
+import { SchoolTesting } from "../school/SchoolTesting.ts";
 import { DemoAccounts } from "./DemoAccounts.ts";
 import { DemoKeys } from "./DemoKeys.ts";
 import { Seed } from "./Seed.ts";
@@ -158,7 +158,7 @@ const opened = (account: string, notebook: string) =>
 
 /** What the seed needs from the server it runs in. */
 const seeding = Layer.mergeAll(
-  Fixture.database,
+  SchoolTesting.database,
   DemoAccounts.seeding,
   CryptoSuite.layer,
   Layer.succeed(Deployment.Current, { revision: "test", environment: "beta" }),
@@ -278,7 +278,7 @@ describe.skipIf(Postgres18.socket === null)("Seed on PostgreSQL 18", () => {
         }).pipe(
           Effect.provide(
             Layer.mergeAll(
-              Fixture.database,
+              SchoolTesting.database,
               DemoAccounts.seeding,
               CryptoSuite.layer,
               Layer.succeed(Deployment.Current, { revision: "test", environment }),

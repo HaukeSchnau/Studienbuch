@@ -10,7 +10,7 @@ import { Bounds } from "../protocol/Bounds.ts";
 import { Command } from "../protocol/Command.ts";
 import { Protocol } from "../protocol/Protocol.ts";
 import { Postgres18 } from "../testing/Postgres18.ts";
-import { Fixture } from "./Fixture.ts";
+import { Fixture } from "../testing/Fixture.ts";
 import { Pull } from "./Pull.ts";
 import { Push } from "./Push.ts";
 import { Spaces } from "./Spaces.ts";

@@ -11,16 +11,13 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as SqlClient from "effect/sql/SqlClient";
 import type * as SqlError from "effect/sql/SqlError";
-// installFileFetch reads the wasm file before any Effect runtime exists.
-// oxlint-disable-next-line effecttsgo/node-builtin-import -- see above
-import * as NodeFSP from "node:fs/promises";
 import { DeviceDatabase } from "../client/DeviceDatabase.ts";
 import { SqliteTx } from "../client/SqliteTx.ts";
+import { Probe } from "../conformance/Probe.ts";
+import ProbeMigrations from "../conformance/migrations/migrations.js";
 import { PostgresTx } from "../server/PostgresTx.ts";
-import { ServerDatabase } from "../server/ServerDatabase.ts";
-import { Postgres18 } from "../testing/Postgres18.ts";
-import { Probe } from "./Probe.ts";
-import ProbeMigrations from "./migrations/migrations.js";
+import { Postgres18 } from "./Postgres18.ts";
+import { ServerDatabase } from "./ServerDatabase.ts";
 
 export * as Engines from "./Engines.ts";
 
@@ -31,7 +28,7 @@ export interface Engine extends Probe.Engine {
 }
 
 export class Service extends Context.Service<Service, ReadonlyArray<Engine>>()(
-  "@stu/sync/conformance/Engines",
+  "@stu/sync/testing/Engines",
 ) {}
 
 const engine = Effect.fnUntraced(function* (
@@ -75,39 +72,10 @@ const servers = [
 ];
 
 const layerOf = (engines: typeof devices) =>
-  Layer.effect(
-    Service,
-    Effect.andThen(Effect.promise(installFileFetch), Effect.all(engines, { concurrency: 1 })),
-  );
+  Layer.effect(Service, Effect.all(engines, { concurrency: 1 }));
 
 /** Every engine. */
 export const layer = layerOf([...devices, ...servers]);
 
 /** The device's two SQLite builds. */
 export const deviceLayer = layerOf(devices);
-
-// The shim is plain async Node code: it replaces the global fetch before Effect's wasm client starts.
-/* oxlint-disable effecttsgo/async-function, effecttsgo/global-fetch, typescript/no-unsafe-type-assertion -- see above */
-/**
- * wa-sqlite's web build loads its wasm with `fetch`, and Node's `fetch` rejects `file:` URLs, so
- * Effect's wasm client cannot start in Node as shipped. Remove this once `makeMemory` accepts the
- * wasm bytes or a `locateFile`, the same upstream change the app's OPFS worker needs.
- */
-export async function installFileFetch() {
-  const nodeFetch = globalThis.fetch;
-
-  if ((nodeFetch as { readsFiles?: true }).readsFiles) return;
-
-  const fileFetch = (input: string | URL | Request, init?: RequestInit) => {
-    const url = new URL(input instanceof Request ? input.url : input);
-
-    if (url.protocol !== "file:") return nodeFetch(input, init);
-
-    return NodeFSP.readFile(url).then(
-      (bytes) => new Response(bytes, { headers: { "content-type": "application/wasm" } }),
-    );
-  };
-
-  globalThis.fetch = Object.assign(fileFetch, { readsFiles: true as const });
-}
-/* oxlint-enable effecttsgo/async-function, effecttsgo/global-fetch, typescript/no-unsafe-type-assertion */
