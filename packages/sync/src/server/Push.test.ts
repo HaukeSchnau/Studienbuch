@@ -252,6 +252,33 @@ describe.skipIf(Postgres18.socket === null)("Push on PostgreSQL 18", () => {
       }),
     );
 
+    it.effect("a readable command's roles are checked on the rows it wrote, as on the device", () =>
+      Effect.gen(function* () {
+        const world = yield* Fixture.school("written");
+        const { lena, tom } = world;
+        yield* (yield* Spaces.Service).addMember(lena.notebook, tom.account, "guest");
+
+        const visit = (mutationId: number, enroll: boolean) =>
+          Command.Mutate.make({
+            mutationId,
+            name: Fixture.visit.name,
+            version: 1,
+            args: { notebook: lena.notebook, school: world.school, termId: world.term, enroll },
+            at,
+          });
+
+        expect([
+          yield* answer(push(lena.account, "written-c1", [visit(1, true)])),
+          yield* answer(push(tom.account, "written-c2", [visit(1, false), visit(2, true)])),
+        ]).toEqual([
+          // The school is declared and only read.
+          { lastMutationId: 1, outcomes: ["1 Applied"] },
+          // A guest may write a visit, never an enrollment.
+          { lastMutationId: 2, outcomes: ["1 Applied", "2 Sync.NotAllowed"] },
+        ]);
+      }),
+    );
+
     it.effect(
       "each Seal check refuses with its tag, in order, and Stale keeps the last mutation id",
       () =>
