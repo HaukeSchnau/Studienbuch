@@ -3,6 +3,8 @@ import { Accounts } from "@stu/api/Accounts";
 import { AuthHeading } from "@stu/ui/AuthHeading";
 import { Button } from "@stu/ui/Button";
 import { Field } from "@stu/ui/Field";
+import { Text } from "@stu/ui/Text";
+import { Theme } from "@stu/ui/Theme";
 import * as Exit from "effect/Exit";
 import * as Option from "effect/Option";
 import * as Atom from "effect/reactivity/Atom";
@@ -85,9 +87,11 @@ function Address() {
 /**
  * The code and the new password. Asking for another code stays here, and when the server refuses
  * that, as offline or after too many requests, the reason shows under the link. Saving signs in,
- * so the choice of a public computer shows here as on "Anmelden".
+ * so the choice of a public computer shows here as on "Anmelden". A signed-out device holds no
+ * notebook key, so the home it lands on is locked, and this step says so first.
  */
 function NewPassword({ email }: { readonly email: string }) {
+  const { color } = Theme.useTheme();
   const [result, reset] = useAtom(AccountState.resetPassword, { mode: "promiseExit" });
   const forget = useAtomSet(AccountState.resetPassword);
   const keepSentTo = useAtomSet(Steps.resetSentTo);
@@ -141,6 +145,10 @@ function NewPassword({ email }: { readonly email: string }) {
           returnKeyType="go"
           onSubmitEditing={() => void submit()}
         />
+        <Text variant="subhead" style={{ color: color.inkSoft }}>
+          Ein neues Passwort öffnet dein Notizbuch nicht. Danach entsperrst du es auf diesem Gerät
+          mit deinem Passkey oder deiner Notfallkarte.
+        </Text>
         <ProblemText reason={reasonOf(result)} />
         <Button
           kind="action"

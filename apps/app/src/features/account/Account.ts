@@ -1,6 +1,7 @@
 import { Access } from "@stu/api/Access";
 import { Accounts } from "@stu/api/Accounts";
 import { Demo } from "@stu/api/Demo";
+import * as Arr from "effect/Array";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
@@ -16,6 +17,7 @@ import { AuthApi } from "../../infra/auth/AuthApi.ts";
 import { PendingSignUp } from "../../infra/auth/PendingSignUp.ts";
 import { SessionStore } from "../../infra/auth/SessionStore.ts";
 import { Passkeys } from "../../infra/passkeys/Passkeys.ts";
+import type { NotebookKeys } from "../keys/NotebookKeys.ts";
 
 // Signing up, in and out on this device. Signing in needs the network once; after that the device
 // works on its own data, and an ended session only pauses sync until the same account signs in
@@ -538,8 +540,8 @@ export const passkeyOutput = Effect.fn("Account.passkeyOutput")(function* (crede
 /**
  * Signs this device out: `forget` deletes the account's database, secrets and session
  * (`Layers.forget`), then the server ends the session. Offline the device still forgets
- * everything, and the session runs out on the server. The caller asks first unless the outbox is
- * known to be empty (`unsentWarning`).
+ * everything, and the session runs out on the server. The caller asks first unless nothing would be
+ * lost (`signOutWarning`).
  */
 export const signOut = Effect.fn("Account.signOut")(function* <E, R>(
   forget: (signed: SessionStore.Signed) => Effect.Effect<void, E, R>,
@@ -560,13 +562,14 @@ export const signOut = Effect.fn("Account.signOut")(function* <E, R>(
   );
 });
 
-/**
- * What signing out would lose, from the engine's count of unsent commands: none only when it
- * counted 0. While the engine starts, or when it didn't start, the device can't know.
- */
-export const unsentWarning = (
-  unsent: AsyncResult.AsyncResult<number, unknown>,
-): Option.Option<string> => {
+/** What signing out would lose, a paragraph each, for the one dialog before "Abmelden". */
+export interface SignOutWarning {
+  readonly paragraphs: ReadonlyArray<string>;
+  /** Only this device opens the notebook, so the dialog offers "Notfallkarte erstellen" first. */
+  readonly offerCard: boolean;
+}
+
+const unsentLoss = (unsent: AsyncResult.AsyncResult<number, unknown>): Option.Option<string> => {
   if (!AsyncResult.isSuccess(unsent)) {
     return Option.some(
       "Dieses Gerät kann gerade nicht prüfen, ob alle Änderungen übertragen sind. Wenn du dich jetzt abmeldest, sind nicht übertragene Änderungen weg.",
@@ -580,6 +583,33 @@ export const unsentWarning = (
       ? "1 Änderung ist noch nicht übertragen. Wenn du dich jetzt abmeldest, ist sie weg."
       : `${unsent.value} Änderungen sind noch nicht übertragen. Wenn du dich jetzt abmeldest, sind sie weg.`,
   );
+};
+
+const notebookLoss: Record<NotebookKeys.AtSignOut, Option.Option<string>> = {
+  kept: Option.none(),
+  lost: Option.some(
+    "Dein Notizbuch hängt an diesem Gerät. Wenn du dich abmeldest, sind deine Hausaufgaben weg, und niemand kann sie zurückholen. Mit einer Notfallkarte kommst du wieder rein.",
+  ),
+  unknown: Option.some(
+    "Dieses Gerät kann gerade nicht prüfen, ob du dein Notizbuch auch ohne dieses Gerät öffnen kannst. Ohne Passkey oder Notfallkarte ist es nach dem Abmelden weg.",
+  ),
+};
+
+/**
+ * What signing out would lose: the notebook (`NotebookKeys.atSignOut`) and the commands the engine
+ * counted as unsent. Both are lost unless known otherwise, so a count or a key check still under way
+ * asks too.
+ */
+export const signOutWarning = (
+  unsent: AsyncResult.AsyncResult<number, unknown>,
+  notebook: AsyncResult.AsyncResult<NotebookKeys.AtSignOut, unknown>,
+): Option.Option<SignOutWarning> => {
+  const atSignOut = AsyncResult.isSuccess(notebook) ? notebook.value : "unknown";
+  const paragraphs = Arr.getSomes([notebookLoss[atSignOut], unsentLoss(unsent)]);
+
+  return Arr.isReadonlyArrayNonEmpty(paragraphs)
+    ? Option.some({ paragraphs, offerCard: atSignOut === "lost" })
+    : Option.none();
 };
 
 /**

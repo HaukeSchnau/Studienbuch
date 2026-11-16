@@ -735,15 +735,43 @@ describe("Account", () => {
     );
   });
 
-  // Signing out deletes the outbox. Only a count the engine read lets it go without asking.
-  it("asks before signing out unless the engine counted no unsent change", () => {
-    const asks = [
-      AsyncResult.success(0),
-      AsyncResult.success(1),
-      AsyncResult.initial(),
-      AsyncResult.fail("AccountDatabase.Unavailable"),
-    ].map((unsent) => Option.isSome(Account.unsentWarning(unsent)));
+  // Signing out deletes the outbox and the device's key. Only a count the engine read and a notebook
+  // that opens without this device let it go without asking, and one dialog names both losses.
+  it("asks before signing out unless nothing waits and the notebook survives this device", () => {
+    const kept = AsyncResult.success("kept" as const);
+    const lost = AsyncResult.success("lost" as const);
+    const failed = AsyncResult.fail("AccountDatabase.Unavailable");
 
-    assert.deepStrictEqual(asks, [false, true, true, true]);
+    const asks = (
+      [
+        [AsyncResult.success(0), kept],
+        [AsyncResult.success(1), kept],
+        [AsyncResult.initial(), kept],
+        [failed, kept],
+        [AsyncResult.success(0), lost],
+        [AsyncResult.success(2), lost],
+        [AsyncResult.success(0), AsyncResult.success("unknown" as const)],
+        [AsyncResult.success(0), AsyncResult.initial()],
+        [AsyncResult.success(0), failed],
+      ] as const
+    ).map(([unsent, notebook]) =>
+      Option.match(Account.signOutWarning(unsent, notebook), {
+        onNone: () => "no",
+        onSome: ({ paragraphs, offerCard }) =>
+          `${String(paragraphs.length)}${offerCard ? " with card" : ""}`,
+      }),
+    );
+
+    assert.deepStrictEqual(asks, [
+      "no",
+      "1",
+      "1",
+      "1",
+      "1 with card",
+      "2 with card",
+      "1",
+      "1",
+      "1",
+    ]);
   });
 });
