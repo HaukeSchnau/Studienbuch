@@ -952,11 +952,12 @@ DIAGRAMS.app = {
     { x: 20, y: 590, w: 1120, h: 196, t: "src/infra: adapters, each a native file and a .web file where the platforms differ" },
   ],
   nodes: [
-    { id: "r-auth", x: 40, y: 42, w: 270, h: 70, t: "(auth)", s: "anmelden, konto-erstellen, aktivieren\ne-mail-bestaetigen, passwort-vergessen\ngeschafft" },
-    { id: "r-keys", x: 330, y: 42, w: 230, h: 70, t: "(keys)", s: "notfallkarte\nnotizbuch-entsperren\nnotizbuch-schluessel" },
-    { id: "r-tabs", x: 580, y: 42, w: 200, h: 70, t: "(tabs)/(uebersicht)", s: "index, diagnose\nselbsttest" },
-    { id: "r-check", x: 800, y: 42, w: 140, h: 70, t: "(check)", s: "passkey-test" },
-    { id: "r-lab", x: 960, y: 42, w: 160, h: 70, t: "dev/sync-lab", s: "web, dev and\npreview only" },
+    { id: "r-nf", x: 40, y: 42, w: 110, h: 70, t: "+not-found", s: "any other\naddress" },
+    { id: "r-auth", x: 165, y: 42, w: 255, h: 70, t: "(auth)", s: "anmelden, konto-erstellen, aktivieren\ne-mail-bestaetigen, passwort-vergessen\ngeschafft" },
+    { id: "r-keys", x: 435, y: 42, w: 195, h: 70, t: "(keys)", s: "notfallkarte\nnotizbuch-entsperren\nnotizbuch-schluessel" },
+    { id: "r-tabs", x: 645, y: 42, w: 175, h: 70, t: "(tabs)/(uebersicht)", s: "index, diagnose\nselbsttest" },
+    { id: "r-check", x: 835, y: 42, w: 120, h: 70, t: "(check)", s: "passkey-test" },
+    { id: "r-lab", x: 970, y: 42, w: 150, h: 70, t: "dev/sync-lab", s: "web, dev and\npreview only" },
 
     { id: "f-account", x: 40, y: 184, w: 170, h: 72, t: "account", s: "gates, sign-in, sign-up\nsign-out" },
     { id: "f-keys", x: 225, y: 184, w: 170, h: 72, t: "keys", s: "NotebookKeys, unlock\nNotfallkarte" },
@@ -989,11 +990,12 @@ DIAGRAMS.app = {
     { id: "i-origin", x: 910, y: 708, w: 210, h: 64, t: "Server origin", s: "web: its own origin\nnative: EXPO_PUBLIC_API_URL", k: "infra" },
   ],
   edges: [
+    { a: "r-nf", b: "f-account", as: "b", bs: "t", bo: -30 },
     { a: "r-auth", b: "f-account" },
     { a: "r-keys", b: "f-keys" },
     { a: "r-tabs", b: "f-over", ao: 0 },
     { a: "r-tabs", b: "f-diag", as: "b", bs: "t", ao: 60, bo: -20 },
-    { a: "r-check", b: "f-account", as: "b", bs: "t", ao: -40, bo: 45, via: [[830, 138], [170, 138]] },
+    { a: "r-check", b: "f-account", as: "b", bs: "t", ao: -40, bo: 45, via: [[855, 138], [170, 138]] },
     { a: "r-lab", b: "f-lab" },
     { a: "f-account", b: "a-atoms", as: "b", bs: "t", ao: 40, via: [[125, 284], [720, 284]], bo: -60 },
     { a: "f-keys", b: "a-atoms", as: "b", bs: "t", via: [[310, 280], [760, 280]], bo: -20 },
@@ -1437,6 +1439,7 @@ const INFO = {
   "p-deploy": { t: "deploy/, .calder/, nix/", k: "infra", d: ["The Alchemy stack that declares each stage's Fleet service and DNS, Calder's CI plan, and the Nix derivations for the bundle, the server smoke test and the closure guard."], f: ["deploy/alchemy.run.ts", ".calder/ci.ts", "nix/bundle.nix", "nix/server-smoke.nix"], a: [5, 6, 7] },
 
   /* app */
+  "r-nf": { t: "Route +not-found", d: ["Any address no other route matches: a typo, an old link or a wrong deep link, on all three platforms. It shows the sign-in card with one way back to <code>/</code>, which is the Übersicht when signed in and the access code when not.", "Expo Router's <code>/_sitemap</code> is off in every build, so no page lists the routes."], f: ["apps/app/src/app/+not-found.tsx", "apps/app/src/features/account/NotFoundScreen.tsx", "apps/app/app.config.ts"] },
   "r-auth": { t: "Routes (auth)", d: ["Willkommen with the access code (<code>aktivieren</code>), sign-in, sign-up, the email code, forgotten password and the success screen. Screens hand the email and reservation along in memory, never in the URL."], f: ["apps/app/src/app/(auth)/_layout.tsx", "apps/app/src/features/account/Steps.ts"] },
   "r-keys": { t: "Routes (keys)", d: ["Notfallkarte, Notizbuch entsperren and Notizbuch-Schlüssel: the screens for the notebook's root key."], f: ["apps/app/src/app/(keys)/notizbuch-entsperren.tsx", "apps/app/src/features/keys/KeysScreen.tsx"], a: [25] },
   "r-tabs": { t: "Routes (tabs)", d: ["The signed-in app: Übersicht, and the device's diagnostics and self test. Only one tab exists so far."], f: ["apps/app/src/app/(tabs)/_layout.tsx", "apps/app/src/ui/navigation/AppTabs.tsx"] },
