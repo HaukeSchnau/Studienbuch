@@ -1,5 +1,6 @@
 import { Homework, type CivilTime } from "@stu/core";
 import { Button } from "@stu/ui/Button";
+import { Checkable } from "@stu/ui/Checkable";
 import { Field } from "@stu/ui/Field";
 import { Icon } from "@stu/ui/Icon";
 import { Text } from "@stu/ui/Text";
@@ -205,9 +206,9 @@ function Chip({
   const colors = subject[choice.mark.slot];
 
   return (
-    <Pressable
-      accessibilityRole="radio"
-      aria-checked={selected}
+    <Checkable
+      kind="radio"
+      checked={selected}
       onPress={onPress}
       style={({ pressed }) => [
         styles.chip,
@@ -223,7 +224,7 @@ function Chip({
         {choice.subject}
       </Text>
       {selected ? <Icon name="check" color="#FFFFFF" size={18} /> : null}
-    </Pressable>
+    </Checkable>
   );
 }
 
@@ -236,7 +237,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: Tokens.space.xs,
-    minHeight: Tokens.layout.minTarget - 4,
     borderRadius: Tokens.radius.pill,
     borderWidth: 2,
     paddingLeft: Tokens.space.xs,
