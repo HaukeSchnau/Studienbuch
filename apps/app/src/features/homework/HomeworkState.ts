@@ -19,6 +19,7 @@ import * as Option from "effect/Option";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as KeyValueStore from "effect/persistence/KeyValueStore";
 import * as Atom from "effect/reactivity/Atom";
+import * as AtomRegistry from "effect/reactivity/AtomRegistry";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import * as Struct from "effect/Struct";
@@ -27,6 +28,7 @@ import { AccountEngine } from "../../infra/runtime/AccountEngine.ts";
 import { Schema as Device } from "../../infra/sqlite/Schema.ts";
 import { DeviceStatus } from "../device-status/DeviceStatus.ts";
 import { HomeworkInput } from "./HomeworkInput.ts";
+import { LocalRefusals } from "./LocalRefusals.ts";
 
 // The notebook's homework as atoms for the screens, on the account's engine: the rows with their
 // courses, which of them wait for the server, the refused changes, the courses to choose from,
@@ -227,6 +229,7 @@ export const setDone = Atom.family((accountId: string) =>
               reason: refused._tag,
             }),
         ),
+        holdRefusal(accountId, "HomeworkState.NotToggled", toggle.id),
       ),
     { concurrent: true },
   ),
@@ -366,9 +369,43 @@ export const remove = Atom.family((accountId: string) =>
       ).pipe(
         Effect.asVoid,
         Effect.mapError((refused) => new NotDeleted({ id, reason: refused._tag })),
+        holdRefusal(accountId, "HomeworkState.NotDeleted", id),
       ),
   ),
 );
+
+/** A tick or a delete this device refused itself. */
+export type LocalRefusal = NotToggled | NotDeleted;
+
+/**
+ * The ticks and deletes this device refused itself, per homework, until the student retries or
+ * dismisses them (`LocalRefusals`). A fn atom keeps only its latest result, so a second tick would
+ * otherwise hide the first one's refusal.
+ */
+export const localRefusals = Atom.family((accountId: string) =>
+  Atom.make<LocalRefusals.Held<LocalRefusal>>(new Map()).pipe(
+    Atom.withLabel(`homework-local-refusals-${accountId}`),
+    Atom.keepAlive,
+  ),
+);
+
+/** Holds the change's refusal, or lets an earlier one for the same homework go once it worked. */
+const holdRefusal =
+  (accountId: string, kind: LocalRefusal["_tag"], id: string) =>
+  <A, E extends LocalRefusal, R>(change: Effect.Effect<A, E, R>) =>
+    Effect.flatMap(AtomRegistry.AtomRegistry, (registry) => {
+      const settle = (refused: Option.Option<LocalRefusal>) =>
+        Effect.sync(() =>
+          registry.update(localRefusals(accountId), (held) =>
+            LocalRefusals.settle(held, kind, id, refused),
+          ),
+        );
+
+      return change.pipe(
+        Effect.tap(() => settle(Option.none())),
+        Effect.tapError((refused) => settle(Option.some<LocalRefusal>(refused))),
+      );
+    });
 
 /** What every homework screen and the Übersicht show: the device's status, today and the notebook. */
 export interface Screen extends DeviceStatus.Status {

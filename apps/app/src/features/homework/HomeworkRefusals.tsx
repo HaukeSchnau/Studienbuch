@@ -1,12 +1,9 @@
 import { useAtom, useAtomSet } from "@effect/atom-react";
 import type { CivilTime } from "@stu/core";
 import { RefusalCard } from "@stu/domain-ui/refusal/RefusalCard";
-import * as Option from "effect/Option";
-import * as AsyncResult from "effect/reactivity/AsyncResult";
-import * as Atom from "effect/reactivity/Atom";
-import * as Schema from "effect/Schema";
 
 import { HomeworkState } from "./HomeworkState.ts";
+import { LocalRefusals } from "./LocalRefusals.ts";
 import { Refused } from "./Refused.ts";
 
 /**
@@ -23,13 +20,12 @@ export function HomeworkRefusals({
   readonly reading: HomeworkState.Reading;
   readonly today: CivilTime.PlainDate;
 }) {
-  const [toggled, toggle] = useAtom(HomeworkState.setDone(accountId));
-  const [removed, remove] = useAtom(HomeworkState.remove(accountId));
+  const toggle = useAtomSet(HomeworkState.setDone(accountId));
+  const remove = useAtomSet(HomeworkState.remove(accountId));
+  const [local, setLocal] = useAtom(HomeworkState.localRefusals(accountId));
   const redo = useAtomSet(HomeworkState.redo(accountId));
   const dismiss = useAtomSet(HomeworkState.dismiss(accountId));
   const titles = new Map(reading.homework.map((each) => [each.id, each.title]));
-  const notToggled = Option.filter(AsyncResult.error(toggled), Schema.is(HomeworkState.NotToggled));
-  const notRemoved = Option.filter(AsyncResult.error(removed), Schema.is(HomeworkState.NotDeleted));
 
   return (
     <>
@@ -42,34 +38,27 @@ export function HomeworkRefusals({
           onDismiss={() => dismiss(rejected)}
         />
       ))}
-      {Option.match(notToggled, {
-        onNone: () => null,
-        onSome: (failed) => (
-          <RefusalCard
-            change={Refused.tick(failed.done, titles.get(failed.id))}
-            reason={{ _tag: failed.reason }}
-            onRetry={() =>
-              toggle({
-                notebook: reading.notebook,
-                id: failed.id,
-                doneOn: failed.done ? today : undefined,
-              })
-            }
-            onDismiss={() => toggle(Atom.Reset)}
-          />
-        ),
-      })}
-      {Option.match(notRemoved, {
-        onNone: () => null,
-        onSome: (failed) => (
-          <RefusalCard
-            change={Refused.removal(titles.get(failed.id))}
-            reason={{ _tag: failed.reason }}
-            onRetry={() => remove({ notebook: reading.notebook, id: failed.id })}
-            onDismiss={() => remove(Atom.Reset)}
-          />
-        ),
-      })}
+      {[...local.values()].map((refused) => (
+        <RefusalCard
+          key={`${refused._tag} ${refused.id}`}
+          change={
+            refused._tag === "HomeworkState.NotToggled"
+              ? Refused.tick(refused.done, titles.get(refused.id))
+              : Refused.removal(titles.get(refused.id))
+          }
+          reason={{ _tag: refused.reason }}
+          onRetry={() =>
+            refused._tag === "HomeworkState.NotToggled"
+              ? toggle({
+                  notebook: reading.notebook,
+                  id: refused.id,
+                  doneOn: refused.done ? today : undefined,
+                })
+              : remove({ notebook: reading.notebook, id: refused.id })
+          }
+          onDismiss={() => setLocal(LocalRefusals.dismiss(local, refused))}
+        />
+      ))}
     </>
   );
 }
