@@ -22,7 +22,7 @@ export interface TickBoxProps {
 
 /**
  * A box drawn by hand, ticked with one pen stroke that draws itself (brand direction D's "done by
- * you"). The touch area is the larger platform minimum around it.
+ * you"). The touch area is the larger platform minimum around it, without taking more room.
  */
 export function TickBox({ checked, onChange, label, color, size = 30, kept }: TickBoxProps) {
   const toggle = () => {
@@ -37,7 +37,6 @@ export function TickBox({ checked, onChange, label, color, size = 30, kept }: Ti
       accessibilityRole="checkbox"
       aria-checked={checked}
       accessibilityLabel={label}
-      hitSlop={(Tokens.layout.minTarget - size) / 2}
       onPress={toggle}
       // react-native-web presses only buttons with Space, and a checkbox ticks with it as well. Its
       // keydown would scroll the page.
@@ -47,20 +46,23 @@ export function TickBox({ checked, onChange, label, color, size = 30, kept }: Ti
       onKeyUp={(event) => {
         if (event.nativeEvent.key === " ") toggle();
       }}
+      // The target itself is larger, as react-native-web ignores `hitSlop`.
       style={({ pressed }) => [
         styles.box,
-        { width: size, height: size },
+        { margin: -(Tokens.layout.minTarget - size) / 2 },
         pressed ? styles.pressed : null,
       ]}
     >
-      <Vector width={size} height={size} viewBox="0 0 32 32" paths={[box(color)]} />
-      {checked ? (
-        <View style={StyleSheet.absoluteFill}>
-          <Wipe width={size} height={size} delay={0} duration={350}>
-            <Vector width={size} height={size} viewBox="0 0 32 32" paths={[tick(color)]} />
-          </Wipe>
-        </View>
-      ) : null}
+      <View style={{ width: size, height: size }}>
+        <Vector width={size} height={size} viewBox="0 0 32 32" paths={[box(color)]} />
+        {checked ? (
+          <View style={StyleSheet.absoluteFill}>
+            <Wipe width={size} height={size} delay={0} duration={350}>
+              <Vector width={size} height={size} viewBox="0 0 32 32" paths={[tick(color)]} />
+            </Wipe>
+          </View>
+        ) : null}
+      </View>
     </Pressable>
   );
 }
@@ -86,6 +88,12 @@ const tick = (color: string) => ({
 });
 
 const styles = StyleSheet.create({
-  box: { cursor: "pointer" },
+  box: {
+    width: Tokens.layout.minTarget,
+    height: Tokens.layout.minTarget,
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer",
+  },
   pressed: { transform: [{ scale: 0.9 }] },
 });
