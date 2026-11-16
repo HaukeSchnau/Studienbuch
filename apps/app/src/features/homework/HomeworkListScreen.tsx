@@ -50,7 +50,11 @@ function AccountList({ accountId }: { readonly accountId: string }) {
       status={<OfflineChip offline={offline} />}
     >
       {Option.match(reading, {
-        onNone: () => null,
+        // A locked device may hold no reading yet, as before the notebook row arrived.
+        onNone: () =>
+          locked ? (
+            <HomeworkList listing={undefined} locked onToggle={ignore} onOpen={ignore} />
+          ) : null,
         onSome: (value) => (
           <View style={styles.content}>
             <HomeworkRefusals accountId={accountId} reading={value} today={today} />
@@ -69,6 +73,9 @@ function AccountList({ accountId }: { readonly accountId: string }) {
     </PanelScreen>
   );
 }
+
+// Nothing to tick or open while the list only says that the notebook is locked.
+const ignore = () => undefined;
 
 const styles = StyleSheet.create({
   blank: { flex: 1 },

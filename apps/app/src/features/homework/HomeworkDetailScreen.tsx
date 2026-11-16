@@ -50,7 +50,11 @@ function AccountDetail({ accountId, id }: { readonly accountId: string; readonly
   return (
     <PanelScreen title="Hausaufgaben" onBack={back} status={<OfflineChip offline={offline} />}>
       {Option.match(reading, {
-        onNone: () => null,
+        // A locked device may hold no reading yet, as before the notebook row arrived.
+        onNone: () =>
+          locked ? (
+            <Notice title={HomeworkItem.locked.title} text={HomeworkItem.locked.text} />
+          ) : null,
         onSome: (value) => {
           const homework = value.homework.find((each) => each.id === id);
 
