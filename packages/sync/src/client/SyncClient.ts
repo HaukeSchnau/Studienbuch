@@ -11,6 +11,7 @@
  */
 import type { AccountKey } from "@stu/e2ee";
 import { CryptoSuite, SealedRow } from "@stu/e2ee";
+import * as Arr from "effect/Array";
 import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
@@ -156,13 +157,32 @@ export class Service extends Context.Service<Service, Interface>()("@stu/sync/cl
 export const keys = DeviceSchema.keys;
 
 /** The device's refused commands, oldest first. */
-export const refusals: SyncQuery.SyncQuery<void, Outbox.Rejected, SqlError.SqlError> = {
+export const refusals: SyncQuery.SyncQuery<
+  void,
+  ReadonlyArray<Outbox.Rejected>,
+  SqlError.SqlError
+> = {
   keys: [keys.refusals],
   run: () => Outbox.rejected,
 };
 
+/** The newest refused command of the mutator named `mutator`, for a screen that shows one. */
+export const latestRefusal: SyncQuery.SyncQuery<
+  string,
+  Option.Option<Outbox.Rejected>,
+  SqlError.SqlError
+> = {
+  keys: [keys.refusals],
+  run: (mutator) =>
+    Effect.map(Outbox.rejected, (all) => Arr.findLast(all, (each) => each.name === mutator)),
+};
+
 /** The commands waiting for the server, oldest first, as the Sync Lab lists them. */
-export const pending: SyncQuery.SyncQuery<void, Outbox.Command, SqlError.SqlError> = {
+export const pending: SyncQuery.SyncQuery<
+  void,
+  ReadonlyArray<Outbox.Command>,
+  SqlError.SqlError
+> = {
   keys: [keys.outbox],
   run: () => Outbox.pending,
 };
@@ -182,7 +202,7 @@ const decodeSynced = Schema.decodeUnknownEffect(Schema.Array(SyncedSpace));
 /** The spaces the account reads as of the last pull, apart from the connection's state. */
 export const spaces: SyncQuery.SyncQuery<
   void,
-  typeof SyncedSpace.Type,
+  ReadonlyArray<typeof SyncedSpace.Type>,
   SqlError.SqlError | Schema.SchemaError
 > = {
   keys: [keys.spaces],

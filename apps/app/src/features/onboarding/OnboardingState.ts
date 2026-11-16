@@ -9,16 +9,14 @@ import {
   Subject,
   Term,
 } from "@stu/core";
-import { DeviceDatabase, DeviceSchema, SyncClient } from "@stu/sync/client";
+import { DeviceDatabase, DeviceSchema, SyncClient, SyncQuery } from "@stu/sync/client";
 import * as Clock from "effect/Clock";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as KeyValueStore from "effect/persistence/KeyValueStore";
 import * as Atom from "effect/reactivity/Atom";
-import * as Reactivity from "effect/reactivity/Reactivity";
 import * as Schema from "effect/Schema";
-import * as SqlClient from "effect/sql/SqlClient";
 import * as Stream from "effect/Stream";
 import * as Struct from "effect/Struct";
 
@@ -128,17 +126,13 @@ const read = Effect.gen(function* () {
         ),
       });
 
-  const refused = (yield* SyncClient.refusals.run())
-    .filter((refusal) => refusal.name === Enrollment.set.name)
-    .sort((a, b) => b.mutationId - a.mutationId)[0];
-
   return Onboarding.Reading.Ready({
     snapshot: {
       id: Notebook.Id.make(notebook.id),
       schoolName: schoolRow?.name ?? "",
       profile: { displayName: profile?.displayName, adult: profile?.adult },
       term: choices,
-      refused: Option.fromNullishOr(refused),
+      refused: yield* SyncClient.latestRefusal.run(Enrollment.set.name),
     },
   });
 });
@@ -147,31 +141,26 @@ const waiting = Onboarding.Reading.Waiting();
 
 const noSchool = Onboarding.Reading.NoSchool();
 
-const tables = [
-  Notebook.Row,
-  NotebookProfile.Row,
-  School.Row,
-  Term.Row,
-  SchoolClass.Row,
-  CourseOffering.Row,
-  Course.Row,
-  Subject.Row,
-  Enrollment.Row,
-];
+/** What the first start needs, which `reading` keeps current. */
+export const query = SyncQuery.read({
+  tables: [
+    Notebook.Row,
+    NotebookProfile.Row,
+    School.Row,
+    Term.Row,
+    SchoolClass.Row,
+    CourseOffering.Row,
+    Course.Row,
+    Subject.Row,
+    Enrollment.Row,
+  ],
+  queries: [SyncClient.spaces, SyncClient.latestRefusal],
+  run: () => read.pipe(Effect.catchTags({ SchemaError: Effect.die })),
+});
 
-// The tables it reads, and the engine's own, which change as a pull or a refusal arrives.
-const keys = [...Object.values(SyncClient.keys), ...tables.map((table) => table.name)];
-
-/** What the first start needs, again after every write, pull and rebase. */
+/** What the first start needs, again whenever a table it reads changes. */
 export const reading = Atom.family((accountId: string) =>
-  runtime(accountId).atom(
-    Reactivity.stream(
-      Effect.flatMap(SqlClient.SqlClient, (sql) => sql.withTransaction(read)).pipe(
-        Effect.catchTags({ SchemaError: Effect.die }),
-      ),
-      keys,
-    ),
-  ),
+  SyncQuery.family(runtime(accountId), query)(),
 );
 
 /** The answers typed so far. `null` where the student hasn't answered, so the notebook's own shows. */
