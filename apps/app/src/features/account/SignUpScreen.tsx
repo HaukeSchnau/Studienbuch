@@ -4,12 +4,12 @@ import { Accounts } from "@stu/api/Accounts";
 import { AuthHeading } from "@stu/ui/AuthHeading";
 import { Button } from "@stu/ui/Button";
 import { Field } from "@stu/ui/Field";
-import { Link } from "@stu/ui/Link";
 import * as Exit from "effect/Exit";
 import * as Option from "effect/Option";
-import { Link as RouteLink, Redirect, useRouter } from "expo-router";
+import { Redirect, useRouter } from "expo-router";
 import { Keyboard, StyleSheet, View } from "react-native";
 
+import { RouteLink } from "../../ui/navigation/RouteLink.tsx";
 import { PublicComputerChoice } from "../keys/PublicComputerChoice.tsx";
 import { AccessCode } from "./AccessCode.ts";
 import { Form, Lead, OtherWay, ProblemText, reasonOf, useCredentials } from "./AccountForm.tsx";
@@ -89,9 +89,12 @@ function SignUpForm({ reservation }: { readonly reservation: Access.Reservation 
         <ProblemText reason={reasonOf(result)} />
         {Option.contains(reasonOf(result), "reservation-refused") ? (
           <View style={styles.center}>
-            <RouteLink href="/aktivieren" dismissTo asChild>
-              <Link label="Zugangscode eingeben" variant="subhead" />
-            </RouteLink>
+            <RouteLink
+              label="Zugangscode eingeben"
+              variant="subhead"
+              href="/aktivieren"
+              dismissTo
+            />
           </View>
         ) : null}
         <Button

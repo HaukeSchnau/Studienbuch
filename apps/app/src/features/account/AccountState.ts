@@ -167,14 +167,24 @@ export const signInWithPasskey = runtime.fn<void>()((_, get) =>
   ),
 );
 
+/**
+ * Whether this tab signed an account out, so the gates lead to "Anmelden" rather than to the code.
+ * Memory only: the sign-out forgot everything else about the account, and a reload starts afresh.
+ */
+export const signedOut = Atom.make(false).pipe(Atom.keepAlive);
+
 export const signOut = runtime
-  .fn<void>()(() =>
-    // The account's engine closes first: only a closed database can be deleted. A public
-    // computer's account kept everything in its engine, so closing it forgets the account.
-    Account.signOut(({ accountId, publicComputer }) =>
-      Effect.andThen(
-        AccountEngine.close(accountId),
-        publicComputer ? Effect.void : Layers.forget(accountId),
+  .fn<void>()((_, get) =>
+    Effect.andThen(
+      // Before the session goes, which is when the gates move on.
+      Effect.sync(() => get.set(signedOut, true)),
+      // The account's engine closes first: only a closed database can be deleted. A public
+      // computer's account kept everything in its engine, so closing it forgets the account.
+      Account.signOut(({ accountId, publicComputer }) =>
+        Effect.andThen(
+          AccountEngine.close(accountId),
+          publicComputer ? Effect.void : Layers.forget(accountId),
+        ),
       ),
     ),
   )
