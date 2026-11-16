@@ -140,7 +140,7 @@ export const createEnrollment = Sync.mutator("enrollment.create", {
 });
 
 /**
- * Records a visit to a term of the notebook, and with `enroll` an empty enrollment in it. It
+ * Records a visit to a term of the notebook, and puts an empty enrollment in it or removes it. It
  * declares the school it only reads and a table it only sometimes writes, as a guest's run does.
  */
 export const visit = Sync.mutator("enrollment.visit", {
@@ -149,7 +149,7 @@ export const visit = Sync.mutator("enrollment.visit", {
     notebook: Schema.String,
     school: Schema.String,
     termId: Schema.String,
-    enroll: Schema.Boolean,
+    enrollment: Schema.Literals(["keep", "put", "remove"]),
   }),
   error: UnknownTerm,
   writes: [Visit, Enrollment],
@@ -163,9 +163,11 @@ export const visit = Sync.mutator("enrollment.visit", {
 
     yield* tx.put(Visit, args.notebook, tx.actor, { termId: args.termId });
 
-    if (args.enroll) {
+    if (args.enrollment === "put") {
       yield* tx.put(Enrollment, args.notebook, args.termId, { termId: args.termId, courseIds: [] });
     }
+
+    if (args.enrollment === "remove") yield* tx.remove(Enrollment, args.notebook, args.termId);
   }),
 });
 
