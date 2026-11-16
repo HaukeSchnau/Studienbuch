@@ -5,6 +5,7 @@ import * as Fiber from "effect/Fiber";
 import * as Headers from "effect/http/Headers";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import * as Scheduler from "effect/Scheduler";
 import * as TestClock from "effect/testing/TestClock";
 import { Fixture } from "./Fixture.ts";
 import { Revocations } from "./Revocations.ts";
@@ -40,6 +41,31 @@ it.layer(
         Option.none(),
         Option.none(),
       ]);
+    }),
+  );
+
+  it.effect("a ticket opens one connection when two redeems race for it", () =>
+    Effect.gen(function* () {
+      const tickets = yield* Tickets.Service;
+      const lena = admission("lena");
+
+      // A fiber yields to the other after this many operations, so each budget pauses the first
+      // redeem at a different step.
+      const opened = yield* Effect.forEach(
+        Array.from({ length: 400 }, (_, index) => index + 6),
+        (budget) =>
+          Effect.gen(function* () {
+            const ticket = yield* tickets.issue(lena);
+
+            const both = yield* Effect.all([tickets.redeem(ticket), tickets.redeem(ticket)], {
+              concurrency: "unbounded",
+            }).pipe(Effect.provideService(Scheduler.MaxOpsBeforeYield, budget));
+
+            return { budget, opened: both.filter(Option.isSome).length };
+          }),
+      );
+
+      expect(opened.filter((each) => each.opened !== 1)).toEqual([]);
     }),
   );
 
