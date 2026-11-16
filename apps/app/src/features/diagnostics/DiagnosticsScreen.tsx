@@ -77,8 +77,9 @@ function NotebookKeyCard({ accountId }: { readonly accountId: string }) {
   const router = useRouter();
   const summary = useAtomValue(KeysState.summary(accountId));
 
+  // Present from the first render, so a screen reader reads the result that replaces "Wird geprüft".
   return (
-    <Card>
+    <Card accessibilityLiveRegion="polite">
       <StatusRow first {...keysRow(summary)} onPress={() => router.push("/notizbuch-schluessel")} />
     </Card>
   );
