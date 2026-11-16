@@ -32,9 +32,10 @@ export function useKeptFocus(key: string | undefined): KeptFocus {
       element.focus({ preventScroll: true });
     }
 
-    const { left, right } = element.getBoundingClientRect();
+    const { left, right, top, bottom } = element.getBoundingClientRect();
+    const outside = left < 0 || right > window.innerWidth || top < 0 || bottom > window.innerHeight;
 
-    if (document.activeElement === element && (left < 0 || right > window.innerWidth)) {
+    if (document.activeElement === element && outside) {
       const shown: unknown = item.current;
 
       // The whole item, centred, so the first and last come back with the list's own padding.
