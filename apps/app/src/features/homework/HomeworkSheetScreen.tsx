@@ -12,7 +12,7 @@ import * as Option from "effect/Option";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Atom from "effect/reactivity/Atom";
 import * as Schema from "effect/Schema";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { useEffect } from "react";
 import { StyleSheet, View } from "react-native";
 
@@ -44,6 +44,7 @@ function AccountSheet({
   readonly id: string | undefined;
 }) {
   const router = useRouter();
+  const navigation = useNavigation();
   const key = id ?? "new";
   const status = useAtomValue(HomeworkState.screen(accountId));
   const [draft, setDraft] = useAtom(HomeworkState.draft(accountId)(key));
@@ -123,7 +124,8 @@ function AccountSheet({
           : HomeworkState.Save.Update({ notebook, id, valid: ready, current, touched }),
     });
 
-    if (Exit.isSuccess(exit)) close();
+    // A save that ends after the sheet was swiped or clicked away mustn't navigate a second time.
+    if (Exit.isSuccess(exit) && navigation.isFocused()) close();
   };
 
   return (
