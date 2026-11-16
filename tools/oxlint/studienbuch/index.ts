@@ -16,6 +16,7 @@ import noFrameWaitsInBrowserTests from "./no-frame-waits-in-browser-tests.ts";
 import noGlobalProcessRuntime from "./no-global-process-runtime.ts";
 import noHermesUnsupportedApis from "./no-hermes-unsupported-apis.ts";
 import noHooklessUseFunction from "./no-hookless-use-function.ts";
+import noHandRolledLiveQuery from "./no-hand-rolled-live-query.ts";
 import noInlineSchemaCompile from "./no-inline-schema-compile.ts";
 import noJsonStringifyEquality from "./no-json-stringify-equality.ts";
 import noLiteralTimeZone from "./no-literal-time-zone.ts";
@@ -60,6 +61,7 @@ export default definePlugin({
     "no-global-process-runtime": noGlobalProcessRuntime,
     "no-hermes-unsupported-apis": noHermesUnsupportedApis,
     "no-hookless-use-function": noHooklessUseFunction,
+    "no-hand-rolled-live-query": noHandRolledLiveQuery,
     "no-inline-schema-compile": noInlineSchemaCompile,
     "no-json-stringify-equality": noJsonStringifyEquality,
     "no-literal-time-zone": noLiteralTimeZone,

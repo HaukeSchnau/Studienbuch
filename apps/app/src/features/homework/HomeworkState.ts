@@ -1,21 +1,11 @@
-import {
-  CivilTime,
-  Course,
-  Enrollment,
-  Homework,
-  Notebook,
-  NotebookProfile,
-  School,
-  Subject,
-} from "@stu/core";
+import { CivilTime, Course, Enrollment, Homework, Notebook, School, Subject } from "@stu/core";
 import type { HomeworkItem } from "@stu/domain-ui/homework/HomeworkItem";
-import { DeviceDatabase, DeviceSchema, type Outbox, SyncClient } from "@stu/sync/client";
+import { DeviceDatabase, DeviceSchema, type Outbox, SyncClient, SyncQuery } from "@stu/sync/client";
 import * as Clock from "effect/Clock";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Atom from "effect/reactivity/Atom";
-import * as Reactivity from "effect/reactivity/Reactivity";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import * as Stream from "effect/Stream";
@@ -119,28 +109,19 @@ const read = Effect.gen(function* () {
   });
 });
 
-const tables = [
-  Notebook.Row,
-  NotebookProfile.Row,
-  School.Row,
-  Course.Row,
-  Subject.Row,
-  Homework.Row,
-];
+/**
+ * The notebook's homework, which `reading` keeps current. The engine invalidates a table whenever
+ * its rows in `pending_row` change, so `Homework` covers which of them wait.
+ */
+export const query = SyncQuery.read({
+  tables: [Notebook.Row, School.Row, Course.Row, Subject.Row, Homework.Row],
+  queries: [SyncClient.refusals],
+  run: () => read.pipe(Effect.catchTags({ SchemaError: Effect.die })),
+});
 
-// The tables it reads, and the engine's own, which change as a pull, a settle or a refusal arrives.
-const keys = [...Object.values(SyncClient.keys), ...tables.map((table) => table.name)];
-
-/** The notebook's homework, again after every write, pull and rebase. `None` without a notebook. */
+/** The notebook's homework, again whenever a table it reads changes. `None` without a notebook. */
 export const reading = Atom.family((accountId: string) =>
-  runtime(accountId).atom(
-    Reactivity.stream(
-      Effect.flatMap(SqlClient.SqlClient, (sql) => sql.withTransaction(read)).pipe(
-        Effect.catchTags({ SchemaError: Effect.die }),
-      ),
-      keys,
-    ),
-  ),
+  SyncQuery.family(runtime(accountId), query)(),
 );
 
 /**
