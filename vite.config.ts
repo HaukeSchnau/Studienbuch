@@ -130,6 +130,7 @@ export default defineConfig({
       "studienbuch/namespace-node-imports": "error",
       "studienbuch/no-file-kind-directories": "error",
       "studienbuch/no-inline-schema-compile": "error",
+      "studienbuch/no-json-stringify-equality": "error",
       "studienbuch/no-low-value-comments": "error",
       "studienbuch/no-native-title-tooltip": "error",
       "studienbuch/no-throwing-errors": "error",
@@ -286,11 +287,12 @@ export default defineConfig({
       },
       {
         // Feature code receives the platform it runs on. Adapters in infra/, the design system in
-        // ui/ and the routes' navigation options may read it.
+        // ui/, the routes' navigation options, platform files and browser tests may read it.
         files: scope(
           "apps/*/src/{features,domain-ui}/**",
           "packages/{core,sync,e2ee,api,domain-ui}/**",
         ),
+        excludeFiles: ["**/*.{web,native,ios,android}.{ts,tsx}", "**/*.browser.test.{ts,tsx}"],
         rules: { "studienbuch/no-global-process-runtime": "error" },
       },
       {
@@ -325,6 +327,10 @@ export default defineConfig({
       {
         files: ["**/*.browser.test.{ts,tsx}"],
         rules: { "studienbuch/no-frame-waits-in-browser-tests": "error" },
+      },
+      {
+        files: scope("packages/core/**"),
+        rules: { "studienbuch/no-ambient-clock-or-random": "error" },
       },
       {
         // packages/core and packages/domain-ui typecheck with the DOM lib for the e2ee and sync code

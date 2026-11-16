@@ -1,6 +1,6 @@
 import { defineRule, type ESTree } from "@oxlint/plugins";
 
-import { importOf } from "./bindings.ts";
+import { importOf, isGlobalRead } from "./bindings.ts";
 import { isInDocumentedHook } from "./custom-hooks.ts";
 import { memberKey, pathOf, propertyKey, unwrap } from "./syntax.ts";
 
@@ -10,6 +10,17 @@ import { memberKey, pathOf, propertyKey, unwrap } from "./syntax.ts";
 
 const HOST_PROPERTIES = new Set(["platform", "arch"]);
 const NODE_OS = new Set(["node:os", "os"]);
+
+// The browser's globals for the page, the device and its storage.
+const HOST_GLOBALS = new Set([
+  "BroadcastChannel",
+  "document",
+  "indexedDB",
+  "localStorage",
+  "navigator",
+  "sessionStorage",
+  "window",
+]);
 
 /** `process` or `globalThis.process`. */
 function isProcess(node: ESTree.Node): boolean {
@@ -34,13 +45,15 @@ export default defineRule({
     type: "problem",
     docs: {
       description:
-        "Disallow reading the host's platform or architecture in feature code: `process.platform`, `os.arch()`, React Native's `Platform` and `process.env.EXPO_OS`.",
+        "Disallow reading the host in feature code: `process.platform`, `os.arch()`, React Native's `Platform`, `process.env.EXPO_OS` and the browser's `window`, `document`, `navigator`, storage and `BroadcastChannel`.",
     },
     messages: {
       hostProcess:
         "Inject the host's {{property}} as a service instead of reading it here, so a test can provide it explicitly.",
       nativePlatform:
         "Feature code gets the platform through an injected service or a documented `use…` hook, not `{{read}}`. Platform differences live in infra/ adapters, ui/ components, app/ routes and `.web.tsx` or `.native.tsx` files.",
+      hostGlobal:
+        "Feature code gets the browser through an injected service or a documented `use…` hook, not the global `{{read}}`. Browser APIs live in infra/ adapters, ui/ components and `.web.tsx` files.",
     },
   },
   create(context) {
@@ -91,10 +104,25 @@ export default defineRule({
       return binding?.module === "react-native" && binding.name === "*";
     };
 
-    const reportRead = (node: ESTree.Node, read: string) => {
+    const reportRead = (
+      node: ESTree.Node,
+      read: string,
+      messageId: "nativePlatform" | "hostGlobal" = "nativePlatform",
+    ) => {
       if (!isInDocumentedHook(context, node)) {
-        context.report({ node, messageId: "nativePlatform", data: { read } });
+        context.report({ node, messageId, data: { read } });
       }
+    };
+
+    /** `globalThis` itself, not a local of that name. */
+    const isGlobalThis = (node: ESTree.Node) => {
+      const expression = unwrap(node);
+
+      return (
+        expression.type === "Identifier" &&
+        expression.name === "globalThis" &&
+        isGlobalRead(context, expression)
+      );
     };
 
     return {
@@ -109,6 +137,13 @@ export default defineRule({
           reportRead(node, `Platform.${key}`);
         } else if (key === "EXPO_OS" && pathOf(node.object)?.endsWith("process.env") === true) {
           reportRead(node, "process.env.EXPO_OS");
+        } else if (HOST_GLOBALS.has(key) && isGlobalThis(node.object)) {
+          reportRead(node, `globalThis.${key}`, "hostGlobal");
+        }
+      },
+      Identifier(node) {
+        if (HOST_GLOBALS.has(node.name) && isGlobalRead(context, node)) {
+          reportRead(node, node.name, "hostGlobal");
         }
       },
       VariableDeclarator(node) {

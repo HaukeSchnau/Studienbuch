@@ -1,13 +1,13 @@
 // One browser API per line that core and domain-ui may not reach for. A guard that stops firing
 // leaves its directive unused, which fails the lint.
 export const globals = [
-  // oxlint-disable-next-line eslint/no-restricted-globals -- fixture: window in domain-ui
+  // oxlint-disable-next-line eslint/no-restricted-globals, studienbuch/no-global-process-runtime -- fixture: window in domain-ui
   window,
   // oxlint-disable-next-line eslint/no-restricted-globals -- fixture: self in domain-ui
   self,
-  // oxlint-disable-next-line eslint/no-restricted-globals -- fixture: document in domain-ui
+  // oxlint-disable-next-line eslint/no-restricted-globals, studienbuch/no-global-process-runtime -- fixture: document in domain-ui
   document,
-  // oxlint-disable-next-line eslint/no-restricted-globals -- fixture: navigator in domain-ui
+  // oxlint-disable-next-line eslint/no-restricted-globals, studienbuch/no-global-process-runtime -- fixture: navigator in domain-ui
   navigator,
   // oxlint-disable-next-line eslint/no-restricted-globals -- fixture: location in domain-ui
   location,
@@ -49,22 +49,22 @@ export const globals = [
   WebSocket,
   // oxlint-disable-next-line eslint/no-restricted-globals -- fixture: EventSource in domain-ui
   EventSource,
-  // oxlint-disable-next-line eslint/no-restricted-globals -- fixture: BroadcastChannel in domain-ui
+  // oxlint-disable-next-line eslint/no-restricted-globals, studienbuch/no-global-process-runtime -- fixture: BroadcastChannel in domain-ui
   BroadcastChannel,
-  // oxlint-disable-next-line eslint/no-restricted-globals -- fixture: localStorage in domain-ui
+  // oxlint-disable-next-line eslint/no-restricted-globals, studienbuch/no-global-process-runtime -- fixture: localStorage in domain-ui
   localStorage,
-  // oxlint-disable-next-line eslint/no-restricted-globals -- fixture: sessionStorage in domain-ui
+  // oxlint-disable-next-line eslint/no-restricted-globals, studienbuch/no-global-process-runtime -- fixture: sessionStorage in domain-ui
   sessionStorage,
-  // oxlint-disable-next-line eslint/no-restricted-globals -- fixture: indexedDB in domain-ui
+  // oxlint-disable-next-line eslint/no-restricted-globals, studienbuch/no-global-process-runtime -- fixture: indexedDB in domain-ui
   indexedDB,
   // oxlint-disable-next-line eslint/no-restricted-globals -- fixture: caches in domain-ui
   caches,
 ];
 
 export const properties = [
-  // oxlint-disable-next-line eslint/no-restricted-properties -- fixture: globalThis.window in domain-ui
+  // oxlint-disable-next-line eslint/no-restricted-properties, studienbuch/no-global-process-runtime -- fixture: globalThis.window in domain-ui
   globalThis.window,
-  // oxlint-disable-next-line eslint/no-restricted-properties -- fixture: globalThis.document in domain-ui
+  // oxlint-disable-next-line eslint/no-restricted-properties, studienbuch/no-global-process-runtime -- fixture: globalThis.document in domain-ui
   globalThis.document,
   // oxlint-disable-next-line eslint/no-restricted-properties -- fixture: globalThis.location in domain-ui
   globalThis.location,

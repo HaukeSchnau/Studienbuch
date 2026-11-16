@@ -63,3 +63,15 @@ export function isEffectModule(context: Context, identifier: Identifier): boolea
     (binding?.module === "effect" && binding.name === "Effect")
   );
 }
+
+/**
+ * Whether `identifier` reads a global such as `window`: a reference that no declaration in the
+ * file binds. Unlike `sourceCode.isGlobalReference`, this needs no `env` naming the global.
+ */
+export function isGlobalRead(context: Context, identifier: Identifier): boolean {
+  const reference = context.sourceCode
+    .getScope(identifier)
+    .references.find((candidate) => candidate.identifier === identifier);
+
+  return reference !== undefined && (reference.resolved?.scope.type ?? "global") === "global";
+}
