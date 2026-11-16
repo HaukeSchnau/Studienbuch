@@ -10,6 +10,7 @@ import * as Option from "effect/Option";
 import { Link as RouteLink, Redirect, useRouter } from "expo-router";
 import { Keyboard, StyleSheet, View } from "react-native";
 
+import { PublicComputerChoice } from "../keys/PublicComputerChoice.tsx";
 import { AccessCode } from "./AccessCode.ts";
 import { Form, Lead, OtherWay, ProblemText, reasonOf, useCredentials } from "./AccountForm.tsx";
 import { AccountState } from "./AccountState.ts";
@@ -48,6 +49,7 @@ function SignUpForm({ reservation }: { readonly reservation: Access.Reservation 
       <AuthHeading>Konto erstellen</AuthHeading>
       <Lead>{AccessCode.describe(reservation)}</Lead>
       <Form>
+        <PublicComputerChoice />
         <Field
           pill
           label="E-Mail-Adresse"

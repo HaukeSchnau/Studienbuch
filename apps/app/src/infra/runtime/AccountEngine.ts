@@ -5,6 +5,7 @@ import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Layer from "effect/Layer";
+import * as Option from "effect/Option";
 import * as Reactivity from "effect/reactivity/Reactivity";
 import * as Scope from "effect/Scope";
 import * as Semaphore from "effect/Semaphore";
@@ -20,11 +21,13 @@ import { Layers } from "./Layers.ts";
 export * as AccountEngine from "./AccountEngine.ts";
 
 /**
- * The engine for `accountId` over `transport`, on the device's layers. Lifecycle, CryptoSuite and
- * Reactivity come from the caller, so the Lab can steer them.
+ * The engine for `accountId` over `transport`, on the device's layers, with its data in memory on
+ * a public computer. Lifecycle, CryptoSuite and Reactivity come from the caller, so the Lab can
+ * steer them.
  */
 export const layer = (
   accountId: string,
+  publicComputer: boolean,
   transport: Layer.Layer<
     Ports.Transport,
     never,
@@ -34,11 +37,11 @@ export const layer = (
   SyncClient.layer(Studienbuch.schema).pipe(
     Layer.provideMerge(transport),
     Layer.provideMerge(SessionStore.session(accountId)),
-    Layer.provideMerge(Layers.account(accountId)),
+    Layer.provideMerge(Layers.account(accountId, publicComputer)),
   );
 
-const forApp = (accountId: string) =>
-  layer(accountId).pipe(
+const forApp = (accountId: string, publicComputer: boolean) =>
+  layer(accountId, publicComputer).pipe(
     Layer.provideMerge(Layer.mergeAll(CryptoSuite.layer, Layer.fresh(Reactivity.layer))),
   );
 
@@ -57,7 +60,8 @@ type Failure = Layer.Error<ReturnType<typeof forApp>>;
 /**
  * The device's running engines. An account's engine starts at its first use and runs until
  * sign-out closes it, because its database may be open only once, and only a closed one can be
- * deleted.
+ * deleted. It keeps its data where the account's session chose at sign-in, and in memory for an
+ * account the device holds no session of.
  */
 export class Engines extends Context.Service<
   Engines,
@@ -72,6 +76,7 @@ export class Engines extends Context.Service<
 export const engines = Layer.effect(Engines)(
   Effect.gen(function* () {
     const device = yield* Effect.context<Layer.Services<ReturnType<typeof forApp>>>();
+    const sessions = yield* SessionStore.Service;
 
     const running = new Map<
       string,
@@ -101,7 +106,13 @@ export const engines = Layer.effect(Engines)(
             if (known !== undefined) return known.context;
             const scope = yield* Scope.make();
 
-            const built = yield* Layer.buildWithScope(forApp(accountId), scope).pipe(
+            // Only an account whose session the device keeps gets storage that outlives the engine.
+            const kept = Option.exists(
+              yield* sessions.current,
+              (signed) => signed.accountId === accountId && !signed.publicComputer,
+            );
+
+            const built = yield* Layer.buildWithScope(forApp(accountId, !kept), scope).pipe(
               Effect.provide(device),
               Effect.onError(() => Scope.close(scope, Exit.void)),
             );

@@ -82,3 +82,38 @@ it.effect(
       assert.isUndefined(yield* stored(entry));
     }),
 );
+
+// A tab that only reads, as on a public computer, must leave no database behind that shows
+// Studienbuch was used in this browser.
+it.effect("creates its database at the first write, never by reading", () =>
+  Effect.gen(function* () {
+    const name = "keychain-test-reads";
+
+    yield* Effect.callback<void>((resume) => {
+      indexedDB.deleteDatabase(name).addEventListener("success", () => resume(Effect.void));
+    });
+
+    const listed = Effect.map(
+      Effect.promise(() => indexedDB.databases()),
+      (found) => found.some((database) => database.name === name),
+    );
+
+    yield* page(IndexedDbKeychain.named(name), (secrets) =>
+      Effect.andThen(secrets.get("root-key"), secrets.remove("root-key")),
+    );
+
+    const afterReads = yield* listed;
+
+    yield* page(IndexedDbKeychain.named(name), (secrets) =>
+      secrets.set("root-key", new Uint8Array(32)),
+    );
+
+    assert.deepStrictEqual(
+      { afterReads, afterWrite: yield* listed },
+      {
+        afterReads: false,
+        afterWrite: true,
+      },
+    );
+  }),
+);

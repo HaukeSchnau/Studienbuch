@@ -15,7 +15,6 @@ import * as SubscriptionRef from "effect/SubscriptionRef";
 import { AuthApi } from "../../infra/auth/AuthApi.ts";
 import { PendingSignUp } from "../../infra/auth/PendingSignUp.ts";
 import { SessionStore } from "../../infra/auth/SessionStore.ts";
-import { Device } from "../../infra/device/Device.ts";
 import { Passkeys } from "../../infra/passkeys/Passkeys.ts";
 
 // Signing up, in and out on this device. Signing in needs the network once; after that the device
@@ -144,23 +143,32 @@ const refuseOtherAccount = Effect.fn("Account.refuseOtherAccount")(function* (
 });
 
 /**
- * Keeps a new session, so the device is signed in, unless another account holds the device.
- * `demo` marks a demo account's password sign-in (`Demo.isDemoSignIn`).
+ * Keeps a new session, so the device is signed in, unless another account holds the device. On a
+ * public computer the device keeps it in memory only (`SessionStore.signedIn`). `demo` marks a
+ * demo account's password sign-in (`Demo.isDemoSignIn`).
  */
-export const keep = Effect.fn("Account.keep")(function* (signedIn: AuthApi.SignedIn, demo = false) {
+export const keep = Effect.fn("Account.keep")(function* (
+  signedIn: AuthApi.SignedIn,
+  publicComputer: boolean,
+  demo = false,
+) {
   const store = yield* SessionStore.Service;
 
   yield* refuseOtherAccount(signedIn);
   yield* store
-    .signedIn({ ...signedIn, demo })
+    .signedIn({ ...signedIn, demo }, publicComputer)
     .pipe(Effect.mapError(() => new Problem({ reason: "failed" })));
 });
 
-export const signIn = Effect.fn("Account.signIn")(function* (email: string, password: string) {
+export const signIn = Effect.fn("Account.signIn")(function* (
+  email: string,
+  password: string,
+  publicComputer: boolean,
+) {
   const api = yield* AuthApi.Service;
   const signedIn = yield* api.signIn(email.trim(), password).pipe(Effect.mapError(problem));
 
-  yield* keep(signedIn, Demo.isDemoSignIn(email, signedIn.accountId));
+  yield* keep(signedIn, publicComputer, Demo.isDemoSignIn(email, signedIn.accountId));
 });
 
 /**
@@ -211,6 +219,7 @@ export const resetPassword = Effect.fn("Account.resetPassword")(function* (
   email: string,
   code: string,
   password: string,
+  publicComputer: boolean,
 ) {
   const api = yield* AuthApi.Service;
 
@@ -218,7 +227,7 @@ export const resetPassword = Effect.fn("Account.resetPassword")(function* (
     .resetPassword(email.trim(), code.replaceAll(/\D/gu, ""), password)
     .pipe(Effect.mapError(problem));
 
-  yield* signIn(email, password);
+  yield* signIn(email, password, publicComputer);
 });
 
 /** A confirmed address and its new session, waiting for the passkey offer before `keep`. */
@@ -366,7 +375,11 @@ export const confirmedFor = (pending: Option.Option<Confirmed>, email: string) =
  * `withPasskey`. Refuses when the waiting session belongs to another address, so a shared device
  * never signs in as, or adds a passkey for, the person who confirmed before.
  */
-export const finish = Effect.fn("Account.finish")(function* (email: string, withPasskey: boolean) {
+export const finish = Effect.fn("Account.finish")(function* (
+  email: string,
+  withPasskey: boolean,
+  publicComputer: boolean,
+) {
   const { current, guard } = yield* Confirmations;
 
   return yield* Effect.gen(function* () {
@@ -375,10 +388,10 @@ export const finish = Effect.fn("Account.finish")(function* (email: string, with
     ).pipe(Effect.mapError(() => new Problem({ reason: "failed" })));
 
     const added = withPasskey
-      ? Option.some(yield* addPasskey(confirmed.signedIn.token))
+      ? Option.some(yield* addPasskey(confirmed.signedIn.token, publicComputer))
       : Option.none<{ readonly credentialId: string; readonly prf: Passkeys.CreatedPrf }>();
 
-    yield* keep(confirmed.signedIn);
+    yield* keep(confirmed.signedIn, publicComputer);
     yield* SubscriptionRef.set(current, Option.none());
 
     // A PRF output from the registration waits for the notebook's key, which starts in the tabs.
@@ -395,9 +408,8 @@ export const finish = Effect.fn("Account.finish")(function* (email: string, with
  * device keeps it, as "Später" does. A public computer ends it, so the next person there finds
  * nobody signed in. It waits for a `finish` under way.
  */
-export const leave = Effect.fn("Account.leave")(function* (email: string) {
+export const leave = Effect.fn("Account.leave")(function* (email: string, publicComputer: boolean) {
   const api = yield* AuthApi.Service;
-  const device = yield* Device.Service;
   const { current, guard } = yield* Confirmations;
 
   yield* Effect.gen(function* () {
@@ -408,7 +420,7 @@ export const leave = Effect.fn("Account.leave")(function* (email: string) {
     const { signedIn } = unfinished.value;
     const end = Effect.ignore(api.signOut(signedIn.token));
 
-    if (device.publicComputer) {
+    if (publicComputer) {
       yield* SubscriptionRef.set(current, Option.none());
       yield* end;
 
@@ -417,7 +429,7 @@ export const leave = Effect.fn("Account.leave")(function* (email: string) {
 
     // Kept before it leaves `current`, so the screen behind never shows a signed-out step. A
     // session the device can't keep ends on the server too.
-    yield* keep(signedIn).pipe(Effect.catchTags({ "Account.Problem": () => end }));
+    yield* keep(signedIn, false).pipe(Effect.catchTags({ "Account.Problem": () => end }));
     yield* SubscriptionRef.set(current, Option.none());
   }).pipe(Semaphore.withPermit(guard));
 });
@@ -433,7 +445,9 @@ export interface PasskeyUsed {
  * Signs in with any passkey of this server. The PRF output stays on the device for the notebook's
  * unlock (recovery.md, section 2).
  */
-export const signInWithPasskey = Effect.fn("Account.signInWithPasskey")(function* () {
+export const signInWithPasskey = Effect.fn("Account.signInWithPasskey")(function* (
+  publicComputer: boolean,
+) {
   const api = yield* AuthApi.Service;
   const passkeys = yield* Passkeys.Authenticator;
 
@@ -447,7 +461,7 @@ export const signInWithPasskey = Effect.fn("Account.signInWithPasskey")(function
     .passkeySignIn(challenge, asserted.credential)
     .pipe(Effect.mapError(problem));
 
-  yield* keep(signedIn);
+  yield* keep(signedIn, publicComputer);
 
   return {
     accountId: signedIn.accountId,
@@ -458,18 +472,23 @@ export const signInWithPasskey = Effect.fn("Account.signInWithPasskey")(function
 
 /**
  * Adds a passkey to the account of a session at most `Keys.freshSignInMinutes` old, and says what
- * it can do for the notebook's unlock.
+ * it can do for the notebook's unlock. On a public computer it goes on the student's phone or a
+ * security key: one this computer kept, as Windows Hello or a password manager would, would sign
+ * the next person here in as the student and open the notebook.
  */
-export const addPasskey = Effect.fn("Account.addPasskey")(function* (token: Redacted.Redacted) {
+export const addPasskey = Effect.fn("Account.addPasskey")(function* (
+  token: Redacted.Redacted,
+  publicComputer: boolean,
+) {
   const api = yield* AuthApi.Service;
   const passkeys = yield* Passkeys.Authenticator;
 
   const { options, challenge } = yield* api
-    .passkeyCreationOptions(token)
+    .passkeyCreationOptions(token, publicComputer)
     .pipe(Effect.mapError(problem));
 
   const created = yield* passkeys
-    .create(options)
+    .create(publicComputer ? { ...options, hints: ["hybrid", "security-key"] } : options)
     .pipe(Effect.catchTags({ "Passkeys.Failed": (error) => Effect.fail(passkeyProblem(error)) }));
 
   yield* api.addPasskey(token, challenge, created.credential).pipe(Effect.mapError(problem));
@@ -501,7 +520,7 @@ export const passkeyOutput = Effect.fn("Account.passkeyOutput")(function* (crede
  * known to be empty (`unsentWarning`).
  */
 export const signOut = Effect.fn("Account.signOut")(function* <E, R>(
-  forget: (accountId: string) => Effect.Effect<void, E, R>,
+  forget: (signed: SessionStore.Signed) => Effect.Effect<void, E, R>,
 ) {
   const store = yield* SessionStore.Service;
   const api = yield* AuthApi.Service;
@@ -512,7 +531,7 @@ export const signOut = Effect.fn("Account.signOut")(function* <E, R>(
 
   if (Option.isNone(current)) return;
 
-  yield* forget(current.value.accountId).pipe(Effect.orDie);
+  yield* forget(current.value).pipe(Effect.orDie);
   yield* store.forget.pipe(Effect.orDie);
   yield* Effect.ignore(
     Option.match(current.value.token, { onNone: () => Effect.void, onSome: api.signOut }),
@@ -560,3 +579,20 @@ export const access = (
         onSome: (signed) => (Option.isSome(signed.token) ? "signed-in" : "ended"),
       }),
   });
+
+/**
+ * Whether the device keeps nothing on disk: as the account it holds chose at sign-in, else as the
+ * tab chose for the next one (`chosen`). A device that can't hold an account holds none.
+ */
+export const keepsNothing = (
+  current: AsyncResult.AsyncResult<Option.Option<SessionStore.Signed>, unknown>,
+  chosen: boolean,
+): AsyncResult.AsyncResult<boolean> =>
+  AsyncResult.isInitial(current)
+    ? AsyncResult.initial()
+    : AsyncResult.success(
+        Option.match(Option.flatten(AsyncResult.value(current)), {
+          onNone: () => chosen,
+          onSome: (signed) => signed.publicComputer,
+        }),
+      );
