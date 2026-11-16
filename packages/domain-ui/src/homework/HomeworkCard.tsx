@@ -28,15 +28,8 @@ export function HomeworkCard({ item, onToggle, width }: HomeworkCardProps) {
   const { control, item: card } = useKeptFocus(item.id);
 
   return (
-    <View
-      ref={card}
-      style={[
-        styles.card,
-        { width, backgroundColor: color.panelCard },
-        item.dimmed ? styles.dimmed : null,
-      ]}
-    >
-      <View style={styles.top}>
+    <View ref={card} style={[styles.card, { width, backgroundColor: color.panelCard }]}>
+      <View style={[styles.top, item.dimmed ? styles.dimmed : null]}>
         {/* Dark pastels hide some art on the navy, which the card keeps in dark mode too. */}
         <SubjectMarker mark={item.mark} size={34} light />
         <TickBox
@@ -112,7 +105,8 @@ const styles = StyleSheet.create({
     paddingLeft: padding.left,
     paddingRight: padding.right,
   },
-  // As the Flutter app greyed done and long-forgotten homework.
+  // As the Flutter app greyed done and long-forgotten homework, but only the art and the box, so
+  // the text keeps its contrast.
   dimmed: { opacity: 0.6 },
   top: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   subject: { marginTop: Tokens.space.sm },
