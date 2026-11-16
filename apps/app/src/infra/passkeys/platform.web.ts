@@ -35,6 +35,7 @@ export const layer = Layer.effect(Passkeys.Authenticator)(
                 ...options,
                 pubKeyCredParams: [...options.pubKeyCredParams],
                 excludeCredentials: descriptors(options.excludeCredentials),
+                hints: options.hints === undefined ? undefined : [...options.hints],
                 extensions: { prf: { eval: { first: salt } } },
               },
             }),

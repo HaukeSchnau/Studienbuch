@@ -10,7 +10,6 @@ import type { ReactNode } from "react";
 import { Linking, StyleSheet, View } from "react-native";
 import { SafeAreaInsetsContext, useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { publicComputer } from "../../infra/device/publicComputer.ts";
 import { StoragePersistence } from "../../infra/offline/StoragePersistence.ts";
 import { AccountState } from "../account/AccountState.ts";
 import { KeysState } from "./KeysState.ts";
@@ -26,19 +25,25 @@ const support = `mailto:info@urbs.one?subject=${encodeURIComponent("Mein Notizbu
  * know to support.
  */
 export function AccountNotice({ children }: { readonly children: ReactNode }) {
-  const account = KeysState.useAccountId();
+  const signed = Option.flatten(AsyncResult.value(useAtomValue(AccountState.current)));
 
-  return Option.match(account, {
+  return Option.match(signed, {
     onNone: () => children,
-    onSome: (accountId) => <Notice accountId={accountId}>{children}</Notice>,
+    onSome: ({ accountId, publicComputer }) => (
+      <Notice accountId={accountId} publicComputer={publicComputer}>
+        {children}
+      </Notice>
+    ),
   });
 }
 
 function Notice({
   accountId,
+  publicComputer,
   children,
 }: {
   readonly accountId: string;
+  readonly publicComputer: boolean;
   readonly children: ReactNode;
 }) {
   const router = useRouter();

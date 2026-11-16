@@ -31,7 +31,7 @@ const visit = Effect.gen(function* () {
   yield* sql`insert or replace into base_row (space, tbl, id, version, data) values ('n', 'Homework', 'h', 1, '{}')`;
 
   return before;
-}).pipe(Effect.provide(Layers.account("lena")));
+}).pipe(Effect.provide(Layers.account("lena", false)));
 
 it.effect(
   "without OPFS, the account's database lives in memory, signs out, and the device says so",
@@ -46,5 +46,5 @@ it.effect(
       yield* Layers.forget("lena");
 
       assert.strictEqual(yield* StoragePersistence.current(false), "memory only");
-    }).pipe(Effect.provide(Layers.device({ name: "private-window", publicComputer: false }))),
+    }).pipe(Effect.provide(Layers.device({ name: "private-window" }))),
 );
