@@ -4,9 +4,15 @@
 const INFO = /^const INFO = \{$(?<body>[\s\S]*?)^\};$/mu;
 const ENTRY = /^ {2}(?<key>"[^"]+"|[\w$]+): \{/u;
 
-/** The INFO entries that sit on the line right below another entry, as "key, below other". */
+/**
+ * The INFO entries that sit on the line right below another entry, as "key, below other", or
+ * "INFO map not found" when the map's declaration changed and nothing could be checked.
+ */
 export function crowded(html: string): ReadonlyArray<string> {
-  const lines = (INFO.exec(html)?.groups?.body ?? "").split("\n");
+  const body = INFO.exec(html)?.groups?.body;
+
+  if (body === undefined) return ["INFO map not found"];
+  const lines = body.split("\n");
 
   return lines.flatMap((line, index) => {
     const key = ENTRY.exec(line)?.groups?.key;

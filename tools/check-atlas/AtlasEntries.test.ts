@@ -24,3 +24,12 @@ const INFO = {
 it("reports INFO entries on the line right below another entry, and nothing outside INFO", () => {
   expect(AtlasEntries.crowded(atlas)).toEqual(['"a-atoms", below "a-sync"', "smtp, below pg"]);
 });
+
+it("fails when it can't find the INFO map, so a changed declaration can't hide crowded entries", () => {
+  const typed = atlas.replace(
+    "const INFO = {",
+    "const INFO = /** @type {Record<string, Box>} */ ({",
+  );
+
+  expect(AtlasEntries.crowded(typed)).toEqual(["INFO map not found"]);
+});

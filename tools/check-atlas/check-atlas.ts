@@ -27,9 +27,10 @@ if (missing.length > 0) {
 if (crowded.length > 0) {
   console.error(
     [
-      `${atlas} has ${crowded.length} INFO entr${crowded.length === 1 ? "y" : "ies"} without a blank line above:`,
+      `${atlas} fails the INFO layout check:`,
       ...crowded.map((entry) => `  ${entry}`),
-      "Put a blank line between entries, so two changes to neighbouring boxes merge cleanly.",
+      "Each INFO entry is one line with a blank line above it, so two changes to neighbouring boxes",
+      "merge cleanly. The check finds the map by its lines `const INFO = {` and `};`.",
     ].join("\n"),
   );
   process.exitCode = 1;
