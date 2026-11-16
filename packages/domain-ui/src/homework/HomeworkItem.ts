@@ -3,7 +3,7 @@
  * in words and the state. The app builds items from its rows, and a page with demo rows can build
  * the same.
  */
-import { HomeworkDates, type CivilTime, type Subject } from "@stu/core";
+import { CivilTime, HomeworkDates, type Subject } from "@stu/core";
 import * as Arr from "effect/Array";
 import * as Option from "effect/Option";
 import * as Order from "effect/Order";
@@ -90,8 +90,8 @@ export interface Listing {
 }
 
 /**
- * The full list ("Alle"): every open homework by due date, then every done one with the latest due
- * date first, so what was just finished stays near the top of its part however long the year runs.
+ * The full list ("Alle"): every open homework by due date, then every done one by the day it was
+ * ticked, the latest first, so what was just finished is on top however late it was.
  */
 export const list = (homework: ReadonlyArray<Source>, today: CivilTime.PlainDate): Listing => ({
   open: Arr.sort(
@@ -99,10 +99,23 @@ export const list = (homework: ReadonlyArray<Source>, today: CivilTime.PlainDate
     HomeworkDates.order,
   ).map((each) => make(each, today)),
   done: Arr.sort(
-    homework.filter((each) => each.doneOn !== undefined),
-    Order.flip(HomeworkDates.order),
+    homework.flatMap((each) =>
+      each.doneOn === undefined ? [] : [{ ...each, doneOn: each.doneOn }],
+    ),
+    recentlyDone,
   ).map((each) => make(each, today)),
 });
+
+type Done = Source & { readonly doneOn: CivilTime.PlainDate };
+
+// Ties go by due date, then id, so every device shows the same order.
+const recentlyDone: Order.Order<Done> = Order.flip(
+  Order.combineAll([
+    Order.mapInput(CivilTime.order, (each: Done) => each.doneOn),
+    Order.mapInput(CivilTime.order, (each: Done) => each.dueOn),
+    Order.mapInput(Order.String, (each: Done) => each.id),
+  ]),
+);
 
 /** One homework's page: the card's facts, the text, and its dates written out. */
 export interface Detail extends Item {

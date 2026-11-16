@@ -46,7 +46,7 @@ describe("HomeworkItem", () => {
     ]);
   });
 
-  it("lists every open homework by due date, then every done one with the latest due date first", () => {
+  it("lists every open homework by due date, then every done one by when it was ticked, the latest first", () => {
     const { open, done } = HomeworkItem.list(
       [
         homework("done-in-september", "2026-09-10", "2026-09-09"),
@@ -56,6 +56,9 @@ describe("HomeworkItem", () => {
         homework("b-same-day", "2026-10-29"),
         homework("a-same-day", "2026-10-29"),
         homework("done-last-week", "2026-10-21", "2026-10-21"),
+        // Ticked today though long overdue, and ticked last week though due next month.
+        homework("late-done-today", "2026-10-01", "2026-10-28"),
+        homework("early-done-last-week", "2026-11-20", "2026-10-21"),
       ],
       today,
     );
@@ -67,7 +70,9 @@ describe("HomeworkItem", () => {
       "next-week",
     ]);
     expect(done.map((item) => item.id)).toEqual([
+      "late-done-today",
       "done-yesterday",
+      "early-done-last-week",
       "done-last-week",
       "done-in-september",
     ]);
