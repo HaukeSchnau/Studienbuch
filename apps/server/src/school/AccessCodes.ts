@@ -5,6 +5,7 @@
  */
 import { Access as Api } from "@stu/api/Access";
 import { School } from "@stu/core";
+import * as Arr from "effect/Array";
 import * as Crypto from "effect/Crypto";
 import * as DateTime from "effect/DateTime";
 import * as Duration from "effect/Duration";
@@ -18,7 +19,7 @@ import { Access } from "./Access.ts";
 export * as AccessCodes from "./AccessCodes.ts";
 
 /** Long enough to sign up and confirm the address. A reservation holds no use meanwhile. */
-export const reservationLifetime = Duration.hours(2);
+const reservationLifetime = Duration.hours(2);
 
 /**
  * How many accounts one reservation may create. A use is spent at confirmation, long after the
@@ -223,21 +224,53 @@ export const releaseSignUp = Effect.fn("AccessCodes.releaseSignUp")(function* (t
 
 /**
  * Notes the reservation a sign-up for `email` carried, beside those of earlier sign-ups for that
- * address. A confirmed address keeps its school.
+ * address, with the hash of the password it chose. Signing up again with the same reservation
+ * replaces that password, as the device holding the reservation then holds the new one. A
+ * confirmed address keeps its school.
  */
 export const rememberSignUp = Effect.fn("AccessCodes.rememberSignUp")(function* (
   token: string,
   email: string,
+  passwordHash: Option.Option<string>,
 ) {
   const sql = yield* SqlClient.SqlClient;
 
   yield* sql`
-    insert into access_sign_up (account_id, reservation_id)
-    select u.id, r.id from access_reservation r, auth_user u
+    insert into access_sign_up (account_id, reservation_id, password_hash)
+    select u.id, r.id, ${Option.getOrNull(passwordHash)} from access_reservation r, auth_user u
     where r.token_hash = ${yield* digest(token)} and lower(u.email) = lower(${email})
       and not u."emailVerified"
-    on conflict do nothing
+    on conflict (account_id, reservation_id) do update set password_hash = excluded.password_hash
   `;
+});
+
+/**
+ * The hash of the password the sign-ups with `token` chose for the account, which the
+ * confirmation that carries `token` must match. None when no sign-up with it kept one.
+ */
+export const signUpPassword = Effect.fn("AccessCodes.signUpPassword")(function* (
+  account: string,
+  token: string,
+) {
+  const sql = yield* SqlClient.SqlClient;
+
+  const rows = yield* sql<{ readonly passwordHash: string }>`
+    select s.password_hash as "passwordHash"
+    from access_sign_up s join access_reservation r on r.id = s.reservation_id
+    where s.account_id = ${account} and r.token_hash = ${yield* digest(token)}
+      and s.password_hash is not null
+  `;
+
+  return Option.map(Arr.head(rows), (row) => row.passwordHash);
+});
+
+/** Drops the passwords the account's sign-ups chose, so its confirmation sets the one typed. */
+export const forgetSignUpPasswords = Effect.fn("AccessCodes.forgetSignUpPasswords")(function* (
+  account: string,
+) {
+  const sql = yield* SqlClient.SqlClient;
+
+  yield* sql`update access_sign_up set password_hash = null where account_id = ${account}`;
 });
 
 /**

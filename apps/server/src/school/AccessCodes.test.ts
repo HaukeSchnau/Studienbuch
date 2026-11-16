@@ -85,7 +85,7 @@ const signUp = (account: string, token: string) =>
     // A sign-up's address is unconfirmed until its code comes back.
     yield* sql`update auth_user set "emailVerified" = false where id = ${account}`;
     const claimed = yield* AccessCodes.claimSignUp(token);
-    yield* AccessCodes.rememberSignUp(token, `${account}@example.test`);
+    yield* AccessCodes.rememberSignUp(token, `${account}@example.test`, Option.none());
 
     return claimed;
   });

@@ -336,7 +336,7 @@ export const cancelSignUp = waitForCode(Option.none());
 
 /**
  * Confirms the address with its code and the password: the one this run signed up with or, after
- * a restart, `password` as typed again, which the server takes only if a sign-up chose it (D88).
+ * a restart, `password` as typed again, which must be the one this sign-up chose (D88).
  * The sign-up's reservation admits the account to the code's school. The new session waits for
  * `finish`, so a passkey can come first.
  */

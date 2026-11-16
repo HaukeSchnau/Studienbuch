@@ -543,6 +543,8 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
 
           const first = yield* codeOf(mailTo(email, () => true));
 
+          // Past the minute the first code holds the address for.
+          yield* TestClock.adjust("1 minute");
           yield* call("POST", "/sign-up/email", {
             body: { email, password: "ein-anderes-passwort", name: "" },
             reservation: held,
@@ -551,21 +553,103 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
           const second = yield* codeOf(mailTo(email, () => true));
 
           const stale = yield* call("POST", "/email-otp/verify-email", {
-            body: { email, otp: first, password },
+            body: { email, otp: first, password: "ein-anderes-passwort" },
             reservation: held,
           });
 
-          // The first sign-up's password still confirms, as the device that signed up with it sends.
-          const confirmed = yield* call("POST", "/email-otp/verify-email", {
+          // The device signed up again with the same reservation, and holds the newer password.
+          const older = yield* call("POST", "/email-otp/verify-email", {
             body: { email, otp: second, password },
             reservation: held,
           });
 
+          const confirmed = yield* call("POST", "/email-otp/verify-email", {
+            body: { email, otp: second, password: "ein-anderes-passwort" },
+            reservation: held,
+          });
+
           assert.deepStrictEqual(
-            { mails: yield* mailCount(email), stale: stale.status, confirmed: confirmed.status },
-            { mails: 2, stale: 400, confirmed: 200 },
+            {
+              mails: yield* mailCount(email),
+              stale: stale.status,
+              older: older.status,
+              confirmed: confirmed.status,
+            },
+            { mails: 2, stale: 400, older: 401, confirmed: 200 },
           );
         }),
+      );
+
+      // Anyone with a school's code may sign up any address, so other sign-ups of it must not
+      // decide which password the student's own device confirms with.
+      it.effect(
+        "leaves the student's password confirming after strangers sign the address up",
+        () =>
+          Effect.gen(function* () {
+            const email = "lena.pushed@example.org";
+            const held = yield* reservation;
+            const theirs = [yield* reservation, yield* reservation];
+
+            yield* call("POST", "/sign-up/email", {
+              body: { email, password, name: "" },
+              reservation: held,
+            });
+
+            // Five, which a reservation's three sign-ups allow with two reservations.
+            yield* Effect.forEach([0, 0, 0, 1, 1], (each, index) =>
+              call("POST", "/sign-up/email", {
+                body: { email, password: `fremdes-passwort-${index}`, name: "" },
+                reservation: theirs[each],
+              }),
+            );
+
+            yield* TestClock.adjust("1 minute");
+            yield* call("POST", "/send-verification-email", { body: { email } });
+
+            const confirmed = yield* call("POST", "/email-otp/verify-email", {
+              body: { email, otp: yield* codeFor(email), password },
+              reservation: held,
+            });
+
+            const signedIn = yield* call("POST", "/sign-in/email", { body: { email, password } });
+
+            assert.deepStrictEqual([confirmed.status, signedIn.status], [200, 200]);
+          }),
+      );
+
+      it.effect(
+        "leaves the student's password confirming after a reset and a stranger's sign-up",
+        () =>
+          Effect.gen(function* () {
+            const email = "lena.reset.stranger@example.org";
+            const held = yield* reservation;
+
+            yield* call("POST", "/sign-up/email", {
+              body: { email, password, name: "" },
+              reservation: held,
+            });
+            yield* mailTo(email, () => true);
+
+            // Anyone may ask for a reset, which drops the sign-up's password; its mail goes after the
+            // answer, so the clock waits for it.
+            yield* call("POST", "/email-otp/request-password-reset", { body: { email } });
+            yield* mailTo(email, () => true);
+
+            yield* call("POST", "/sign-up/email", {
+              body: { email, password: "fremdes-passwort", name: "" },
+              reservation: yield* reservation,
+            });
+
+            yield* TestClock.adjust("1 minute");
+            yield* call("POST", "/send-verification-email", { body: { email } });
+
+            const confirmed = yield* call("POST", "/email-otp/verify-email", {
+              body: { email, otp: yield* codeFor(email), password },
+              reservation: held,
+            });
+
+            assert.strictEqual(confirmed.status, 200);
+          }),
       );
 
       // A second press must not replace the code that is still on its way (D90).
@@ -580,6 +664,11 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
             reservation: yield* reservation,
           });
           yield* mailTo(email, () => true);
+
+          // The sign-up's own code holds the address for a minute too.
+          const early = yield* resend;
+
+          yield* TestClock.adjust("1 minute");
 
           const resent = [yield* resend, yield* resend];
           const sent = yield* codeOf(mailTo(email, () => true));
@@ -598,12 +687,13 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
 
           assert.deepStrictEqual(
             {
+              early: early.status,
               resent: resent.map((answer) => answer.status),
               confirmed: confirmed.status,
               resets: resets.map((answer) => answer.status),
               mails: yield* mailCount(email),
             },
-            { resent: [200, 200], confirmed: 200, resets: [200, 200, 200], mails: 4 },
+            { early: 200, resent: [200, 200], confirmed: 200, resets: [200, 200, 200], mails: 4 },
           );
         }),
       );

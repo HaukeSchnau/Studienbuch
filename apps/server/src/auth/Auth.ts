@@ -65,22 +65,31 @@ export interface Callbacks {
   readonly signingUp: (reservation: string) => Promise<boolean>;
   /**
    * The sign-up for `email` went through, also as Better Auth's stand-in answer for a known
-   * address, or Better Auth refused it.
+   * address, or Better Auth refused it. Keeps the password `signUpPassword` hashed for `request`
+   * with the reservation.
    */
-  readonly signedUp: (reservation: string, email: Option.Option<string>) => Promise<void>;
+  readonly signedUp: (
+    reservation: string,
+    email: Option.Option<string>,
+    request: Request | undefined,
+  ) => Promise<void>;
   /**
-   * Keeps the password a sign-up names for its confirmation to check, and answers the one the
-   * account holds until then, which nobody knows.
+   * Hashes the password a sign-up names, for `signedUp` to keep, and answers the one the account
+   * holds until its address is confirmed, which nobody knows.
    */
-  readonly signUpPassword: (email: string, password: string) => Promise<string>;
+  readonly signUpPassword: (request: Request | undefined, password: string) => Promise<string>;
   /** Better Auth answered a sign-up of an address that already has an account, and did nothing. */
   readonly signedUpAgain: (email: string, confirmed: boolean) => Promise<void>;
-  /** Keeps what a confirmation request carries, for `proven`: its password and its code. */
+  /**
+   * Keeps what a confirmation request carries, for `proven`: its password, its reservation and
+   * its code.
+   */
   readonly proving: (request: Request, email: string, password: string) => Promise<void>;
   /**
    * The request's code was right: sets the password it carried and ends whatever the account
-   * picked up before, its sessions and passkeys. Answers false, and gives the code back, for a
-   * password no sign-up of the address named. Rejects a request that carried none.
+   * picked up before, its sessions and passkeys. Answers false, and gives the code back, for
+   * another password than the one the sign-up with the request's reservation chose. Rejects a
+   * request that carried none.
    */
   readonly proven: (account: string, request: Request | undefined) => Promise<boolean>;
   /** Admits the account to the school of the reservation the confirming device carries. */
@@ -204,11 +213,9 @@ export const options = (settings: Settings, callbacks: Callbacks) =>
 
             return Option.isSome(password) &&
               lengthProblem(password, context.context.password.config) === undefined
-              ? callbacks
-                  .signUpPassword(emailIn(context.body), password.value)
-                  .then((throwaway) => ({
-                    context: { body: { ...context.body, password: throwaway } },
-                  }))
+              ? callbacks.signUpPassword(context.request, password.value).then((throwaway) => ({
+                  context: { body: { ...context.body, password: throwaway } },
+                }))
               : undefined;
           });
         }
@@ -258,6 +265,7 @@ export const options = (settings: Settings, callbacks: Callbacks) =>
         return callbacks.signedUp(
           reservation,
           Result.isSuccess(created) ? Option.some(created.success.user.email) : Option.none(),
+          context.request,
         );
       }),
     },
@@ -423,15 +431,9 @@ const keyedHash = (secret: Redacted.Redacted, value: string) =>
 /** Code mails per address and hour, for confirmation codes and for reset codes. */
 const mailsPerHour = 5;
 
-/** The passwords sign-ups of an unconfirmed address named, beside the email-OTP plugin's rows. */
-const signUpPasswords = (address: string) => `sign-up-password-${address}`;
-
-/** How many of an address's latest sign-ups a confirmation checks its password against. */
-const signUpsChecked = 5;
-
 /** What a confirmation request carries, from before its code is checked to after. */
 interface Proof {
-  readonly address: string;
+  readonly reservation: Option.Option<string>;
   readonly password: Redacted.Redacted;
   readonly hash: string;
   /** The code row the request will use up, to give back if the password is wrong. */
@@ -775,11 +777,11 @@ const make = Effect.gen(function* () {
     // account to its school, so an unconfirmed address gets the sign-up's confirmation code. Its
     // sign-up password is the forgotten one, so confirming sets the one typed then.
     if (!user.user.emailVerified) {
-      yield* sql`delete from auth_verification where identifier = ${signUpPasswords(address)}`.pipe(
-        Effect.orDie,
-      );
+      yield* provided(AccessCodes.forgetSignUpPasswords(user.user.id)).pipe(Effect.orDie);
 
       const confirming = yield* freshCode("email-verification", address);
+
+      yield* holdForCode(address);
 
       return yield* mail.send(confirmInsteadMail(address, confirming));
     }
@@ -807,34 +809,25 @@ const make = Effect.gen(function* () {
     );
   });
 
-  // Every sign-up hashes once here, so a confirmed address, which keeps nothing, takes as long.
-  // Better Auth deletes verification rows by the wall clock, so these expire by the database's.
+  // The password a sign-up names, hashed, until its `after` hook keeps it with the reservation.
+  const signUps = new WeakMap<Request, string>();
+
   const signUpPassword = Effect.fn("Auth.signUpPassword")(function* (
-    email: string,
+    request: Request | undefined,
     password: string,
   ) {
     const hash = yield* Effect.promise(() => context.password.hash(password));
-    const address = Option.map(decodeAddress({ email }), (valid) => valid.email.toLowerCase());
 
-    if (Option.isSome(address)) {
-      const user = yield* Effect.promise(() =>
-        context.internalAdapter.findUserByEmail(address.value),
-      );
-
-      if (user?.user.emailVerified !== true) {
-        yield* sql`
-          insert into auth_verification (id, identifier, value, "expiresAt", "createdAt", "updatedAt")
-          values (
-            gen_random_uuid()::text, ${signUpPasswords(address.value)}, ${hash},
-            now() + make_interval(secs => ${Duration.toSeconds(AccessCodes.reservationLifetime)}),
-            now(), now()
-          )
-        `.pipe(Effect.orDie);
-      }
-    }
+    if (request !== undefined) signUps.set(request, hash);
 
     return Base64Url.encode(yield* Effect.orDie(crypto.randomBytes(32)));
   });
+
+  // Every confirmation code, a sign-up's own too, holds the address for the cooldown (D90).
+  const holdForCode = (address: string) =>
+    Effect.map(Clock.currentTimeMillis, (now) =>
+      cooldowns.add(`/send-verification-email ${address.toLowerCase()}`, now),
+    );
 
   // Better Auth mails nothing for a known address. One that waits for its code gets a fresh one,
   // which replaces the last as a resend does. The sign-up waits for it, as for a new account's.
@@ -861,7 +854,7 @@ const make = Effect.gen(function* () {
     );
 
     proofs.set(request, {
-      address,
+      reservation: Option.fromNullishOr(request.headers.get(Access.reservationHeader)),
       password: Redacted.make(password),
       hash,
       code: Option.map(Option.fromNullishOr(code), ({ value, expiresAt }) => ({
@@ -873,21 +866,23 @@ const make = Effect.gen(function* () {
   });
 
   // Runs after Better Auth used up the code, so only the code's holder learns that a password is
-  // wrong. A wrong one gives the code back with one try less, as a wrong code would.
+  // wrong. A wrong one gives the code back with one try less, as a wrong code would. Only the
+  // sign-up with the confirming device's own reservation decides, so nobody else's sign-up of the
+  // address can lock the student out; without one the typed password counts, as it did.
   const prove = Effect.fn("Auth.prove")(function* (account: string, proof: Proof) {
-    const named = yield* sql<{ readonly value: string }>`
-      select value from auth_verification
-      where identifier = ${signUpPasswords(proof.address)} and "expiresAt" > now()
-      order by "createdAt" desc limit ${signUpsChecked}
-    `.pipe(Effect.orDie);
+    const chosen = Option.isNone(proof.reservation)
+      ? Option.none<string>()
+      : yield* AccessCodes.signUpPassword(account, proof.reservation.value).pipe(Effect.orDie);
 
-    const match = yield* Effect.findFirst(named, ({ value }) =>
-      Effect.promise(() =>
-        context.password.verify({ hash: value, password: Redacted.value(proof.password) }),
-      ),
-    );
+    const matches = yield* Option.match(chosen, {
+      onNone: () => Effect.succeed(true),
+      onSome: (hash) =>
+        Effect.promise(() =>
+          context.password.verify({ hash, password: Redacted.value(proof.password) }),
+        ),
+    });
 
-    if (named.length > 0 && Option.isNone(match)) {
+    if (!matches) {
       yield* Option.match(proof.code, {
         onNone: () => Effect.void,
         onSome: ({ identifier, value, expiresAt }) => {
@@ -915,7 +910,6 @@ const make = Effect.gen(function* () {
             where "userId" = ${account} and "providerId" = 'credential'
           `;
           yield* sql`delete from auth_passkey where "userId" = ${account}`;
-          yield* sql`delete from auth_verification where identifier = ${signUpPasswords(proof.address)}`;
 
           return yield* sql<{ readonly id: string }>`
             delete from auth_session where "userId" = ${account} returning id
@@ -949,11 +943,9 @@ const make = Effect.gen(function* () {
     ...options(settings, {
       sendCode: (email, code) =>
         Effect.runPromiseWith(services)(
-          mail
-            .send(codeMail(email, code))
-            .pipe(
-              Effect.tapError((error) => Effect.logError("A verification code wasn't sent", error)),
-            ),
+          Effect.andThen(holdForCode(email), mail.send(codeMail(email, code))).pipe(
+            Effect.tapError((error) => Effect.logError("A verification code wasn't sent", error)),
+          ),
         ),
       requestReset: (email) => {
         background(
@@ -964,14 +956,19 @@ const make = Effect.gen(function* () {
         );
       },
       signingUp: (reservation) => run(AccessCodes.claimSignUp(reservation)),
-      signedUp: (reservation, email) =>
+      signedUp: (reservation, email, request) =>
         run(
           Option.match(email, {
             onNone: () => AccessCodes.releaseSignUp(reservation),
-            onSome: (address) => AccessCodes.rememberSignUp(reservation, address),
+            onSome: (address) =>
+              AccessCodes.rememberSignUp(
+                reservation,
+                address,
+                Option.fromNullishOr(request === undefined ? undefined : signUps.get(request)),
+              ),
           }),
         ),
-      signUpPassword: (email, password) => run(signUpPassword(email, password)),
+      signUpPassword: (request, password) => run(signUpPassword(request, password)),
       signedUpAgain: (email, confirmed) =>
         confirmed
           ? Promise.resolve()
