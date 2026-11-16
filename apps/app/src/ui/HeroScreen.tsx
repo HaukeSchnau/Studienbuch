@@ -1,6 +1,8 @@
 import { Hero } from "@stu/ui/Hero";
+import { Pill } from "@stu/ui/Pill";
 import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
+import { type Href, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState, type ReactNode } from "react";
 import {
@@ -33,6 +35,11 @@ export interface HeroScreenProps {
    * screen's bottom, and the bottom's overscroll takes its colour.
    */
   readonly footer?: { readonly color: string; readonly children: ReactNode };
+  /**
+   * A screen above the tabs gets "Zurück" in the hero's toolbar row on the web and Android, and
+   * iOS its native header. Without a screen before it, as after a reload, back leads here.
+   */
+  readonly back?: Href;
   readonly children?: ReactNode;
 }
 
@@ -48,11 +55,18 @@ export function HeroScreen({
   aside,
   refresh,
   footer,
+  back,
   children,
 }: HeroScreenProps) {
   const { color } = Theme.useTheme();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { overCanvas, onHeroEnd, onScroll } = useHeroCover(insets.top);
+
+  const goBack = (fallback: Href) => {
+    if (router.canGoBack()) router.back();
+    else router.replace(fallback);
+  };
 
   return (
     <View style={[styles.screen, { backgroundColor: color.canvas }]}>
@@ -89,6 +103,11 @@ export function HeroScreen({
           subtitle={subtitle}
           status={status}
           aside={aside}
+          toolbar={
+            back === undefined || Platform.OS === "ios"
+              ? undefined
+              : { start: <Pill icon="back" label="Zurück" onPress={() => goBack(back)} /> }
+          }
           top={heroTop(insets.top)}
           onColourEnd={onHeroEnd}
         >

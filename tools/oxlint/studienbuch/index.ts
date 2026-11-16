@@ -31,6 +31,7 @@ import noTestTimeoutOrUnreasonedSkip from "./no-test-timeout-or-unreasoned-skip.
 import noThrowingErrors from "./no-throwing-errors.ts";
 import noWallClockInTests from "./no-wall-clock-in-tests.ts";
 import oneRoleCheck from "./one-role-check.ts";
+import platformTwinExtension from "./platform-twin-extension.ts";
 import preferCatchTags from "./prefer-catch-tags.ts";
 import preferEffectFn from "./prefer-effect-fn.ts";
 import requireDisposableRender from "./require-disposable-render.ts";
@@ -74,6 +75,7 @@ export default definePlugin({
     "no-throwing-errors": noThrowingErrors,
     "no-wall-clock-in-tests": noWallClockInTests,
     "one-role-check": oneRoleCheck,
+    "platform-twin-extension": platformTwinExtension,
     "prefer-catch-tags": preferCatchTags,
     "prefer-effect-fn": preferEffectFn,
     "require-disposable-render": requireDisposableRender,

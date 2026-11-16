@@ -179,7 +179,14 @@ export const summary = Atom.family((accountId: string) =>
   ),
 );
 
-// The summary reads the status, so refreshing the status alone runs both again, in order.
+/** `NotebookKeys.atSignOut` for "Abmelden", after the status as the summary. */
+export const atSignOut = Atom.family((accountId: string) =>
+  runtime(accountId).atom((get) =>
+    Effect.andThen(get.result(status(accountId)), NotebookKeys.atSignOut),
+  ),
+);
+
+// The summary and `atSignOut` read the status, so refreshing the status runs them again, in order.
 const refresh = (accountId: string, get: Atom.FnContext) =>
   Effect.sync(() => get.refresh(status(accountId)));
 

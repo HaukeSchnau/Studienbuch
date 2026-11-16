@@ -626,3 +626,19 @@ export const summary = Effect.gen(function* () {
 
   return { secured: methods.some((each) => !each.thisDevice), methods } satisfies Summary;
 });
+
+/**
+ * What signing out does to the notebook, which goes with this device's key: `lost` when no other
+ * way in survives the device, `unknown` while the server can't say, else `kept`. A device without
+ * the key loses nothing, and the server derives a demo account's again at every sign-in.
+ */
+export type AtSignOut = "kept" | "lost" | "unknown";
+
+export const atSignOut = Effect.gen(function* () {
+  if (Option.isNone(yield* heldRootKey) || (yield* demoSignIn)) return "kept" as const;
+
+  return yield* summary.pipe(
+    Effect.map(({ secured }): AtSignOut => (secured ? "kept" : "lost")),
+    Effect.catchTags({ "NotebookKeys.Problem": () => Effect.succeed<AtSignOut>("unknown") }),
+  );
+});

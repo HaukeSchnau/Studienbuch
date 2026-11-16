@@ -49,6 +49,8 @@ const fakeServer = Effect.gen(function* () {
   // The root key the server derives for a demo account, and how often a device asked for it.
   const demoKey = yield* Ref.make(Option.none<Redacted.Redacted<Uint8Array>>());
   const demoAsked = yield* Ref.make(0);
+  // `state` doesn't answer, as without a network.
+  const offline = yield* Ref.make(false);
 
   const answer = <A, E>(effect: Effect.Effect<A, E>) =>
     Effect.flatMap(effect, (value) =>
@@ -64,15 +66,19 @@ const fakeServer = Effect.gen(function* () {
       : [...wrappers, wrapper];
 
   const server = KeyServer.Service.of({
-    state: Effect.map(
-      Effect.all([Ref.get(stored), Ref.get(hideRecords)]),
-      ([{ records, wrappers }, hidden]) =>
-        new Keys.State({
-          records: hidden ? [] : records,
-          wrappers: wrappers.map(
-            ({ statement }) => new Keys.Listed({ statement, createdAt: since }),
-          ),
-        }),
+    state: Effect.flatMap(
+      Effect.all([Ref.get(stored), Ref.get(hideRecords), Ref.get(offline)]),
+      ([{ records, wrappers }, hidden, away]) =>
+        away
+          ? Effect.fail(new KeyServer.Unreachable())
+          : Effect.succeed(
+              new Keys.State({
+                records: hidden ? [] : records,
+                wrappers: wrappers.map(
+                  ({ statement }) => new Keys.Listed({ statement, createdAt: since }),
+                ),
+              }),
+            ),
     ),
     init: (record, wrapper) =>
       Effect.flatMap(
@@ -127,7 +133,17 @@ const fakeServer = Effect.gen(function* () {
     ),
   });
 
-  return { server, stored, seals, hideRecords, loseAnswer, sealedWith, demoKey, demoAsked };
+  return {
+    server,
+    stored,
+    seals,
+    hideRecords,
+    loseAnswer,
+    sealedWith,
+    demoKey,
+    demoAsked,
+    offline,
+  };
 });
 
 type FakeServer = Effect.Success<typeof fakeServer>;
@@ -541,6 +557,48 @@ describe("NotebookKeys", () => {
           ],
         );
       }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
+  );
+
+  // Lena pressed "Später": her phone holds the only copy of the key, and signing out deletes it.
+  it.effect("signing out loses the notebook only where this device holds the only way in", () =>
+    Effect.gen(function* () {
+      const server = yield* fakeServer;
+      const phone = yield* device(server);
+      yield* phone.run(NotebookKeys.status);
+      const alone = yield* phone.run(NotebookKeys.atSignOut);
+      yield* Ref.set(server.offline, true);
+      const offline = yield* phone.run(NotebookKeys.atSignOut);
+      yield* Ref.set(server.offline, false);
+      yield* phone.run(createCard);
+      const withCard = yield* phone.run(NotebookKeys.atSignOut);
+      const laptop = yield* device(server);
+      yield* laptop.run(NotebookKeys.status);
+      const locked = yield* laptop.run(NotebookKeys.atSignOut);
+
+      // A demo account's key comes from the server at every sign-in, and it has no wrapper.
+      const demo = yield* fakeServer;
+      const rootKey = Redacted.make(new Uint8Array(32).fill(5));
+      const keys = yield* AccountKey.derive(rootKey, account, 0);
+      yield* Ref.set(demo.stored, {
+        records: [yield* AccountKey.record(keys, "first")],
+        wrappers: [],
+      });
+      yield* Ref.set(demo.demoKey, Option.some(rootKey));
+      const demoTablet = yield* device(demo, { demo: true });
+      yield* demoTablet.run(NotebookKeys.status);
+      const demoAccount = yield* demoTablet.run(NotebookKeys.atSignOut);
+
+      assert.deepStrictEqual(
+        { alone, offline, withCard, locked, demoAccount },
+        {
+          alone: "lost",
+          offline: "unknown",
+          withCard: "kept",
+          locked: "kept",
+          demoAccount: "kept",
+        },
+      );
+    }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
   );
 
   it.effect("a public computer starts no notebook key and keeps no device seed", () =>
