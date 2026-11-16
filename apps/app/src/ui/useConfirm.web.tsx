@@ -5,7 +5,7 @@ import { Tokens } from "@stu/ui/Tokens";
 import { useFocusOnMount } from "@stu/ui/useFocusOnMount";
 import * as Option from "effect/Option";
 import { useCallback, useId, useState } from "react";
-import { Modal, Pressable, StyleSheet, View } from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 
 import type { Answer, Question } from "./useConfirm.tsx";
 
@@ -80,31 +80,34 @@ function Dialog({
             },
           ]}
         >
-          {/* The question takes the focus, so a screen reader reads it before the choices. */}
-          <View ref={title} tabIndex={-1} style={styles.focusable}>
-            <Text variant="title2" nativeID={titleId} accessibilityRole="header" aria-level={2}>
-              {question.title}
-            </Text>
-          </View>
-          <View nativeID={textId} style={styles.text}>
-            {question.paragraphs.map((paragraph) => (
-              <Text key={paragraph} style={{ color: color.inkSoft }}>
-                {paragraph}
+          {/* oxlint-disable-next-line studienbuch/require-registered-list-scroll -- the dialog's own scroll, so a short or zoomed window doesn't cut the question off; it sits above any header */}
+          <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+            {/* The question takes the focus, so a screen reader reads it before the choices. */}
+            <View ref={title} tabIndex={-1} style={styles.focusable}>
+              <Text variant="title2" nativeID={titleId} accessibilityRole="header" aria-level={2}>
+                {question.title}
               </Text>
-            ))}
-          </View>
-          <View style={styles.choices}>
-            {question.instead === undefined ? null : (
-              <Button label={question.instead} block onPress={() => onAnswer("instead")} />
-            )}
-            <Button
-              label={question.proceed}
-              kind="danger"
-              block
-              onPress={() => onAnswer("proceed")}
-            />
-            <Button label="Abbrechen" kind="secondary" block onPress={() => onAnswer("cancel")} />
-          </View>
+            </View>
+            <View nativeID={textId} style={styles.text}>
+              {question.paragraphs.map((paragraph) => (
+                <Text key={paragraph} style={{ color: color.inkSoft }}>
+                  {paragraph}
+                </Text>
+              ))}
+            </View>
+            <View style={styles.choices}>
+              {question.instead === undefined ? null : (
+                <Button label={question.instead} block onPress={() => onAnswer("instead")} />
+              )}
+              <Button
+                label={question.proceed}
+                kind="danger"
+                block
+                onPress={() => onAnswer("proceed")}
+              />
+              <Button label="Abbrechen" kind="secondary" block onPress={() => onAnswer("cancel")} />
+            </View>
+          </ScrollView>
         </View>
       </View>
     </Modal>
@@ -122,11 +125,13 @@ const styles = StyleSheet.create({
   card: {
     width: "100%",
     maxWidth: 440,
-    gap: Tokens.space.lg,
-    padding: Tokens.layout.cardPadding,
+    maxHeight: "100%",
+    overflow: "hidden",
     borderRadius: Tokens.radius.card,
     borderWidth: 1,
   },
+  scroll: { flexGrow: 0, flexShrink: 1 },
+  content: { gap: Tokens.space.lg, padding: Tokens.layout.cardPadding },
   focusable: { outlineStyle: "solid", outlineWidth: 0 },
   text: { gap: Tokens.space.md },
   choices: { gap: Tokens.space.md },
