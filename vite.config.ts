@@ -289,6 +289,12 @@ export default defineConfig({
         rules: { "studienbuch/require-registered-list-scroll": "error" },
       },
       {
+        // Checkable is the one pressable with a checkbox's or a radio's role.
+        files: scope("apps/app/**", "apps/web/**", "packages/{ui,domain-ui}/**"),
+        excludeFiles: ["packages/ui/src/Checkable.tsx"],
+        rules: { "studienbuch/no-raw-checkable": "error" },
+      },
+      {
         // RouteLink is the one place that wraps expo-router's Link.
         files: scope("apps/app/src/**"),
         excludeFiles: ["apps/app/src/ui/navigation/RouteLink.tsx"],

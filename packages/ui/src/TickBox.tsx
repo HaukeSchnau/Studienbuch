@@ -1,5 +1,6 @@
-import { Pressable, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
+import { Checkable } from "./Checkable.tsx";
 import { Tokens } from "./Tokens.ts";
 import type { KeptFocus } from "./useKeptFocus.ts";
 import { Vector } from "./Vector.tsx";
@@ -25,27 +26,13 @@ export interface TickBoxProps {
  * you"). The touch area is the larger platform minimum around it, without taking more room.
  */
 export function TickBox({ checked, onChange, label, color, size = 30, kept }: TickBoxProps) {
-  const toggle = () => {
-    kept?.onUsed();
-    onChange(!checked);
-  };
-
   return (
-    <Pressable
-      ref={kept?.ref}
-      onFocus={kept?.onFocus}
-      accessibilityRole="checkbox"
-      aria-checked={checked}
-      accessibilityLabel={label}
-      onPress={toggle}
-      // react-native-web presses only buttons with Space, and a checkbox ticks with it as well. Its
-      // keydown would scroll the page.
-      onKeyDown={(event) => {
-        if (event.nativeEvent.key === " ") event.preventDefault();
-      }}
-      onKeyUp={(event) => {
-        if (event.nativeEvent.key === " ") toggle();
-      }}
+    <Checkable
+      kind="checkbox"
+      checked={checked}
+      label={label}
+      kept={kept}
+      onPress={() => onChange(!checked)}
       // The target itself is larger, as react-native-web ignores `hitSlop`.
       style={({ pressed }) => [
         styles.box,
@@ -63,7 +50,7 @@ export function TickBox({ checked, onChange, label, color, size = 30, kept }: Ti
           </View>
         ) : null}
       </View>
-    </Pressable>
+    </Checkable>
   );
 }
 
@@ -93,7 +80,6 @@ const styles = StyleSheet.create({
     height: Tokens.layout.minTarget,
     alignItems: "center",
     justifyContent: "center",
-    cursor: "pointer",
   },
   pressed: { transform: [{ scale: 0.9 }] },
 });
