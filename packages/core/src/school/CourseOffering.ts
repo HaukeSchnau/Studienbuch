@@ -23,6 +23,11 @@ export const Row = Sync.table("CourseOffering", {
     classIds: Schema.Array(SchoolClass.Id),
     /** A student chooses at most one course of an elective group. Absent for a required course. */
     groupKey: Schema.optional(Schema.String),
+    /**
+     * Whether a student this offering is for must choose one course of its group (Wahlpflicht),
+     * such as Kunst or Musik. Absent, the group may stay empty.
+     */
+    choiceRequired: Schema.optional(Schema.Boolean),
   },
   indexes: ["termId"],
 });
