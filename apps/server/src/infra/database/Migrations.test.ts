@@ -55,7 +55,13 @@ describe.skipIf(Postgres18.socket === null)("Migrations", () => {
 
       it.effect("refuses an applied migration that was edited", () =>
         Effect.gen(function* () {
-          yield* Migrations.apply(yield* release(first));
+          const applied = yield* release(first);
+          // Every database holds these hashes, so they stay the SHA-256 in lowercase hex.
+          assert.strictEqual(
+            applied[0]?.hash,
+            "d42c74861acad31a2d5b8ff45635b39cf8b9f97357196b7ca668ce4c0275d713",
+          );
+          yield* Migrations.apply(applied);
           const edited = yield* release({ "20260101000000_a": `${a}-- edited\n` });
           const error = yield* Effect.flip(Migrations.apply(edited));
           assert.strictEqual(error._tag, "Migrations.HistoryMismatch");

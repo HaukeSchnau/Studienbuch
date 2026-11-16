@@ -3,7 +3,7 @@
  * right before it connects, because a browser can't set headers on a WebSocket upgrade, and the
  * ticket in the URL is spent by the time a proxy logs it. They live in memory for 30 seconds.
  */
-import * as Clock from "effect/Clock";
+import * as Cache from "effect/Cache";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";
 import * as Duration from "effect/Duration";
@@ -12,7 +12,6 @@ import * as Base64Url from "effect/encoding/Base64Url";
 import type * as Headers from "effect/http/Headers";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
-import * as Schedule from "effect/Schedule";
 import type { Ports } from "./Ports.ts";
 import { Revocations } from "./Revocations.ts";
 
@@ -45,43 +44,45 @@ export const layer = Layer.effect(
   Effect.gen(function* () {
     const crypto = yield* Crypto.Crypto;
     const revocations = yield* Revocations.Service;
-    // Insertion order is issue order, which the per-session cap and the sweep rely on.
-    const open = new Map<string, { readonly admission: Admission; readonly until: number }>();
 
-    const sweep = Effect.map(Clock.currentTimeMillis, (now) => {
-      for (const [ticket, { until }] of open) if (until <= now) open.delete(ticket);
+    // Only `issue` adds tickets, so the lookup never runs. Insertion order is issue order, which
+    // the per-session cap relies on, and `issue` reads every entry, which drops the expired ones.
+    const open = yield* Cache.make({
+      lookup: (_ticket: string): Effect.Effect<Admission> =>
+        Effect.die("A ticket comes from issue"),
+      capacity: Number.POSITIVE_INFINITY,
+      timeToLive: lifetime,
     });
 
-    yield* sweep.pipe(Effect.repeat(Schedule.spaced(lifetime)), Effect.forkScoped);
-
     const issue = Effect.fn("Tickets.issue")(function* (admission: Admission) {
-      const now = yield* Clock.currentTimeMillis;
       const { sessionId } = admission.session;
 
-      const held = [...open].filter(
-        ([, { admission }]) => admission.session.sessionId === sessionId,
+      const held = Array.from(yield* Cache.entries(open)).filter(
+        ([, each]) => each.session.sessionId === sessionId,
       );
 
-      for (const [ticket] of held.slice(0, Math.max(0, held.length - perSession + 1))) {
-        open.delete(ticket);
-      }
+      yield* Effect.forEach(
+        held.slice(0, Math.max(0, held.length - perSession + 1)),
+        ([ticket]) => Cache.invalidate(open, ticket),
+        { discard: true },
+      );
 
       const ticket = Base64Url.encode(yield* Effect.orDie(crypto.randomBytes(32)));
-      open.set(ticket, { admission, until: now + Duration.toMillis(lifetime) });
+      yield* Cache.set(open, ticket, admission);
 
       return ticket;
     });
 
     const redeem = Effect.fn("Tickets.redeem")(function* (ticket: string) {
-      const now = yield* Clock.currentTimeMillis;
-      const held = open.get(ticket);
-      open.delete(ticket);
+      const held = yield* Cache.getSuccess(open, ticket);
+      // Two redeems can both read the ticket before either removes it. Only one removes it.
+      const spent = yield* Cache.invalidateWhen(open, ticket, () => true);
 
-      if (held === undefined || held.until <= now) return Option.none();
+      if (Option.isNone(held) || !spent) return Option.none();
 
-      if (yield* revocations.revoked(held.admission.session.sessionId)) return Option.none();
+      if (yield* revocations.revoked(held.value.session.sessionId)) return Option.none();
 
-      return Option.some(held.admission);
+      return held;
     });
 
     return Service.of({ issue, redeem });
