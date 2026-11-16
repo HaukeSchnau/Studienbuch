@@ -11,3 +11,6 @@ export { PgliteClient } from "@effect/sql-pglite";
 
 // oxlint-disable-next-line studienbuch/import-boundaries -- fixture: Vitest loads only in tests
 export { inject } from "vitest";
+
+// oxlint-disable-next-line studienbuch/test-only-imports -- fixture: a template literal names the test entry
+export const postgres = () => import(`@stu/sync/testing`);

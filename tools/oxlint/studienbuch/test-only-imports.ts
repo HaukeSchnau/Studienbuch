@@ -3,7 +3,7 @@ import * as NodePath from "node:path";
 import { defineRule, type ESTree } from "@oxlint/plugins";
 
 import { layoutPath } from "./repository-path.ts";
-import { isStringLiteral } from "./syntax.ts";
+import { staticString } from "./syntax.ts";
 
 // Entries that hand out test doubles. `@stu/e2ee/testing` draws "random" bytes from a fixed
 // stream, so production code that imported it would seal with predictable nonces and keys.
@@ -12,12 +12,14 @@ const TEST_ENTRY = /^@stu\/[^/]+\/testing(?:\/|$)/u;
 
 const TEST_FILE = /\.(?:test|spec)\.tsx?$|\.(?:setup|bench)\.ts$/u;
 
-// Test machinery by its path: sync's `testing/` and its simulation, which runs devices on
-// `@stu/e2ee/testing`, and any `<Name>Testing.ts` module. A module that imports one has to be one
-// too, so a chain of imports from production code into test code breaks at its first link. e2ee's
-// own `testing/` stays out: the vectors that the self-test ships run on its `TestCrypto`.
-const TEST_MACHINERY =
-  /^packages\/sync\/src\/(?:testing\.ts$|testing\/|simulation\/)|\/[A-Z][A-Za-z\d]*Testing\.tsx?$/u;
+// Test machinery by its repository path: a package's `testing/` and `testing.ts`, and sync's
+// simulation, which runs devices on `@stu/e2ee/testing`. A module that imports one has to be test
+// machinery too, so a chain of imports from production code into test code breaks at its first link.
+const TEST_DIRECTORY =
+  /^packages\/[^/]+\/src\/(?:testing\.ts$|testing\/)|^packages\/sync\/src\/simulation\//u;
+
+// A helper that tests share, by its file name or by any specifier that names it, an alias included.
+const TESTING_MODULE = /(?:^|\/)[A-Z][A-Za-z\d]*Testing(?:\.tsx?)?$/u;
 
 /** Test doubles stay in tests. */
 export default defineRule({
@@ -25,7 +27,7 @@ export default defineRule({
     type: "problem",
     docs: {
       description:
-        "Allow test machinery, such as `@stu/e2ee/testing`, sync's `testing/` or a `<Name>Testing.ts` module, in test files and other test machinery only.",
+        "Allow test machinery, such as `@stu/e2ee/testing`, a package's `testing/` or a `<Name>Testing.ts` module, in test files and other test machinery only.",
     },
     messages: {
       testOnly:
@@ -35,16 +37,19 @@ export default defineRule({
   create(context) {
     const file = layoutPath(context);
 
-    if (TEST_FILE.test(file) || TEST_MACHINERY.test(file)) return {};
+    if (TEST_FILE.test(file) || TEST_DIRECTORY.test(file) || TESTING_MODULE.test(file)) return {};
     const directory = NodePath.posix.dirname(file);
 
     const testOnly = (source: string) =>
       TEST_ENTRY.test(source) ||
-      (source.startsWith(".") && TEST_MACHINERY.test(NodePath.posix.join(directory, source)));
+      TESTING_MODULE.test(source) ||
+      (source.startsWith(".") && TEST_DIRECTORY.test(NodePath.posix.join(directory, source)));
 
-    const check = (source: ESTree.Node) => {
-      if (isStringLiteral(source) && testOnly(source.value)) {
-        context.report({ node: source, messageId: "testOnly", data: { source: source.value } });
+    const check = (node: ESTree.Node) => {
+      const source = staticString(node);
+
+      if (source !== null && testOnly(source)) {
+        context.report({ node, messageId: "testOnly", data: { source } });
       }
     };
 

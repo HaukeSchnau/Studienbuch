@@ -553,7 +553,7 @@ svg .st { font-size: 12.5px; font-weight: 700; fill: var(--ink); }
       <tr><th>everything</th><td>the global Temporal polyfill; <code>vitest</code> in tests</td><td>Civil time uses the functional API (ADR 0001); tests use <code>@effect/vitest</code>.</td></tr>
     </tbody>
   </table></div>
-  <p class="hint">Source: <a href="https://git.schnau.dev/schnau/Studienbuch/src/branch/main/tools/oxlint/studienbuch/boundaries">tools/oxlint/studienbuch/boundaries</a>, and <a href="https://git.schnau.dev/schnau/Studienbuch/src/branch/main/tools/oxlint/studienbuch/no-ambient-clock-or-random.ts">no-ambient-clock-or-random.ts</a> for core's clock reads. The same plugin also checks mutator purity, host reads in feature code, deterministic tests, test machinery outside tests (<code>@stu/*/testing</code>, sync's <code>testing/</code> and simulation, <code>&lt;Name&gt;Testing.ts</code> modules), baked-in origins, Hermes-unsafe APIs, directory names and em dashes in copy.</p>
+  <p class="hint">Source: <a href="https://git.schnau.dev/schnau/Studienbuch/src/branch/main/tools/oxlint/studienbuch/boundaries">tools/oxlint/studienbuch/boundaries</a>, and <a href="https://git.schnau.dev/schnau/Studienbuch/src/branch/main/tools/oxlint/studienbuch/no-ambient-clock-or-random.ts">no-ambient-clock-or-random.ts</a> for core's clock reads. The same plugin also checks mutator purity, host reads in feature code, deterministic tests, test machinery outside tests (<code>@stu/*/testing</code>, a package's <code>testing/</code>, sync's simulation, <code>&lt;Name&gt;Testing.ts</code> modules), baked-in origins, Hermes-unsafe APIs, directory names and em dashes in copy.</p>
 </section>
 
 <section id="app">

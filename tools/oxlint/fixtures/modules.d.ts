@@ -1,5 +1,7 @@
 // The packages the fixtures import. The workspace root installs none of them, and a fixture only
 // needs its import to resolve.
+declare module "#/console/ConsoleTesting.ts";
+
 declare module "@effect/atom-react";
 
 declare module "@effect/sql-pg";
