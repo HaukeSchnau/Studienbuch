@@ -140,7 +140,11 @@ function ExamTile({ exam, onSign }: { exam: Exam; onSign: ((id: string) => void)
         {confirmed ? null : (
           <>
             <View style={styles.signers}>
-              <Signer done={exam.teacher} label="Lehrkraft" />
+              <Signer
+                done={exam.teacher}
+                label="Lehrkraft"
+                unseen={exam.teacher ? "hat unterschrieben" : "fehlt"}
+              />
               <Signer done={exam.parents} label="Eltern fehlen" />
             </View>
             {onSign === undefined ? null : (
@@ -165,7 +169,11 @@ function ExamTile({ exam, onSign }: { exam: Exam; onSign: ((id: string) => void)
   );
 }
 
-function Signer({ done, label }: { done: boolean; label: string }) {
+/**
+ * One signature's state. The sticker is hidden from screen readers, so `unseen` says the state in
+ * words only they read, when `label` doesn't.
+ */
+function Signer({ done, label, unseen }: { done: boolean; label: string; unseen?: string }) {
   const { color } = Theme.useTheme();
   const tone = done ? color.accent : color.danger;
 
@@ -174,6 +182,7 @@ function Signer({ done, label }: { done: boolean; label: string }) {
       <StatusSticker status={done ? "confirmed" : "missing"} size={20} />
       <Text variant="footnote" style={{ color: tone }}>
         {label}
+        {unseen === undefined ? null : <span className="visually-hidden"> {unseen}</span>}
       </Text>
     </View>
   );

@@ -15,6 +15,8 @@ export const color = {
   blueLight: "#A9CBFA",
   yellow: "#FFC531",
   yellowDark: "#E09A0B",
+  /** A rim for yellow on white, at 4.1:1. */
+  amber: "#B06F00",
   coral: "#FF6B57",
   red: "#E8443A",
   teal: "#2BB5A6",

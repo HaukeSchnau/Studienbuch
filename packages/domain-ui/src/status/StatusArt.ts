@@ -6,9 +6,12 @@ export * as StatusArt from "./StatusArt.ts";
 
 const { circle, fill, stroke } = Sticker;
 
-const { navy, greenDark, blue, yellow, red, white } = Sticker.color;
+const { navy, greenDark, blue, yellow, amber, red, white } = Sticker.color;
 
-// The dark green keeps the white tick at 4.5:1, which the brand green doesn't.
+const triangle = "M10.3 4.4a2 2 0 0 1 3.4 0l7.5 13a2 2 0 0 1-1.7 3H4.5a2 2 0 0 1-1.7-3Z";
+
+// The dark green keeps the white tick at 4.5:1, which the brand green doesn't. The yellow triangle
+// is 1.6:1 on a white card, so it gets a rim 0.8 units wide that holds 4.1:1.
 const pieces = {
   /** Bestätigt, abgesichert, entschuldigt. */
   confirmed: [
@@ -19,7 +22,8 @@ const pieces = {
   missing: [fill(red, circle(12, 12, 8.6)), stroke(white, 2.3, "M9 9L15 15M15 9L9 15")],
   /** Something the student has to do. */
   attention: [
-    fill(yellow, "M10.3 4.4a2 2 0 0 1 3.4 0l7.5 13a2 2 0 0 1-1.7 3H4.5a2 2 0 0 1-1.7-3Z"),
+    stroke(amber, 1.6, triangle),
+    fill(yellow, triangle),
     stroke(navy, 2.2, "M12 9.4V13.8"),
     fill(navy, circle(12, 16.9, 1.2)),
   ],
