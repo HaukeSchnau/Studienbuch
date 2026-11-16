@@ -72,6 +72,14 @@ srv-2 is different. Previews, beta and later prod share it, and separate users, 
 - On the server, a space's version is bumped under a row lock, so version order equals commit order. A pull reads in one `REPEATABLE READ` snapshot, and the last mutation id never leads the rows. A change to push or pull needs a concurrency test on real PostgreSQL 18, as in `packages/sync/src/server/PostgresTx.test.ts`.
 - A race fix comes with a test that fails without it. The test awaits a `Deferred` or a `Queue`, or drives the `TestClock`.
 
+## Effect instead of hand-made machinery
+
+Lint can't tell these from legitimate code, so review checks them (D77):
+
+- A value cached in a closure and filled after a `yield*` lets two fibers both miss and both fill it. Use `SynchronizedRef.modifyEffect` or a `Semaphore`.
+- A hand-made reference-counted `Map`, a registry of waiting `Deferred`s, or a `Map` that a fiber sweeps on a timer is a finding. `RcMap` shares one resource per key while anyone holds it, `PubSub` with `Stream.filter` wakes waiters, and `Cache` with a `timeToLive` forgets entries, as in `packages/sync/src/server/{Connections,Revocations,Tickets}.ts`.
+- A `_tag` comparison on a broad type, such as `unknown` or another module's error union, keeps compiling when the tag is renamed and never matches again. Use `Schema.is` or `catchTags`. A `switch` on `_tag` over a closed union is fine, because the type checker proves it exhaustive.
+
 ## Offline
 
 - Screens read local SQLite and never wait for the network. A screen that waits for an RPC before it shows local data is a finding.
