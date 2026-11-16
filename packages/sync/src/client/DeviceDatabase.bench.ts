@@ -12,12 +12,9 @@ import type * as Layer from "effect/Layer";
 import * as ManagedRuntime from "effect/ManagedRuntime";
 import * as SqlClient from "effect/sql/SqlClient";
 import { test } from "vitest";
-import { Engines } from "../conformance/Engines.ts";
 import ProbeMigrations from "../conformance/migrations/migrations.js";
 import { ProbeDevice } from "../conformance/ProbeDevice.ts";
 import { DeviceDatabase } from "./DeviceDatabase.ts";
-
-await Engines.installFileFetch();
 
 const rows = 1_000;
 const groups = 20;

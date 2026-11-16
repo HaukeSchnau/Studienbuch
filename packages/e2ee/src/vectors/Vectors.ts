@@ -22,6 +22,7 @@ import { Wrapper } from "../recovery/Wrapper.ts";
 import { SealedRow } from "../rows/SealedRow.ts";
 import { SpaceKey } from "../space-keys/SpaceKey.ts";
 import { CryptoSuite } from "../suite/CryptoSuite.ts";
+// oxlint-disable-next-line studienbuch/test-only-imports -- the self-test ships the vectors on TestCrypto's fixed randomness
 import { TestCrypto } from "../testing/TestCrypto.ts";
 import file from "./vectors.json";
 

@@ -10,7 +10,7 @@ import { Sync } from "../definition/Sync.ts";
 import { CanonicalJson } from "../transaction/CanonicalJson.ts";
 import { Tx } from "../transaction/Tx.ts";
 import { Cases } from "./Cases.ts";
-import { Engines } from "./Engines.ts";
+import { Engines } from "../testing/Engines.ts";
 import { Fixture } from "./Fixture.ts";
 import { Probe } from "./Probe.ts";
 
