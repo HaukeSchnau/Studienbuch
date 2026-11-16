@@ -5,7 +5,7 @@ import { Tokens } from "@stu/ui/Tokens";
 import { useFocusOnMount } from "@stu/ui/useFocusOnMount";
 import * as Option from "effect/Option";
 import { useCallback, useId, useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Modal, ScrollView, StyleSheet, View } from "react-native";
 
 import type { Answer, Question } from "./useConfirm.tsx";
 
@@ -63,11 +63,12 @@ function Dialog({
       aria-describedby={textId}
     >
       <View style={styles.backdrop}>
-        {/* A click beside the dialog cancels; Tab and screen readers skip it, Escape cancels. */}
-        <Pressable
-          tabIndex={-1}
+        {/* A click beside the dialog cancels. A plain View, because react-native-web gives every
+            Pressable a tabindex, and the modal's focus trap moves to anything that has one. */}
+        <View
           aria-hidden
-          onPress={() => onAnswer("cancel")}
+          onStartShouldSetResponder={() => true}
+          onResponderRelease={() => onAnswer("cancel")}
           style={[StyleSheet.absoluteFill, styles.scrim]}
         />
         <View
