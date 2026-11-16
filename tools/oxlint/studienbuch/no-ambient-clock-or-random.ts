@@ -3,15 +3,37 @@ import { defineRule, type ESTree } from "@oxlint/plugins";
 import { importOf, isGlobalRead } from "./bindings.ts";
 import { memberKey, moduleExportName, unwrap } from "./syntax.ts";
 
-// Members of Effect modules that read or wait on the clock. Whole modules (`Clock`, `Random`,
-// `Crypto`, Temporal's `Now`) are import-boundaries' to bar, and effect-native's `global-date`,
-// `global-random` and `crypto-random-uuid` already report `Date`, `Math.random` and
-// `crypto.randomUUID`.
+// Members of Effect modules that read or wait on the clock or read the host's time zone. Whole
+// modules (`Clock`, `Random`, `Crypto`, Temporal's `Now`) are import-boundaries' to bar, and
+// effect-native's `global-date`, `global-random` and `crypto-random-uuid` already report `Date`,
+// `Math.random` and `crypto.randomUUID`.
 const CLOCK_MEMBERS = new Map<string, ReadonlySet<string>>([
-  ["DateTime", new Set(["now", "nowAsDate", "nowInCurrentZone", "nowUnsafe"])],
+  [
+    "DateTime",
+    new Set([
+      "formatLocal",
+      "layerCurrentZoneLocal",
+      "now",
+      "nowAsDate",
+      "nowInCurrentZone",
+      "nowUnsafe",
+      "withCurrentZoneLocal",
+      "zoneMakeLocal",
+    ]),
+  ],
   [
     "Effect",
-    new Set(["clockWith", "delay", "sleep", "timed", "timeout", "timeoutOption", "timeoutOrElse"]),
+    new Set([
+      "cachedInvalidateWithTTL",
+      "cachedWithTTL",
+      "clockWith",
+      "delay",
+      "sleep",
+      "timed",
+      "timeout",
+      "timeoutOption",
+      "timeoutOrElse",
+    ]),
   ],
 ]);
 
@@ -35,11 +57,11 @@ export default defineRule({
     type: "problem",
     docs: {
       description:
-        "Disallow reading the clock or randomness in packages/core: `DateTime.now`, `Effect.sleep` and its kin, `crypto` and `performance`.",
+        "Disallow reading the clock, the host's time zone or randomness in packages/core: `DateTime.now`, `DateTime.zoneMakeLocal`, `Effect.sleep` and its kin, `crypto` and `performance`.",
     },
     messages: {
       ambient:
-        "`{{read}}` reads the clock or randomness. Mutators read neither, so a replay gives the same result everywhere: ids and timestamps arrive as arguments.",
+        "`{{read}}` reads the clock, the host's time zone or randomness. Mutators read none of them, so a replay gives the same result everywhere: ids and timestamps arrive as arguments.",
     },
   },
   create(context) {
@@ -65,6 +87,19 @@ export default defineRule({
     const isGlobal = (node: ESTree.Node, names: ReadonlySet<string>) =>
       node.type === "Identifier" && names.has(node.name) && isGlobalRead(context, node);
 
+    /** `randomUUID` for the `crypto` in `crypto.randomUUID`, null when nothing reads a member. */
+    const memberRead = (node: ESTree.Node) => {
+      const { parent } = node;
+
+      return parent?.type === "MemberExpression" && parent.object === node
+        ? memberKey(parent)
+        : null;
+    };
+
+    // effect-native's crypto-random-uuid reports `crypto.randomUUID`, through globalThis too.
+    const isRandomUuid = (name: string, node: ESTree.Node) =>
+      name === "crypto" && memberRead(node) === "randomUUID";
+
     return {
       ImportDeclaration: checkImport,
       MemberExpression(node) {
@@ -78,20 +113,18 @@ export default defineRule({
 
         if (module !== null && CLOCK_MEMBERS.get(module)?.has(key) === true) {
           report(node, `${module}.${key}`);
-        } else if (AMBIENT_GLOBALS.has(key) && isGlobal(object, GLOBAL_THIS)) {
+        } else if (
+          AMBIENT_GLOBALS.has(key) &&
+          isGlobal(object, GLOBAL_THIS) &&
+          !isRandomUuid(key, node)
+        ) {
           report(node, `globalThis.${key}`);
         }
       },
       Identifier(node) {
-        if (!isGlobal(node, AMBIENT_GLOBALS)) return;
+        if (!isGlobal(node, AMBIENT_GLOBALS) || isRandomUuid(node.name, node)) return;
 
-        const parent = node.parent;
-
-        const member =
-          parent.type === "MemberExpression" && parent.object === node ? memberKey(parent) : null;
-
-        // effect-native's crypto-random-uuid reports this one.
-        if (node.name === "crypto" && member === "randomUUID") return;
+        const member = memberRead(node);
 
         report(node, member === null ? node.name : `${node.name}.${member}`);
       },

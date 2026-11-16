@@ -21,6 +21,24 @@ export const pause = Effect.sleep("1 second");
 // oxlint-disable-next-line studienbuch/no-ambient-clock-or-random -- fixture: Effect.clockWith in core
 export const millis = Effect.clockWith((clock: { readonly currentTimeMillis: number }) => clock);
 
+// oxlint-disable-next-line studienbuch/no-ambient-clock-or-random -- fixture: the host's time zone
+export const here = DateTime.zoneMakeLocal;
+
+// oxlint-disable-next-line studienbuch/no-ambient-clock-or-random -- fixture: a layer of the host's time zone
+export const hereLayer = DateTime.layerCurrentZoneLocal;
+
+// oxlint-disable-next-line studienbuch/no-ambient-clock-or-random -- fixture: an effect in the host's time zone
+export const inHere = DateTime.withCurrentZoneLocal;
+
+// oxlint-disable-next-line studienbuch/no-ambient-clock-or-random -- fixture: a date shown in the host's time zone
+export const shown = DateTime.formatLocal;
+
+// oxlint-disable-next-line studienbuch/no-ambient-clock-or-random -- fixture: a cache that expires by the clock
+export const cachedRows = Effect.cachedWithTTL;
+
+// oxlint-disable-next-line studienbuch/no-ambient-clock-or-random -- fixture: an invalidatable cache that expires by the clock
+export const invalidatable = Effect.cachedInvalidateWithTTL;
+
 // oxlint-disable-next-line studienbuch/no-ambient-clock-or-random -- fixture: crypto.getRandomValues in core
 export const noise = () => crypto.getRandomValues(new Uint8Array(16));
 
