@@ -44,7 +44,6 @@ export function SignInScreen() {
     <>
       <AuthHeading>Anmelden</AuthHeading>
       <Form>
-        {/* Switching reloads the tab, so it comes before anything is typed. */}
         <PublicComputerChoice />
         <Field
           pill

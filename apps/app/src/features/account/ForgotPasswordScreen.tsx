@@ -10,6 +10,7 @@ import * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Atom from "effect/reactivity/Atom";
 import { Keyboard, StyleSheet, View } from "react-native";
 
+import { PublicComputerChoice } from "../keys/PublicComputerChoice.tsx";
 import {
   Done,
   Form,
@@ -85,7 +86,8 @@ function Address() {
 
 /**
  * The code and the new password. Asking for another code stays here, and when the server refuses
- * that, as offline or after too many requests, the reason shows under the link.
+ * that, as offline or after too many requests, the reason shows under the link. Saving signs in,
+ * so the choice of a public computer shows here as on "Anmelden".
  */
 function NewPassword({ email }: { readonly email: string }) {
   const [result, reset] = useAtom(AccountState.resetPassword, { mode: "promiseExit" });
@@ -119,6 +121,7 @@ function NewPassword({ email }: { readonly email: string }) {
         {Accounts.codeMinutes} Minuten.
       </Done>
       <Form>
+        <PublicComputerChoice />
         <CodeField value={code.value} onChangeText={code.set} />
         <Field
           pill

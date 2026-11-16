@@ -368,7 +368,7 @@ export const status = Effect.gen(function* () {
     );
   }
 
-  if (records.length === 0 && (yield* Device.Service).publicComputer) {
+  if (records.length === 0 && (yield* Device.PublicComputer)) {
     return Status.NotHere();
   }
 
@@ -382,7 +382,7 @@ export const status = Effect.gen(function* () {
  * public computer or has one already. `reconcile` publishes the wrapper after the unlock.
  */
 const adopt = Effect.fn("NotebookKeys.adopt")(function* (keys: AccountKey.Keys) {
-  if (!(yield* Device.Service).publicComputer && Option.isNone(yield* heldSeed)) {
+  if (!(yield* Device.PublicComputer) && Option.isNone(yield* heldSeed)) {
     const seed = yield* (yield* CryptoSuite.Service).randomBytes(rootKeyLength);
     yield* (yield* Ports.DeviceSecrets).set("device-seed", seed);
   }

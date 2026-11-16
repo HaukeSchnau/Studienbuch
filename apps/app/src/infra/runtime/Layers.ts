@@ -8,7 +8,6 @@ import { ServerOrigin } from "../api/ServerOrigin.ts";
 import { Device } from "../device/Device.ts";
 import { VirtualDevice } from "../device/VirtualDevice.ts";
 import { Names } from "../device/Names.ts";
-import { publicComputer } from "../device/publicComputer.ts";
 import { DeviceSessions } from "../keychain/DeviceSessions.ts";
 import { Keychain } from "../keychain/Keychain.ts";
 import { MemoryKeychain } from "../keychain/MemoryKeychain.ts";
@@ -39,7 +38,7 @@ export const device = (options: Device.Options) =>
   ).pipe(
     Layer.provideMerge(DeviceSessions.layer),
     Layer.provideMerge(ServerOrigin.layer),
-    Layer.provideMerge(options.publicComputer ? MemoryKeychain.layer() : platformKeychain),
+    Layer.provideMerge(platformKeychain),
     Layer.provideMerge(Device.layer(options)),
   );
 
@@ -47,7 +46,7 @@ export const device = (options: Device.Options) =>
  * This app's own device. Every atom runtime that names this one value shares one build of it, so
  * the device's sessions and secrets have a single writer.
  */
-export const app = device({ name: VirtualDevice.current, publicComputer });
+export const app = device({ name: VirtualDevice.current });
 
 const secrets = (accountId: string) =>
   Layer.unwrap(
@@ -59,9 +58,19 @@ const secrets = (accountId: string) =>
     }),
   );
 
-/** What a signed-in account adds on top of its device's layers: its secrets and its database. */
-export const account = (accountId: string) =>
-  Layer.mergeAll(secrets(accountId), AccountDatabase.layer(accountId));
+/**
+ * What a signed-in account adds on top of its device's layers: its secrets and its database. On a
+ * public computer both live in memory of their own, so closing the layer forgets them.
+ */
+export const account = (accountId: string, publicComputer: boolean) => {
+  const stores = Layer.mergeAll(
+    secrets(accountId),
+    AccountDatabase.layer(accountId, publicComputer),
+    Layer.succeed(Device.PublicComputer)(publicComputer),
+  );
+
+  return publicComputer ? Layer.provide(stores, MemoryKeychain.layer()) : stores;
+};
 
 /**
  * Deletes what an account left on this device at sign-out: its database, its secrets and its
