@@ -63,9 +63,10 @@ function Dialog({
       aria-describedby={textId}
     >
       <View style={styles.backdrop}>
+        {/* A click beside the dialog cancels; Tab and screen readers skip it, Escape cancels. */}
         <Pressable
-          accessible={false}
-          focusable={false}
+          tabIndex={-1}
+          aria-hidden
           onPress={() => onAnswer("cancel")}
           style={[StyleSheet.absoluteFill, styles.scrim]}
         />
