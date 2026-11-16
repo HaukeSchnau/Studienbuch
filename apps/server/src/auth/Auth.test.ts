@@ -255,12 +255,15 @@ const mailTo = (email: string, matches: (message: Mail.Message) => boolean) =>
 const resetMailTo = (email: string) =>
   mailTo(email, (message) => message.subject.includes("Passwort"));
 
-/** The six digits of the next reset mail to `email`. */
-const resetCodeFor = (email: string) =>
+/** The six digits in a mail. */
+const codeOf = <E, R>(mail: Effect.Effect<Mail.Message, E, R>) =>
   Effect.map(
-    resetMailTo(email),
-    (mail) => /\b(?<code>\d{6})\b/u.exec(mail.text)?.groups?.code ?? "no code",
+    mail,
+    (message) => /\b(?<code>\d{6})\b/u.exec(message.text)?.groups?.code ?? "no code",
   );
+
+/** The six digits of the next reset mail to `email`. */
+const resetCodeFor = (email: string) => codeOf(resetMailTo(email));
 
 /** Whatever the code, a different one of six digits. */
 const wrongCode = (code: string) => String((Number(code) + 1) % 1_000_000).padStart(6, "0");
@@ -478,6 +481,133 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
         }),
       );
 
+      // D88: after a reload the device asks for the password again, and a typo there must not
+      // become the account's password.
+      it.effect("confirms only with the sign-up's password, and a typo leaves the code", () =>
+        Effect.gen(function* () {
+          const email = "lena.typo@example.org";
+          const held = yield* reservation;
+
+          yield* call("POST", "/sign-up/email", {
+            body: { email, password, name: "" },
+            reservation: held,
+          });
+
+          const otp = yield* codeFor(email);
+
+          const typo = yield* call("POST", "/email-otp/verify-email", {
+            body: { email, otp, password: `${password}x` },
+            reservation: held,
+          });
+
+          const unconfirmed = (yield* userOf(email))?.emailVerified;
+
+          const confirmed = yield* call("POST", "/email-otp/verify-email", {
+            body: { email, otp, password },
+            reservation: held,
+          });
+
+          const [withTypo, withPassword] = [
+            yield* call("POST", "/sign-in/email", { body: { email, password: `${password}x` } }),
+            yield* call("POST", "/sign-in/email", { body: { email, password } }),
+          ];
+
+          assert.deepStrictEqual(
+            {
+              typo: `${typo.status} ${typo.json === null ? "" : (yield* decodeCode(typo.json)).code}`,
+              unconfirmed,
+              confirmed: confirmed.status,
+              withTypo: withTypo.status,
+              withPassword: withPassword.status,
+            },
+            {
+              typo: "401 INVALID_EMAIL_OR_PASSWORD",
+              unconfirmed: false,
+              confirmed: 200,
+              withTypo: 401,
+              withPassword: 200,
+            },
+          );
+        }),
+      );
+
+      it.effect("mails a fresh code when an unconfirmed address signs up again", () =>
+        Effect.gen(function* () {
+          const email = "lena.again@example.org";
+          const held = yield* reservation;
+
+          yield* call("POST", "/sign-up/email", {
+            body: { email, password, name: "" },
+            reservation: held,
+          });
+
+          const first = yield* codeOf(mailTo(email, () => true));
+
+          yield* call("POST", "/sign-up/email", {
+            body: { email, password: "ein-anderes-passwort", name: "" },
+            reservation: held,
+          });
+
+          const second = yield* codeOf(mailTo(email, () => true));
+
+          const stale = yield* call("POST", "/email-otp/verify-email", {
+            body: { email, otp: first, password },
+            reservation: held,
+          });
+
+          // The first sign-up's password still confirms, as the device that signed up with it sends.
+          const confirmed = yield* call("POST", "/email-otp/verify-email", {
+            body: { email, otp: second, password },
+            reservation: held,
+          });
+
+          assert.deepStrictEqual(
+            { mails: yield* mailCount(email), stale: stale.status, confirmed: confirmed.status },
+            { mails: 2, stale: 400, confirmed: 200 },
+          );
+        }),
+      );
+
+      // A second press must not replace the code that is still on its way (D90).
+      it.effect("mails one code a minute to an address, and the code already sent works", () =>
+        Effect.gen(function* () {
+          const email = "lena.cooldown@example.org";
+          const resend = call("POST", "/send-verification-email", { body: { email } });
+          const reset = call("POST", "/email-otp/request-password-reset", { body: { email } });
+
+          yield* call("POST", "/sign-up/email", {
+            body: { email, password, name: "" },
+            reservation: yield* reservation,
+          });
+          yield* mailTo(email, () => true);
+
+          const resent = [yield* resend, yield* resend];
+          const sent = yield* codeOf(mailTo(email, () => true));
+
+          const confirmed = yield* call("POST", "/email-otp/verify-email", {
+            body: { email, otp: sent, password },
+          });
+
+          // Passwort vergessen waits a minute too.
+          const resets = [yield* reset, yield* reset];
+
+          yield* resetMailTo(email);
+          yield* TestClock.adjust("1 minute");
+          resets.push(yield* reset);
+          yield* resetMailTo(email);
+
+          assert.deepStrictEqual(
+            {
+              resent: resent.map((answer) => answer.status),
+              confirmed: confirmed.status,
+              resets: resets.map((answer) => answer.status),
+              mails: yield* mailCount(email),
+            },
+            { resent: [200, 200], confirmed: 200, resets: [200, 200, 200], mails: 4 },
+          );
+        }),
+      );
+
       it.effect("mails no code to a confirmed address, and its code can't be guessed in", () =>
         Effect.gen(function* () {
           yield* signUp("lena.resend@example.org");
@@ -494,6 +624,13 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
             body: { email: "lena.resend@example.org", otp: "000000", password },
           });
 
+          // Signing the address up again answers as for any address, and mails nothing either.
+          const again = yield* call("POST", "/sign-up/email", {
+            body: { email: "lena.resend@example.org", password, name: "" },
+            reservation: yield* reservation,
+          });
+
+          assert.strictEqual(again.status, 200);
           assert.strictEqual(resent.status, 200);
           assert.strictEqual(otp.status, 404);
           assert.strictEqual(guessed.status, 400);
@@ -693,14 +830,15 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
 
           // What the reset request mailed: a confirmation code, which no reset accepts.
           const mailed = yield* mailTo(email, () => true);
-          const code = /\b(?<code>\d{6})\b/u.exec(mailed.text)?.groups?.code ?? "no code";
+          const code = yield* codeOf(Effect.succeed(mailed));
 
           const reset = yield* call("POST", "/email-otp/reset-password", {
             body: { email, otp: code, password: "ganz-neu-4567" },
           });
 
+          // The mail says to choose a password while confirming, as the sign-up's is forgotten.
           const confirmed = yield* call("POST", "/email-otp/verify-email", {
-            body: { email, otp: code, password },
+            body: { email, otp: code, password: "ganz-neu-4567" },
             reservation: held,
           });
 
@@ -755,6 +893,8 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
             const first = email.startsWith("lena") ? yield* resetCodeFor(email) : "123456";
             const wrong = yield* tries("/email-otp/reset-password", email, wrongCode(first), extra);
 
+            // Past the cooldown, so the second request mails a second code.
+            yield* TestClock.adjust("1 minute");
             yield* request;
             const second = email.startsWith("lena") ? yield* resetCodeFor(email) : "123456";
             yield* expire(email);
@@ -774,6 +914,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
             const first = email.startsWith("lena") ? yield* codeFor(email) : "123456";
             const wrong = yield* tries("/email-otp/verify-email", email, wrongCode(first), extra);
 
+            yield* TestClock.adjust("1 minute");
             yield* request;
             const second = email.startsWith("lena") ? yield* codeFor(email) : "123456";
             yield* expire(email);
@@ -850,11 +991,21 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
 
           yield* signUp(email);
 
-          const answers = yield* Effect.forEach([1, 2, 3, 4, 5, 6], () =>
-            call("POST", "/email-otp/request-password-reset", { body: { email } }),
-          );
+          // A minute apart, as the cooldown allows. The clock moves on only once the reset that runs
+          // after the answer mailed, since a database connection times out by this clock too.
+          const answers = yield* Effect.forEach([1, 2, 3, 4, 5, 6], (each) =>
+            Effect.gen(function* () {
+              yield* TestClock.adjust("1 minute");
 
-          yield* Effect.forEach([1, 2, 3, 4, 5], () => resetCodeFor(email));
+              const answer = yield* call("POST", "/email-otp/request-password-reset", {
+                body: { email },
+              });
+
+              if (each <= 5) yield* resetCodeFor(email);
+
+              return answer;
+            }),
+          );
 
           assert.deepStrictEqual(
             answers.map((answer) => answer.status),

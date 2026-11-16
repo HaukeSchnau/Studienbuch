@@ -26,13 +26,13 @@ export * as Account from "./Account.ts";
 /** Why something didn't work, in words a screen can show (`sentence`). */
 export const Reason = Schema.Literals([
   "wrong-password",
-  "incomplete",
   "invalid-email",
   "weak-password",
   "sign-up-closed",
   "reservation-refused",
   "wrong-code",
   "password-needed",
+  "password-mismatch",
   "too-many-attempts",
   "offline",
   "server-error",
@@ -56,8 +56,8 @@ export class Problem extends Schema.TaggedError<Problem, { readonly brand: uniqu
 
 export const sentence: Record<Reason, string> = {
   "wrong-password": "E-Mail-Adresse oder Passwort stimmt nicht.",
-  incomplete: "Füll bitte alle Felder aus.",
-  "invalid-email": "Diese E-Mail-Adresse sieht nicht richtig aus.",
+  "invalid-email":
+    "Diese E-Mail-Adresse sieht nicht richtig aus. Sie braucht ein @ und eine Domain wie schule.de.",
   "weak-password": `Dein Passwort braucht mindestens ${Accounts.minPasswordLength} Zeichen.`,
   "sign-up-closed": "Neue Konten gibt es bald mit dem Zugangscode deiner Schule.",
   "reservation-refused":
@@ -65,7 +65,10 @@ export const sentence: Record<Reason, string> = {
   // The server answers a wrong, spent and expired code alike, so an address without an account
   // can't be told apart. The sentence covers all three.
   "wrong-code": `Der Code stimmt nicht oder gilt nicht mehr. Nach fünf falschen Versuchen und nach ${Accounts.codeMinutes} Minuten brauchst du einen neuen.`,
-  "password-needed": "Gib zum Bestätigen dein Passwort noch einmal ein.",
+  "password-needed":
+    "Gib zum Bestätigen das Passwort ein, das du beim Konto erstellen gewählt hast.",
+  "password-mismatch":
+    "Das ist nicht das Passwort, das du beim Konto erstellen gewählt hast. Der Code gilt weiter.",
   "too-many-attempts": "Zu viele Versuche. Warte kurz und versuch es dann noch einmal.",
   offline: "Keine Verbindung zum Server. Zum Anmelden brauchst du einmal Internet.",
   "server-error": "Beim Server ist gerade etwas schiefgelaufen. Versuch es gleich noch einmal.",
@@ -86,7 +89,9 @@ export const sentence: Record<Reason, string> = {
 const reasons = new Map<string, Reason>(
   Object.entries({
     INVALID_EMAIL_OR_PASSWORD: "wrong-password",
-    VALIDATION_ERROR: "incomplete",
+    // Better Auth checks a sign-up's address more strictly than `Accounts.Address`, and the app
+    // sends no empty field.
+    VALIDATION_ERROR: "invalid-email",
     INVALID_EMAIL: "invalid-email",
     PASSWORD_TOO_SHORT: "weak-password",
     EMAIL_PASSWORD_SIGN_UP_DISABLED: "sign-up-closed",
@@ -182,6 +187,7 @@ export const signUp = Effect.fn("Account.signUp")(function* (
 ) {
   const api = yield* AuthApi.Service;
 
+  yield* checkAddress(email);
   yield* api
     .signUp(email.trim(), password, Option.some(reservation.token))
     .pipe(Effect.mapError(problem));
@@ -195,6 +201,12 @@ export const signUp = Effect.fn("Account.signUp")(function* (
   );
 });
 
+// Said before the server is asked, which answers a reset request for no address as for any.
+const checkAddress = (email: string) =>
+  Accounts.isAddress(email.trim())
+    ? Effect.void
+    : Effect.fail(new Problem({ reason: "invalid-email" }));
+
 export const sendCode = Effect.fn("Account.sendCode")(function* (email: string) {
   const api = yield* AuthApi.Service;
 
@@ -207,6 +219,7 @@ export const requestPasswordReset = Effect.fn("Account.requestPasswordReset")(fu
 ) {
   const api = yield* AuthApi.Service;
 
+  yield* checkAddress(email);
   yield* api.requestPasswordReset(email.trim()).pipe(Effect.mapError(problem));
 });
 
@@ -322,9 +335,10 @@ const waitForCode = Effect.fn("Account.waitForCode")(function* (next: Option.Opt
 export const cancelSignUp = waitForCode(Option.none());
 
 /**
- * Confirms the address with its code and sets the password: the one this run signed up with or,
- * after a restart, `password` as typed again. The sign-up's reservation admits the account to the
- * code's school. The new session waits for `finish`, so a passkey can come first.
+ * Confirms the address with its code and the password: the one this run signed up with or, after
+ * a restart, `password` as typed again, which the server takes only if a sign-up chose it (D88).
+ * The sign-up's reservation admits the account to the code's school. The new session waits for
+ * `finish`, so a passkey can come first.
  */
 export const confirmEmail = Effect.fn("Account.confirmEmail")(function* (
   email: string,
@@ -351,7 +365,15 @@ export const confirmEmail = Effect.fn("Account.confirmEmail")(function* (
       known.value,
       Option.map(pending, (waiting) => waiting.reservation.token),
     )
-    .pipe(Effect.mapError(problem));
+    .pipe(
+      Effect.mapError((error) => {
+        const found = problem(error);
+
+        return found.reason === "wrong-password"
+          ? new Problem({ reason: "password-mismatch" })
+          : found;
+      }),
+    );
 
   // Said here, on the code screen, rather than after the passkey offer.
   yield* refuseOtherAccount(signedIn);

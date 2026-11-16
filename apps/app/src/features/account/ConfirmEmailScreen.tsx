@@ -3,14 +3,12 @@ import { Accounts } from "@stu/api/Accounts";
 import { AuthHeading } from "@stu/ui/AuthHeading";
 import { Button } from "@stu/ui/Button";
 import { Field } from "@stu/ui/Field";
-import { Link } from "@stu/ui/Link";
 import * as Exit from "effect/Exit";
 import * as Option from "effect/Option";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Atom from "effect/reactivity/Atom";
 import { Redirect, useRouter } from "expo-router";
-import { useState } from "react";
-import { Keyboard, StyleSheet, View } from "react-native";
+import { Keyboard } from "react-native";
 
 import { publicComputer } from "../../infra/device/publicComputer.ts";
 import { Account } from "./Account.ts";
@@ -25,7 +23,7 @@ import {
   useCredentials,
 } from "./AccountForm.tsx";
 import { AccountState } from "./AccountState.ts";
-import { CodeField, codeLength } from "./CodeField.tsx";
+import { CodeField, ResendCode, useCode } from "./CodeField.tsx";
 import { Steps } from "./Steps.ts";
 
 /**
@@ -54,13 +52,15 @@ function CodeEntry({ waiting }: { readonly waiting: Account.SigningUp }) {
   const forget = useAtomSet(AccountState.confirmEmail);
   const code = useCode(() => forget(Atom.Reset));
   const { password, setPassword } = useCredentials();
-  const [resent, sendCode] = useAtom(AccountState.sendCode);
+  const [resent, sendCode] = useAtom(AccountState.sendCode, { mode: "promiseExit" });
   const cancel = useAtomSet(AccountState.cancelSignUp);
   const keepReservation = useAtomSet(Steps.reservation);
+  const keepEmail = useAtomSet(Steps.signUpEmail);
+  const keepCode = useAtomSet(Steps.accessCode);
 
   // After a reload or a restart the device no longer holds the password it signed up with.
   const asksPassword = Option.isNone(waiting.password);
-  const complete = code.value.length === codeLength && (!asksPassword || password.length > 0);
+  const complete = code.complete && (!asksPassword || password.length > 0);
 
   const submit = async () => {
     if (!complete) return;
@@ -75,13 +75,17 @@ function CodeEntry({ waiting }: { readonly waiting: Account.SigningUp }) {
 
     if (Exit.isSuccess(exit)) {
       keepReservation(Option.none());
+      keepEmail(Option.none());
+      keepCode(Option.none());
       router.push("/geschafft");
     }
   };
 
-  // Another address takes the same code's reservation back to "Konto erstellen".
+  // Another address, or this one with a typo fixed, takes the same code's reservation back to
+  // "Konto erstellen", which shows this address to correct.
   const otherAddress = () => {
     keepReservation(Option.some(waiting.reservation));
+    keepEmail(Option.some(email));
     router.dismissTo("/konto-erstellen");
     cancel();
   };
@@ -99,8 +103,12 @@ function CodeEntry({ waiting }: { readonly waiting: Account.SigningUp }) {
             pill
             label="Passwort"
             hint={Account.sentence["password-needed"]}
+            invalid={Option.contains(reasonOf(result), "password-mismatch")}
             value={password}
-            onChangeText={setPassword}
+            onChangeText={(text) => {
+              setPassword(text);
+              forget(Atom.Reset);
+            }}
             autoComplete="current-password"
             textContentType="password"
             secureTextEntry
@@ -119,15 +127,14 @@ function CodeEntry({ waiting }: { readonly waiting: Account.SigningUp }) {
           busy={result.waiting}
           onPress={() => void submit()}
         />
-        <View style={styles.center}>
-          <Link
-            variant="subhead"
-            label={resent._tag === "Success" ? "Code ist unterwegs" : "Neuen Code schicken"}
-            busy={resent.waiting}
-            onPress={() => sendCode(email)}
-          />
-        </View>
-        <ProblemText reason={reasonOf(resent)} />
+        <ResendCode
+          result={resent}
+          send={() => sendCode(email).then(Exit.isSuccess)}
+          onSent={() => {
+            code.clear();
+            forget(Atom.Reset);
+          }}
+        />
         <Button
           kind="secondary"
           label="Andere E-Mail-Adresse verwenden"
@@ -141,6 +148,8 @@ function CodeEntry({ waiting }: { readonly waiting: Account.SigningUp }) {
         back
         onPress={() => {
           keepReservation(Option.none());
+          keepEmail(Option.none());
+          keepCode(Option.none());
           cancel();
         }}
       />
@@ -192,25 +201,3 @@ function PasskeyOffer({ email }: { readonly email: string }) {
     </>
   );
 }
-
-/**
- * The code as typed, digits only and at most six, so a pasted "145 838" becomes "145838".
- * `onEdit` runs when it changes, so an answer about the old code goes.
- */
-export function useCode(onEdit: () => void) {
-  const [value, setValue] = useState("");
-
-  return {
-    value,
-    set: (text: string) => {
-      const next = text.replaceAll(/\D/gu, "").slice(0, codeLength);
-
-      if (next !== value) onEdit();
-      setValue(next);
-    },
-  };
-}
-
-const styles = StyleSheet.create({
-  center: { alignItems: "center" },
-});

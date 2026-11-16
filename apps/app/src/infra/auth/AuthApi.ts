@@ -158,7 +158,8 @@ export class Service extends Context.Service<
     ) => Effect.Effect<void, Failure>;
     /**
      * Confirms the address with its code and sets the account's password, which counts only from
-     * here on: anyone can sign up any address, so the server keeps no password from before.
+     * here on: anyone can sign up any address. The server takes only a password one of the
+     * address's sign-ups chose, and answers another as a wrong password.
      */
     readonly confirmEmail: (
       email: string,

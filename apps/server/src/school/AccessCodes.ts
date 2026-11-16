@@ -18,7 +18,7 @@ import { Access } from "./Access.ts";
 export * as AccessCodes from "./AccessCodes.ts";
 
 /** Long enough to sign up and confirm the address. A reservation holds no use meanwhile. */
-const reservationLifetime = Duration.hours(2);
+export const reservationLifetime = Duration.hours(2);
 
 /**
  * How many accounts one reservation may create. A use is spent at confirmation, long after the
