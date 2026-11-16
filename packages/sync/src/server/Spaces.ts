@@ -79,6 +79,11 @@ export const make = Effect.gen(function* () {
    */
   const regrant = Effect.fnUntraced(function* (spaces: ReadonlyArray<string>) {
     if (membershipTables.length === 0 || spaces.length === 0) return;
+
+    // The lock their writers take, in id order like `Decision.lock`, so no write commits between
+    // the rules' reads of the rows and the delete of the grants the rows no longer name.
+    yield* sql`select 1 from space where id = any(${spaces}) order by id for no key update`;
+
     const tx = yield* PostgresTx.make({ actor: "", writes: [] });
 
     const accounts = yield* Membership.apply(definition, spaces, membershipTables).pipe(

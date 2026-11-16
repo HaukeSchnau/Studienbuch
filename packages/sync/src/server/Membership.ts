@@ -18,10 +18,10 @@ interface Grant {
 }
 
 /**
- * Applies the rules over `written` tables to each of `spaces`, in one delete and one insert, and
- * returns the accounts whose memberships changed. Rows name spaces by key within their space's
- * parent, and only members who read the parent receive them. Their parent memberships stay locked
- * until commit, so leaving the parent waits for the grant, or the reverse.
+ * Applies the rules over `written` tables to `spaces` in one delete and one insert, and returns
+ * the accounts whose memberships changed. Rows name spaces by key in their space's parent, for
+ * members who read the parent. The caller holds each space's lock while this reads its rows, and
+ * the parent memberships stay locked until commit, so no write or leave overlaps the grant.
  */
 export const apply = Effect.fn("Membership.apply")(function* (
   definition: Sync.Definition,
