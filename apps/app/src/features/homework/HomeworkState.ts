@@ -51,9 +51,6 @@ const decode = {
   ),
 };
 
-/** The time zone of a device that holds no school row yet. */
-export const fallbackTimeZone = CivilTime.TimeZone.make("Europe/Berlin");
-
 // The first start shows refused course choices itself (OnboardingState).
 const shownElsewhere: ReadonlySet<string> = new Set([Enrollment.set.name]);
 
@@ -116,7 +113,7 @@ const read = Effect.gen(function* () {
 
   return Option.some<Reading>({
     notebook: Notebook.Id.make(notebook.id),
-    timeZone: school?.timeZone ?? fallbackTimeZone,
+    timeZone: school?.timeZone ?? School.defaultTimeZone,
     homework,
     refusals,
   });
@@ -154,7 +151,7 @@ export const today = Atom.family((timeZone: CivilTime.TimeZone) =>
   Atom.make(
     Stream.tick(Duration.minutes(1)).pipe(
       Stream.mapEffect(() =>
-        Effect.map(Clock.currentTimeMillis, (now) => CivilTime.dateIn(now, timeZone)),
+        Effect.map(Clock.currentTimeMillis, (now) => School.today({ timeZone }, now)),
       ),
       Stream.changesWith((a, b) => CivilTime.order(a, b) === 0),
     ),

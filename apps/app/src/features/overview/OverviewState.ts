@@ -1,4 +1,4 @@
-import type { CivilTime, Notebook } from "@stu/core";
+import { type CivilTime, type Notebook, School } from "@stu/core";
 import { HomeworkItem } from "@stu/domain-ui/homework/HomeworkItem";
 import { type Outbox, SyncClient } from "@stu/sync/client";
 import * as Effect from "effect/Effect";
@@ -86,7 +86,7 @@ export const overview = Atom.family((accountId: string) =>
       get(
         HomeworkState.today(
           Option.match(reading, {
-            onNone: () => HomeworkState.fallbackTimeZone,
+            onNone: () => School.defaultTimeZone,
             onSome: (r) => r.timeZone,
           }),
         ),
