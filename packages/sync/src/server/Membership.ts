@@ -9,87 +9,117 @@ import { Sync } from "../definition/Sync.ts";
 
 export * as Membership from "./Membership.ts";
 
+/** A membership a rule grants: `account` reads `space` with `role`, because of `grantor`'s rows. */
+interface Grant {
+  readonly space: string;
+  readonly account: string;
+  readonly role: string;
+  readonly grantor: string;
+}
+
 /**
- * Applies the rules over `written` tables for `space`'s rows, and returns the accounts whose
- * memberships changed. Rows name spaces by key within `space`'s parent, so a notebook reaches only
- * its own school's courses, and only members who read the parent receive them. Their parent
- * memberships stay locked until commit, so leaving the parent waits for the grant, or the reverse.
+ * Applies the rules over `written` tables to each of `spaces`, in one delete and one insert, and
+ * returns the accounts whose memberships changed. Rows name spaces by key within their space's
+ * parent, and only members who read the parent receive them. Their parent memberships stay locked
+ * until commit, so leaving the parent waits for the grant, or the reverse.
  */
 export const apply = Effect.fn("Membership.apply")(function* (
   definition: Sync.Definition,
-  space: string,
+  spaces: ReadonlyArray<string>,
   written: ReadonlyArray<Sync.Any>,
 ) {
   const sql = yield* SqlClient.SqlClient;
-  const changed = new Set<string>();
   const rules = definition.membership.filter((rule) => written.includes(rule.from));
 
-  if (rules.length === 0) return [];
+  if (rules.length === 0 || spaces.length === 0) return [];
 
-  const [granting] = yield* sql<{ readonly parent: string | null }>`
-    select parent_id as parent from space where id = ${space}
+  const members = yield* sql<{
+    readonly space: string;
+    readonly parent: string;
+    readonly account: string;
+  }>`
+    select m.space_id as space, s.parent_id as parent, m.account_id as account
+    from space s
+    join space_member m on m.space_id = s.id
+    join space_member p on p.account_id = m.account_id and p.space_id = s.parent_id
+    where s.id = any(${spaces})
+    for share of m, p
   `;
 
-  const parent = granting?.parent ?? null;
+  const parents = new Map<string, string>();
+  const accounts = new Map<string, Array<string>>();
 
-  const members =
-    parent === null
-      ? []
-      : yield* sql<{ readonly account: string }>`
-          select m.account_id as account from space_member m
-          join space_member p on p.account_id = m.account_id and p.space_id = ${parent}
-          where m.space_id = ${space}
-          for share of m, p
-        `;
+  for (const { space, parent, account } of members) {
+    parents.set(space, parent);
+    accounts.set(space, [...(accounts.get(space) ?? []), account]);
+  }
 
-  /** The spaces of `kind` under the granting space's parent whose keys the rows named. */
-  const existing = (kind: string, keys: ReadonlyArray<string>) =>
-    parent === null || keys.length === 0
-      ? Effect.succeed([])
-      : sql<{ readonly id: string }>`
-          select id from space
-          where parent_id = ${parent} and kind = ${kind} and key in ${sql.in(keys)}
-          order by id
-        `.pipe(Effect.map((rows) => rows.map((row) => row.id)));
+  const wanted: Array<Grant> = [];
 
   for (const rule of rules) {
-    const granted = yield* Sync.grants(rule, space, existing);
+    const named: Array<{
+      readonly grantor: string;
+      readonly parent: string;
+      readonly key: string;
+    }> = [];
 
-    const held = yield* sql<{ readonly space: string; readonly account: string }>`
-      select m.space_id as space, m.account_id as account
-      from space_member m join space s on s.id = m.space_id
-      where m.granted_by = ${space} and s.kind = ${rule.kind.name}
-    `;
+    for (const [space, parent] of parents) {
+      // All keys the rows name. The query below keeps those that name a space of the rule's kind.
+      const keys = yield* Sync.grants(rule, space, (_kind, keys) => Effect.succeed(keys));
 
-    const key = (target: string, account: string) => JSON.stringify([target, account]);
-    const heldKeys = new Set(held.map((row) => key(row.space, row.account)));
-
-    const wanted = granted.flatMap((target) =>
-      members.map(({ account }) => ({ space: target, account })),
-    );
-
-    const wantedKeys = new Set(wanted.map((row) => key(row.space, row.account)));
-
-    for (const row of wanted.filter((row) => !heldKeys.has(key(row.space, row.account)))) {
-      // An account that already reads the space through another source keeps that membership.
-      const added = yield* sql`
-        insert into space_member (space_id, account_id, role, granted_by)
-        values (${row.space}, ${row.account}, ${rule.role}, ${space})
-        on conflict (space_id, account_id) do nothing
-        returning 1
-      `;
-
-      if (added.length > 0) changed.add(row.account);
+      for (const key of keys) named.push({ grantor: space, parent, key });
     }
 
-    for (const row of held.filter((row) => !wantedKeys.has(key(row.space, row.account)))) {
-      yield* sql`
-        delete from space_member
-        where space_id = ${row.space} and account_id = ${row.account} and granted_by = ${space}
-      `;
-      changed.add(row.account);
+    const granted =
+      named.length === 0
+        ? []
+        : yield* sql<{ readonly grantor: string; readonly space: string }>`
+            select w.grantor, s.id as space
+            from unnest(
+              ${named.map((row) => row.grantor)}::text[],
+              ${named.map((row) => row.parent)}::text[],
+              ${named.map((row) => row.key)}::text[]
+            ) as w(grantor, parent, key)
+            join space s on s.parent_id = w.parent and s.key = w.key and s.kind = ${rule.kind.name}
+          `;
+
+    for (const { grantor, space } of granted) {
+      for (const account of accounts.get(grantor) ?? []) {
+        wanted.push({ space, account, role: rule.role, grantor });
+      }
     }
   }
 
-  return [...changed].sort();
+  const column = (field: keyof Grant) => wanted.map((grant) => grant[field]);
+
+  // Deletes first, so a membership that moves to another granting space in this call stays.
+  const removed = yield* sql<{ readonly account: string }>`
+    delete from space_member m using space s
+    where s.id = m.space_id
+      and m.granted_by = any(${spaces})
+      and s.kind = any(${rules.map((rule) => rule.kind.name)})
+      and (m.space_id, m.account_id, m.granted_by) not in (
+        select * from unnest(${column("space")}::text[], ${column("account")}::text[],
+          ${column("grantor")}::text[])
+      )
+    returning m.account_id as account
+  `;
+
+  // An account that already reads the space through another source keeps that membership. Rows go
+  // in key order, so two transactions granting the same memberships wait rather than deadlock.
+  const added =
+    wanted.length === 0
+      ? []
+      : yield* sql<{ readonly account: string }>`
+          insert into space_member (space_id, account_id, role, granted_by)
+          select * from unnest(
+            ${column("space")}::text[], ${column("account")}::text[], ${column("role")}::text[],
+            ${column("grantor")}::text[]
+          )
+          order by 1, 2
+          on conflict (space_id, account_id) do nothing
+          returning account_id as account
+        `;
+
+  return [...new Set([...removed, ...added].map((row) => row.account))].sort();
 });
