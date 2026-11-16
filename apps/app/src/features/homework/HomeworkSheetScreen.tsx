@@ -6,12 +6,14 @@ import { RefusalText } from "@stu/domain-ui/refusal/RefusalText";
 import { Text } from "@stu/ui/Text";
 import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
+import { useStableCallback } from "@stu/ui/useStableCallback";
 import * as Exit from "effect/Exit";
 import * as Option from "effect/Option";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Atom from "effect/reactivity/Atom";
 import * as Schema from "effect/Schema";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect } from "react";
 import { StyleSheet, View } from "react-native";
 
 import { Sheet } from "../../ui/Sheet.tsx";
@@ -61,6 +63,12 @@ function AccountSheet({
     current.readable ? current.reading : Option.none(),
   );
 
+  // Gone, as when another device deleted it. Its edit draft would never be read again.
+  const gone =
+    id !== undefined && Option.exists(reading, (r) => !r.homework.some((each) => each.id === id));
+
+  useDropWhenGone(gone, () => void discard(key));
+
   // Opened by its address on a device without the notebook's key, as after a reload.
   if (Option.exists(status, (current) => current.locked)) {
     return (
@@ -78,10 +86,9 @@ function AccountSheet({
   const { notebook } = reading.value;
   const stored = reading.value.homework.find((each) => each.id === id);
 
-  // Gone, as when another device deleted it. Its edit draft would never be read again.
   if (id !== undefined && stored === undefined) {
     return (
-      <Sheet onClose={() => void discard(key).then(close)}>
+      <Sheet onClose={close}>
         <Notice
           title="Diese Hausaufgabe gibt es nicht mehr"
           text="Vielleicht wurde sie auf einem anderen Gerät gelöscht."
@@ -135,6 +142,18 @@ function AccountSheet({
       />
     </Sheet>
   );
+}
+
+/**
+ * Runs `drop` once the sheet finds its homework gone, so its draft goes on every platform, also when
+ * the phones' sheet is swiped away without `onClose`.
+ */
+export function useDropWhenGone(gone: boolean, drop: () => void) {
+  const dropOnce = useStableCallback(drop);
+
+  useEffect(() => {
+    if (gone) dropOnce();
+  }, [gone, dropOnce]);
 }
 
 function Notice({ title, text }: { readonly title: string; readonly text: string }) {
