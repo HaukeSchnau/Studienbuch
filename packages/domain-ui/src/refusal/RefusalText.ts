@@ -11,8 +11,9 @@ export const title = "Nicht übernommen";
 
 export const fallback = "Der Server hat die Änderung abgelehnt.";
 
-// A refusal a core mutator can fail with doesn't compile until it has its sentence.
-const core = {
+// Every refusal a command can end with, so a new or renamed tag doesn't compile until it has its
+// sentence.
+const sentences = {
   "Homework.CourseNotChosen":
     "Dieser Kurs ist nicht mehr in deiner Kurswahl. Vielleicht hast du ihn auf einem anderen Gerät abgewählt.",
   "Homework.NotFound": "Diese Hausaufgabe wurde auf einem anderen Gerät gelöscht.",
@@ -20,10 +21,6 @@ const core = {
   "Enrollment.ClassRequired": "Wähl zuerst deine Klasse, dann deine Kurse.",
   "Enrollment.CourseNotOffered": "Dieser Kurs wird in diesem Halbjahr nicht angeboten.",
   "Enrollment.TwoInOneGroup": "Von diesen Kursen kannst du nur einen wählen.",
-} as const satisfies Record<Studienbuch.RefusalTag, string>;
-
-// Refusals whose types live in @stu/sync, which this package may not import.
-const other = {
   "Sync.NotMember": "Diese Änderung gehört in ein Notizbuch, in dem du nicht Mitglied bist.",
   "Sync.NotAllowed": "Hier darfst du nichts ändern.",
   "Sync.Locked": "Dieser Eintrag ist bestätigt und lässt sich nicht mehr ändern.",
@@ -41,10 +38,13 @@ const other = {
   "Tx.RowMissing": "Diesen Eintrag gibt es nicht mehr.",
   "Tx.InvalidRow": "Der Eintrag ist ungültig.",
   "Tx.InvalidId": "Der Eintrag ist ungültig.",
-} as const;
+  // A NUL or a lone surrogate, which Postgres can't store.
+  "CanonicalJson.Unrepresentable":
+    "Der Text enthält ein Zeichen, das sich nicht speichern lässt. Entfern es und versuch es noch einmal.",
+} as const satisfies Record<Studienbuch.RefusalTag, string>;
 
-const sentences: ReadonlyMap<string, string> = new Map(Object.entries({ ...core, ...other }));
+const byTag: ReadonlyMap<string, string> = new Map(Object.entries(sentences));
 
 /** The sentence for a refusal's tag. */
 export const sentence = (reason: { readonly _tag: string }): string =>
-  sentences.get(reason._tag) ?? fallback;
+  byTag.get(reason._tag) ?? fallback;

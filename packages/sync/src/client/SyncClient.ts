@@ -76,7 +76,7 @@ export type MutateError<E> =
   | Refusal.InvalidArgs
   | Refusal.TooLarge
   | Refusal.BadEnvelope
-  | Sealing.Unreadable;
+  | Refusal.Unreadable;
 
 export interface Status {
   /** Whether the engine has a connection to the server. */
@@ -294,7 +294,7 @@ export const make = Effect.fnUntraced(function* (
   /**
    * Runs one command on the device's rows and queues it, inside the caller's transaction. The
    * declared spaces must be valid ids the device knows, the mutator must succeed, and the
-   * account's role must allow each table it wrote in each space it wrote.
+   * account's role must allow each row it wrote (`Sync.mayWrite`), as the server checks.
    */
   const queue = Effect.fnUntraced(function* <E>(
     mutator: Sync.AnyMutator,
@@ -336,9 +336,9 @@ export const make = Effect.fnUntraced(function* (
         return yield* Effect.die(`${mutator.name} wrote ${row.space}, which it doesn't declare`);
       }
 
-      const roles = definition.byName.tables.get(row.table)?.writableBy[space.kind] ?? [];
-
-      if (!roles.includes(space.role)) return yield* new Refusal.NotAllowed({ space: row.space });
+      if (!Sync.mayWrite(definition, space.role, space.kind, row.table)) {
+        return yield* new Refusal.NotAllowed({ space: row.space });
+      }
     }
 
     // A sealed command keeps its rows as drafts for the push, which seals them. The server checks

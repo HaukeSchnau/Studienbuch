@@ -4,15 +4,22 @@ import { StyleSheet, View } from "react-native";
 import { Text } from "./Text.tsx";
 import { Theme } from "./Theme.ts";
 import { Tokens } from "./Tokens.ts";
+import { Underline } from "./Underline.tsx";
+import { useLastLine } from "./useLastLine.ts";
 import { useLayout } from "./useLayout.ts";
 import { Vector } from "./Vector.tsx";
 
 export interface HeroProps {
   readonly title: string;
+  /** Draws the old web's hand-drawn line under the title's last line, as under "Moin, Lena!". */
+  readonly underline?: boolean;
   readonly subtitle?: string | undefined;
   /** Short facts in white pills under the title, such as "KW 44". */
   readonly chips?: ReadonlyArray<string>;
-  /** Under the subtitle and chips, such as the sync status. */
+  /**
+   * Under the subtitle and chips, such as the sync status. Its width doesn't move the swoosh, so a
+   * status wider than the title and subtitle crosses the curve, as `aside` may.
+   */
   readonly status?: ReactNode;
   /** Art at the right of the title, such as a subject's tile. It may overlap the swoosh. */
   readonly aside?: ReactNode;
@@ -36,6 +43,7 @@ export interface HeroProps {
  */
 export function Hero({
   title,
+  underline = false,
   subtitle,
   chips = [],
   status,
@@ -47,6 +55,7 @@ export function Hero({
 }: HeroProps) {
   const { color } = Theme.useTheme();
   const swoosh = useSwoosh();
+  const words = useLastLine();
   // The area extends this far below the text, where the band sits.
   const below = swoosh.band + edge - swoosh.lift;
 
@@ -73,29 +82,46 @@ export function Hero({
         )}
         <View style={[styles.column, styles.heading]} onLayout={swoosh.onHeading}>
           <View style={styles.text} onLayout={swoosh.onText}>
-            <Text variant="display" accessibilityRole="header" style={styles.onHero}>
-              {title}
-            </Text>
-            {/* Bold, because white on the light hero green passes only as large bold text. */}
-            {subtitle === undefined ? null : (
-              <Text variant="title3" weight="bold" style={styles.onHero}>
-                {subtitle}
-              </Text>
-            )}
-            {chips.length === 0 ? null : (
-              <View style={styles.chips}>
-                {chips.map((chip) => (
-                  <Text
-                    key={chip}
-                    variant="subhead"
-                    weight="semibold"
-                    style={[styles.chip, { backgroundColor: color.surface, color: color.accent }]}
-                  >
-                    {chip}
-                  </Text>
-                ))}
+            <View style={[styles.text, styles.reach]} onLayout={swoosh.onReach}>
+              <View {...words.container}>
+                <Text
+                  {...words.text}
+                  variant="display"
+                  accessibilityRole="header"
+                  style={styles.onHero}
+                >
+                  {title}
+                </Text>
+                {underline && words.line !== undefined ? (
+                  <Underline
+                    line={words.line}
+                    color={color.heroUnderline}
+                    delay={240}
+                    duration={560}
+                  />
+                ) : null}
               </View>
-            )}
+              {/* Bold, because white on the light hero green passes only as large bold text. */}
+              {subtitle === undefined ? null : (
+                <Text variant="title3" weight="bold" style={styles.onHero}>
+                  {subtitle}
+                </Text>
+              )}
+              {chips.length === 0 ? null : (
+                <View style={styles.chips}>
+                  {chips.map((chip) => (
+                    <Text
+                      key={chip}
+                      variant="subhead"
+                      weight="semibold"
+                      style={[styles.chip, { backgroundColor: color.surface, color: color.accent }]}
+                    >
+                      {chip}
+                    </Text>
+                  ))}
+                </View>
+              )}
+            </View>
             {status}
           </View>
           {aside}
@@ -150,25 +176,29 @@ function depth(x: number) {
 }
 
 /**
- * Where the swoosh sits. Pass `onArea`, `onHeading` and `onText` to the coloured area, the heading row
- * and the text block. The curve then passes just under the text block's bottom right corner, so a
- * short greeting lets it rise as in legacy and a long name or a large text size pushes it down.
- * Until the first layout it assumes text that ends at 70 % of the width.
+ * Where the swoosh sits. Pass `onArea`, `onHeading`, `onText` and `onReach` to the coloured area, the
+ * heading row, the text block and its part without the status. The curve passes just under the block
+ * where that part ends, so a short greeting lets it rise as in legacy, a long name pushes it down,
+ * and a status leaves it alone. Until the first layout it assumes text that ends at 70 % of the width.
  */
 export function useSwoosh() {
   const area = useLayout();
   const heading = useLayout();
   const text = useLayout();
+  const reach = useLayout();
   const band = bandFor(area.layout?.width ?? 0);
 
   const lift =
-    area.layout === undefined || heading.layout === undefined || text.layout === undefined
+    area.layout === undefined ||
+    heading.layout === undefined ||
+    text.layout === undefined ||
+    reach.layout === undefined
       ? band / 3
       : Math.min(
           depth(
             Math.min(
               1,
-              (heading.layout.x + text.layout.x + text.layout.width + reachPadding) /
+              (heading.layout.x + text.layout.x + reach.layout.width + reachPadding) /
                 area.layout.width,
             ),
           ) * band,
@@ -181,6 +211,7 @@ export function useSwoosh() {
     onArea: area.onLayout,
     onHeading: heading.onLayout,
     onText: text.onLayout,
+    onReach: reach.onLayout,
   };
 }
 
@@ -248,6 +279,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: Tokens.layout.cardPadding,
   },
   text: { flexShrink: 1, gap: Tokens.space.xs },
+  // As wide as its own text, where the column would stretch it to the status.
+  reach: { alignSelf: "flex-start" },
   onHero: { color: "#FFFFFF" },
   chips: {
     flexDirection: "row",

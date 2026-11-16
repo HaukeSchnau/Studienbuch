@@ -9,6 +9,7 @@ import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
+import { Sync } from "../definition/Sync.ts";
 import { Command } from "../protocol/Command.ts";
 import { Protocol } from "../protocol/Protocol.ts";
 import { Refusal } from "../protocol/Refusal.ts";
@@ -142,10 +143,7 @@ export const decide = Effect.fn("SealCommand.decide")(function* (
       return yield* Decision.refuse(new Refusal.NotMember({ space }));
     }
 
-    if (
-      held.kind.encryption !== "sealed" ||
-      !SyncSchema.sealedWriters(definition, held.kind.name).has(held.role)
-    ) {
+    if (!Sync.maySeal(definition, held.role, held.kind.name)) {
       return yield* Decision.refuse(new Refusal.NotAllowed({ space }));
     }
   }
