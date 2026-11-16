@@ -151,23 +151,27 @@ describe("enrollment.set", () => {
   );
 });
 
+/** The offerings of the fixture's winter term. */
+const offeringsOf = (db: MemoryTx.Database) =>
+  db
+    .transaction(
+      { actor: "server", writes: [], location: "server" },
+      Effect.flatMap(Tx.Service, (tx) =>
+        tx.list(CourseOffering.Row, Fixture.school, { index: "termId", equals: term }),
+      ),
+    )
+    .pipe(Effect.map((offerings) => offerings.map(({ row }) => row)));
+
+const for112 = { termId: term, gradeLevel: 11, classId: Fixture.class112 };
+
 describe("Enrollment.courses", () => {
   it.effect(
     "writes the required courses and one wanted elective per group, which set accepts",
     () =>
       Effect.gen(function* () {
         const db = yield* Fixture.make;
-
-        const offerings = yield* db.transaction(
-          { actor: "server", writes: [], location: "server" },
-          Effect.flatMap(Tx.Service, (tx) =>
-            tx.list(CourseOffering.Row, Fixture.school, { index: "termId", equals: term }),
-          ),
-        );
-
-        const rows = offerings.map(({ row }) => row);
+        const rows = yield* offeringsOf(db);
         const wanted = new Set([Fixture.mathG, Fixture.mathE, Fixture.art]);
-        const for112 = { termId: term, gradeLevel: 11, classId: Fixture.class112 };
 
         // Deutsch belongs to 11.2, and Kunst to grade levels 12 and 13.
         const courseIds = Enrollment.courses(rows, for112, wanted);
@@ -179,6 +183,30 @@ describe("Enrollment.courses", () => {
 
         yield* Fixture.run(db, Enrollment.set, { ...choice, courseIds }, "server");
         expect(stored(db)).toMatchObject({ courseIds: ["demo-de-11.2", "demo-ma-e"] });
+      }),
+  );
+});
+
+describe("Enrollment.groups and Enrollment.unanswered", () => {
+  it.effect(
+    "a required group open to the chooser needs one of its courses, and an optional one none",
+    () =>
+      Effect.gen(function* () {
+        const db = yield* Fixture.make;
+        const rows = yield* offeringsOf(db);
+        const for12 = { termId: term, gradeLevel: 12 };
+
+        expect(Enrollment.groups(rows, for112)).toEqual([
+          { key: "MA", required: true, courseIds: [Fixture.mathE, Fixture.mathG] },
+        ]);
+        expect(Enrollment.groups(rows, for12)).toEqual([
+          { key: "KU", required: false, courseIds: [Fixture.art] },
+        ]);
+
+        expect(Enrollment.unanswered(rows, for112, new Set())).toEqual(["MA"]);
+        expect(Enrollment.unanswered(rows, for112, new Set([Fixture.german]))).toEqual(["MA"]);
+        expect(Enrollment.unanswered(rows, for112, new Set([Fixture.mathG]))).toEqual([]);
+        expect(Enrollment.unanswered(rows, for12, new Set())).toEqual([]);
       }),
   );
 });
