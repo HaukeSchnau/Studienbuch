@@ -49,10 +49,14 @@ export const layer = Layer.effect(
     const revoke = (sessionId: string) =>
       Effect.andThen(Cache.set(lately, sessionId, true), PubSub.publish(revocations, sessionId));
 
-    // Subscribed before the layer is up, so no revocation slips past a starting server. The stream
-    // ends only with its adapter, as the server shuts down.
+    // The reader starts at once and subscribes on its first pull, before the layer is up, so no
+    // revocation slips past a starting server. The stream ends only with its adapter, at shutdown.
     const next = yield* Stream.toPull(resolver.revoked);
-    yield* next.pipe(Effect.flatMap(Effect.forEach(revoke)), Effect.forever, Effect.forkScoped);
+    yield* next.pipe(
+      Effect.flatMap(Effect.forEach(revoke)),
+      Effect.forever,
+      Effect.forkScoped({ startImmediately: true }),
+    );
 
     const revoked = (sessionId: string) => Cache.has(lately, sessionId);
 
