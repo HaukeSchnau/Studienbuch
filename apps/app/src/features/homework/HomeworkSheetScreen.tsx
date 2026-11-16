@@ -137,7 +137,12 @@ function AccountSheet({
         today={today}
         canSave={Option.isSome(valid)}
         problem={Option.getOrUndefined(problem)}
-        onSave={() => Option.map(valid, (ready) => void submit(ready))}
+        // A second press while the first save runs would interrupt it, and once that one had
+        // written, save the homework again under a new id. Not `canSave`: a disabled button
+        // loses the focus.
+        onSave={() => {
+          if (!saved.waiting) Option.map(valid, (ready) => void submit(ready));
+        }}
         onCancel={() => void discard(key).then(close)}
       />
     </Sheet>
