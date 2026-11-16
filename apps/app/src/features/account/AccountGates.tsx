@@ -7,23 +7,24 @@ import type { ReactNode } from "react";
 import { AccountState } from "./AccountState.ts";
 
 /**
- * The tabs, unless the device could hold an account and holds none: then the code, or the sign-up
- * waiting for its mailed code. One whose session ended keeps its data and tabs. A build without a
- * server, or a locked keychain, shows the diagnostics.
+ * The tabs, unless the device could hold an account and holds none: then the sign-up waiting for
+ * its mailed code, "Anmelden" after this tab signed out, else the code. One whose session ended
+ * keeps its data and tabs. A build without a server, or a locked keychain, shows the diagnostics.
  */
 export function SignedIn({ children }: { readonly children: ReactNode }) {
   const access = AccountState.useAccess();
   const signingUp = useAtomValue(AccountState.signingUp);
+  const signedOut = useAtomValue(AccountState.signedOut);
 
   if (access === "loading" || AsyncResult.isInitial(signingUp)) return null;
 
   if (access !== "signed-out") return children;
 
-  return Option.isSome(AsyncResult.getOrElse(signingUp, () => Option.none())) ? (
-    <Redirect href="/e-mail-bestaetigen" />
-  ) : (
-    <Redirect href="/aktivieren" />
-  );
+  if (Option.isSome(AsyncResult.getOrElse(signingUp, () => Option.none()))) {
+    return <Redirect href="/e-mail-bestaetigen" />;
+  }
+
+  return <Redirect href={signedOut ? "/anmelden" : "/aktivieren"} />;
 }
 
 /**

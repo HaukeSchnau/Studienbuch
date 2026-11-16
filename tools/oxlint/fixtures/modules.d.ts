@@ -32,6 +32,8 @@ declare module "@stu/sync/server";
 
 declare module "@stu/sync/testing";
 
+declare module "@stu/ui/Link";
+
 declare module "@tanstack/react-router";
 
 declare module "drizzle-kit/api-postgres";

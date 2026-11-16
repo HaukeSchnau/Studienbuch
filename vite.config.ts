@@ -288,6 +288,12 @@ export default defineConfig({
         rules: { "studienbuch/require-registered-list-scroll": "error" },
       },
       {
+        // RouteLink is the one place that wraps expo-router's Link.
+        files: scope("apps/app/src/**"),
+        excludeFiles: ["apps/app/src/ui/navigation/RouteLink.tsx"],
+        rules: { "studienbuch/no-raw-router-link": "error" },
+      },
+      {
         // Feature code receives the platform it runs on. Adapters in infra/, the design system in
         // ui/, the routes' navigation options, platform files and browser tests may read it.
         files: scope(

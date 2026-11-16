@@ -2,14 +2,17 @@ import { playwright } from "vite-plus/test/browser-playwright";
 import { defineConfig, type Plugin } from "vite-plus";
 
 // Logic tests run in Node. Code that needs a browser's own APIs (IndexedDB, WebCrypto keys, OPFS)
-// runs as `*.browser.test.ts` in Chromium and Firefox through Playwright, with the browsers from
-// nixpkgs' `playwright-driver.browsers` in PLAYWRIGHT_BROWSERS_PATH.
+// or renders components runs as `*.browser.test.ts(x)` in Chromium and Firefox through Playwright,
+// with the browsers from nixpkgs' `playwright-driver.browsers` in PLAYWRIGHT_BROWSERS_PATH.
 
 // What Metro does for the web build and Vite doesn't: our imports of `x.ts` get `x.web.ts` where
 // one exists (metro.config.js), a wasm import is the file's URL, SQL migrations are text modules
 // (metro.transformer.js), and the SQLite worker's URL is relative to the page, where Vite wants it
 // relative to the module and loaded as a module worker.
 const ownTypeScript = /^\.{1,2}\/.*\.tsx?$/u;
+
+const webAlias = { "react-native": "react-native-web" };
+const webExtensions = [".web.ts", ".web.tsx", ".web.js", ".ts", ".tsx", ".mjs", ".js", ".json"];
 
 const metroForTheWeb: Plugin = {
   name: "studienbuch:metro-for-the-web",
@@ -56,14 +59,26 @@ export default defineConfig({
       {
         extends: true,
         plugins: [metroForTheWeb],
-        resolve: {
-          alias: { "react-native": "react-native-web" },
-          extensions: [".web.ts", ".web.tsx", ".web.js", ".ts", ".tsx", ".mjs", ".js", ".json"],
+        resolve: { alias: webAlias, extensions: webExtensions },
+        define: { "process.env.EXPO_OS": JSON.stringify("web"), __DEV__: "true" },
+        // Pre-bundling expo-router and its React Native libraries needs what Metro gives them: the
+        // `.web` files, the development build and `global`. expo-modules-core also re-exports names
+        // from files that only declare types, which Metro never checks.
+        optimizeDeps: {
+          rolldownOptions: {
+            resolve: { alias: webAlias, extensions: webExtensions },
+            transform: {
+              define: {
+                "process.env.NODE_ENV": JSON.stringify("development"),
+                global: "globalThis",
+              },
+            },
+            shimMissingExports: true,
+          },
         },
-        define: { "process.env.EXPO_OS": JSON.stringify("web") },
         test: {
           name: "browser",
-          include: ["src/**/*.browser.test.ts"],
+          include: ["src/**/*.browser.test.{ts,tsx}"],
           browser: {
             enabled: true,
             headless: true,
