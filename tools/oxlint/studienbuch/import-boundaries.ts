@@ -71,7 +71,10 @@ export default defineRule({
       );
     };
 
-    /** Reports what `source` gives this file: named bindings, `default`, or `*` for all of it. */
+    /**
+     * Reports what `source` gives this file: named bindings, `default`, or `*` for all of it. An
+     * import that crosses several boundaries fails once, with the first one it crosses.
+     */
     const check = (
       source: string,
       node: ESTree.Node,
@@ -81,26 +84,31 @@ export default defineRule({
 
       if (left !== null) {
         context.report({ node, messageId: "otherPackage", data: { source, package: left } });
+
+        return;
       }
 
-      for (const boundary of crossing(source)) {
-        if (boundary.names === undefined) {
-          context.report({
-            node,
-            messageId: "forbidden",
-            data: { source, reason: boundary.reason },
-          });
-          continue;
-        }
+      const crossed = crossing(source);
+      const whole = crossed.find((boundary) => boundary.names === undefined);
 
-        for (const imported of names) {
-          if (WHOLE_MODULE.has(imported.name) || boundary.names.includes(imported.name)) {
-            context.report({
-              node: imported.node,
-              messageId: "forbiddenName",
-              data: { name: imported.name, source, reason: boundary.reason },
-            });
-          }
+      if (whole !== undefined) {
+        context.report({ node, messageId: "forbidden", data: { source, reason: whole.reason } });
+
+        return;
+      }
+
+      for (const imported of names) {
+        const boundary = crossed.find(
+          (candidate) =>
+            WHOLE_MODULE.has(imported.name) || candidate.names?.includes(imported.name) === true,
+        );
+
+        if (boundary !== undefined) {
+          context.report({
+            node: imported.node,
+            messageId: "forbiddenName",
+            data: { name: imported.name, source, reason: boundary.reason },
+          });
         }
       }
     };

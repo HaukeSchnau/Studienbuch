@@ -30,5 +30,9 @@ export const sqlClients = [
 /** The files behind one of `@stu/sync`'s entry points: `client` is `client.ts` and `client/`. */
 export const syncFiles = (entry: string) => `packages/sync/src/${entry}{.ts,/**}`;
 
-/** An entry point of `@stu/sync`, by its name and by the paths a relative import inside reaches. */
+/**
+ * An entry point of `@stu/sync`, by its name and by the paths a relative import inside the package
+ * reaches. Boundaries outside packages/sync name the entry only, since a relative import never
+ * leaves its package.
+ */
 export const syncEntry = (entry: string) => [`@stu/sync/${entry}{,/**}`, syncFiles(entry)];

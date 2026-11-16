@@ -24,7 +24,7 @@ export const packages: ReadonlyArray<Boundary> = [
       ...node,
       ...sqlClients,
       "@stu/{e2ee,api}{,/**}",
-      ...["client", "server", "lab", "conformance"].flatMap(syncEntry),
+      "@stu/sync/{client,server,lab,conformance}{,/**}",
     ],
     reason:
       "packages/core is the domain. It runs on every platform and inside mutators, so it imports no UI, platform API, SQL client, e2ee or api, and of sync only the definition API.",

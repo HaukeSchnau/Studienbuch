@@ -1,4 +1,4 @@
-import { type Boundary, syncEntry } from "./boundary.ts";
+import type { Boundary } from "./boundary.ts";
 
 export const app: ReadonlyArray<Boundary> = [
   {
@@ -8,7 +8,7 @@ export const app: ReadonlyArray<Boundary> = [
   },
   {
     files: ["apps/app/**", "apps/web/**", "packages/{ui,domain-ui,api}/**"],
-    forbidden: [...syncEntry("server"), "@stu/server{,/**}"],
+    forbidden: ["@stu/sync/server{,/**}", "@stu/server{,/**}"],
     reason: "Client bundles never include server code.",
   },
   {

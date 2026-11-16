@@ -1,4 +1,4 @@
-import { type Boundary, expo, reactNative, syncEntry } from "./boundary.ts";
+import { type Boundary, expo, reactNative } from "./boundary.ts";
 
 export const server: ReadonlyArray<Boundary> = [
   {
@@ -8,7 +8,7 @@ export const server: ReadonlyArray<Boundary> = [
   },
   {
     files: ["apps/server/**"],
-    forbidden: ["client", "lab", "conformance"].flatMap(syncEntry),
+    forbidden: ["@stu/sync/{client,lab,conformance}{,/**}"],
     reason:
       "apps/server runs the sync server. The device client, the Sync Lab and the conformance suite never load there.",
   },
