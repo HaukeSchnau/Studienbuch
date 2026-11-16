@@ -104,10 +104,18 @@ export function Datenschutz() {
       </p>
       <p>
         Die Verschlüsselung schützt Ihre Inhalte, wenn Daten von unseren Servern abfließen oder
-        jemand unbefugt auf sie zugreift. Sie hat zwei Grenzen, die für jede vergleichbare App
-        gelten: Wir liefern die App selbst aus, im Browser bei jedem Aufruf, und eine absichtlich
-        veränderte App könnte Inhalte vor der Verschlüsselung abgreifen. Und auf einem entsperrten
-        Gerät sind die Inhalte so lesbar wie in jeder anderen App.
+        jemand unbefugt auf sie zugreift. Sie hat drei Grenzen. Zwei davon gelten für jede
+        vergleichbare App: Wir liefern die App selbst aus, im Browser bei jedem Aufruf, und eine
+        absichtlich veränderte App könnte Inhalte vor der Verschlüsselung abgreifen. Und auf einem
+        entsperrten Gerät sind die Inhalte so lesbar wie in jeder anderen App.
+      </p>
+      <p>
+        Die dritte Grenze betrifft nur die App im Browser, und wir beheben sie vor dem öffentlichen
+        Start: Im Browser speichert die App Ihre Einträge und die Schlüssel Ihres Studienbuchs
+        derzeit unverschlüsselt im Speicher des Browsers. Wer Zugriff auf Ihr Browserprofil hat,
+        kann sie lesen. Nutzen auch andere den Computer, wählen Sie bei der Anmeldung „Öffentlicher
+        Computer“. Dann speichert die App nichts auf diesem Computer. Die Apps für iPhone und
+        Android speichern ihre Daten verschlüsselt.
       </p>
 
       <h3>Verarbeitete Daten</h3>
