@@ -8,7 +8,7 @@ import * as Fiber from "effect/Fiber";
 import * as Option from "effect/Option";
 import * as SqlClient from "effect/sql/SqlClient";
 import { Access } from "./Access.ts";
-import { Fixture } from "./Fixture.ts";
+import { SchoolTesting } from "./SchoolTesting.ts";
 import { Schools } from "./Schools.ts";
 
 const school = School.Id.make("am-see");
@@ -57,12 +57,12 @@ const someoneWaits = Effect.flatMap(
 ).pipe(Effect.repeat({ until: (rows) => rows.length > 0 }));
 
 describe.skipIf(Postgres18.socket === null)("Access on PostgreSQL 18", () => {
-  layer(Fixture.database)((it) => {
+  layer(SchoolTesting.database)((it) => {
     it.effect("two admissions of one account at once give it one notebook, with its courses", () =>
       Effect.gen(function* () {
         const sql = yield* SqlClient.SqlClient;
         yield* Schools.publish(data);
-        yield* Fixture.account("lena");
+        yield* SchoolTesting.account("lena");
         const firstAdmitted = yield* Deferred.make<void>();
         const commitFirst = yield* Deferred.make<void>();
 
@@ -84,7 +84,7 @@ describe.skipIf(Postgres18.socket === null)("Access on PostgreSQL 18", () => {
         const one = yield* Fiber.join(first);
         const other = yield* Fiber.join(second);
 
-        expect({ one, other, memberships: yield* Fixture.memberships("lena") }).toEqual({
+        expect({ one, other, memberships: yield* SchoolTesting.memberships("lena") }).toEqual({
           one: { notebook: one.notebook, created: true },
           other: { notebook: one.notebook, created: false },
           memberships: [
@@ -100,15 +100,15 @@ describe.skipIf(Postgres18.socket === null)("Access on PostgreSQL 18", () => {
       Effect.gen(function* () {
         const spaces = yield* Spaces.Service;
         yield* Schools.publish(data);
-        yield* Fixture.account("mia");
+        yield* SchoolTesting.account("mia");
         const first = yield* Access.admit("mia", school, choose("ma-1"));
-        const admitted = yield* Fixture.memberships("mia");
+        const admitted = yield* SchoolTesting.memberships("mia");
         yield* spaces.removeMember(first.notebook, "mia");
         yield* spaces.removeMember(school, "mia");
-        const left = yield* Fixture.memberships("mia");
+        const left = yield* SchoolTesting.memberships("mia");
         const again = yield* Access.admit("mia", school, Option.none());
 
-        expect({ again, left, back: yield* Fixture.memberships("mia") }).toEqual({
+        expect({ again, left, back: yield* SchoolTesting.memberships("mia") }).toEqual({
           again: { notebook: first.notebook, created: false },
           left: [],
           back: admitted,
@@ -120,11 +120,11 @@ describe.skipIf(Postgres18.socket === null)("Access on PostgreSQL 18", () => {
       Effect.gen(function* () {
         const sql = yield* SqlClient.SqlClient;
         yield* Schools.publish(data);
-        yield* Fixture.account("demo-lena");
+        yield* SchoolTesting.account("demo-lena");
         yield* sql`insert into demo_account (account_id, persona) values ('demo-lena', 'lena')`;
         const refusal = yield* Effect.flip(Access.admit("demo-lena", school, choose("ma-1")));
 
-        expect([refusal._tag, yield* Fixture.memberships("demo-lena")]).toEqual([
+        expect([refusal._tag, yield* SchoolTesting.memberships("demo-lena")]).toEqual([
           "Access.DemoAccount",
           [],
         ]);
@@ -134,13 +134,13 @@ describe.skipIf(Postgres18.socket === null)("Access on PostgreSQL 18", () => {
     it.effect("a first choice that enrollment.set refuses admits nothing", () =>
       Effect.gen(function* () {
         yield* Schools.publish(data);
-        yield* Fixture.account("tom");
+        yield* SchoolTesting.account("tom");
         const before = yield* notebooks;
         const refusal = yield* Effect.flip(Access.admit("tom", school, choose("ku-1")));
 
         expect({
           refusal: refusal._tag,
-          memberships: yield* Fixture.memberships("tom"),
+          memberships: yield* SchoolTesting.memberships("tom"),
           notebooks: yield* notebooks,
         }).toEqual({ refusal: "Enrollment.CourseNotOffered", memberships: [], notebooks: before });
       }),

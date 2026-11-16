@@ -28,7 +28,7 @@ import * as SqlClient from "effect/sql/SqlClient";
 import { Auth } from "../auth/Auth.ts";
 import { Deployment } from "../infra/config/Deployment.ts";
 import { Database } from "../infra/database/Database.ts";
-import { Testing } from "../infra/database/Testing.ts";
+import { DatabaseTesting } from "../infra/database/DatabaseTesting.ts";
 import { Mail } from "../infra/mail/Mail.ts";
 import { Rpc } from "../routes/Rpc.ts";
 import { DemoAccounts } from "./DemoAccounts.ts";
@@ -99,7 +99,7 @@ const server = (environment: string, options: { readonly keySeed?: boolean } = {
       );
     }),
   ).pipe(
-    Layer.provide([Testing.prepared, DemoAccounts.seeding]),
+    Layer.provide([DatabaseTesting.prepared, DemoAccounts.seeding]),
     Layer.provideMerge(NodeServices.layer),
   );
 

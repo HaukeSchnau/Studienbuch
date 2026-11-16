@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import * as Effect from "effect/Effect";
 import * as SqlClient from "effect/sql/SqlClient";
 import { Cases } from "../conformance/Cases.ts";
-import { Engines } from "../conformance/Engines.ts";
+import { Engines } from "../testing/Engines.ts";
 import { Probe } from "../conformance/Probe.ts";
 import { ProbeDevice } from "../conformance/ProbeDevice.ts";
 import { Tx } from "../transaction/Tx.ts";

@@ -280,6 +280,7 @@ export default defineConfig({
           "studienbuch/no-ad-hoc-state-or-effects": "error",
           "studienbuch/no-baked-origin": "error",
           "studienbuch/no-raw-resize-observer": "error",
+          "studienbuch/no-sqlite-update-hooks": "error",
         },
       },
       {

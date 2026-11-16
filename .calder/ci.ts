@@ -85,7 +85,11 @@ const tests = [
     setup: install,
     dir: "packages/sync",
     tests: ["src/**/*.test.ts"],
-    inputs: Files.of("packages/sync/vite.config.ts", postgresSetup),
+    inputs: Files.of(
+      "packages/sync/vite.config.ts",
+      postgresSetup,
+      "packages/sync/src/testing/FileFetch.setup.ts",
+    ),
     before: postgres18,
     vitest: ["vp", "test"],
   }),

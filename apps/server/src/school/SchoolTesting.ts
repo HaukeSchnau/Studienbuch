@@ -5,12 +5,12 @@ import { SyncServer } from "@stu/sync/server";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as SqlClient from "effect/sql/SqlClient";
-import { Testing } from "../infra/database/Testing.ts";
+import { DatabaseTesting } from "../infra/database/DatabaseTesting.ts";
 
-export * as Fixture from "./Fixture.ts";
+export * as SchoolTesting from "./SchoolTesting.ts";
 
 export const database = SyncServer.writers(Studienbuch.schema).pipe(
-  Layer.provideMerge(Testing.prepared),
+  Layer.provideMerge(DatabaseTesting.prepared),
   Layer.provideMerge(NodeServices.layer),
 );
 

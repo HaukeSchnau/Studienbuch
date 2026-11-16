@@ -52,7 +52,7 @@ export default defineConfig({
         extends: true,
         test: {
           name: "node",
-          include: ["src/**/*.test.ts", "modules/**/*.test.ts"],
+          include: ["src/**/*.test.ts", "modules/**/*.test.ts", "app.config.test.ts"],
           exclude: ["src/**/*.browser.test.ts"],
         },
       },

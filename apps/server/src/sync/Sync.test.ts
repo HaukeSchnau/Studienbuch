@@ -21,7 +21,7 @@ import * as Layer from "effect/Layer";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import * as Stream from "effect/Stream";
-import { Testing } from "../infra/database/Testing.ts";
+import { DatabaseTesting } from "../infra/database/DatabaseTesting.ts";
 import { Sync } from "./Sync.ts";
 
 /** No sessions: these tests write and push rows, and open no connection. */
@@ -33,7 +33,7 @@ const noSessions = Layer.succeed(
 const engine = SyncServer.layer(Studienbuch.schema).pipe(
   Layer.provideMerge(Listener.layer(PgClient.PgClient, (notification) => notification.payload)),
   Layer.provideMerge(Layer.mergeAll(noSessions, Sync.accountKeys, CryptoSuite.layer)),
-  Layer.provideMerge(Testing.prepared),
+  Layer.provideMerge(DatabaseTesting.prepared),
   Layer.provideMerge(NodeServices.layer),
 );
 

@@ -7,8 +7,8 @@
 import { generateDrizzleJson, generateMigration } from "drizzle-kit/api-postgres";
 import * as Effect from "effect/Effect";
 import * as SqlClient from "effect/sql/SqlClient";
-import { SyncEpoch } from "./SyncEpoch.ts";
-import { Tables } from "./Tables.ts";
+import { SyncEpoch } from "../server/SyncEpoch.ts";
+import { Tables } from "../server/Tables.ts";
 
 export * as ServerDatabase from "./ServerDatabase.ts";
 
