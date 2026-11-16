@@ -26,6 +26,7 @@ import noPollingLoopInTests from "./no-polling-loop-in-tests.ts";
 import noRawResizeObserver from "./no-raw-resize-observer.ts";
 import noRawRouterLink from "./no-raw-router-link.ts";
 import noRealTimeWaitInTests from "./no-real-time-wait-in-tests.ts";
+import noSqliteUpdateHooks from "./no-sqlite-update-hooks.ts";
 import noTestInLoop from "./no-test-in-loop.ts";
 import noTestTimeoutOrUnreasonedSkip from "./no-test-timeout-or-unreasoned-skip.ts";
 import noThrowingErrors from "./no-throwing-errors.ts";
@@ -69,6 +70,7 @@ export default definePlugin({
     "no-raw-resize-observer": noRawResizeObserver,
     "no-raw-router-link": noRawRouterLink,
     "no-real-time-wait-in-tests": noRealTimeWaitInTests,
+    "no-sqlite-update-hooks": noSqliteUpdateHooks,
     "no-test-in-loop": noTestInLoop,
     "no-test-timeout-or-unreasoned-skip": noTestTimeoutOrUnreasonedSkip,
     "no-throwing-errors": noThrowingErrors,

@@ -5,7 +5,7 @@ import * as Layer from "effect/Layer";
 import * as Path from "effect/Path";
 import { Migrations } from "./Migrations.ts";
 
-export * as Testing from "./Testing.ts";
+export * as DatabaseTesting from "./DatabaseTesting.ts";
 
 /**
  * A fresh database on the test run's PostgreSQL 18 at the release's schema, as `prepare` leaves it

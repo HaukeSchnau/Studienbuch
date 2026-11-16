@@ -2,19 +2,24 @@ import * as NodePath from "node:path";
 
 import { defineRule, type ESTree } from "@oxlint/plugins";
 
-import { isStringLiteral } from "./syntax.ts";
+import { layoutPath } from "./repository-path.ts";
+import { staticString } from "./syntax.ts";
 
 // Entries that hand out test doubles. `@stu/e2ee/testing` draws "random" bytes from a fixed
 // stream, so production code that imported it would seal with predictable nonces and keys.
-const TEST_ONLY = new Set(["@stu/e2ee/testing"]);
+// `@stu/sync/testing` reads Vitest's context as it loads.
+const TEST_ENTRY = /^@stu\/[^/]+\/testing(?:\/|$)/u;
 
-const TEST_FILE = /\.(?:test|spec)\.tsx?$|\.setup\.ts$/u;
+const TEST_FILE = /\.(?:test|spec)\.tsx?$|\.(?:setup|bench)\.ts$/u;
 
-// `@stu/sync/testing` is test code too: the simulation and its helpers, which only tests import.
-const TEST_ENTRY = /\/packages\/sync\/src\/(?:testing\.ts$|testing\/|simulation\/)/u;
+// Test machinery by its repository path: a package's `testing/` and `testing.ts`, and sync's
+// simulation, which runs devices on `@stu/e2ee/testing`. A module that imports one has to be test
+// machinery too, so a chain of imports from production code into test code breaks at its first link.
+const TEST_DIRECTORY =
+  /^packages\/[^/]+\/src\/(?:testing\.ts$|testing\/)|^packages\/sync\/src\/simulation\//u;
 
-// The simulation runs devices on `@stu/e2ee/testing`, so a relative import of it brings that along.
-const SIMULATION = /\/packages\/sync\/src\/simulation\//u;
+// A helper that tests share, by its file name or by any specifier that names it, an alias included.
+const TESTING_MODULE = /(?:^|\/)[A-Z][A-Za-z\d]*Testing(?:\.tsx?)?$/u;
 
 /** Test doubles stay in tests. */
 export default defineRule({
@@ -22,24 +27,29 @@ export default defineRule({
     type: "problem",
     docs: {
       description:
-        "Allow test-only entries such as `@stu/e2ee/testing`, and the sync simulation, in test files and `@stu/sync/testing` only.",
+        "Allow test machinery, such as `@stu/e2ee/testing`, a package's `testing/` or a `<Name>Testing.ts` module, in test files and other test machinery only.",
     },
     messages: {
       testOnly:
-        "`{{source}}` is for tests only. Production code takes the real layer, such as `CryptoSuite.layer`.",
+        "`{{source}}` is for tests only. Production code takes the real layer, such as `CryptoSuite.layer`. A helper that tests share goes in a `<Name>Testing.ts` module.",
     },
   },
   create(context) {
-    if (TEST_FILE.test(context.filename) || TEST_ENTRY.test(context.filename)) return {};
-    const directory = NodePath.dirname(context.filename);
+    const file = layoutPath(context);
+
+    if (TEST_FILE.test(file) || TEST_DIRECTORY.test(file) || TESTING_MODULE.test(file)) return {};
+    const directory = NodePath.posix.dirname(file);
 
     const testOnly = (source: string) =>
-      TEST_ONLY.has(source) ||
-      (source.startsWith(".") && SIMULATION.test(NodePath.join(directory, source)));
+      TEST_ENTRY.test(source) ||
+      TESTING_MODULE.test(source) ||
+      (source.startsWith(".") && TEST_DIRECTORY.test(NodePath.posix.join(directory, source)));
 
-    const check = (source: ESTree.Node) => {
-      if (isStringLiteral(source) && testOnly(source.value)) {
-        context.report({ node: source, messageId: "testOnly", data: { source: source.value } });
+    const check = (node: ESTree.Node) => {
+      const source = staticString(node);
+
+      if (source !== null && testOnly(source)) {
+        context.report({ node, messageId: "testOnly", data: { source } });
       }
     };
 

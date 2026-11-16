@@ -38,14 +38,10 @@ const fail = (operation: string) => (cause: unknown) =>
   });
 
 const make = Effect.fn("ExpoSqliteClient.make")(function* (config: Config) {
-  const reactivity = yield* Reactivity.Reactivity;
-
   const db = yield* Effect.acquireRelease(
     Effect.tryPromise({
       try: async () => {
-        const opened = await SQLite.openDatabaseAsync(config.filename, {
-          enableChangeListener: true,
-        });
+        const opened = await SQLite.openDatabaseAsync(config.filename);
 
         await opened.execAsync(`PRAGMA key = "x'${config.encryptionKey}'"`);
 
@@ -55,15 +51,6 @@ const make = Effect.fn("ExpoSqliteClient.make")(function* (config: Config) {
     }),
     (opened) => Effect.promise(() => opened.closeAsync()),
   );
-
-  // sqlite3_update_hook to Reactivity, so `sql.reactive` queries run again after writes.
-  const subscription = SQLite.addDatabaseChangeListener((change) => {
-    if (change.databaseFilePath === db.databasePath) {
-      reactivity.invalidateUnsafe({ [change.tableName]: [String(change.rowId)] });
-    }
-  });
-
-  yield* Effect.addFinalizer(() => Effect.sync(() => subscription.remove()));
 
   const rows = (sql: string, values: ReadonlyArray<unknown>) =>
     Effect.tryPromise({
