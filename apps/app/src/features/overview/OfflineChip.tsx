@@ -2,6 +2,7 @@ import { Icon } from "@stu/ui/Icon";
 import { Text } from "@stu/ui/Text";
 import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
+import { useAnnounceStatus } from "@stu/ui/useAnnounce";
 import * as Option from "effect/Option";
 import { StyleSheet, View } from "react-native";
 
@@ -17,22 +18,28 @@ export function OfflineChip({
 }) {
   const { color, elevation } = Theme.useTheme();
 
+  const text = Option.map(offline, ({ waiting }) =>
+    waiting === 0
+      ? "Offline"
+      : waiting === 1
+        ? "Offline, 1 Änderung wartet"
+        : `Offline, ${String(waiting)} Änderungen warten`,
+  );
+
+  useAnnounceStatus(Option.getOrUndefined(text));
+
   return (
     // The line is the live region, so a screen reader hears the chip come.
     <View accessibilityLiveRegion="polite" style={styles.line}>
-      {Option.match(offline, {
+      {Option.match(text, {
         onNone: () => null,
-        onSome: ({ waiting }) => (
+        onSome: (text) => (
           <View
             style={[styles.chip, { backgroundColor: color.surface, boxShadow: elevation.float }]}
           >
             <Icon name="cloudOff" color={color.warning} size={20} />
             <Text variant="subhead" weight="bold">
-              {waiting === 0
-                ? "Offline"
-                : waiting === 1
-                  ? "Offline, 1 Änderung wartet"
-                  : `Offline, ${String(waiting)} Änderungen warten`}
+              {text}
             </Text>
           </View>
         ),
