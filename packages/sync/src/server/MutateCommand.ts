@@ -121,17 +121,16 @@ export const decide = Effect.fn("MutateCommand.decide")(function* (
   }
 
   const advanced = yield* Decision.advanced(locked);
-  const accounts = new Set<string>();
 
-  for (const { space } of advanced) {
-    const changed = yield* Membership.apply(definition, space, mutator.writes).pipe(
-      Effect.provideService(Tx.Service, tx),
-      // The rows it reads are the ones the command just wrote through their codec.
-      Effect.catchIf(isTxRefusal, Effect.die),
-    );
+  const accounts = yield* Membership.apply(
+    definition,
+    advanced.map(({ space }) => space),
+    mutator.writes,
+  ).pipe(
+    Effect.provideService(Tx.Service, tx),
+    // The rows it reads are the ones the command just wrote through their codec.
+    Effect.catchIf(isTxRefusal, Effect.die),
+  );
 
-    for (const account of changed) accounts.add(account);
-  }
-
-  return Decision.Applied({ spaces: advanced, accounts: [...accounts].sort() });
+  return Decision.Applied({ spaces: advanced, accounts });
 });
