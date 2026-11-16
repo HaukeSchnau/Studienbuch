@@ -7,6 +7,7 @@ import * as Effect from "effect/Effect";
 import * as Fiber from "effect/Fiber";
 import * as Option from "effect/Option";
 import * as SqlClient from "effect/sql/SqlClient";
+import * as TestClock from "effect/testing/TestClock";
 import { AccessCodes } from "./AccessCodes.ts";
 import { SchoolTesting } from "./SchoolTesting.ts";
 import { Schools } from "./Schools.ts";
@@ -74,8 +75,8 @@ const uses = (code: string) =>
     `,
   ).pipe(Effect.map(([row]) => row));
 
-/** A sign-up with the reservation, as Better Auth's hooks record it. */
-const signUp = (account: string, token: string) =>
+/** A sign-up with the reservation, as Better Auth's hooks record it, with its password's hash. */
+const signUp = (account: string, token: string, passwordHash = Option.none<string>()) =>
   Effect.gen(function* () {
     const sql = yield* SqlClient.SqlClient;
     const known = yield* sql`select 1 from auth_user where id = ${account}`;
@@ -85,7 +86,7 @@ const signUp = (account: string, token: string) =>
     // A sign-up's address is unconfirmed until its code comes back.
     yield* sql`update auth_user set "emailVerified" = false where id = ${account}`;
     const claimed = yield* AccessCodes.claimSignUp(token);
-    yield* AccessCodes.rememberSignUp(token, `${account}@example.test`, Option.none());
+    yield* AccessCodes.rememberSignUp(token, `${account}@example.test`, passwordHash);
 
     return claimed;
   });
@@ -192,6 +193,48 @@ describe.skipIf(Postgres18.socket === null)("AccessCodes on PostgreSQL 18", () =
           stored: { uses: 1, reserved: 1 },
         });
       }),
+    );
+
+    // A hash of the student's password, often tied to a mistyped or a stranger's address, must not
+    // stay in the database once nothing can confirm with it.
+    it.effect(
+      "forgets the passwords a reservation's sign-ups chose once it is spent or lapsed",
+      () =>
+        Effect.gen(function* () {
+          const sql = yield* SqlClient.SqlClient;
+
+          yield* Schools.publish(data);
+
+          const code = yield* AccessCodes.mint({ school, kind: "student", maxUses: Option.none() });
+          const spent = yield* AccessCodes.reserve(code.code);
+
+          // A mistyped address, then the right one, which confirms and spends the reservation.
+          yield* signUp("ida-typo", spent.token, Option.some("hash-ida-typo"));
+          yield* signUp("ida", spent.token, Option.some("hash-ida"));
+          yield* AccessCodes.admitConfirmed("ida", Option.some(spent.token));
+
+          const lapsing = yield* AccessCodes.reserve(code.code);
+
+          yield* signUp("ole", lapsing.token, Option.some("hash-ole"));
+          yield* TestClock.adjust("2 hours");
+
+          // The next redemption comes after the first has lapsed; its own sign-up keeps its hash.
+          const live = yield* AccessCodes.reserve(code.code);
+
+          yield* signUp("eva", live.token, Option.some("hash-eva"));
+          yield* AccessCodes.reserve(code.code);
+
+          const kept = yield* sql<{ readonly account: string; readonly hash: string | null }>`
+          select account_id as account, password_hash as hash from access_sign_up
+          where account_id in ('ida-typo', 'ole', 'eva') order by account_id
+        `;
+
+          expect(kept).toEqual([
+            { account: "eva", hash: "hash-eva" },
+            { account: "ida-typo", hash: null },
+            { account: "ole", hash: null },
+          ]);
+        }),
     );
 
     it.effect("a reservation creates a few accounts at most, and a spent one no more", () =>

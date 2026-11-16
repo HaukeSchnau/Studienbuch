@@ -172,6 +172,14 @@ export const reserve = Effect.fn("AccessCodes.reserve")(function* (typed: string
     values (${code.id}, ${tokenHash}, ${at(expiresAt)})
   `;
 
+  // A lapsed reservation confirms nothing, so each redemption clears the passwords that sign-ups
+  // with lapsed reservations chose. On a quiet server they stay until the next redemption.
+  yield* sql`
+    update access_sign_up s set password_hash = null
+    from access_reservation r
+    where r.id = s.reservation_id and s.password_hash is not null and r.expires_at <= ${at(now)}
+  `;
+
   return { token, schoolName: code.schoolName ?? "", kind: code.kind, expiresAt };
 });
 
@@ -345,12 +353,16 @@ export const admitConfirmed = Effect.fn("AccessCodes.admitConfirmed")(function* 
         }),
       );
 
-      // An account that had access already used up nothing.
+      // An account that had access already used up nothing. A spent reservation confirms no
+      // other sign-up, so the passwords they chose go.
       if (Option.isSome(admitted) && admitted.value.created) {
         yield* sql`update access_code set uses = uses + 1 where id = ${held.id}`;
         yield* sql`
           update access_reservation set spent_at = ${now}, spent_by = ${account}
           where id = ${held.reservation}
+        `;
+        yield* sql`
+          update access_sign_up set password_hash = null where reservation_id = ${held.reservation}
         `;
       }
 
