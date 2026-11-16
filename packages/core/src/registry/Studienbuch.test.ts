@@ -4,7 +4,7 @@
  * prints as `schema.v<version>.json` and import it below.
  */
 import { describe, expect, expectTypeOf, it } from "@effect/vitest";
-import { Evolution, Sync } from "@stu/sync";
+import { Evolution, type Protocol, type Refusal, Sync, type Tx } from "@stu/sync";
 import * as Effect from "effect/Effect";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
@@ -91,15 +91,20 @@ const recordGrade = Sync.mutator("grade.record", {
 });
 
 describe("Studienbuch.RefusalTag", () => {
-  it("is the tags of every refusal the schema's mutators fail with", () => {
+  it("is the tags of every refusal a command can end with: the mutators', Tx's and the engine's", () => {
     expectTypeOf<Studienbuch.RefusalTag>().toEqualTypeOf<
-      Homework.Refusal["_tag"] | Enrollment.Refusal["_tag"]
+      | Homework.Refusal["_tag"]
+      | Enrollment.Refusal["_tag"]
+      | Tx.Refused["_tag"]
+      | Refusal.Engine["_tag"]
+      | Refusal.Unreadable["_tag"]
+      | Protocol.DeviceRevoked["_tag"]
     >();
   });
 
   it("gains the tags of a mutator added to the list", () => {
     expectTypeOf<
-      Studienbuch.RefusalTags<[...typeof Studienbuch.mutators, typeof recordGrade]>
+      Sync.RefusalTag<[...typeof Studienbuch.mutators, typeof recordGrade]>
     >().toEqualTypeOf<Studienbuch.RefusalTag | "Grade.Invalid">();
   });
 });

@@ -45,15 +45,11 @@ export const mutators = [
   NotebookProfile.set,
 ] as const;
 
-/** The tags of the refusals that `Mutators` can fail with. */
-export type RefusalTags<Mutators extends ReadonlyArray<Sync.AnyMutator>> =
-  Mutators[number]["error"]["Type"]["_tag"];
-
 /**
- * Every refusal tag a mutator of Studienbuch can fail with, such as `"Homework.NotFound"`. A
- * mutator added to `mutators` adds its tags here.
+ * Every refusal tag a Studienbuch command can end with, such as `"Homework.NotFound"` or
+ * `"Sync.NotAllowed"`. A mutator added to `mutators` adds its tags here, and so does the engine.
  */
-export type RefusalTag = RefusalTags<typeof mutators>;
+export type RefusalTag = Sync.RefusalTag<typeof mutators>;
 
 export const schema = Sync.schema({
   version,
