@@ -1,89 +1,51 @@
-import { definePlugin } from "@oxlint/plugins";
+import { definePlugin, type Rule } from "@oxlint/plugins";
+import * as NodeFS from "node:fs";
+import * as NodePath from "node:path";
 
-import demoAccountBoundaries from "./demo-account-boundaries.ts";
-import effectFnName from "./effect-fn-name.ts";
-import importBoundaries from "./import-boundaries.ts";
-import selfExportingModules from "./module-shape.ts";
-import mutatorKeepsTxErrors from "./mutator-keeps-tx-errors.ts";
-import namespaceNodeImports from "./namespace-node-imports.ts";
-import noAdHocStateOrEffects from "./no-ad-hoc-state-or-effects.ts";
-import noAmbientClockOrRandom from "./no-ambient-clock-or-random.ts";
-import noBakedOrigin from "./no-baked-origin.ts";
-import noDomTestEnvironment from "./no-dom-test-environment.ts";
-import noEmDashCopy from "./no-em-dash-copy.ts";
-import noFileKindDirectories from "./no-file-kind-directories.ts";
-import noFrameWaitsInBrowserTests from "./no-frame-waits-in-browser-tests.ts";
-import noGlobalProcessRuntime from "./no-global-process-runtime.ts";
-import noHermesUnsupportedApis from "./no-hermes-unsupported-apis.ts";
-import noHooklessUseFunction from "./no-hookless-use-function.ts";
-import noHandRolledLiveQuery from "./no-hand-rolled-live-query.ts";
-import noInlineSchemaCompile from "./no-inline-schema-compile.ts";
-import noJsonStringifyEquality from "./no-json-stringify-equality.ts";
-import noLiteralTimeZone from "./no-literal-time-zone.ts";
-import noLowValueComments from "./no-low-value-comments.ts";
-import noManualEffectRuntimeInTests from "./no-manual-effect-runtime-in-tests.ts";
-import noNativeTitleTooltip from "./no-native-title-tooltip.ts";
-import noPollingLoopInTests from "./no-polling-loop-in-tests.ts";
-import noRawResizeObserver from "./no-raw-resize-observer.ts";
-import noRawRouterLink from "./no-raw-router-link.ts";
-import noRealTimeWaitInTests from "./no-real-time-wait-in-tests.ts";
-import noSqliteUpdateHooks from "./no-sqlite-update-hooks.ts";
-import noTestInLoop from "./no-test-in-loop.ts";
-import noTestTimeoutOrUnreasonedSkip from "./no-test-timeout-or-unreasoned-skip.ts";
-import noThrowingErrors from "./no-throwing-errors.ts";
-import noWallClockInTests from "./no-wall-clock-in-tests.ts";
-import oneRoleCheck from "./one-role-check.ts";
-import preferCatchTags from "./prefer-catch-tags.ts";
-import preferEffectFn from "./prefer-effect-fn.ts";
-import requireDisposableRender from "./require-disposable-render.ts";
-import requireRegisteredListScroll from "./require-registered-list-scroll.ts";
-import requireSuppressionReason from "./require-suppression-reason.ts";
-import taggedErrorName from "./tagged-error-name.ts";
-import testOnlyImports from "./test-only-imports.ts";
+import type { Scope } from "./scope.ts";
+
+/** A file in rules/: the rule, and where it runs unless it runs everywhere. */
+interface RuleModule {
+  readonly default: Rule;
+  readonly scope?: Scope;
+}
+
+const directory = new URL("rules/", import.meta.url);
+
+// Each file in rules/ is one rule named after the file, so a new rule edits no shared file.
+const modules = await Promise.all(
+  NodeFS.readdirSync(directory)
+    .filter((file) => file.endsWith(".ts"))
+    .sort()
+    .map(async (file) => {
+      const module: RuleModule = await import(new URL(file, directory).href);
+
+      return { name: NodePath.basename(file, ".ts"), ...module };
+    }),
+);
 
 /** Studienbuch's own rules: the conventions in AGENTS.md that a linter can check. */
 export default definePlugin({
   meta: { name: "studienbuch" },
-  rules: {
-    "demo-account-boundaries": demoAccountBoundaries,
-    "effect-fn-name": effectFnName,
-    "import-boundaries": importBoundaries,
-    "module-shape": selfExportingModules,
-    "mutator-keeps-tx-errors": mutatorKeepsTxErrors,
-    "namespace-node-imports": namespaceNodeImports,
-    "no-ad-hoc-state-or-effects": noAdHocStateOrEffects,
-    "no-ambient-clock-or-random": noAmbientClockOrRandom,
-    "no-baked-origin": noBakedOrigin,
-    "no-dom-test-environment": noDomTestEnvironment,
-    "no-em-dash-copy": noEmDashCopy,
-    "no-file-kind-directories": noFileKindDirectories,
-    "no-frame-waits-in-browser-tests": noFrameWaitsInBrowserTests,
-    "no-global-process-runtime": noGlobalProcessRuntime,
-    "no-hermes-unsupported-apis": noHermesUnsupportedApis,
-    "no-hookless-use-function": noHooklessUseFunction,
-    "no-hand-rolled-live-query": noHandRolledLiveQuery,
-    "no-inline-schema-compile": noInlineSchemaCompile,
-    "no-json-stringify-equality": noJsonStringifyEquality,
-    "no-literal-time-zone": noLiteralTimeZone,
-    "no-low-value-comments": noLowValueComments,
-    "no-manual-effect-runtime-in-tests": noManualEffectRuntimeInTests,
-    "no-native-title-tooltip": noNativeTitleTooltip,
-    "no-polling-loop-in-tests": noPollingLoopInTests,
-    "no-raw-resize-observer": noRawResizeObserver,
-    "no-raw-router-link": noRawRouterLink,
-    "no-real-time-wait-in-tests": noRealTimeWaitInTests,
-    "no-sqlite-update-hooks": noSqliteUpdateHooks,
-    "no-test-in-loop": noTestInLoop,
-    "no-test-timeout-or-unreasoned-skip": noTestTimeoutOrUnreasonedSkip,
-    "no-throwing-errors": noThrowingErrors,
-    "no-wall-clock-in-tests": noWallClockInTests,
-    "one-role-check": oneRoleCheck,
-    "prefer-catch-tags": preferCatchTags,
-    "prefer-effect-fn": preferEffectFn,
-    "require-disposable-render": requireDisposableRender,
-    "require-registered-list-scroll": requireRegisteredListScroll,
-    "require-suppression-reason": requireSuppressionReason,
-    "tagged-error-name": taggedErrorName,
-    "test-only-imports": testOnlyImports,
-  },
+  rules: Object.fromEntries(modules.map(({ name, default: rule }) => [name, rule])),
 });
+
+const error = (name: string) => [`studienbuch/${name}`, "error"] as const;
+
+/** Every rule turned on where its `scope` says, for the lint section of vite.config.ts. */
+export const enabled = {
+  rules: Object.fromEntries(
+    modules.flatMap(({ name, scope }) => (scope === undefined ? [error(name)] : [])),
+  ),
+  overrides: modules.flatMap(({ name, scope }) =>
+    scope === undefined
+      ? []
+      : [
+          {
+            files: [...(scope.files ?? ["**/*"])],
+            excludeFiles: [...(scope.excludeFiles ?? [])],
+            rules: Object.fromEntries([error(name)]),
+          },
+        ],
+  ),
+};

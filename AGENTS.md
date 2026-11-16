@@ -181,7 +181,7 @@ The layout below is the target. Packages appear as M0 builds them.
 
 [The atlas](docs/architecture/atlas.html) is the map of modules, their boundaries and the data flows between them, drawn from the code on `main`. Read it before you add a module or move a responsibility. It is one self-contained page whose boxes, arrows and walkthroughs are data in its script.
 
-- A PR that adds a module, moves a responsibility, or adds or removes an arrow updates the atlas in the same PR. `vp run check:atlas` fails when the atlas names a path the tree lacks.
+- A PR that adds a module, moves a responsibility, or adds or removes an arrow updates the atlas in the same PR. `vp run check:atlas` fails when the atlas names a path the tree lacks, or when two entries of its `INFO` map sit on neighbouring lines: the blank line between them lets two PRs change neighbouring boxes and still merge.
 - One job per module, its logic in one place, dependencies in the atlas's direction. A dependency against that direction, logic duplicated across modules, or a module doing two jobs is a review finding.
 
 ## Taste
@@ -199,6 +199,8 @@ The layout below is the target. Packages appear as M0 builds them.
 ## Lint
 
 `vp check` enforces most rules of this codebase, through oxlint with type information, the Effect presets, anti-slop and our plugin in `tools/oxlint/`: no throwing, the module shape, package boundaries, mutator purity, APIs Hermes lacks, baked-in origins, directory names, deterministic tests, `Effect.fn` and `catchTags`, no platform reads in feature code, comments of at most four lines, no em dashes in copy, time zones written out only in core, and a reason on every suppression. Many of the plugin's rules come from T3 Code (MIT, `tools/T3CODE-LICENSE`). When a rule fights a real need, change the rule in its own PR rather than suppressing it in passing. A convention a lint rule can check gets that rule in `tools/oxlint/`, in the PR that sets it.
+
+A rule is one file in `tools/oxlint/studienbuch/rules/`, named after the rule. Its default export is the rule, and `export const scope` says where it runs; without one it runs everywhere. The plugin loads every file there, and `vite.config.ts` turns each rule on from its scope, so a new rule edits no shared file. Its fixture goes in `tools/oxlint/fixtures/`, where every import is untyped and needs no declaration.
 
 ## Effect
 
