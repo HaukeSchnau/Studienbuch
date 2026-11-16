@@ -45,8 +45,8 @@ export function PanelScreen({ title, onBack, action, status, children }: PanelSc
       <ScrollView
         style={styles.screen}
         contentContainerStyle={styles.grow}
-        // The header pads below the status bar itself.
-        contentInsetAdjustmentBehavior="never"
+        // On iOS the content then ends above the tab bar, and starts below the status bar.
+        contentInsetAdjustmentBehavior="automatic"
         automaticallyAdjustKeyboardInsets
         keyboardShouldPersistTaps="handled"
         onScroll={onScroll}
@@ -111,7 +111,13 @@ function Glyph({
 // The panel is blue in both schemes, so its text is white.
 const onPanel = "#FFFFFF";
 
-const top = (statusBar: number) => statusBar + Tokens.space.sm;
+// iOS insets the scroll view below the status bar itself, as on HeroScreen.
+const top = (statusBar: number) =>
+  Platform.select({
+    ios: Tokens.space.sm,
+    android: statusBar + Tokens.space.sm,
+    default: Tokens.space.sm,
+  });
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
