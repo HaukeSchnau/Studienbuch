@@ -6,6 +6,7 @@ import { Icon } from "@stu/ui/Icon";
 import { Text } from "@stu/ui/Text";
 import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
+import { useRefocus } from "@stu/ui/useRefocus";
 import { useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
@@ -73,6 +74,7 @@ export function HomeworkForm({
 }: HomeworkFormProps) {
   const { color } = Theme.useTheme();
   const calendar = useCalendarOpen();
+  const { ref: dateButton, refocus: backToDate } = useRefocus();
   const set = onChange;
 
   return (
@@ -128,6 +130,7 @@ export function HomeworkForm({
         <View style={styles.due}>
           <Text variant="callout">Abgabetermin:</Text>
           <Pressable
+            ref={dateButton}
             accessibilityRole="button"
             accessibilityLabel={
               values.dueOn === null
@@ -153,6 +156,8 @@ export function HomeworkForm({
             value={values.dueOn}
             onChange={(dueOn) => {
               set({ dueOn });
+              // The picked day unmounts with the calendar, and its focus would fall to the page.
+              backToDate();
               calendar.close();
             }}
             range={range}

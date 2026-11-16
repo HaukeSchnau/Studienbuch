@@ -10,6 +10,14 @@ import * as PlainDateFns from "temporal-polyfill/fns/PlainDate";
 
 import { DateText } from "./DateText.ts";
 
+declare module "react-native" {
+  // react-native-web writes them to the DOM; native ignores them.
+  interface AccessibilityProps {
+    readonly "aria-pressed"?: boolean | undefined;
+    readonly "aria-current"?: "date" | undefined;
+  }
+}
+
 export interface MonthPickerProps {
   readonly value: CivilTime.PlainDate | null;
   readonly onChange: (date: CivilTime.PlainDate) => void;
@@ -58,6 +66,10 @@ export function MonthPicker({ value, onChange, range, today }: MonthPickerProps)
                 key={key}
                 accessibilityRole="button"
                 accessibilityLabel={DateText.full(day, today)}
+                // The browser announces a pressed button and today's date; VoiceOver and TalkBack
+                // read `aria-selected`, which the browser ignores on a button.
+                aria-pressed={selected}
+                aria-current={isToday ? "date" : undefined}
                 aria-selected={selected}
                 disabled={!enabled}
                 onPress={() => onChange(day)}

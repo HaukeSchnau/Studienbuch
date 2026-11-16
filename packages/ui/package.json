@@ -40,6 +40,10 @@
     },
     "./useLayout": "./src/useLayout.ts",
     "./useLingeringOrder": "./src/useLingeringOrder.ts",
+    "./useRefocus": {
+      "react-native": "./src/useRefocus.ts",
+      "default": "./src/useRefocus.web.ts"
+    },
     "./useStableCallback": "./src/useStableCallback.ts",
     "./Vector": {
       "react-native": "./src/Vector.tsx",
