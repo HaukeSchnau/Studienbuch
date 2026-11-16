@@ -58,15 +58,40 @@ const tests = [
     inputs: Files.of("vite.config.ts"),
     vitest: ["vp", "test"],
   }),
-  // The app's Node project. Its `*.browser.test.ts` need Playwright's browsers, which the CI shell
-  // doesn't have yet.
+  // The app's Node project.
   Vitest.files({
     name: "test-app",
     shell,
     setup: install,
     dir: "apps/app",
-    tests: ["src/**/*.test.ts", "modules/**/*.test.ts", "!src/**/*.browser.test.ts"],
+    tests: [
+      "src/**/*.test.ts",
+      "modules/**/*.test.ts",
+      "app.config.test.ts",
+      "!src/**/*.browser.test.ts",
+    ],
     inputs: Files.of("apps/app/vite.config.ts"),
+    vitest: ["vp", "test"],
+  }),
+  // The app's browser project, in the CI shell's headless Chromium and Firefox. Its Vite config
+  // swaps our imports of `x.ts` for `x.web.ts` and loads the SQLite worker by a URL, two edges
+  // Calder's import graph doesn't follow, so every web file and the worker count for every test.
+  Vitest.files({
+    name: "test-app-browser",
+    shell,
+    setup: install,
+    dir: "apps/app",
+    tests: ["src/**/*.browser.test.ts", "src/**/*.browser.test.tsx"],
+    inputs: Files.union(
+      Files.of("apps/app/vite.config.ts"),
+      Files.imports([
+        "apps/app/src/**/*.web.ts",
+        "apps/app/src/**/*.web.tsx",
+        "apps/app/src/infra/sqlite/opfs.worker.ts",
+        "packages/*/src/**/*.web.ts",
+        "packages/*/src/**/*.web.tsx",
+      ]),
+    ),
     vitest: ["vp", "test"],
   }),
   Vitest.files({

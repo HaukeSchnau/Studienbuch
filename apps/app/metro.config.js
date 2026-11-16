@@ -1,6 +1,15 @@
+const { createHash } = require("node:crypto");
+const { getConfig } = require("expo/config");
 const { getDefaultConfig } = require("expo/metro-config");
 
 const config = getDefaultConfig(__dirname);
+
+// babel-preset-expo inlines the public app config into transformed modules (expo-router reads its
+// plugin options from it), but Metro's cache key leaves the config out. Without this a config change
+// kept serving modules transformed for the old one until `--clear`. Same call as the preset's.
+const { exp } = getConfig(__dirname, { isPublicConfig: true, skipSDKVersionRequirement: true });
+
+config.cacheVersion = createHash("sha256").update(JSON.stringify(exp)).digest("hex");
 
 // The web's SQLite worker loads wa-sqlite's wasm build as an asset.
 config.resolver.assetExts.push("wasm");

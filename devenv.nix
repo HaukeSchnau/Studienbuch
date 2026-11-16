@@ -130,6 +130,8 @@ in
       EXPO_OFFLINE = "1";
       # `expo start` would otherwise rewrite tsconfig.json.
       EXPO_NO_TYPESCRIPT_SETUP = "1";
+      # Metro's transform cache, which otherwise every worktree on the machine shares in /tmp.
+      EXPO_METRO_CACHE_OUTPUT_DIR = "${state}/metro-cache";
     };
   };
 
