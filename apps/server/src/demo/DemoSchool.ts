@@ -5,8 +5,7 @@
  * same ids. Names are invented.
  */
 import { Demo } from "@stu/api/Demo";
-import { CivilTime, Course, CourseOffering, Notebook, School, type Term } from "@stu/core";
-import * as Effect from "effect/Effect";
+import { type Course, Notebook, School, type Term } from "@stu/core";
 import { Schools } from "../school/Schools.ts";
 
 export * as DemoSchool from "./DemoSchool.ts";
@@ -16,67 +15,26 @@ export const id = School.Id.make("demo-schule");
 /** Every demo course is offered to this grade level, and Lena and Tom are in it. */
 export const gradeLevel = 11;
 
-export const timeZone = CivilTime.TimeZone.make("Europe/Berlin");
-
 /** One course of each subject, `ma-1` and so on. A student chooses Kunst or Musik. */
 const subjects = [
-  { id: "ma", name: "Mathematik", shortName: "MA", offering: {} },
-  { id: "de", name: "Deutsch", shortName: "DE", offering: {} },
-  { id: "en", name: "Englisch", shortName: "EN", offering: {} },
-  { id: "bi", name: "Biologie", shortName: "BI", offering: {} },
-  { id: "ch", name: "Chemie", shortName: "CH", offering: {} },
-  { id: "ge", name: "Geschichte", shortName: "GE", offering: {} },
-  { id: "pw", name: "Politik-Wirtschaft", shortName: "PW", offering: {} },
-  { id: "ku", name: "Kunst", shortName: "KU", offering: { groupKey: "kunst-musik" } },
-  { id: "mu", name: "Musik", shortName: "MU", offering: { groupKey: "kunst-musik" } },
-  { id: "sp", name: "Sport", shortName: "SP", offering: {} },
-] as const;
+  { id: "ma", name: "Mathematik", shortName: "MA" },
+  { id: "de", name: "Deutsch", shortName: "DE" },
+  { id: "en", name: "Englisch", shortName: "EN" },
+  { id: "bi", name: "Biologie", shortName: "BI" },
+  { id: "ch", name: "Chemie", shortName: "CH" },
+  { id: "ge", name: "Geschichte", shortName: "GE" },
+  { id: "pw", name: "Politik-Wirtschaft", shortName: "PW" },
+  { id: "ku", name: "Kunst", shortName: "KU", groupKey: "kunst-musik" },
+  { id: "mu", name: "Musik", shortName: "MU", groupKey: "kunst-musik" },
+  { id: "sp", name: "Sport", shortName: "SP" },
+] as const satisfies ReadonlyArray<Schools.SimpleSubject>;
 
 type SubjectId = (typeof subjects)[number]["id"];
 
-const course = (subject: SubjectId) => Course.Id.make(`${subject}-1`);
+const course = (subject: SubjectId) => Schools.simpleCourse(subject);
 
-/** The school's rows for the school year that holds `today`, with both terms offering every course. */
-export const data = Effect.fn("DemoSchool.data")(function* (today: CivilTime.PlainDate) {
-  const year = yield* Schools.yearAround(today);
-
-  return {
-    year,
-    data: {
-      id,
-      school: { name: "Demoschule am Wiesengrund", timeZone },
-      schoolYears: { [year.id]: year.row },
-      terms: Object.fromEntries(year.terms.map((term) => [term.id, term.row])),
-      subjects: Object.fromEntries(
-        subjects.map((subject) => [
-          subject.id,
-          { name: subject.name, shortName: subject.shortName },
-        ]),
-      ),
-      classes: {},
-      courses: Object.fromEntries(
-        subjects.map((subject) => [
-          course(subject.id),
-          { name: `${subject.shortName}-1`, subjectId: subject.id },
-        ]),
-      ),
-      offerings: Object.fromEntries(
-        year.terms.flatMap((term) =>
-          subjects.map((subject) => [
-            CourseOffering.idFor(course(subject.id), term.id),
-            {
-              courseId: course(subject.id),
-              termId: term.id,
-              gradeLevels: [gradeLevel],
-              classIds: [],
-              ...subject.offering,
-            },
-          ]),
-        ),
-      ),
-    } satisfies Schools.Data,
-  };
-});
+/** The school's rows for the school year that holds today, with both terms offering every course. */
+export const data = Schools.simple({ id, name: "Demoschule am Wiesengrund", gradeLevel, subjects });
 
 export interface Persona {
   readonly account: string;

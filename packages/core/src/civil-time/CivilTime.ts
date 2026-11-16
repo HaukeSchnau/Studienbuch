@@ -1,7 +1,7 @@
 /**
  * Calendar dates without a time zone (ADR 0001): Temporal records in domain code, ISO 8601 strings
  * such as `"2026-10-29"` in rows and arguments, which sort as dates in a device view. Core reads no
- * clock, so the caller computes "today" with `dateIn` and the school's `timeZone`, and passes it in.
+ * clock, so the caller computes "today" with `School.today` from the clock, and passes it in.
  */
 import * as Effect from "effect/Effect";
 import * as Result from "effect/Result";

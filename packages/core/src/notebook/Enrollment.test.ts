@@ -1,8 +1,9 @@
 import { describe, expect, it } from "@effect/vitest";
-import { Sync } from "@stu/sync";
+import { Sync, Tx } from "@stu/sync";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import { Course } from "../school/Course.ts";
+import { CourseOffering } from "../school/CourseOffering.ts";
 import { SchoolClass } from "../school/SchoolClass.ts";
 import { Term } from "../school/Term.ts";
 import { Fixture } from "../testing/Fixture.ts";
@@ -147,6 +148,40 @@ describe("enrollment.set", () => {
         Option.getOrUndefined(db.stored(args.notebook, Enrollment.Row.name, args.termId)),
       ).toBeUndefined();
     }),
+  );
+});
+
+/** The offerings of the fixture's first school, in every term. */
+const offerings = (db: MemoryTx.Database) =>
+  db.transaction(
+    { actor: "server", writes: [], location: "server" },
+    Effect.flatMap(Tx.Service, (tx) => tx.list(CourseOffering.Row, Fixture.school)).pipe(
+      Effect.map((entries) => entries.map(({ row }) => row)),
+    ),
+  );
+
+describe("Enrollment.courseIds", () => {
+  it.effect(
+    "lists the required courses and the first preferred elective of each group, which enrollment.set accepts",
+    () =>
+      Effect.gen(function* () {
+        const db = yield* Fixture.make;
+        const chooser = { termId: term, gradeLevel: 11, classId: Fixture.class112 };
+
+        // Kunst isn't offered to grade 11, and Mathematik G comes before E.
+        const courseIds = Enrollment.courseIds(yield* offerings(db), chooser, [
+          Fixture.art,
+          Fixture.mathG,
+          Fixture.mathE,
+        ]);
+
+        yield* Fixture.run(db, Enrollment.set, { notebook, ...chooser, courseIds }, "server");
+
+        expect({ courseIds, stored: stored(db) }).toEqual({
+          courseIds: ["demo-de-11.2", "demo-ma-g"],
+          stored: { ...chooser, courseIds: ["demo-de-11.2", "demo-ma-g"] },
+        });
+      }),
   );
 });
 

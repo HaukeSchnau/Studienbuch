@@ -4,6 +4,7 @@
  * it.
  */
 import { Ids, Sync } from "@stu/sync";
+import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import { CivilTime } from "../civil-time/CivilTime.ts";
 
@@ -42,3 +43,19 @@ export const Row = Sync.table("School", {
 });
 
 export type Row = Sync.Row<typeof Row>;
+
+/**
+ * The zone of a school whose source names none, such as the demo school, and of a device that
+ * holds no school row yet. Every school so far is in Germany.
+ */
+export const defaultTimeZone = CivilTime.TimeZone.make("Europe/Berlin");
+
+/**
+ * The date at the school at `now`, in epoch milliseconds: the "today" of its terms, timetable and
+ * homework. Before the school's row arrived, in {@link defaultTimeZone}.
+ */
+export const today = (school: Option.Option<Row>, now: number): CivilTime.PlainDate =>
+  CivilTime.dateIn(
+    now,
+    Option.match(school, { onNone: () => defaultTimeZone, onSome: (row) => row.timeZone }),
+  );

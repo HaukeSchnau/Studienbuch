@@ -135,9 +135,6 @@ const encodeDate = Schema.encodeEffect(CivilTime.PlainDate);
 
 const decodeChoice = Schema.decodeEffect(Enrollment.set.args);
 
-/** The time zone of a device without school data yet. */
-const fallbackTimeZone = CivilTime.TimeZone.make("Europe/Berlin");
-
 const snapshot = Effect.gen(function* () {
   const sql = yield* SqlClient.SqlClient;
   const db = yield* DeviceDatabase.make;
@@ -171,7 +168,7 @@ const snapshot = Effect.gen(function* () {
   return {
     clientId: meta?.client_id ?? "",
     lastMutationId: meta?.last_mutation_id ?? 0,
-    today: CivilTime.dateIn(yield* Clock.currentTimeMillis, school?.timeZone ?? fallbackTimeZone),
+    today: School.today(Option.fromNullishOr(school), yield* Clock.currentTimeMillis),
     spaces: yield* SyncClient.spaces.run(),
     held,
     homework,

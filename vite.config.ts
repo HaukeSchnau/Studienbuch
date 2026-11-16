@@ -294,6 +294,12 @@ export default defineConfig({
         rules: { "studienbuch/no-global-process-runtime": "error" },
       },
       {
+        // "Today" at a school is in the zone its row names, which core reads in `School.today`.
+        files: scope("apps/**", "packages/**"),
+        excludeFiles: [...scope("packages/core/**"), "**/*.{test,spec}.{ts,tsx}"],
+        rules: { "studienbuch/no-literal-time-zone": "error" },
+      },
+      {
         // Copy that people or agents read.
         files: scope("apps/*/src/**", "packages/*/src/**"),
         excludeFiles: ["**/*.{test,spec}.{ts,tsx}"],

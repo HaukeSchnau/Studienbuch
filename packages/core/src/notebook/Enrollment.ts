@@ -68,6 +68,60 @@ export const Refusal = Schema.Union([UnknownTerm, ClassRequired, CourseNotOffere
 export type Refusal = typeof Refusal.Type;
 
 /**
+ * Whether `classId` is a class `enrollment.set` takes from a chooser whose grade level has the
+ * classes `classIds` that school year: one of them, or none where it has none.
+ */
+export const classFits = (classIds: ReadonlyArray<string>, classId: SchoolClass.Id | undefined) =>
+  classId === undefined ? classIds.length === 0 : classIds.includes(classId);
+
+/**
+ * Of `offerings`, in order, the ones one choice can hold together: every required course and the
+ * first course of each elective group.
+ */
+export const compatible = <A extends Pick<CourseOffering.Row, "groupKey">>(
+  offerings: ReadonlyArray<A>,
+): ReadonlyArray<A> => {
+  const groups = new Set<string>();
+
+  return offerings.filter(({ groupKey }) => {
+    if (groupKey === undefined) return true;
+
+    if (groups.has(groupKey)) return false;
+
+    groups.add(groupKey);
+
+    return true;
+  });
+};
+
+/**
+ * The courses a choice of `chooser` lists: every required course offered to it, and of the
+ * electives offered to it the first of each group in `preferred`, sorted as the row keeps them.
+ * `enrollment.set` accepts the choice when the chooser's class fits.
+ */
+export const courseIds = (
+  offerings: ReadonlyArray<CourseOffering.Row>,
+  chooser: CourseOffering.Chooser,
+  preferred: Iterable<Course.Id>,
+): ReadonlyArray<Course.Id> => {
+  const open = offerings.filter((offering) => CourseOffering.isFor(offering, chooser));
+
+  const electives = new Map(
+    open.flatMap((each) => (each.groupKey === undefined ? [] : [[each.courseId, each] as const])),
+  );
+
+  const wanted = Array.from(preferred).flatMap((id) => {
+    const offering = electives.get(id);
+
+    return offering === undefined ? [] : [offering];
+  });
+
+  const required = open.filter((each) => each.groupKey === undefined);
+
+  return Arr.dedupe(compatible([...required, ...wanted]).map((each) => each.courseId)).sort();
+};
+
+/**
  * Chooses the courses of one term at the notebook's school, replacing the term's earlier choice.
  * An empty list leaves every course of the term. The checks run in this order: the term, the
  * class, each course's offering, the elective groups.
@@ -101,14 +155,11 @@ export const set = Sync.mutator("enrollment.set", {
       equals: term.value.schoolYearId,
     });
 
-    const ofGradeLevel = classes.filter(({ row }) => row.gradeLevel === args.gradeLevel);
+    const ofGradeLevel = classes.flatMap(({ id, row }) =>
+      row.gradeLevel === args.gradeLevel ? [id] : [],
+    );
 
-    const classFits =
-      args.classId === undefined
-        ? ofGradeLevel.length === 0
-        : ofGradeLevel.some(({ id }) => id === args.classId);
-
-    if (!classFits) return yield* new ClassRequired();
+    if (!classFits(ofGradeLevel, args.classId)) return yield* new ClassRequired();
 
     const offerings = yield* tx.list(CourseOffering.Row, school, {
       index: "termId",

@@ -1,7 +1,7 @@
 import {
   type Course,
   CourseOffering,
-  type Enrollment,
+  Enrollment,
   type Notebook,
   type School,
   type SchoolClass,
@@ -102,6 +102,13 @@ export const classesOf = (term: TermChoices, gradeLevel: School.GradeLevel) =>
     .filter((each) => each.gradeLevel === gradeLevel)
     .sort((a, b) => a.name.localeCompare(b.name, "de", { numeric: true }));
 
+/** Whether the chooser names a class the course choice can go with (`Enrollment.classFits`). */
+export const classFits = (term: TermChoices, chooser: CourseOffering.Chooser) =>
+  Enrollment.classFits(
+    classesOf(term, chooser.gradeLevel).map((each) => each.id),
+    chooser.classId,
+  );
+
 /** One course the student may choose or leave, shown as a subject tile. */
 export interface Elective {
   readonly courseId: Course.Id;
@@ -141,7 +148,7 @@ export const label = (elective: Elective) =>
 
 /**
  * Chooses or leaves one elective. Choosing it leaves the others of its group, because a group
- * allows one (`Enrollment.TwoInOneGroup`).
+ * allows one (`Enrollment.compatible`).
  */
 export const toggle = (
   chosen: ReadonlySet<Course.Id>,
@@ -152,11 +159,13 @@ export const toggle = (
     return new Set([...chosen].filter((id) => id !== elective.courseId));
   }
 
-  const sameGroup = new Set(
-    all.flatMap((each) => (each.groupKey === elective.groupKey ? [each.courseId] : [])),
-  );
+  // First in line, it wins its group over the course chosen before.
+  const kept = Enrollment.compatible([
+    elective,
+    ...all.filter((each) => chosen.has(each.courseId)),
+  ]);
 
-  return new Set([...[...chosen].filter((id) => !sameGroup.has(id)), elective.courseId]);
+  return new Set(kept.map((each) => each.courseId));
 };
 
 /** The electives an earlier choice for this term holds, as the tiles start. */
@@ -176,19 +185,10 @@ export const startingChoice = (
 
 /**
  * The course choice to write: every required course open to `chooser` and the chosen electives
- * still open to it, sorted as `enrollment.set` keeps them.
+ * still open to it (`Enrollment.courseIds`).
  */
 export const courseIds = (
   term: TermChoices,
   chooser: CourseOffering.Chooser,
   chosen: ReadonlySet<Course.Id>,
-): ReadonlyArray<Course.Id> => {
-  const open = offered(term, chooser);
-  const required = open.filter((offering) => offering.groupKey === undefined);
-  const electiveIds = new Set(open.flatMap((o) => (o.groupKey === undefined ? [] : [o.courseId])));
-
-  return Arr.dedupe([
-    ...required.map((offering) => offering.courseId),
-    ...[...chosen].filter((id) => electiveIds.has(id)),
-  ]).sort();
-};
+) => Enrollment.courseIds(term.offerings, chooser, chosen);

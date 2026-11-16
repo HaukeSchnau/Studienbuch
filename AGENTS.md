@@ -198,7 +198,7 @@ The layout below is the target. Packages appear as M0 builds them.
 
 ## Lint
 
-`vp check` enforces most rules of this codebase, through oxlint with type information, the Effect presets, anti-slop and our plugin in `tools/oxlint/`: no throwing, the module shape, package boundaries, mutator purity, APIs Hermes lacks, baked-in origins, directory names, deterministic tests, `Effect.fn` and `catchTags`, no platform reads in feature code, comments of at most four lines, no em dashes in copy, and a reason on every suppression. Many of the plugin's rules come from T3 Code (MIT, `tools/T3CODE-LICENSE`). When a rule fights a real need, change the rule in its own PR rather than suppressing it in passing. A convention a lint rule can check gets that rule in `tools/oxlint/`, in the PR that sets it.
+`vp check` enforces most rules of this codebase, through oxlint with type information, the Effect presets, anti-slop and our plugin in `tools/oxlint/`: no throwing, the module shape, package boundaries, mutator purity, APIs Hermes lacks, baked-in origins, directory names, deterministic tests, `Effect.fn` and `catchTags`, no platform reads in feature code, comments of at most four lines, no em dashes in copy, time zones only from the school's row, and a reason on every suppression. Many of the plugin's rules come from T3 Code (MIT, `tools/T3CODE-LICENSE`). When a rule fights a real need, change the rule in its own PR rather than suppressing it in passing. A convention a lint rule can check gets that rule in `tools/oxlint/`, in the PR that sets it.
 
 ## Effect
 

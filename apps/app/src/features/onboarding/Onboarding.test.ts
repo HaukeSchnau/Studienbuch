@@ -94,6 +94,21 @@ it("choosing an elective leaves the other of its group, and choosing it again le
   assert.deepStrictEqual(ids(Onboarding.toggle(musik, tile("mu"), tiles)), ["fr"]);
 });
 
+it("lets the student finish with one of the grade level's classes, or none where it has none", () => {
+  const fits = (gradeLevel: number, classId?: string) =>
+    Onboarding.classFits(choices, {
+      termId: term,
+      gradeLevel,
+      classId: classId === undefined ? undefined : SchoolClass.Id.make(classId),
+    });
+
+  // An earlier choice's class stays in the answers when the student picks another grade level.
+  assert.deepStrictEqual(
+    [fits(9, "c2"), fits(9), fits(9, "c11"), fits(10), fits(10, "c2")],
+    [true, false, false, true, false],
+  );
+});
+
 it("writes every required course with the chosen electives that are still open", () => {
   const chosen = new Set(["fr", "ku", "if"].map((id) => Course.Id.make(id)));
 

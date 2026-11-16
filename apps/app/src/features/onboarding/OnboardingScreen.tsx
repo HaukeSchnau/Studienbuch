@@ -209,7 +209,7 @@ function CoursesStep({ accountId, snapshot, draft }: Omit<StepsProps, "start">) 
 
       const electives = Onboarding.electives(term, chooser);
       const chosen = answers.chosen(term, chooser);
-      const ready = classes.length === 0 || Option.isSome(answers.classId);
+      const ready = Onboarding.classFits(term, chooser);
 
       return (
         <>
