@@ -5,17 +5,15 @@
  */
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
-import * as NetAddress from "effect/net/NetAddress";
 import * as Predicate from "effect/Predicate";
 import type * as Rpc from "effect/rpc/Rpc";
 import type * as RpcGroup from "effect/rpc/RpcGroup";
 import * as RpcServer from "effect/rpc/RpcServer";
 import type * as Scope from "effect/Scope";
 import type * as Socket from "effect/socket/Socket";
-import * as SocketServer from "effect/socket/SocketServer";
 import type { Ports } from "../client/Ports.ts";
 import { WebSocketTransport } from "../client/WebSocketTransport.ts";
-import { Protocol } from "../protocol/Protocol.ts";
+import { Connections } from "../server/Connections.ts";
 import type { Ports as ServerPorts } from "../server/Ports.ts";
 import { Link } from "./Link.ts";
 
@@ -124,28 +122,15 @@ export const make = Effect.fnUntraced(function* (
 export type Network = Effect.Success<ReturnType<typeof make>>;
 
 /**
- * Runs an RPC group's handlers on one socket until it closes, through Effect's socket server
- * protocol, the framing the WebSocket route uses too. The harness's own tests serve stubs with it.
+ * Runs an RPC group's handlers on one socket until it closes, through `Connections.socketProtocol`
+ * as the WebSocket route does. The harness's own tests serve stubs with it.
  */
 export const serveSocket = Effect.fnUntraced(function* <Rpcs extends Rpc.Any>(
   group: RpcGroup.RpcGroup<Rpcs>,
   socket: Socket.Socket,
 ) {
   const ended = yield* Deferred.make<void>();
-
-  const oneSocket = SocketServer.SocketServer.of({
-    address: NetAddress.unixPathAddress("simulation"),
-    run: (handler) =>
-      Effect.andThen(
-        Effect.ensuring(Effect.orDie(handler(socket)), Deferred.succeed(ended, undefined)),
-        Effect.never,
-      ),
-  });
-
-  const protocol = yield* RpcServer.makeProtocolSocketServer.pipe(
-    Effect.provideService(SocketServer.SocketServer, oneSocket),
-    Effect.provide(Protocol.serialization),
-  );
+  const protocol = yield* Connections.socketProtocol(socket, ended);
 
   yield* RpcServer.make(group, { disableFatalDefects: true }).pipe(
     Effect.provideService(RpcServer.Protocol, protocol),

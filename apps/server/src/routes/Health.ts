@@ -1,4 +1,5 @@
 import { System } from "@stu/api/System";
+import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as HttpMiddleware from "effect/http/HttpMiddleware";
 import * as HttpRouter from "effect/http/HttpRouter";
@@ -30,6 +31,9 @@ export class Readiness extends Schema.Class<Readiness, { readonly brand: unique 
     }),
   ),
 }) {}
+
+/** How long readiness waits for the database before it reports it unavailable. */
+export const timeout = Duration.seconds(2);
 
 /** Readiness against the migrations this release ships. `console status` prints the same. */
 export const readiness = Effect.gen(function* () {
@@ -65,6 +69,8 @@ export const readiness = Effect.gen(function* () {
       jobs: jobs(yield* Jobs.lastRuns),
     });
   }).pipe(
+    // A full pool queues the checkout without a limit, and a host gates traffic on this answer.
+    Effect.timeout(timeout),
     Effect.catch((cause) =>
       Effect.as(
         Effect.logWarning("Readiness cannot reach the database", cause),
