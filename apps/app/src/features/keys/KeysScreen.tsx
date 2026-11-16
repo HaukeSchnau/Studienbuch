@@ -134,7 +134,11 @@ function Overview({
   };
 
   return (
-    <HeroScreen title="Notizbuch-Schlüssel" subtitle="Wenn du dieses Gerät verlierst">
+    <HeroScreen
+      title="Notizbuch-Schlüssel"
+      subtitle="Wenn du dieses Gerät verlierst"
+      back="/diagnose"
+    >
       {AsyncResult.match(summary, {
         onInitial: () => null,
         onFailure: () => (
