@@ -7,7 +7,9 @@ Confidence: established
 ## Rule
 
 The student chooses their class when several are available and may choose the optional courses that
-belong to that class before completing setup.
+belong to that class before completing setup. Courses that exclude each other, such as Kunst and
+Musik, show as one choice ("Kunst oder Musik"). When the school requires that choice, setup completes
+only once one of them is chosen.
 
 ## Example
 
@@ -23,6 +25,7 @@ And setup can be completed with the selected class and course
 | Class selection is required when ambiguous | `setup-continue-button` is disabled before a class is selected                                                 |
 | Courses are scoped to the class            | `optional-course-list` contains the seeded course for the selected class and excludes the other class's course |
 | The selection is accepted                  | `setup-continue-button` is enabled and `selected-optional-course` identifies the chosen course                 |
+| A required choice holds setup back         | `setup-continue-button` is disabled until one course of the required group is selected                         |
 
 ## State
 

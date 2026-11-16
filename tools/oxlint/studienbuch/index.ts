@@ -24,6 +24,7 @@ import noLowValueComments from "./no-low-value-comments.ts";
 import noManualEffectRuntimeInTests from "./no-manual-effect-runtime-in-tests.ts";
 import noNativeTitleTooltip from "./no-native-title-tooltip.ts";
 import noPollingLoopInTests from "./no-polling-loop-in-tests.ts";
+import noRawCheckable from "./no-raw-checkable.ts";
 import noRawResizeObserver from "./no-raw-resize-observer.ts";
 import noRawRouterLink from "./no-raw-router-link.ts";
 import noRealTimeWaitInTests from "./no-real-time-wait-in-tests.ts";
@@ -70,6 +71,7 @@ export default definePlugin({
     "no-native-title-tooltip": noNativeTitleTooltip,
     "no-polling-loop-in-tests": noPollingLoopInTests,
     "no-raw-resize-observer": noRawResizeObserver,
+    "no-raw-checkable": noRawCheckable,
     "no-raw-router-link": noRawRouterLink,
     "no-real-time-wait-in-tests": noRealTimeWaitInTests,
     "no-sqlite-update-hooks": noSqliteUpdateHooks,
