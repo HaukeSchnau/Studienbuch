@@ -1,11 +1,13 @@
 import { PgClient } from "@effect/sql-pg";
 import { describe, expect, layer } from "@effect/vitest";
+import * as Arr from "effect/Array";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as Fiber from "effect/Fiber";
 import * as Queue from "effect/Queue";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
+import * as Tracer from "effect/Tracer";
 import { Postgres18 } from "../testing/Postgres18.ts";
 import { Tx } from "../transaction/Tx.ts";
 import { Fixture } from "./Fixture.ts";
@@ -65,6 +67,22 @@ const school = (name: string, courses: ReadonlyArray<string>) =>
     return { lena: `${name}-account-lena`, tom: `${name}-account-tom` };
   });
 
+/** How many SQL statements `effect` sends. */
+const statements = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+  Effect.suspend(() => {
+    let sent = 0;
+
+    const tracer = Tracer.make({
+      span: (options) => {
+        if (options.kind === "client") sent += 1;
+
+        return new Tracer.NativeSpan(options);
+      },
+    });
+
+    return Effect.map(Effect.withTracer(effect, tracer), () => sent);
+  });
+
 const enroll = (notebook: string, courseIds: ReadonlyArray<string>) =>
   Effect.flatMap(SyncWriter.Service, (writer) =>
     writer.write(
@@ -75,6 +93,51 @@ const enroll = (notebook: string, courseIds: ReadonlyArray<string>) =>
       ),
     ),
   );
+
+/**
+ * Runs `held` in a transaction that stays open while `other` starts, then commits it and awaits
+ * `other`. Returns whether `other` waited for that transaction or finished before it.
+ */
+const whileUncommitted = <E1, R1, E2, R2>(
+  held: Effect.Effect<unknown, E1, R1>,
+  other: Effect.Effect<unknown, E2, R2>,
+) =>
+  Effect.gen(function* () {
+    const sql = yield* SqlClient.SqlClient;
+    const ran = yield* Deferred.make<number>();
+    const commit = yield* Deferred.make<void>();
+
+    const holding = yield* Effect.forkChild(
+      sql.withTransaction(
+        Effect.gen(function* () {
+          yield* held;
+          const [row] = yield* sql<{ readonly pid: number }>`select pg_backend_pid() as pid`;
+          yield* Deferred.succeed(ran, row?.pid ?? 0);
+          yield* Deferred.await(commit);
+        }),
+      ),
+    );
+
+    const pid = yield* Deferred.await(ran);
+    const running = yield* Effect.forkChild(other);
+
+    const blocked = sql<{ readonly blocked: boolean }>`
+      select exists (
+        select 1 from pg_stat_activity where ${pid}::int = any(pg_blocking_pids(pid))
+      ) as blocked
+    `.pipe(Effect.repeat({ until: ([row]) => row?.blocked === true }));
+
+    const first = yield* Effect.raceFirst(
+      Effect.as(blocked, "waited"),
+      Effect.as(Fiber.join(running), "went first"),
+    );
+
+    yield* Deferred.succeed(commit, undefined);
+    yield* Fiber.join(holding);
+    yield* Fiber.join(running);
+
+    return first;
+  });
 
 describe.skipIf(Postgres18.socket === null)("SyncWriter on PostgreSQL 18", () => {
   layer(Fixture.server)((it) => {
@@ -253,15 +316,22 @@ describe.skipIf(Postgres18.socket === null)("SyncWriter on PostgreSQL 18", () =>
       () =>
         Effect.gen(function* () {
           const spaces = yield* Spaces.Service;
-          const { lena } = yield* school("leaving", ["ma"]);
+          const { lena, tom } = yield* school("leaving", ["ma"]);
           // Physics has no space yet.
           yield* enroll("leaving-lena", ["ma", "ph"]);
+          yield* enroll("leaving-tom", ["ph"]);
           const enrolled = yield* memberships(lena);
           yield* spaces.create("leaving-ph", Fixture.Course, {
             parent: "leaving-school",
             key: "ph",
           });
           const opened = yield* memberships(lena);
+          // One course space opens for every notebook that named it.
+          expect(yield* memberships(tom)).toEqual([
+            ["leaving-ph", "leaving-tom"],
+            ["leaving-school", null],
+            ["leaving-tom", null],
+          ]);
           yield* spaces.removeMember("leaving-school", lena);
           const left = yield* memberships(lena);
           yield* enroll("leaving-lena", ["ma", "ph"]);
@@ -299,6 +369,90 @@ describe.skipIf(Postgres18.socket === null)("SyncWriter on PostgreSQL 18", () =>
             ],
             without: [["leaving-school", null]],
           });
+        }),
+    );
+
+    it.effect("leaving the school while a grant is uncommitted waits for it, then ends it", () =>
+      Effect.gen(function* () {
+        const spaces = yield* Spaces.Service;
+        const { lena } = yield* school("racing", ["ma"]);
+
+        const leave = yield* whileUncommitted(
+          enroll("racing-lena", ["ma"]),
+          spaces.removeMember("racing-school", lena),
+        );
+
+        expect({ leave, memberships: yield* memberships(lena) }).toEqual({
+          leave: "waited",
+          memberships: [["racing-lena", null]],
+        });
+      }),
+    );
+
+    it.effect(
+      "a course that opens while an enrollment naming it is uncommitted waits for it, then grants it",
+      () =>
+        Effect.gen(function* () {
+          const spaces = yield* Spaces.Service;
+          const { lena } = yield* school("late", []);
+
+          const opening = yield* whileUncommitted(
+            enroll("late-lena", ["ph"]),
+            spaces.create("late-ph", Fixture.Course, { parent: "late-school", key: "ph" }),
+          );
+
+          expect({ opening, memberships: yield* memberships(lena) }).toEqual({
+            opening: "waited",
+            memberships: [
+              ["late-lena", null],
+              ["late-ph", "late-lena"],
+              ["late-school", null],
+            ],
+          });
+        }),
+    );
+
+    it.effect(
+      "a course that opens reaches every notebook that chose it, and each more notebook costs one row read",
+      () =>
+        Effect.gen(function* () {
+          const spaces = yield* Spaces.Service;
+          const sql = yield* SqlClient.SqlClient;
+
+          // Every student chose physics before its course space opened.
+          const opening = (name: string, students: number) =>
+            Effect.gen(function* () {
+              const school = `${name}-school`;
+              const course = `${name}-ph`;
+              yield* spaces.create(school, Fixture.School);
+
+              yield* Effect.forEach(Arr.range(1, students), (n) =>
+                Effect.gen(function* () {
+                  const notebook = `${name}-notebook-${n}`;
+                  yield* spaces.create(notebook, Fixture.Notebook, { parent: school });
+                  yield* spaces.addMember(notebook, `${name}-account-${n}`, "owner");
+                  yield* spaces.addMember(school, `${name}-account-${n}`, "reader");
+                  yield* enroll(notebook, ["ph"]);
+                }),
+              );
+
+              const sent = yield* statements(
+                spaces.create(course, Fixture.Course, { parent: school, key: "ph" }),
+              );
+
+              const [readers] = yield* sql<{ readonly count: number }>`
+                select count(*)::int as count from space_member where space_id = ${course}
+              `;
+
+              return { statements: sent, readers: readers?.count };
+            });
+
+          const small = yield* opening("opening-small", 2);
+          const large = yield* opening("opening-large", 30);
+
+          // The memberships themselves take as many statements at any school size.
+          expect(small.readers).toBe(2);
+          expect(large).toEqual({ statements: small.statements + 28, readers: 30 });
         }),
     );
 
