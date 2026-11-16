@@ -1,7 +1,7 @@
 import { defineRule } from "@oxlint/plugins";
 
 import { layoutPath } from "./repository-path.ts";
-import { memberKey } from "./syntax.ts";
+import { memberKey, propertyKey } from "./syntax.ts";
 
 // Who may write is decided in one module, which both engines ask, so a command the device takes
 // is never refused by the server for a role rule the device checked differently.
@@ -25,6 +25,12 @@ export default defineRule({
     return {
       MemberExpression(node) {
         if (memberKey(node) === "writableBy") context.report({ node, messageId: "writableBy" });
+      },
+      // `const { writableBy } = table` reads it too.
+      Property(node) {
+        if (node.parent?.type === "ObjectPattern" && propertyKey(node) === "writableBy") {
+          context.report({ node, messageId: "writableBy" });
+        }
       },
     };
   },

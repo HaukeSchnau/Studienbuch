@@ -17,12 +17,35 @@ const HANDLERS = new Set([
   "mapError",
   "mapErrorEager",
   "option",
+  "partition",
+  "race",
+  "raceAll",
+  "repeatOrElse",
   "result",
   "sandbox",
+  "unwrapReason",
+  "validate",
+  "withExecutionPlan",
 ]);
 
 const isHandler = (name: string) =>
   HANDLERS.has(name) || HANDLER_PREFIXES.some((prefix) => name.startsWith(prefix));
+
+/** `Effect.all(effects, { mode })`, which with `mode: "result"` collects failures as values. */
+function hasMode(node: ESTree.MemberExpression): boolean {
+  const call = node.parent;
+
+  if (call?.type !== "CallExpression" || unwrap(call.callee) !== node) return false;
+
+  const options = call.arguments[1];
+
+  return (
+    options?.type === "ObjectExpression" &&
+    options.properties.some(
+      (property) => property.type === "Property" && propertyKey(property) === "mode",
+    )
+  );
+}
 
 /** Whether `node` is the options object of `Sync.mutator(name, options)`. */
 function isMutatorOptions(context: Context, node: ESTree.Node): boolean {
@@ -84,7 +107,7 @@ export default defineRule({
         if (
           node.computed ||
           node.property.type !== "Identifier" ||
-          !isHandler(node.property.name) ||
+          !(isHandler(node.property.name) || (node.property.name === "all" && hasMode(node))) ||
           node.object.type !== "Identifier" ||
           !isEffectModule(context, node.object)
         ) {
