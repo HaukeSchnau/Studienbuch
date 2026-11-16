@@ -120,12 +120,19 @@ function AccountSheet({
       draft: key,
       save:
         current === undefined || id === undefined
-          ? HomeworkState.Save.Create({ notebook, id: crypto.randomUUID(), valid: ready })
+          ? HomeworkState.Save.Create({ notebook, id: crypto.randomUUID(), valid: ready, touched })
           : HomeworkState.Save.Update({ notebook, id, valid: ready, current, touched }),
     });
 
     // A save that ends after the sheet was swiped or clicked away mustn't navigate a second time.
-    if (Exit.isSuccess(exit) && navigation.isFocused()) close();
+    if (!Exit.isSuccess(exit) || !navigation.isFocused()) return;
+
+    HomeworkState.Saved.$match(exit.value, {
+      Done: close,
+      // What was typed after the press stays here, over the saved homework.
+      Kept: () => undefined,
+      Moved: ({ id: created }) => router.replace(HomeworkRoutes.edit(created)),
+    });
   };
 
   return (

@@ -24,6 +24,14 @@ export const Draft = Schema.Struct({
 
 export type Draft = typeof Draft.Type;
 
+const sameDraft = Schema.toEquivalence(Draft);
+
+/**
+ * Whether the draft `now` still holds just what a save submitted. Only then may the save drop it:
+ * a field typed after the press would otherwise go without being saved.
+ */
+export const unchangedSince = (submitted: Draft, now: Draft): boolean => sameDraft(submitted, now);
+
 const empty: Values = { courseId: null, title: "", description: "", dueOn: null };
 
 /** A homework as the device holds it, which an edit starts from. */

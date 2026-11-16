@@ -114,6 +114,27 @@ describe("HomeworkInput.changes", () => {
   });
 });
 
+describe("HomeworkInput.unchangedSince", () => {
+  const submitted = { title: "Versuchsprotokoll", dueOn: date("2026-11-20") };
+
+  it("lets the draft go when it still holds what was saved, the same date read again included", () => {
+    assert.isTrue(
+      HomeworkInput.unchangedSince(submitted, {
+        title: "Versuchsprotokoll",
+        dueOn: date("2026-11-20"),
+      }),
+    );
+  });
+
+  it.each([
+    ["typed on after the press", { ...submitted, title: "Versuchsprotokoll, mit Skizze" }],
+    ["touched another field after the press", { ...submitted, description: "Skizze" }],
+    ["picked another date", { ...submitted, dueOn: date("2026-11-21") }],
+  ])("keeps the draft when the student %s", (_, now) => {
+    assert.isFalse(HomeworkInput.unchangedSince(submitted, now));
+  });
+});
+
 describe("HomeworkInput.offered", () => {
   const terms = [
     term("winter", "2026-08-01", "2027-01-31"),

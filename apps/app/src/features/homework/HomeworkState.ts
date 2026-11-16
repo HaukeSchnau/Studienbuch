@@ -292,6 +292,8 @@ export type Save = Data.TaggedEnum<{
     /** A random UUIDv4, which `Homework.Id` explains. */
     readonly id: string;
     readonly valid: HomeworkInput.Valid;
+    /** The draft as it was at the press. */
+    readonly touched: HomeworkInput.Draft;
   };
   Update: {
     readonly notebook: Notebook.Id;
@@ -313,30 +315,55 @@ export class Unsaved extends Schema.TaggedError<Unsaved, { readonly brand: uniqu
   { reason: Schema.String },
 ) {}
 
-/** Saves the sheet on this device at once and drops its draft; the engine sends it later. */
+/**
+ * What the sheet does after a save: close (`Done`), stay open with what the student typed after
+ * the press (`Kept`), or open the new homework's edit with it (`Moved`), since saving the add sheet
+ * again would add the homework twice.
+ */
+export type Saved = Data.TaggedEnum<{ Done: {}; Kept: {}; Moved: { readonly id: string } }>;
+
+export const Saved = Data.taggedEnum<Saved>();
+
+/**
+ * Saves the sheet on this device at once; the engine sends it later. The draft goes only if it still
+ * holds what was submitted (`HomeworkInput.unchangedSince`), as the fields stay editable meanwhile.
+ */
 export const save = Atom.family((accountId: string) =>
   runtime(accountId).fn<{ readonly save: Save; readonly draft: string }>()(
     ({ save, draft: key }, get) =>
       Effect.gen(function* () {
         const sync = yield* SyncClient.Service;
 
-        if (save._tag === "Create") {
-          yield* sync.mutate(Homework.create, {
-            notebook: save.notebook,
-            id: Homework.Id.make(save.id),
-            ...save.valid,
-          });
-        } else {
-          yield* sync.mutate(Homework.update, {
-            notebook: save.notebook,
-            id: Homework.Id.make(save.id),
-            ...HomeworkInput.changes(save.valid, save.current, save.touched),
-          });
+        yield* Effect.mapError(
+          save._tag === "Create"
+            ? sync.mutate(Homework.create, {
+                notebook: save.notebook,
+                id: Homework.Id.make(save.id),
+                ...save.valid,
+              })
+            : sync.mutate(Homework.update, {
+                notebook: save.notebook,
+                id: Homework.Id.make(save.id),
+                ...HomeworkInput.changes(save.valid, save.current, save.touched),
+              }),
+          (refused) => new Unsaved({ reason: refused._tag }),
+        );
+
+        const registry = yield* AtomRegistry.AtomRegistry;
+        const now = AsyncResult.value(registry.get(draft(accountId)(key)));
+
+        if (Option.isSome(now) && !HomeworkInput.unchangedSince(save.touched, now.value)) {
+          if (save._tag === "Update") return Saved.Kept();
+
+          yield* moveDraft(accountId, key, save.id, now.value, get);
+
+          return Saved.Moved({ id: save.id });
         }
-      }).pipe(
-        Effect.mapError((refused) => new Unsaved({ reason: refused._tag })),
-        Effect.andThen(dropDraft(accountId, key, get)),
-      ),
+
+        yield* dropDraft(accountId, key, get);
+
+        return Saved.Done();
+      }),
   ),
 );
 
@@ -353,6 +380,18 @@ const dropDraft = (accountId: string, key: string, get: Atom.FnContext) =>
     Effect.ignore,
     Effect.andThen(Effect.sync(() => get.set(draft(accountId)(key), {}))),
   );
+
+// Through the store as well, for the same reason.
+const moveDraft = (
+  accountId: string,
+  from: string,
+  to: string,
+  value: HomeworkInput.Draft,
+  get: Atom.FnContext,
+) =>
+  Effect.flatMap(KeyValueStore.KeyValueStore, (store) =>
+    KeyValueStore.toSchemaStore(store, HomeworkInput.Draft).set(draftKey(to), value),
+  ).pipe(Effect.ignore, Effect.andThen(dropDraft(accountId, from, get)));
 
 /** The device itself refused a delete. `reason` is the refusal's tag. */
 export class NotDeleted extends Schema.TaggedError<NotDeleted, { readonly brand: unique symbol }>()(
