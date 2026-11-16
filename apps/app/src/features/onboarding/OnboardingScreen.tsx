@@ -4,7 +4,7 @@ import {
   NotebookProfile,
   SchoolClass,
   type CourseOffering,
-  type Enrollment,
+  Enrollment,
   type School,
 } from "@stu/core";
 import { RefusalText } from "@stu/domain-ui/refusal/RefusalText";
@@ -201,15 +201,10 @@ function CoursesStep({ accountId, snapshot, draft }: Omit<StepsProps, "start">) 
     onSome: ([term, gradeLevel]) => {
       const classes = Onboarding.classesOf(term, gradeLevel);
 
-      const chooser = {
-        termId: term.id,
-        gradeLevel,
-        classId: Option.getOrUndefined(answers.classId),
-      };
-
+      const chooser = Onboarding.chooser(term, gradeLevel, answers.classId);
       const electives = Onboarding.electives(term, chooser);
       const chosen = answers.chosen(term, chooser);
-      const ready = classes.length === 0 || Option.isSome(answers.classId);
+      const ready = Onboarding.classAnswered(term, chooser);
 
       return (
         <>
@@ -224,7 +219,7 @@ function CoursesStep({ accountId, snapshot, draft }: Omit<StepsProps, "start">) 
               <PillChoice
                 label="Klasse"
                 options={classes.map((each) => ({ value: each.id, label: each.name }))}
-                value={answers.classId}
+                value={Option.fromNullishOr(chooser.classId)}
                 onChange={(id: string) => save({ ...draft, classId: id, chosen: null })}
               />
             )}
@@ -250,7 +245,7 @@ function CoursesStep({ accountId, snapshot, draft }: Omit<StepsProps, "start">) 
                 termId: term.id,
                 gradeLevel,
                 classId: chooser.classId,
-                courseIds: Onboarding.courseIds(term, chooser, chosen),
+                courseIds: Enrollment.courses(term.offerings, chooser, chosen),
               }}
             />
             <View style={styles.center}>

@@ -1,7 +1,7 @@
 import {
   type Course,
   CourseOffering,
-  type Enrollment,
+  Enrollment,
   type Notebook,
   type School,
   type SchoolClass,
@@ -102,6 +102,26 @@ export const classesOf = (term: TermChoices, gradeLevel: School.GradeLevel) =>
     .filter((each) => each.gradeLevel === gradeLevel)
     .sort((a, b) => a.name.localeCompare(b.name, "de", { numeric: true }));
 
+/**
+ * Who chooses in the term: the grade level, and the class answered for it if that is one of its
+ * classes. A class answered for another grade level, such as the earlier choice's, doesn't count.
+ */
+export const chooser = (
+  term: TermChoices,
+  gradeLevel: School.GradeLevel,
+  classId: Option.Option<SchoolClass.Id>,
+): CourseOffering.Chooser => ({
+  termId: term.id,
+  gradeLevel,
+  classId: Option.getOrUndefined(
+    Option.filter(classId, (id) => classesOf(term, gradeLevel).some((each) => each.id === id)),
+  ),
+});
+
+/** Whether the chooser's class is answered, as `enrollment.set` requires. */
+export const classAnswered = (term: TermChoices, chooser: CourseOffering.Chooser) =>
+  Enrollment.classFits(classesOf(term, chooser.gradeLevel), chooser.classId);
+
 /** One course the student may choose or leave, shown as a subject tile. */
 export interface Elective {
   readonly courseId: Course.Id;
@@ -172,23 +192,4 @@ export const startingChoice = (
       onSome: (enrollment) => enrollment.courseIds.filter((id) => open.has(id)),
     }),
   );
-};
-
-/**
- * The course choice to write: every required course open to `chooser` and the chosen electives
- * still open to it, sorted as `enrollment.set` keeps them.
- */
-export const courseIds = (
-  term: TermChoices,
-  chooser: CourseOffering.Chooser,
-  chosen: ReadonlySet<Course.Id>,
-): ReadonlyArray<Course.Id> => {
-  const open = offered(term, chooser);
-  const required = open.filter((offering) => offering.groupKey === undefined);
-  const electiveIds = new Set(open.flatMap((o) => (o.groupKey === undefined ? [] : [o.courseId])));
-
-  return Arr.dedupe([
-    ...required.map((offering) => offering.courseId),
-    ...[...chosen].filter((id) => electiveIds.has(id)),
-  ]).sort();
 };

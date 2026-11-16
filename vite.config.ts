@@ -299,6 +299,16 @@ export default defineConfig({
         rules: { "studienbuch/no-dom-test-environment": "error" },
       },
       {
+        // "Today" at a school comes from its row through `School.today`. Core holds the fallback,
+        // and the demo and dev schools name their own zone.
+        files: scope("apps/*/src/**", "packages/*/src/**"),
+        excludeFiles: [
+          ...scope("packages/core/**", "apps/server/src/{demo,dev}/**"),
+          "**/*.{test,spec}.{ts,tsx}",
+        ],
+        rules: { "studienbuch/no-literal-time-zone": "error" },
+      },
+      {
         // Tests are deterministic: they await events and drive the TestClock (AGENTS.md, "Verifying").
         files: ["**/*.{test,spec}.{ts,tsx}"],
         rules: {
