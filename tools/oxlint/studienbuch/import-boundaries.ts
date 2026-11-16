@@ -8,7 +8,7 @@ import { everywhere } from "./boundaries/everywhere.ts";
 import { packages } from "./boundaries/packages.ts";
 import { server } from "./boundaries/server.ts";
 import { layoutPath } from "./repository-path.ts";
-import { isStringLiteral, moduleExportName } from "./syntax.ts";
+import { moduleExportName, staticString } from "./syntax.ts";
 
 // AGENTS.md, "Where code lives", one file per part of the repository.
 const BOUNDARIES: ReadonlyArray<Boundary> = [...everywhere, ...packages, ...server, ...app];
@@ -145,9 +145,9 @@ export default defineRule({
         check(node.source.value, node.source, [{ name: "*", node }]);
       },
       ImportExpression(node) {
-        if (isStringLiteral(node.source)) {
-          check(node.source.value, node.source, [{ name: "*", node }]);
-        }
+        const source = staticString(node.source);
+
+        if (source !== null) check(source, node.source, [{ name: "*", node }]);
       },
     };
   },

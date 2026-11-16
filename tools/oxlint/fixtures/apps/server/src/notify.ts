@@ -11,3 +11,6 @@ export { Faults } from "@stu/sync/lab";
 export { Replay } from "@stu/sync/conformance";
 
 export const channel = "push";
+
+// oxlint-disable-next-line studienbuch/import-boundaries -- fixture: a template literal import that leaves the package
+export const core = () => import(`../../../packages/core/boundaries.ts`);
