@@ -4,18 +4,30 @@
   "license": "BUSL-1.1",
   "type": "module",
   "exports": {
+    "./calendar/DateText": "./src/calendar/DateText.ts",
     "./homework/Due": "./src/homework/Due.ts",
+    "./homework/HomeworkItem": "./src/homework/HomeworkItem.ts",
+    "./homework/HomeworkPanel": "./src/homework/HomeworkPanel.tsx",
+    "./refusal/RefusalCard": "./src/refusal/RefusalCard.tsx",
     "./refusal/RefusalText": "./src/refusal/RefusalText.ts",
-    "./subject/SubjectColor": "./src/subject/SubjectColor.ts"
+    "./subject/SubjectMark": "./src/subject/SubjectMark.ts"
   },
   "dependencies": {
     "@stu/core": "workspace:*",
     "@stu/ui": "workspace:*",
+    "effect": "catalog:",
     "temporal-polyfill": "catalog:"
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",
+    "@types/react": "catalog:",
+    "react": "catalog:",
+    "react-native": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
+  },
+  "peerDependencies": {
+    "react": "*",
+    "react-native": "*"
   }
 }

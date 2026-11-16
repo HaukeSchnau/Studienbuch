@@ -30,6 +30,8 @@ const glyphs = {
     "M6 8a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0-7 0M3 19.5c.6-3 2.9-5 6.5-5 1.2 0 2.3.2 3.2.6M15.5 13a2 2 0 1 0 4 0a2 2 0 1 0-4 0M17.5 15v5.5M17.5 18h1.75M17.5 20.25h1.25",
   ),
   retry: stroked("M19.5 12a7.5 7.5 0 1 1-2.2-5.3M19.5 4.5V9H15"),
+  /** Someone's account. */
+  person: stroked("M8 8a4 4 0 1 0 8 0a4 4 0 1 0-8 0M4.5 20c.8-3.6 3.7-6 7.5-6s6.7 2.4 7.5 6"),
   /** Confirmed: a white tick in a filled circle. */
   checkBadge: (color: string): ReadonlyArray<VectorPath> => [
     { d: "M0 12a12 12 0 1 0 24 0a12 12 0 1 0-24 0", fill: color },

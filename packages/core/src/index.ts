@@ -24,6 +24,6 @@ export { Subject } from "./school/Subject.ts";
 
 export { Term } from "./school/Term.ts";
 
-export { Studienbuch } from "./sync/Studienbuch.ts";
+export { Studienbuch } from "./registry/Studienbuch.ts";
 
 export { Text } from "./text/Text.ts";

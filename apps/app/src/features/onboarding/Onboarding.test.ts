@@ -10,6 +10,7 @@ import {
 } from "@stu/core";
 import { assert, it } from "@effect/vitest";
 import * as Option from "effect/Option";
+import * as AsyncResult from "effect/reactivity/AsyncResult";
 
 import { Onboarding } from "./Onboarding.ts";
 
@@ -182,4 +183,23 @@ it("a class answered for another grade level doesn't count for this one", () => 
   assert.strictEqual(ninth.classId, "c10");
   assert.isTrue(Onboarding.classAnswered(choices, ninth));
   assert.isFalse(Onboarding.classAnswered(choices, Onboarding.chooser(choices, 9, Option.none())));
+});
+
+it("greets by name once read, and without one when the read failed", () => {
+  const failed = AsyncResult.fail("SqlError");
+
+  for (const [reading, expected] of [
+    [AsyncResult.initial(), Option.none()],
+    [AsyncResult.initial(true), Option.none()],
+    [AsyncResult.success(ready()), Option.some(Option.some("Lena"))],
+    [AsyncResult.success(ready({ profile: {} })), Option.some(Option.none())],
+    [AsyncResult.success(Onboarding.Reading.Waiting()), Option.some(Option.none())],
+    [failed, Option.some(Option.none())],
+    [
+      AsyncResult.fail("SqlError", { previousSuccess: Option.some(AsyncResult.success(ready())) }),
+      Option.some(Option.some("Lena")),
+    ],
+  ] as const) {
+    assert.deepStrictEqual(Onboarding.greeting(reading), expected);
+  }
 });
