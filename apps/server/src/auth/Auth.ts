@@ -8,6 +8,7 @@ import { type BetterAuthOptions, betterAuth } from "better-auth";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { bearer, emailOTP } from "better-auth/plugins";
 import { serializeSignedCookie } from "better-call";
+import type * as Cause from "effect/Cause";
 import * as Clock from "effect/Clock";
 import * as Config from "effect/Config";
 import * as Context from "effect/Context";
@@ -18,7 +19,6 @@ import * as Base64Url from "effect/encoding/Base64Url";
 import * as FiberSet from "effect/FiberSet";
 import * as Cookies from "effect/http/Cookies";
 import * as Headers from "effect/http/Headers";
-import * as HttpEffect from "effect/http/HttpEffect";
 import * as HttpRouter from "effect/http/HttpRouter";
 import * as HttpServerRequest from "effect/http/HttpServerRequest";
 import * as HttpServerResponse from "effect/http/HttpServerResponse";
@@ -379,14 +379,14 @@ const codeMail = (to: string, code: string): Mail.Message => ({
 });
 
 // RFC 5321 allows 254 characters in a path; one @, nothing blank, a dot in the domain.
-const decodeAddress = Schema.decodeUnknownOption(
-  Schema.Struct({
-    email: Schema.String.check(
-      Schema.isMaxLength(254),
-      Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u),
-    ),
-  }),
-);
+const Address = Schema.Struct({
+  email: Schema.String.check(
+    Schema.isMaxLength(254),
+    Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u),
+  ),
+});
+
+const decodeAddress = Schema.decodeUnknownOption(Address);
 
 const text = new TextEncoder();
 
@@ -412,17 +412,23 @@ const wrongPasswords = 10;
 // What Better Auth answers a wrong password with, at sign-in and when changing it.
 const wrongPasswordCodes = new Set(["INVALID_EMAIL_OR_PASSWORD", "INVALID_PASSWORD"]);
 
+/**
+ * What `decode` reads from a request's or answer's JSON body. It reads a copy, so Better Auth or the
+ * client still gets the body.
+ */
+const peek = <A>(message: Request | Response, decode: (json: string) => Option.Option<A>) =>
+  Effect.map(
+    Effect.option(Effect.tryPromise(() => message.clone().text())),
+    Option.flatMap(decode),
+  );
+
 const isWrongPassword = (response: Response) =>
   response.status === 400 || response.status === 401
-    ? response
-        .clone()
-        .json()
-        .then(
-          (body) =>
-            Option.exists(decodeErrorCode(body), ({ code }) => wrongPasswordCodes.has(code)),
-          () => false,
-        )
-    : Promise.resolve(false);
+    ? Effect.map(
+        peek(response, decodeErrorCode),
+        Option.exists(({ code }) => wrongPasswordCodes.has(code)),
+      )
+    : Effect.succeed(false);
 
 // Better Auth's answer to a code request, which a capped one gets too, so it tells nothing.
 const codeRequests = new Map<string, object>([
@@ -439,13 +445,12 @@ const tooMany = (seconds: number) =>
 
 /** The lower-cased address a request's JSON body names, if it names one. */
 const addressIn = (request: Request) =>
-  request
-    .clone()
-    .json()
-    .then(
-      (body) => Option.map(decodeAddress(body), ({ email }) => email.toLowerCase()),
-      () => Option.none<string>(),
-    );
+  Effect.map(
+    peek(request, decodeAddressJson),
+    Option.map(({ email }) => email.toLowerCase()),
+  );
+
+const decodeAddressJson = Schema.decodeUnknownOption(Schema.fromJsonString(Address));
 
 const dateOf = (date: DateTime.Utc) =>
   DateTime.format(date, {
@@ -516,23 +521,21 @@ const confirmInsteadMail = (to: string, code: string): Mail.Message => ({
 // Better Auth counts wrong tries and expiry only where a code exists. A sign-up that was never
 // confirmed has one and an unknown address none, so every answer about the code is one constant
 // response, byte for byte. Password lengths are checked before the code, alike for everyone.
-const sameAnswerForBadCodes = (response: Response): Promise<Response> =>
+const sameAnswerForBadCodes = (response: Response) =>
   response.status === 400 || response.status === 403
-    ? response
-        .clone()
-        .json()
-        .then(decodeErrorCode)
-        .then((error) =>
-          Option.exists(error, ({ code }) => codeAnswers.has(code))
-            ? new Response(invalidCode, {
-                status: 400,
-                headers: { "content-type": "application/json" },
-              })
-            : response,
-        )
-    : Promise.resolve(response);
+    ? Effect.map(peek(response, decodeErrorCode), (error) =>
+        Option.exists(error, ({ code }) => codeAnswers.has(code))
+          ? new Response(invalidCode, {
+              status: 400,
+              headers: { "content-type": "application/json" },
+            })
+          : response,
+      )
+    : Effect.succeed(response);
 
-const decodeErrorCode = Schema.decodeUnknownOption(Schema.Struct({ code: Schema.String }));
+const decodeErrorCode = Schema.decodeUnknownOption(
+  Schema.fromJsonString(Schema.Struct({ code: Schema.String })),
+);
 
 // A guessed code for an address without an account reaches USER_NOT_FOUND.
 const codeAnswers = new Set(["INVALID_OTP", "OTP_EXPIRED", "TOO_MANY_ATTEMPTS", "USER_NOT_FOUND"]);
@@ -548,8 +551,8 @@ const codePaths = new Set([
 export class Service extends Context.Service<
   Service,
   {
-    /** Better Auth's handler. `route` mounts it. */
-    readonly handler: (request: Request) => Promise<Response>;
+    /** Better Auth's handler behind the limits. `route` mounts it. */
+    readonly handler: (request: Request) => Effect.Effect<Response, Cause.UnknownError>;
     /** The name Better Auth gives its passkey challenge cookie in this environment. */
     readonly challengeCookie: string;
     readonly origin: string;
@@ -595,20 +598,17 @@ const make = Effect.gen(function* () {
   // Admitting an account writes its notebook through the sync engine.
   const writers = yield* Layer.build(SyncServer.writers(Studienbuch.schema));
 
-  const run = <A, E>(
-    effect: Effect.Effect<
-      A,
-      E,
-      SqlClient.SqlClient | Crypto.Crypto | Spaces.Service | SyncWriter.Service
-    >,
-  ) =>
-    Effect.runPromiseWith(services)(
-      effect.pipe(
-        Effect.provide(writers),
-        Effect.provideService(SqlClient.SqlClient, sql),
-        Effect.provideService(Crypto.Crypto, crypto),
-      ),
+  type Needs = SqlClient.SqlClient | Crypto.Crypto | Spaces.Service | SyncWriter.Service;
+
+  const provided = <A, E>(effect: Effect.Effect<A, E, Needs>) =>
+    effect.pipe(
+      Effect.provide(writers),
+      Effect.provideService(SqlClient.SqlClient, sql),
+      Effect.provideService(Crypto.Crypto, crypto),
     );
+
+  const run = <A, E>(effect: Effect.Effect<A, E, Needs>) =>
+    Effect.runPromiseWith(services)(provided(effect));
 
   const deleted = yield* PubSub.unbounded<string>();
 
@@ -624,91 +624,104 @@ const make = Effect.gen(function* () {
   // Redeeming is free and a sign-up of a known address mails nothing, so a code gives each client
   // three counts back per use in a window: no client mails past the ceiling with it, and none can
   // spend another's. A code without a limit gives none back.
-  const giveBackFor = (client: string, request: Request, now: number) => {
+  const giveBackFor = Effect.fn("Auth.giveBack")(function* (
+    client: string,
+    request: Request,
+    now: number,
+  ) {
     const reservation = request.headers.get(Access.reservationHeader);
 
-    if (reservation === null) return Promise.resolve();
+    if (reservation === null) return;
 
-    return run(AccessCodes.codeOf(reservation)).then((code) => {
-      if (Option.isNone(code) || code.value.maxUses === null) return;
+    const code = yield* provided(AccessCodes.codeOf(reservation));
 
-      const limit = AccessCodes.signUpBudget * code.value.maxUses;
+    if (Option.isNone(code) || code.value.maxUses === null) return;
 
-      if (Option.isNone(codes.take(`${client} ${code.value.id}`, limit, now))) {
-        clients.giveBack(client, now);
-      }
-    });
+    const limit = AccessCodes.signUpBudget * code.value.maxUses;
+
+    if (Option.isNone(codes.take(`${client} ${code.value.id}`, limit, now))) {
+      clients.giveBack(client, now);
+    }
+  });
+
+  // Better Auth answers a refusal itself, so a rejection is the server's failure.
+  const answer = (request: Request) => {
+    const answered = Effect.tryPromise(() => auth.handler(request));
+
+    return codePaths.has(new URL(request.url).pathname)
+      ? Effect.flatMap(answered, sameAnswerForBadCodes)
+      : answered;
   };
 
   // The account a password check is for: the address at sign-in, the session's when changing it.
   const passwordOf = (route: string, request: Request) =>
     route === "/sign-in/email"
       ? addressIn(request)
-      : auth.api
-          .getSession({ headers: request.headers })
-          .then((found) =>
+      : Effect.map(
+          Effect.tryPromise(() => auth.api.getSession({ headers: request.headers })),
+          (found) =>
             Option.map(Option.fromNullishOr(found), ({ user }) => user.email.toLowerCase()),
-          );
+        );
 
   // A password check counts before it runs, so parallel guesses can't all pass the count, and a
   // check that wasn't a wrong password gives its count back.
-  const checkingPassword = (
+  const checkingPassword = Effect.fn("Auth.checkingPassword")(function* (
     route: string,
     request: Request,
     now: number,
-    next: (request: Request) => Promise<Response>,
-  ) =>
-    passwordOf(route, request).then((address) => {
-      if (Option.isNone(address)) return next(request);
+  ) {
+    const address = yield* passwordOf(route, request);
 
-      const wait = passwords.take(address.value, wrongPasswords, now);
+    if (Option.isNone(address)) return yield* answer(request);
 
-      if (Option.isSome(wait)) return tooMany(wait.value);
+    const wait = passwords.take(address.value, wrongPasswords, now);
 
-      return next(request).then((response) =>
-        isWrongPassword(response).then((wrong) => {
-          if (!wrong) passwords.giveBack(address.value, now);
+    if (Option.isSome(wait)) return tooMany(wait.value);
 
-          return response;
-        }),
-      );
-    });
+    const response = yield* answer(request);
+
+    if (!(yield* isWrongPassword(response))) passwords.giveBack(address.value, now);
+
+    return response;
+  });
 
   // A school's network shares one client address, so a client gets a ceiling per route, and an
   // email address its caps: a few code mails an hour, and a few wrong passwords.
-  const limited = (
-    request: Request,
-    next: (request: Request) => Promise<Response>,
-  ): Promise<Response> => {
+  const limited = Effect.fn("Auth.limited")(function* (request: Request) {
     const route = new URL(request.url).pathname.slice(Accounts.path.length);
 
-    if (!limitedRoutes.has(route)) return next(request);
+    if (!limitedRoutes.has(route)) return yield* answer(request);
 
-    const now = Effect.runSyncWith(services)(Clock.currentTimeMillis);
+    const now = yield* Clock.currentTimeMillis;
     const client = `${route} ${Limits.client(request.headers.get("x-forwarded-for"))}`;
     const ceiling = clients.take(client, Limits.perClient, now);
 
-    if (Option.isSome(ceiling)) return Promise.resolve(tooMany(ceiling.value));
+    if (Option.isSome(ceiling)) return tooMany(ceiling.value);
 
-    const answer = codeRequests.get(route);
+    const capped = codeRequests.get(route);
 
-    if (answer !== undefined) {
-      return addressIn(request).then((address) =>
-        Option.isSome(address) &&
+    if (capped !== undefined) {
+      const address = yield* addressIn(request);
+
+      return Option.isSome(address) &&
         Option.isSome(mails.take(`${route} ${address.value}`, mailsPerHour, now))
-          ? Response.json(answer)
-          : next(request),
+        ? Response.json(capped)
+        : yield* answer(request);
+    }
+
+    if (passwordRoutes.has(route)) return yield* checkingPassword(route, request, now);
+
+    const response = yield* answer(request);
+
+    // Better Auth did the work, so the answer stands even if the count stays spent.
+    if (reservedRoutes.has(route) && response.status === 200) {
+      yield* giveBackFor(client, request, now).pipe(
+        Effect.catchCause((cause) => Effect.logError("A client's count wasn't given back", cause)),
       );
     }
 
-    if (passwordRoutes.has(route)) return checkingPassword(route, request, now, next);
-
-    if (!reservedRoutes.has(route)) return next(request);
-
-    return next(request).then((response) =>
-      response.status === 200 ? giveBackFor(client, request, now).then(() => response) : response,
-    );
-  };
+    return response;
+  });
 
   // Every address gets a reset code, also one without an account, so a wrong, spent or expired
   // code answers alike for all and takes as long. Only a confirmed address is mailed its code.
@@ -889,12 +902,7 @@ const make = Effect.gen(function* () {
   });
 
   return {
-    handler: (request: Request) =>
-      limited(request, (request) =>
-        codePaths.has(new URL(request.url).pathname)
-          ? auth.handler(request).then(sameAnswerForBadCodes)
-          : auth.handler(request),
-      ),
+    handler: limited,
     challengeCookie: context.createAuthCookie(challengeCookie).name,
     origin: new URL(settings.publicUrl).origin,
     sessions: { resolve, revoked: Stream.fromPubSub(deleted) },
@@ -942,9 +950,8 @@ export const route = HttpRouter.add("*", `${Accounts.path}/*`, (request) =>
       },
     });
 
-    const response = yield* HttpEffect.fromWebHandler(auth.handler).pipe(
-      Effect.provideService(HttpServerRequest.HttpServerRequest, request.modify({ headers })),
-    );
+    const web = yield* HttpServerRequest.toWeb(request.modify({ headers }));
+    const response = HttpServerResponse.fromWeb(yield* auth.handler(web));
 
     const withoutCookies = HttpServerResponse.updateCookies(response, () => Cookies.empty);
 

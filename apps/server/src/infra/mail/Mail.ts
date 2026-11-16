@@ -3,10 +3,12 @@ import { desc } from "drizzle-orm";
 import * as Config from "effect/Config";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
+import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Redacted from "effect/Redacted";
+import * as Schedule from "effect/Schedule";
 import * as Schema from "effect/Schema";
 import { createTransport } from "nodemailer";
 import { Deployment } from "../config/Deployment.ts";
@@ -90,28 +92,61 @@ export const captured = Effect.gen(function* () {
   );
 });
 
+/** How long one mail may take, every try included. A sign-up waits for its code mail. */
+export const sendTimeout = Duration.seconds(10);
+
+// RFC 5321 makes a 4yz reply transient, and a dropped connection may take the mail on a new one. A
+// server that went silent stays so, and trying it again would only keep the sign-up waiting.
+const isTransient = (error: SendFailed) =>
+  error.responseCode === undefined
+    ? error.code === "ECONNECTION" || error.code === "ESOCKET"
+    : error.responseCode >= 400 && error.responseCode < 500;
+
+/** Tries `attempt` up to three times while it fails transiently, and gives up after `sendTimeout`. */
+export const retried = (attempt: Effect.Effect<void, SendFailed>) =>
+  attempt.pipe(
+    Effect.retry({ while: isTransient, times: 2, schedule: Schedule.exponential("500 millis") }),
+    Effect.timeoutOrElse({
+      duration: sendTimeout,
+      orElse: () => Effect.fail(new SendFailed({ code: "timeout" })),
+    }),
+  );
+
 /** Sends over SMTP. The URL carries the credentials, as in `smtps://user:password@host:465`. */
 export const layerSmtp = (url: Redacted.Redacted, from: string) =>
   Layer.effect(Service)(
     Effect.gen(function* () {
+      // Nodemailer waits minutes for a silent server, and keeps a socket that `retried` gave up on
+      // open as long. Query parameters in the URL still override these.
+      const timeout = Duration.toMillis(sendTimeout);
+
       const transport = yield* Effect.acquireRelease(
-        Effect.sync(() => createTransport(Redacted.value(url))),
+        Effect.sync(() =>
+          createTransport({
+            url: Redacted.value(url),
+            connectionTimeout: timeout,
+            greetingTimeout: timeout,
+            socketTimeout: timeout,
+          }),
+        ),
         (transport) => Effect.sync(() => transport.close()),
       );
 
       return {
         send: Effect.fn("Mail.smtp")(function* (message: Message) {
-          yield* Effect.tryPromise({
-            try: () => transport.sendMail({ from, ...message }),
-            catch: (cause) => {
-              const read = Option.getOrUndefined(decodeSmtpError(cause));
+          yield* retried(
+            Effect.tryPromise({
+              try: () => transport.sendMail({ from, ...message }),
+              catch: (cause) => {
+                const read = Option.getOrUndefined(decodeSmtpError(cause));
 
-              return new SendFailed({
-                code: read?.code ?? "unknown",
-                responseCode: read?.responseCode,
-              });
-            },
-          });
+                return new SendFailed({
+                  code: read?.code ?? "unknown",
+                  responseCode: read?.responseCode,
+                });
+              },
+            }),
+          );
         }),
       };
     }),

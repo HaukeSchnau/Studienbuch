@@ -41,18 +41,33 @@ const publicUrl = "http://localhost:3000";
 /** Every mail the server hands to `Mail`, also the ones it sends in the background. */
 class Outbox extends Context.Service<Outbox, Queue.Queue<Mail.Message>>()("Test.Outbox") {}
 
-const watchedMail = Layer.effect(Mail.Service)(
-  Effect.gen(function* () {
-    const mail = yield* Mail.Service;
-    const outbox = yield* Outbox;
+/** Mail that keeps each message in `Outbox`, then runs `afterSend` before the server goes on. */
+const watchedMail = (afterSend: Effect.Effect<void, never, SqlClient.SqlClient>) =>
+  Layer.effect(Mail.Service)(
+    Effect.gen(function* () {
+      const mail = yield* Mail.Service;
+      const outbox = yield* Outbox;
+      const sql = yield* SqlClient.SqlClient;
 
-    return Mail.Service.of({
-      send: (message) => Effect.tap(mail.send(message), () => Queue.offer(outbox, message)),
-    });
-  }),
-).pipe(
-  Layer.provide(Mail.layer),
-  Layer.provideMerge(Layer.effect(Outbox)(Queue.unbounded<Mail.Message>())),
+      return Mail.Service.of({
+        send: (message) =>
+          mail.send(message).pipe(
+            Effect.tap(() => Queue.offer(outbox, message)),
+            Effect.tap(() => Effect.provideService(afterSend, SqlClient.SqlClient, sql)),
+          ),
+      });
+    }),
+  ).pipe(
+    Layer.provide(Mail.layer),
+    Layer.provideMerge(Layer.effect(Outbox)(Queue.unbounded<Mail.Message>())),
+  );
+
+/** From now on every read of access codes fails, as it would against a database that went away. */
+const accessCodesGone = Effect.orDie(
+  Effect.flatMap(
+    SqlClient.SqlClient,
+    (sql) => sql`alter table if exists access_code rename to access_code_gone`,
+  ),
 );
 
 const school = School.Id.make("auth-school");
@@ -69,7 +84,11 @@ const migrations = NodeURL.fileURLToPath(new URL("../../migrations/", import.met
  * The auth route on a fresh database with every migration, in one environment. Beta sends mail
  * over SMTP, which its tests never reach.
  */
-const server = (environment: string, overrides: Record<string, string> = {}) =>
+const server = (
+  environment: string,
+  overrides: Record<string, string> = {},
+  afterSend: Effect.Effect<void, never, SqlClient.SqlClient> = Effect.void,
+) =>
   Layer.unwrap(
     Effect.gen(function* () {
       const sql = yield* SqlClient.SqlClient;
@@ -102,7 +121,7 @@ const server = (environment: string, overrides: Record<string, string> = {}) =>
       return HttpRouter.serve(Auth.route, { disableLogger: true, disableListenLog: true }).pipe(
         Layer.provideMerge(NodeHttpServer.layerTest),
         Layer.provideMerge(Auth.layer),
-        Layer.provideMerge(watchedMail),
+        Layer.provideMerge(watchedMail(afterSend)),
         Layer.provideMerge(Database.layer),
         Layer.provideMerge(Deployment.layer),
         Layer.provide(ConfigProvider.layer(ConfigProvider.fromEnv({ env }))),
@@ -1480,6 +1499,38 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
 
           assert.strictEqual(listed._tag, "Mail.NotCaptured");
         }),
+      );
+    });
+
+    // Giving a client's count back reads the access code after Better Auth answered, and failing
+    // to give it back mustn't turn that answer into an error the student tries again after.
+    it.layer(server("development", {}, accessCodesGone))((it) => {
+      it.effect(
+        "answers a sign-up and its confirmation that went through, though the database fails after the mail",
+        () =>
+          Effect.gen(function* () {
+            const email = "lena.ausfall@example.org";
+            const held = yield* reservation;
+
+            const signedUp = yield* call("POST", "/sign-up/email", {
+              body: { email, password, name: "" },
+              reservation: held,
+            });
+
+            const confirmed = yield* call("POST", "/email-otp/verify-email", {
+              body: { email, otp: yield* codeFor(email), password },
+              reservation: held,
+            });
+
+            assert.deepStrictEqual(
+              {
+                signedUp: signedUp.status,
+                confirmed: confirmed.status,
+                signedIn: confirmed.token !== undefined,
+              },
+              { signedUp: 200, confirmed: 200, signedIn: true },
+            );
+          }),
       );
     });
 
