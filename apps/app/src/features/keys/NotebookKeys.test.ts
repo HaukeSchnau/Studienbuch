@@ -588,14 +588,24 @@ describe("NotebookKeys", () => {
       yield* demoTablet.run(NotebookKeys.status);
       const demoAccount = yield* demoTablet.run(NotebookKeys.atSignOut);
 
+      // The server took a first device's key, and its answer was lost: only `pending-key` holds it.
+      const unanswered = yield* fakeServer;
+      yield* Ref.set(unanswered.loseAnswer, true);
+      const tablet = yield* device(unanswered);
+      const tabletStatus = yield* tablet.run(NotebookKeys.status);
+      yield* Ref.set(unanswered.offline, true);
+      const pending = yield* tablet.run(NotebookKeys.atSignOut);
+
       assert.deepStrictEqual(
-        { alone, offline, withCard, locked, demoAccount },
+        { alone, offline, withCard, locked, demoAccount, tabletStatus: tabletStatus._tag, pending },
         {
           alone: "lost",
           offline: "unknown",
           withCard: "kept",
           locked: "kept",
           demoAccount: "kept",
+          tabletStatus: "Offline",
+          pending: "unknown",
         },
       );
     }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
