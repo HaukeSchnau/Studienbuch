@@ -1,14 +1,13 @@
 import { useAtomValue } from "@effect/atom-react";
 import { Card } from "@stu/ui/Card";
-import { Link } from "@stu/ui/Link";
 import { Text } from "@stu/ui/Text";
 import { Theme } from "@stu/ui/Theme";
 import * as Option from "effect/Option";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
-import { Link as RouteLink } from "expo-router";
 import { StyleSheet, View } from "react-native";
 
 import { HeroScreen } from "../../ui/HeroScreen.tsx";
+import { RouteLink } from "../../ui/navigation/RouteLink.tsx";
 import { KeysState } from "../keys/KeysState.ts";
 import { OnboardingState } from "../onboarding/OnboardingState.ts";
 
@@ -76,9 +75,7 @@ function DeviceCard() {
       <Text style={{ color: color.inkSoft }}>
         Verbindung, Verschlüsselung und Speicher prüfen. Dort meldest du dich auch ab.
       </Text>
-      <RouteLink href="/diagnose" asChild>
-        <Link label="Öffnen" variant="subhead" />
-      </RouteLink>
+      <RouteLink label="Öffnen" variant="subhead" href="/diagnose" />
     </Card>
   );
 }

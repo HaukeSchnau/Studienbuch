@@ -1,6 +1,5 @@
 import { Arrive } from "@stu/ui/Arrive";
 import { Icon } from "@stu/ui/Icon";
-import { Link } from "@stu/ui/Link";
 import { SuccessTick } from "@stu/ui/SuccessTick";
 import { Text } from "@stu/ui/Text";
 import { Theme } from "@stu/ui/Theme";
@@ -11,10 +10,11 @@ import * as Cause from "effect/Cause";
 import * as Exit from "effect/Exit";
 import * as Option from "effect/Option";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
-import { Link as RouteLink, type Href } from "expo-router";
+import type { Href } from "expo-router";
 import { useRef, useState, type ComponentRef, type ReactNode } from "react";
 import { StyleSheet, View, type TextInput } from "react-native";
 
+import { RouteLink } from "../../ui/navigation/RouteLink.tsx";
 import { Account } from "./Account.ts";
 
 // What the account screens share inside the sign-in card, after the old web's auth-shell.tsx: the
@@ -136,9 +136,7 @@ export function OtherWay({ question, label, href, back = false, onPress }: Other
           {question}
         </Text>
       )}
-      <RouteLink href={href} dismissTo={back} onPress={onPress} asChild>
-        <Link label={label} variant="subhead" />
-      </RouteLink>
+      <RouteLink label={label} variant="subhead" href={href} dismissTo={back} onPress={onPress} />
     </View>
   );
 }

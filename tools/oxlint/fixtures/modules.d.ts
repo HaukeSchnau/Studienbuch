@@ -16,6 +16,8 @@ declare module "@stu/sync/client";
 
 declare module "@stu/sync/server";
 
+declare module "@stu/ui/Link";
+
 declare module "@tanstack/react-router";
 
 declare module "effect";
