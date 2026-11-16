@@ -1,14 +1,18 @@
 import { useAtom, useAtomSet, useAtomValue } from "@effect/atom-react";
 import { Homework } from "@stu/core";
 import { HomeworkForm } from "@stu/domain-ui/homework/HomeworkForm";
+import { HomeworkItem } from "@stu/domain-ui/homework/HomeworkItem";
 import { RefusalText } from "@stu/domain-ui/refusal/RefusalText";
 import { Text } from "@stu/ui/Text";
+import { Theme } from "@stu/ui/Theme";
+import { Tokens } from "@stu/ui/Tokens";
 import * as Exit from "effect/Exit";
 import * as Option from "effect/Option";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Atom from "effect/reactivity/Atom";
 import * as Schema from "effect/Schema";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { StyleSheet, View } from "react-native";
 
 import { Sheet } from "../../ui/Sheet.tsx";
 import { KeysState } from "../keys/KeysState.ts";
@@ -57,6 +61,15 @@ function AccountSheet({
     current.readable ? current.reading : Option.none(),
   );
 
+  // Opened by its address on a device without the notebook's key, as after a reload.
+  if (Option.exists(status, (current) => current.locked)) {
+    return (
+      <Sheet onClose={close}>
+        <Notice title={HomeworkItem.locked.title} text={HomeworkItem.locked.text} />
+      </Sheet>
+    );
+  }
+
   if (Option.isNone(status) || Option.isNone(reading) || !AsyncResult.isSuccess(draft)) {
     return <Sheet onClose={close}>{null}</Sheet>;
   }
@@ -65,12 +78,14 @@ function AccountSheet({
   const { notebook } = reading.value;
   const stored = reading.value.homework.find((each) => each.id === id);
 
+  // Gone, as when another device deleted it. Its edit draft would never be read again.
   if (id !== undefined && stored === undefined) {
     return (
-      <Sheet onClose={close}>
-        <Text variant="headline" weight="bold">
-          Diese Hausaufgabe gibt es nicht mehr.
-        </Text>
+      <Sheet onClose={() => void discard(key).then(close)}>
+        <Notice
+          title="Diese Hausaufgabe gibt es nicht mehr"
+          text="Vielleicht wurde sie auf einem anderen Gerät gelöscht."
+        />
       </Sheet>
     );
   }
@@ -121,3 +136,20 @@ function AccountSheet({
     </Sheet>
   );
 }
+
+function Notice({ title, text }: { readonly title: string; readonly text: string }) {
+  const { color } = Theme.useTheme();
+
+  return (
+    <View accessibilityLiveRegion="polite" style={styles.notice}>
+      <Text variant="headline" weight="bold">
+        {title}
+      </Text>
+      <Text variant="callout" style={{ color: color.inkSoft }}>
+        {text}
+      </Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({ notice: { gap: Tokens.space.sm } });
