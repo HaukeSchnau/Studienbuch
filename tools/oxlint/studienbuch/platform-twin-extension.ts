@@ -6,18 +6,20 @@ import { defineRule } from "@oxlint/plugins";
 const PLATFORM_FILE =
   /^(?<stem>.+)\.(?<platform>web|native|ios|android)\.(?<extension>tsx?|jsx?)$/u;
 
-const EXTENSIONS = ["ts", "tsx", "js", "jsx"] as const;
+// The order in which Metro tries extensions (`resolver.sourceExts`), for the ones our code uses.
+const EXTENSIONS = ["ts", "tsx", "js", "jsx"];
 
 /**
- * A platform file such as `useConfirm.web.tsx` shares its twin's extension. Metro tries every
- * platform for one extension before the next, so `useConfirm.ts` would win on the web over
- * `useConfirm.web.tsx`, and the web would silently run the phones' code.
+ * A platform file such as `useConfirm.web.tsx` has no twin with an extension Metro tries first.
+ * Metro tries every platform for one extension before the next, so `useConfirm.ts` would win on
+ * the web over `useConfirm.web.tsx`, also beside a `useConfirm.tsx`, and the web would silently run
+ * the phones' code.
  */
 export default defineRule({
   meta: {
     type: "problem",
     docs: {
-      description: "Require a platform file to share its twin's extension.",
+      description: "Disallow a twin that Metro resolves before a platform file.",
     },
     messages: {
       extension:
@@ -34,9 +36,9 @@ export default defineRule({
     const directory = NodePath.dirname(context.filename);
     const exists = (name: string) => NodeFS.existsSync(NodePath.join(directory, name));
 
-    if (exists(`${stem}.${extension}`)) return {};
-
-    const twin = EXTENSIONS.map((each) => `${stem}.${each}`).find(exists);
+    const twin = EXTENSIONS.slice(0, EXTENSIONS.indexOf(extension))
+      .map((each) => `${stem}.${each}`)
+      .find(exists);
 
     if (twin === undefined) return {};
 
