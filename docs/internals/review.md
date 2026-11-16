@@ -37,6 +37,10 @@ AGENTS.md's "Architecture" and "Effect" sections hold the rules. `studienbuch/im
 - Logic that already lives in another module, copied or reimplemented beside it, is a finding. Name the module that owns it.
 - A module that takes on a second job, such as a feature that also decodes a wire format or a route handler that holds a domain rule, is a finding. Name where the second job belongs.
 - Code that does by hand what an Effect module does is a finding: a hand-written validator instead of `Schema`, a retry loop instead of `Schedule`, polling instead of `Stream`, a memo map instead of `Cache` or `RcMap`, cleanup in `finally` instead of a `Scope`. Name the module and check it in the installed source. In `apps/server` and `packages/{core,sync,e2ee,api}` the effect-native lint preset already covers `console`, `process.env`, timers and `JSON.parse`.
+- A value cached in a closure and filled after a `yield*` lets two fibers both miss and both fill it. Use `SynchronizedRef.modifyEffect` or a `Semaphore`.
+- A hand-made reference-counted `Map`, a registry of waiting `Deferred`s, or a `Map` that a fiber sweeps on a timer is a finding. `RcMap` shares one resource per key while anyone holds it, `PubSub` with `Stream.filter` wakes waiters, and `Cache` with a `timeToLive` forgets entries, as in `packages/sync/src/server/{Connections,Revocations,Tickets}.ts`.
+- A read and a removal that must happen once, split across two effects, let another fiber run between them, because a fiber yields after a budget of operations. `Cache.invalidateWhen` removes an entry only for the fiber whose read is still current, as `Tickets.redeem` spends a ticket.
+- A `_tag` comparison on a broad type, such as `unknown` or another module's error union, keeps compiling when the tag is renamed and never matches again. Use `Schema.is` or `catchTags`. A `switch` on `_tag` over a closed union is fine, because the type checker proves it exhaustive.
 - A convention the PR sets that a lint rule could keep, with no rule in `tools/oxlint/`, is a finding.
 
 ## Sync and conformance
@@ -81,7 +85,7 @@ AGENTS.md's "Architecture" and "Effect" sections hold the rules. `studienbuch/im
 - Jobs run through `ClusterCron` on a `SingleRunner` (ADR 0011). Runs never overlap and missed runs catch up in order, so a job has to cope with several runs back to back after downtime.
 - On the web, one tab owns a device's database through a Web Lock taken before the SQLite worker starts (ADR 0014). Code that opens the device database without it leaves a second tab waiting forever.
 - On the server, a space's version is bumped under a row lock, so version order equals commit order. A pull reads in one `REPEATABLE READ` snapshot, and the last mutation id never leads the rows. A change to push or pull needs a concurrency test on real PostgreSQL 18, as in `packages/sync/src/server/PostgresTx.test.ts`.
-- A race fix comes with a test that fails without it. The test awaits a `Deferred` or a `Queue`, or drives the `TestClock`.
+- A race fix comes with a test that fails without it. The test awaits a `Deferred` or a `Queue`, or drives the `TestClock`. When the race sits between two effects of one fiber, the test runs both sides under each small `Scheduler.MaxOpsBeforeYield` budget, as in `packages/sync/src/server/Tickets.test.ts`.
 
 ## Offline
 
