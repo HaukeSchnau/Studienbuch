@@ -11,6 +11,11 @@ let kept: { readonly key: string; readonly until: number } | undefined;
 // Longer than a list lets a used item linger before moving it (HomeworkPanel: 1.2 s).
 const keepFor = 3000;
 
+// A press anywhere moves the focus on purpose, even onto the page itself, so nothing takes it back.
+const drop = () => {
+  kept = undefined;
+};
+
 /**
  * useKeptFocus.ts on the web. A list moves an item by moving or re-creating its element, which
  * drops the focus to the page, or by moving the elements around it, which can leave it out of view.
@@ -55,6 +60,10 @@ export function useKeptFocus(key: string | undefined): KeptFocus {
       key !== undefined && element.matches(":focus-visible")
         ? { key, until: Date.now() + keepFor }
         : undefined;
+
+    if (kept !== undefined) {
+      document.addEventListener("pointerdown", drop, { capture: true, once: true });
+    }
   };
 
   return { control: { ref, onFocus: keep, onUsed: keep }, item };
