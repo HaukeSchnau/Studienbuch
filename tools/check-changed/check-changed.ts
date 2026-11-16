@@ -1,8 +1,8 @@
 // Ported from T3 Code's `scripts/check-changed.ts` (github.com/pingdotgg/t3code, MIT, copyright T3
 // Tools Inc.; see tools/T3CODE-LICENSE).
 
-// Format and lint of the changed files, knip, a typecheck of the affected projects and their
-// dependents, and the tests beside changed files. The change is the jj diff from
+// Format and lint of the changed files, knip, the atlas's paths, a typecheck of the affected
+// projects and their dependents, and the tests beside changed files. The change is the jj diff from
 // `fork_point(trunk() | @)` to `@`, or in git the diff from the merge base with origin/main plus
 // untracked files. `vp run check:changed <rev>` compares with another jj revset or git ref.
 import * as NodeChildProcess from "node:child_process";
@@ -210,6 +210,16 @@ if (repositoryWide || code.length > 0) {
 }
 
 if (runKnip) steps.push({ name: "knip", args: ["exec", "knip"] });
+
+// The atlas can name a path that was moved or removed, so a deleted file runs its check too.
+const runAtlas = files.some(
+  (file) =>
+    file === "docs/architecture/atlas.html" ||
+    file.startsWith("tools/check-atlas/") ||
+    !exists(file),
+);
+
+if (runAtlas) steps.push({ name: "atlas paths", args: ["run", "check:atlas"] });
 
 for (const dir of affected) {
   steps.push({ name: `typecheck ${dir}`, args: ["exec", "tsc", "--noEmit", "-p", dir] });
