@@ -76,10 +76,8 @@ function AccountSheet({
   }
 
   const current: HomeworkInput.Current | undefined = stored;
-
-  const values =
-    draft.value ??
-    (current === undefined ? HomeworkInput.empty : HomeworkInput.fromCurrent(current));
+  const touched = draft.value;
+  const values = HomeworkInput.values(current, touched);
 
   const choices = HomeworkState.choices(reading.value, today, current?.courseId);
 
@@ -100,7 +98,7 @@ function AccountSheet({
       save:
         current === undefined || id === undefined
           ? HomeworkState.Save.Create({ notebook, id: crypto.randomUUID(), valid: ready })
-          : HomeworkState.Save.Update({ notebook, id, valid: ready, current }),
+          : HomeworkState.Save.Update({ notebook, id, valid: ready, current, touched }),
     });
 
     if (Exit.isSuccess(exit)) close();
@@ -111,7 +109,7 @@ function AccountSheet({
       <HomeworkForm
         heading={id === undefined ? "Hausaufgabe hinzufügen" : "Hausaufgabe bearbeiten"}
         values={values}
-        onChange={setDraft}
+        onChange={(changes) => setDraft({ ...touched, ...changes })}
         choices={choices}
         range={Homework.dueDates(today)}
         today={today}

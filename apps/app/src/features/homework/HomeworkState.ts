@@ -285,19 +285,20 @@ export const choices = (
     .sort((a, b) => a.subject.localeCompare(b.subject, "de"));
 };
 
-const draftKey = (key: string) => `homework-draft-${key}`;
+// Earlier builds kept whole values under `homework-draft-…`; this shape gets a key of its own.
+const draftKey = (key: string) => `homework-touched-${key}`;
 
 /**
- * The sheet's draft for a new homework (`"new"`) or for one homework's edit (its id), kept across a
- * restart until it is saved or dropped. `null` when there is none, so an edit starts from the row.
+ * What the student touched in the sheet for a new homework (`"new"`) or one homework's edit (its id),
+ * kept across a restart until it is saved or dropped (`HomeworkInput.Draft`).
  */
 export const draft = Atom.family((accountId: string) =>
   Atom.family((key: string) =>
     Atom.kvs({
       runtime: runtime(accountId),
       key: draftKey(key),
-      schema: Schema.NullOr(HomeworkInput.Draft),
-      defaultValue: () => null,
+      schema: HomeworkInput.Draft,
+      defaultValue: () => ({}),
       mode: "async",
     }),
   ),
@@ -316,6 +317,7 @@ export type Save = Data.TaggedEnum<{
     readonly id: string;
     readonly valid: HomeworkInput.Valid;
     readonly current: HomeworkInput.Current;
+    readonly touched: HomeworkInput.Draft;
   };
 }>;
 
@@ -347,7 +349,7 @@ export const save = Atom.family((accountId: string) =>
           yield* sync.mutate(Homework.update, {
             notebook: save.notebook,
             id: Homework.Id.make(save.id),
-            ...HomeworkInput.changes(save.valid, save.current),
+            ...HomeworkInput.changes(save.valid, save.current, save.touched),
           });
         }
       }).pipe(
@@ -368,7 +370,7 @@ export const discard = Atom.family((accountId: string) =>
 const dropDraft = (accountId: string, key: string, get: Atom.FnContext) =>
   Effect.flatMap(KeyValueStore.KeyValueStore, (store) => store.remove(draftKey(key))).pipe(
     Effect.ignore,
-    Effect.andThen(Effect.sync(() => get.set(draft(accountId)(key), null))),
+    Effect.andThen(Effect.sync(() => get.set(draft(accountId)(key), {}))),
   );
 
 /** The device itself refused a delete. `reason` is the refusal's tag. */

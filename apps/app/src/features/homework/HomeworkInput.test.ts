@@ -82,17 +82,34 @@ describe("HomeworkInput.decode", () => {
 
 describe("HomeworkInput.changes", () => {
   it("sends only the fields an edit changed, and null to remove the description", () => {
-    const edited = HomeworkInput.decode(
-      {
-        ...HomeworkInput.fromCurrent(current),
-        title: "Versuchsprotokoll, sauber",
-        description: " ",
-      },
+    const touched = { title: "Versuchsprotokoll, sauber", description: " " };
+
+    const edited = HomeworkInput.decode(HomeworkInput.values(current, touched), {
+      ...context,
+      current,
+    });
+
+    expect(Option.map(edited, (valid) => HomeworkInput.changes(valid, current, touched))).toEqual(
+      Option.some({ title: "Versuchsprotokoll, sauber", description: null }),
+    );
+  });
+
+  it("keeps a field the student didn't touch as another device changed it meanwhile", () => {
+    // The student began editing the title while the due date was 9.11.; another device has since
+    // moved it to 25.11.
+    const live = { ...current, dueOn: date("2026-11-25") };
+    const touched = { title: "Versuchsprotokoll, sauber" };
+
+    expect(HomeworkInput.values(live, touched).dueOn).toEqual(live.dueOn);
+
+    // Even values that still hold the old date send none: only touched fields go out.
+    const stale = HomeworkInput.decode(
+      { ...HomeworkInput.fromCurrent(current), ...touched },
       { ...context, current },
     );
 
-    expect(Option.map(edited, (valid) => HomeworkInput.changes(valid, current))).toEqual(
-      Option.some({ title: "Versuchsprotokoll, sauber", description: null }),
+    expect(Option.map(stale, (valid) => HomeworkInput.changes(valid, live, touched))).toEqual(
+      Option.some({ title: "Versuchsprotokoll, sauber" }),
     );
   });
 });

@@ -11,17 +11,20 @@ import * as Schema from "effect/Schema";
 
 export * as HomeworkInput from "./HomeworkInput.ts";
 
-/** The sheet's values as a draft keeps them across a restart. */
+/**
+ * What the student touched in the sheet, kept across a restart until "Speichern" or "Abbrechen".
+ * Fields they didn't touch aren't kept, so they follow the homework as it is now (`values`).
+ */
 export const Draft = Schema.Struct({
-  courseId: Schema.NullOr(Schema.String),
-  title: Schema.String,
-  description: Schema.String,
-  dueOn: Schema.NullOr(CivilTime.PlainDate),
+  courseId: Schema.optionalKey(Schema.String),
+  title: Schema.optionalKey(Schema.String),
+  description: Schema.optionalKey(Schema.String),
+  dueOn: Schema.optionalKey(CivilTime.PlainDate),
 });
 
 export type Draft = typeof Draft.Type;
 
-export const empty: Draft = { courseId: null, title: "", description: "", dueOn: null };
+const empty: Values = { courseId: null, title: "", description: "", dueOn: null };
 
 /** A homework as the device holds it, which an edit starts from. */
 export interface Current {
@@ -31,11 +34,17 @@ export interface Current {
   readonly dueOn: CivilTime.PlainDate;
 }
 
-export const fromCurrent = (current: Current): Draft => ({
+export const fromCurrent = (current: Current): Values => ({
   courseId: current.courseId,
   title: current.title,
   description: current.description ?? "",
   dueOn: current.dueOn,
+});
+
+/** The sheet's values: the homework as it is now, or empty, with what the student touched over it. */
+export const values = (current: Current | undefined, touched: Draft): Values => ({
+  ...(current === undefined ? empty : fromCurrent(current)),
+  ...touched,
 });
 
 /** An enrollment as the device holds it: the courses chosen in one term. */
@@ -120,19 +129,26 @@ export const decode = (values: Values, context: Context): Option.Option<Valid> =
 type Changes = Omit<typeof Homework.update.args.Type, "notebook" | "id">;
 
 /**
- * The fields an edit changes, and only those: `homework.update` patches what it is given, so two
- * devices editing different fields both keep their edit (ADR 0020). `null` removes the description.
+ * The fields an edit changes: those the student touched that differ from the homework as it is now.
+ * `homework.update` patches what it is given, so a field another device changed while the sheet was
+ * open keeps that change (ADR 0020). `null` removes the description.
  */
-export const changes = (valid: Valid, current: Current) => {
+export const changes = (valid: Valid, current: Current, touched: Draft) => {
   const changed: { -readonly [Field in keyof Changes]?: Changes[Field] } = {};
 
-  if (valid.courseId !== current.courseId) changed.courseId = valid.courseId;
+  if (touched.courseId !== undefined && valid.courseId !== current.courseId) {
+    changed.courseId = valid.courseId;
+  }
 
-  if (valid.title !== current.title) changed.title = valid.title;
+  if (touched.title !== undefined && valid.title !== current.title) changed.title = valid.title;
 
-  if (valid.description !== current.description) changed.description = valid.description ?? null;
+  if (touched.description !== undefined && valid.description !== current.description) {
+    changed.description = valid.description ?? null;
+  }
 
-  if (CivilTime.order(valid.dueOn, current.dueOn) !== 0) changed.dueOn = valid.dueOn;
+  if (touched.dueOn !== undefined && CivilTime.order(valid.dueOn, current.dueOn) !== 0) {
+    changed.dueOn = valid.dueOn;
+  }
 
   return changed;
 };

@@ -21,6 +21,14 @@ export interface Values {
   readonly dueOn: CivilTime.PlainDate | null;
 }
 
+/** What one input changes. A field once picked is never emptied again, so no value is `null`. */
+export type Change = Partial<{
+  readonly courseId: string;
+  readonly title: string;
+  readonly description: string;
+  readonly dueOn: CivilTime.PlainDate;
+}>;
+
 /** A course to pick as Fach, named and marked by its subject. */
 export interface CourseChoice {
   readonly id: string;
@@ -32,7 +40,8 @@ export interface HomeworkFormProps {
   /** "Hausaufgabe hinzufügen" or "Hausaufgabe bearbeiten". */
   readonly heading: string;
   readonly values: Values;
-  readonly onChange: (values: Values) => void;
+  /** The fields the student just changed. */
+  readonly onChange: (changes: Change) => void;
   readonly choices: ReadonlyArray<CourseChoice>;
   /** The due dates the calendar offers. */
   readonly range: CivilTime.DateRange;
@@ -63,7 +72,7 @@ export function HomeworkForm({
 }: HomeworkFormProps) {
   const { color } = Theme.useTheme();
   const calendar = useCalendarOpen();
-  const set = (changes: Partial<Values>) => onChange({ ...values, ...changes });
+  const set = onChange;
 
   return (
     <View style={styles.form}>
