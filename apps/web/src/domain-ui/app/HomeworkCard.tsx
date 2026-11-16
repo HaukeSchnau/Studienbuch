@@ -2,9 +2,10 @@ import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
 import type { ReactNode } from "react";
 import { Card } from "@stu/ui/Card";
+import { Checkable } from "@stu/ui/Checkable";
 import { Icon } from "@stu/ui/Icon";
 import { Text } from "@stu/ui/Text";
-import { Pressable, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 export interface Homework {
   readonly id: string;
@@ -56,10 +57,10 @@ function HomeworkRow({ item, onToggle }: { item: Homework; onToggle: (id: string
   const { color } = Theme.useTheme();
 
   return (
-    <Pressable
-      accessibilityLabel={`${item.subject}: ${item.title}`}
-      accessibilityRole="checkbox"
-      accessibilityState={{ checked: item.done }}
+    <Checkable
+      kind="checkbox"
+      checked={item.done}
+      label={`${item.subject}: ${item.title}`}
       onPress={() => onToggle(item.id)}
       style={({ pressed }) => [
         styles.row,
@@ -108,7 +109,7 @@ function HomeworkRow({ item, onToggle }: { item: Homework; onToggle: (id: string
       >
         {item.done ? <Icon color={color.onAccent} name="check" size={18} /> : null}
       </View>
-    </Pressable>
+    </Checkable>
   );
 }
 
@@ -129,7 +130,6 @@ const styles = StyleSheet.create({
     paddingVertical: Tokens.space.md,
     paddingLeft: Tokens.space.xl,
     paddingRight: Tokens.space.lg,
-    cursor: "pointer",
   },
   bar: {
     position: "absolute",

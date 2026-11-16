@@ -1,0 +1,2 @@
+DROP VIEW `CourseOffering`;--> statement-breakpoint
+CREATE VIEW `CourseOffering` AS select space, id, data ->> '$."courseId"' as "courseId", data ->> '$."termId"' as "termId", data -> '$."gradeLevels"' as "gradeLevels", data -> '$."classIds"' as "classIds", data ->> '$."groupKey"' as "groupKey", data ->> '$."choiceRequired"' as "choiceRequired" from sync_row_view where tbl = 'CourseOffering';

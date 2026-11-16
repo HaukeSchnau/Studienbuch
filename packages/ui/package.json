@@ -13,6 +13,7 @@
     "./AuthHeading": "./src/AuthHeading.tsx",
     "./Button": "./src/Button.tsx",
     "./Card": "./src/Card.tsx",
+    "./Checkable": "./src/Checkable.tsx",
     "./Checkbox": "./src/Checkbox.tsx",
     "./Drawing": {
       "react-native": "./src/Drawing.tsx",
@@ -23,6 +24,7 @@
     "./Icon": "./src/Icon.tsx",
     "./Link": "./src/Link.tsx",
     "./Pill": "./src/Pill.tsx",
+    "./PillChoice": "./src/PillChoice.tsx",
     "./RevisionCard": "./src/RevisionCard.tsx",
     "./Sticker": "./src/Sticker.ts",
     "./SubjectBlob": "./src/SubjectBlob.tsx",
