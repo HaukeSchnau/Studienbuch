@@ -18,6 +18,7 @@ import noHermesUnsupportedApis from "./no-hermes-unsupported-apis.ts";
 import noHooklessUseFunction from "./no-hookless-use-function.ts";
 import noInlineSchemaCompile from "./no-inline-schema-compile.ts";
 import noJsonStringifyEquality from "./no-json-stringify-equality.ts";
+import noLiteralTimeZone from "./no-literal-time-zone.ts";
 import noLowValueComments from "./no-low-value-comments.ts";
 import noManualEffectRuntimeInTests from "./no-manual-effect-runtime-in-tests.ts";
 import noNativeTitleTooltip from "./no-native-title-tooltip.ts";
@@ -59,6 +60,7 @@ export default definePlugin({
     "no-hookless-use-function": noHooklessUseFunction,
     "no-inline-schema-compile": noInlineSchemaCompile,
     "no-json-stringify-equality": noJsonStringifyEquality,
+    "no-literal-time-zone": noLiteralTimeZone,
     "no-low-value-comments": noLowValueComments,
     "no-manual-effect-runtime-in-tests": noManualEffectRuntimeInTests,
     "no-native-title-tooltip": noNativeTitleTooltip,

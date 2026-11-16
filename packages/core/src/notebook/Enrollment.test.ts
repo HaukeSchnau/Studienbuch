@@ -1,8 +1,9 @@
 import { describe, expect, it } from "@effect/vitest";
-import { Sync } from "@stu/sync";
+import { Sync, Tx } from "@stu/sync";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import { Course } from "../school/Course.ts";
+import { CourseOffering } from "../school/CourseOffering.ts";
 import { SchoolClass } from "../school/SchoolClass.ts";
 import { Term } from "../school/Term.ts";
 import { Fixture } from "../testing/Fixture.ts";
@@ -147,6 +148,38 @@ describe("enrollment.set", () => {
         Option.getOrUndefined(db.stored(args.notebook, Enrollment.Row.name, args.termId)),
       ).toBeUndefined();
     }),
+  );
+});
+
+describe("Enrollment.courses", () => {
+  it.effect(
+    "writes the required courses and one wanted elective per group, which set accepts",
+    () =>
+      Effect.gen(function* () {
+        const db = yield* Fixture.make;
+
+        const offerings = yield* db.transaction(
+          { actor: "server", writes: [], location: "server" },
+          Effect.flatMap(Tx.Service, (tx) =>
+            tx.list(CourseOffering.Row, Fixture.school, { index: "termId", equals: term }),
+          ),
+        );
+
+        const rows = offerings.map(({ row }) => row);
+        const wanted = new Set([Fixture.mathG, Fixture.mathE, Fixture.art]);
+        const for112 = { termId: term, gradeLevel: 11, classId: Fixture.class112 };
+
+        // Deutsch belongs to 11.2, and Kunst to grade levels 12 and 13.
+        const courseIds = Enrollment.courses(rows, for112, wanted);
+
+        expect(courseIds).toEqual([Fixture.german, Fixture.mathE]);
+        expect(Enrollment.courses(rows, { ...for112, classId: Fixture.class111 }, wanted)).toEqual([
+          Fixture.mathE,
+        ]);
+
+        yield* Fixture.run(db, Enrollment.set, { ...choice, courseIds }, "server");
+        expect(stored(db)).toMatchObject({ courseIds: ["demo-de-11.2", "demo-ma-e"] });
+      }),
   );
 });
 

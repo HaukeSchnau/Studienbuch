@@ -68,6 +68,45 @@ export const Refusal = Schema.Union([UnknownTerm, ClassRequired, CourseNotOffere
 export type Refusal = typeof Refusal.Type;
 
 /**
+ * Whether `classId` answers which class of a grade level: one of `ofGradeLevel`, its classes in the
+ * term's school year, or none where it has none. `set` refuses anything else with `ClassRequired`.
+ */
+export const classFits = (
+  ofGradeLevel: ReadonlyArray<{ readonly id: string }>,
+  classId: SchoolClass.Id | undefined,
+): boolean =>
+  classId === undefined ? ofGradeLevel.length === 0 : ofGradeLevel.some(({ id }) => id === classId);
+
+/**
+ * The course list `set` accepts for `chooser` out of `wanted`: every required course the term's
+ * `offerings` open to it, and of the wanted electives open to it the first of each group, in the
+ * offerings' order. Sorted, as `set` keeps it.
+ */
+export const courses = (
+  offerings: ReadonlyArray<CourseOffering.Row>,
+  chooser: CourseOffering.Chooser,
+  wanted: ReadonlySet<Course.Id>,
+): ReadonlyArray<Course.Id> => {
+  const groups = new Set<string>();
+  const courseIds = new Set<Course.Id>();
+
+  for (const offering of offerings) {
+    if (!CourseOffering.isFor(offering, chooser)) continue;
+
+    const { courseId, groupKey } = offering;
+
+    if (groupKey === undefined) {
+      courseIds.add(courseId);
+    } else if (wanted.has(courseId) && !groups.has(groupKey)) {
+      groups.add(groupKey);
+      courseIds.add(courseId);
+    }
+  }
+
+  return [...courseIds].sort();
+};
+
+/**
  * Chooses the courses of one term at the notebook's school, replacing the term's earlier choice.
  * An empty list leaves every course of the term. The checks run in this order: the term, the
  * class, each course's offering, the elective groups.
@@ -103,12 +142,7 @@ export const set = Sync.mutator("enrollment.set", {
 
     const ofGradeLevel = classes.filter(({ row }) => row.gradeLevel === args.gradeLevel);
 
-    const classFits =
-      args.classId === undefined
-        ? ofGradeLevel.length === 0
-        : ofGradeLevel.some(({ id }) => id === args.classId);
-
-    if (!classFits) return yield* new ClassRequired();
+    if (!classFits(ofGradeLevel, args.classId)) return yield* new ClassRequired();
 
     const offerings = yield* tx.list(CourseOffering.Row, school, {
       index: "termId",

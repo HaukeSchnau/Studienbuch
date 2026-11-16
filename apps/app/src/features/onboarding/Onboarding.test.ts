@@ -95,18 +95,6 @@ it("choosing an elective leaves the other of its group, and choosing it again le
   assert.deepStrictEqual(ids(Onboarding.toggle(musik, tile("mu"), tiles)), ["fr"]);
 });
 
-it("writes every required course with the chosen electives that are still open", () => {
-  const chosen = new Set(["fr", "ku", "if"].map((id) => Course.Id.make(id)));
-
-  // Informatik belongs to 9.2, so a change to 9.10 drops it.
-  assert.deepStrictEqual(ids(Onboarding.courseIds(choices, chooser, chosen)), [
-    "de",
-    "fr",
-    "ku",
-    "ma",
-  ]);
-});
-
 it("starts the tiles from an earlier choice for the term", () => {
   const earlier = {
     ...choices,
@@ -177,6 +165,24 @@ it("brings the course step back when the server refused the course choice", () =
 
 it("lets a student without a school through to the overview", () => {
   assert.strictEqual(Onboarding.next(Onboarding.Reading.NoSchool()), "done");
+});
+
+it("a class answered for another grade level doesn't count for this one", () => {
+  const earlier = Option.some(SchoolClass.Id.make("c10"));
+
+  // Grade 11 has a class of its own, and grade 12 has none.
+  for (const gradeLevel of [11, 12]) {
+    const each = Onboarding.chooser(choices, gradeLevel, earlier);
+
+    assert.isUndefined(each.classId);
+    assert.strictEqual(Onboarding.classAnswered(choices, each), gradeLevel === 12);
+  }
+
+  const ninth = Onboarding.chooser(choices, 9, earlier);
+
+  assert.strictEqual(ninth.classId, "c10");
+  assert.isTrue(Onboarding.classAnswered(choices, ninth));
+  assert.isFalse(Onboarding.classAnswered(choices, Onboarding.chooser(choices, 9, Option.none())));
 });
 
 it("greets by name once read, and without one when the read failed", () => {
