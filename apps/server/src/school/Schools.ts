@@ -101,9 +101,9 @@ export const publish = Effect.fn("Schools.publish")(function* (data: Data) {
   // The data is the caller's own constant or the import's checked records.
 }, Effect.orDie);
 
-// Data holds rows in their encoded form, as constants and the import's records write them.
+// Data holds rows in their encoded form, as constants and the import's records write them. A
+// school row encodes to itself, because a time zone is a string.
 const encode = {
-  school: Schema.encodeEffect(Schema.Struct(School.Row.fields)),
   schoolYear: Schema.encodeEffect(Schema.Struct(SchoolYear.Row.fields)),
   term: Schema.encodeEffect(Schema.Struct(Term.Row.fields)),
 };
@@ -149,7 +149,7 @@ export const simple = Effect.fn("Schools.simple")(function* (options: {
 
   const data: Data = {
     id: options.id,
-    school: yield* encode.school(options.school),
+    school: options.school,
     schoolYears: { [year.id]: yield* encode.schoolYear(year.row) },
     terms: Object.fromEntries(terms),
     subjects: Object.fromEntries(

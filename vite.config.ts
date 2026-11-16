@@ -304,13 +304,10 @@ export default defineConfig({
         rules: { "studienbuch/no-dom-test-environment": "error" },
       },
       {
-        // "Today" at a school comes from its row through `School.today`. Core holds the fallback,
-        // and the demo and dev schools name their own zone.
+        // "Today" at a school comes from its row through `School.today`. Core holds the default
+        // zone, which the demo and dev schools use too.
         files: scope("apps/*/src/**", "packages/*/src/**"),
-        excludeFiles: [
-          ...scope("packages/core/**", "apps/server/src/{demo,dev}/**"),
-          "**/*.{test,spec}.{ts,tsx}",
-        ],
+        excludeFiles: [...scope("packages/core/**"), "**/*.{test,spec}.{ts,tsx}"],
         rules: { "studienbuch/no-literal-time-zone": "error" },
       },
       {

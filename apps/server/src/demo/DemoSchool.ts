@@ -5,7 +5,7 @@
  * same ids. Names are invented.
  */
 import { Demo } from "@stu/api/Demo";
-import { CivilTime, type Course, Notebook, School, type Term } from "@stu/core";
+import { type CivilTime, type Course, Notebook, School, type Term } from "@stu/core";
 import { Schools } from "../school/Schools.ts";
 
 export * as DemoSchool from "./DemoSchool.ts";
@@ -15,10 +15,7 @@ export const id = School.Id.make("demo-schule");
 /** Every demo course is offered to this grade level, and Lena and Tom are in it. */
 export const gradeLevel = 11;
 
-const school = {
-  name: "Demoschule am Wiesengrund",
-  timeZone: CivilTime.TimeZone.make("Europe/Berlin"),
-};
+const school = { name: "Demoschule am Wiesengrund", timeZone: School.defaultTimeZone };
 
 /** One course of each subject, `ma-1` and so on. A student chooses Kunst or Musik. */
 const subjects = [

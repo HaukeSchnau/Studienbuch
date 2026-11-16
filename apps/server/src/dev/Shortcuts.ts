@@ -4,7 +4,7 @@
  * only development and preview servers answer, to a signed-in account.
  */
 import { Dev } from "@stu/api/Dev";
-import { CivilTime, School, Studienbuch } from "@stu/core";
+import { School, Studienbuch } from "@stu/core";
 import { Ports, SyncServer } from "@stu/sync/server";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
@@ -23,8 +23,6 @@ export * as Shortcuts from "./Shortcuts.ts";
 /** The grade level a dev school offers its courses to, and the one `Dev.admit` chooses. */
 const gradeLevel = 11;
 
-const timeZone = CivilTime.TimeZone.make("Europe/Berlin");
-
 const subjects = [
   { id: "ma", name: "Mathematik", shortName: "MA" },
   { id: "de", name: "Deutsch", shortName: "DE" },
@@ -41,7 +39,7 @@ export const createSchool = Effect.gen(function* () {
   const bytes = yield* Effect.orDie(crypto.randomBytes(6));
   const suffix = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
   const id = School.Id.make(`dev-${suffix}`);
-  const school = { name: `Schule ${suffix}`, timeZone };
+  const school = { name: `Schule ${suffix}`, timeZone: School.defaultTimeZone };
 
   const { data, term } = yield* Schools.simple({
     id,

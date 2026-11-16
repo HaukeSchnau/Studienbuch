@@ -6,18 +6,17 @@ const CONSTRUCTORS = new Set(["make", "makeOption", "makeEffect"]);
 
 /**
  * "Today" comes from the school's row through core's `School.today`, so the device and the server
- * agree on it. Only core, the demo and dev schools, and tests write a time zone out.
+ * agree on it. Only core, which holds `School.defaultTimeZone`, and tests write a time zone out.
  */
 export default defineRule({
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Disallow `TimeZone.make` with a literal zone outside core, the demo and dev schools, and tests.",
+      description: "Disallow `TimeZone.make` with a literal zone outside core and tests.",
     },
     messages: {
       literalTimeZone:
-        "`{{zone}}` decides the date for every school. Read the school's row and call `School.today(school, now)` from @stu/core, which falls back to the default zone where no row arrived yet.",
+        "`{{zone}}` decides the date for every school. Read the school's row and call `School.today(school, now)` from @stu/core, which falls back to `School.defaultTimeZone` where no row arrived yet. A school without a source of its own takes `School.defaultTimeZone` too.",
     },
   },
   create(context) {

@@ -11,6 +11,7 @@ describe("SchoolYear.around", () => {
     { day: "2027-01-31", year: "2026", half: 1 },
     { day: "2027-02-01", year: "2026", half: 2 },
     { day: "2027-07-31", year: "2026", half: 2 },
+    { day: "2027-08-01", year: "2027", half: 1 },
   ])("puts $day in half $half of $year", ({ day, year, half }) => {
     const around = SchoolYear.around(date(day));
 

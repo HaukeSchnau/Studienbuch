@@ -43,14 +43,17 @@ export const Row = Sync.table("School", {
 
 export type Row = Sync.Row<typeof Row>;
 
-// Every school so far is in Germany.
-const fallbackTimeZone = CivilTime.TimeZone.make("Europe/Berlin");
+/**
+ * The zone of a school whose source names none, such as the demo and dev schools, and of a device
+ * that holds no school row yet. Every school so far is in Germany.
+ */
+export const defaultTimeZone = CivilTime.TimeZone.make("Europe/Berlin");
 
 /**
  * The date at the school at the instant `now`, in epoch milliseconds, which the caller reads from
- * its clock. A device that holds no school row yet counts in `Europe/Berlin`.
+ * its clock. A device that holds no school row yet counts in {@link defaultTimeZone}.
  */
 export const today = (
   school: Pick<Row, "timeZone"> | undefined,
   now: number,
-): CivilTime.PlainDate => CivilTime.dateIn(now, school?.timeZone ?? fallbackTimeZone);
+): CivilTime.PlainDate => CivilTime.dateIn(now, school?.timeZone ?? defaultTimeZone);
