@@ -4,6 +4,7 @@ import demoAccountBoundaries from "./demo-account-boundaries.ts";
 import effectFnName from "./effect-fn-name.ts";
 import importBoundaries from "./import-boundaries.ts";
 import selfExportingModules from "./module-shape.ts";
+import mutatorKeepsTxErrors from "./mutator-keeps-tx-errors.ts";
 import namespaceNodeImports from "./namespace-node-imports.ts";
 import noAdHocStateOrEffects from "./no-ad-hoc-state-or-effects.ts";
 import noAmbientClockOrRandom from "./no-ambient-clock-or-random.ts";
@@ -27,6 +28,7 @@ import noTestInLoop from "./no-test-in-loop.ts";
 import noTestTimeoutOrUnreasonedSkip from "./no-test-timeout-or-unreasoned-skip.ts";
 import noThrowingErrors from "./no-throwing-errors.ts";
 import noWallClockInTests from "./no-wall-clock-in-tests.ts";
+import oneRoleCheck from "./one-role-check.ts";
 import preferCatchTags from "./prefer-catch-tags.ts";
 import preferEffectFn from "./prefer-effect-fn.ts";
 import requireDisposableRender from "./require-disposable-render.ts";
@@ -43,6 +45,7 @@ export default definePlugin({
     "effect-fn-name": effectFnName,
     "import-boundaries": importBoundaries,
     "module-shape": selfExportingModules,
+    "mutator-keeps-tx-errors": mutatorKeepsTxErrors,
     "namespace-node-imports": namespaceNodeImports,
     "no-ad-hoc-state-or-effects": noAdHocStateOrEffects,
     "no-ambient-clock-or-random": noAmbientClockOrRandom,
@@ -66,6 +69,7 @@ export default definePlugin({
     "no-test-timeout-or-unreasoned-skip": noTestTimeoutOrUnreasonedSkip,
     "no-throwing-errors": noThrowingErrors,
     "no-wall-clock-in-tests": noWallClockInTests,
+    "one-role-check": oneRoleCheck,
     "prefer-catch-tags": preferCatchTags,
     "prefer-effect-fn": preferEffectFn,
     "require-disposable-render": requireDisposableRender,

@@ -19,13 +19,6 @@ import { Tx } from "../transaction/Tx.ts";
 
 export * as SqliteTx from "./SqliteTx.ts";
 
-/** A row a command wrote or deleted. */
-export interface Written {
-  readonly space: string;
-  readonly table: string;
-  readonly id: string;
-}
-
 /**
  * A readable command runs again on the server, which holds encrypted rows only as ciphertext, so
  * its mutator may not read them on the device either: it would copy plaintext into a readable row.
@@ -47,35 +40,22 @@ const readableOnly = (tx: Tx.Interface, runner: Tx.Runner): Tx.Interface => {
 
 /** The device's `Tx` for a command of the signed-in account. */
 export const make = Effect.fnUntraced(function* (runner: Tx.Runner) {
-  return readableOnly(Tx.make(store(yield* SqlClient.SqlClient, runner, () => undefined)), runner);
+  return readableOnly(Tx.make(store(yield* SqlClient.SqlClient, runner)), runner);
 });
 
 export const layer = (runner: Tx.Runner) => Layer.effect(Tx.Service, make(runner));
 
 /**
- * The device's `Tx` and the rows it wrote so far, each once, in the order of their first write.
- * The engine checks the roles of the spaces written and invalidates their tables.
+ * The device's `Tx` and the rows it wrote so far (`Tx.tracked`). The engine checks the roles of
+ * the spaces written and invalidates their tables.
  */
 export const tracked = Effect.fnUntraced(function* (runner: Tx.Runner) {
-  const written = new Map<string, Written>();
+  const { tx, written } = Tx.tracked(store(yield* SqlClient.SqlClient, runner));
 
-  const tx = readableOnly(
-    Tx.make(
-      store(yield* SqlClient.SqlClient, runner, (row) => {
-        written.set(JSON.stringify([row.space, row.table, row.id]), row);
-      }),
-    ),
-    runner,
-  );
-
-  return { tx, written: (): ReadonlyArray<Written> => [...written.values()] };
+  return { tx: readableOnly(tx, runner), written };
 });
 
-const store = (
-  sql: SqlClient.SqlClient,
-  runner: Tx.Runner,
-  onWrite: (row: Written) => void,
-): Tx.Store => ({
+const store = (sql: SqlClient.SqlClient, runner: Tx.Runner): Tx.Store => ({
   ...runner,
   location: "client",
 
@@ -96,10 +76,7 @@ const store = (
     sql`
       insert into pending_row (space, tbl, id, data) values (${space}, ${table}, ${id}, ${data})
       on conflict (space, tbl, id) do update set data = excluded.data
-    `.pipe(
-      Effect.tap(() => Effect.sync(() => onWrite({ space, table, id }))),
-      Effect.asVoid,
-    ),
+    `.pipe(Effect.asVoid),
 });
 
 /**

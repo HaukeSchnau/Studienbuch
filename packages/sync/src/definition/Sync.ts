@@ -30,6 +30,7 @@ import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 import { Ids } from "../protocol/Ids.ts";
 import { Protocol } from "../protocol/Protocol.ts";
+import { Refusal } from "../protocol/Refusal.ts";
 import { CanonicalJson } from "../transaction/CanonicalJson.ts";
 import { Tx } from "../transaction/Tx.ts";
 
@@ -181,7 +182,7 @@ type OneClass<Writes extends ReadonlyArray<Any>> = "readable" extends Writes[num
 export interface Mutator<
   Name extends string = string,
   Args = unknown,
-  Refusal extends { readonly _tag: string } = { readonly _tag: string },
+  Own extends { readonly _tag: string } = { readonly _tag: string },
   Writes extends ReadonlyArray<Any> = ReadonlyArray<Any>,
 > {
   readonly name: Name;
@@ -190,20 +191,23 @@ export interface Mutator<
   /** The arguments' JSON codec. A `Mutate` command carries them in its encoded form. */
   readonly args: Schema.Codec<Args, Schema.Json>;
   /** The JSON codec of the refusals the mutator fails with, each tagged `Area.Reason`. */
-  readonly error: Schema.Codec<Refusal, Schema.Json>;
+  readonly error: Schema.Codec<Own, Schema.Json>;
+  /** The JSON codec of every refusal a run ends with: the mutator's own and `Tx`'s. */
+  readonly refusal: Schema.Codec<Own | Tx.Refused, Schema.Json>;
   readonly writes: Writes;
   readonly mode: ModeOf<Writes>;
   /**
-   * The spaces a command writes. The engines lock them in sorted order and check the actor's
-   * role in each before the mutator runs. A write elsewhere is a defect.
+   * The spaces a command writes, and may read. The engines lock them in sorted order and check
+   * that the actor is a member of each before the mutator runs, and {@link mayWrite} for each row
+   * it wrote after. A write elsewhere is a defect.
    */
   readonly spaces: (args: Args) => ReadonlyArray<string>;
   /**
    * Reads and writes rows through `Tx` only, and reads no clock, randomness or network: ids and
    * times arrive in the arguments. It runs on the device for every command, and again on the
-   * server for `Mutate`.
+   * server for `Mutate`. It handles no `Tx` error (`studienbuch/mutator-keeps-tx-errors`).
    */
-  readonly run: (args: Args) => Effect.Effect<void, Refusal | Tx.Error, Tx.Service>;
+  readonly run: (args: Args) => Effect.Effect<void, Own | Tx.Error, Tx.Service>;
 }
 
 /** Any mutator, with its arguments' type erased. Engines run one through {@link invoke}. */
@@ -212,6 +216,7 @@ export interface AnyMutator {
   readonly version: number;
   readonly args: Schema.Codec<unknown, Schema.Json>;
   readonly error: Schema.Codec<{ readonly _tag: string }, Schema.Json>;
+  readonly refusal: Schema.Codec<{ readonly _tag: string }, Schema.Json>;
   readonly writes: ReadonlyArray<Any>;
   readonly mode: Mode;
   readonly spaces: (args: never) => ReadonlyArray<string>;
@@ -284,21 +289,70 @@ export const mutator = <
       args: ArgsSchema["Type"],
     ) => Effect.Effect<void, ErrorSchema["Type"] | Tx.Error, Tx.Service>;
   },
-): Mutator<Name, ArgsSchema["Type"], ErrorSchema["Type"], Writes> => ({
-  name,
-  version: options.version,
-  args: Schema.toCodecJson(options.args),
-  error: Schema.toCodecJson(options.error ?? Schema.Never),
-  writes: options.writes,
-  mode: modeOf(options.writes),
-  spaces: options.spaces,
-  run: options.run,
-});
+): Mutator<Name, ArgsSchema["Type"], ErrorSchema["Type"], Writes> => {
+  const error = options.error ?? Schema.Never;
+
+  return {
+    name,
+    version: options.version,
+    args: Schema.toCodecJson(options.args),
+    error: Schema.toCodecJson(error),
+    refusal: Schema.toCodecJson(Schema.Union([error, Tx.Refused])),
+    writes: options.writes,
+    mode: modeOf(options.writes),
+    spaces: options.spaces,
+    run: options.run,
+  };
+};
 
 const modeOf = <Writes extends ReadonlyArray<Any>>(writes: Writes): ModeOf<Writes> =>
   // `OneClass` keeps the classes of `writes` alike, so the first table decides.
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- see above
   (writes[0]?.class === "encrypted" ? "Seal" : "Mutate") as ModeOf<Writes>;
+
+const decodeReason = Schema.decodeUnknownEffect(Refusal.Reason);
+
+/**
+ * A refusal a mutator's run ended with, its own or `Tx`'s, as the server sends it and the device
+ * keeps it. Any other error is the mutator's bug and fails the encoding.
+ */
+export const encodeRefusal = (
+  mutator: AnyMutator,
+  error: { readonly _tag: string },
+): Effect.Effect<Refusal.Reason, Schema.SchemaError> =>
+  Effect.flatMap(Schema.encodeUnknownEffect(mutator.refusal)(error), decodeReason);
+
+/**
+ * Every refusal tag a command of `Mutators` can end with, which a screen names: each mutator's
+ * own, `Tx`'s, the server engine's, the device's `Unreadable` and the revocation that ends every
+ * waiting command.
+ */
+export type RefusalTag<Mutators extends ReadonlyArray<AnyMutator>> =
+  | Mutators[number]["refusal"]["Type"]["_tag"]
+  | Refusal.Engine["_tag"]
+  | Refusal.Unreadable["_tag"]
+  | Protocol.DeviceRevoked["_tag"];
+
+// Who may write
+
+const writers = (table: Any | undefined, kind: string) => table?.writableBy[kind] ?? [];
+
+/**
+ * Whether the account's `role` in a space of `kind` may write rows of `table`. Both engines ask
+ * for each row a command's run wrote, so a mutator may declare tables it writes only sometimes.
+ */
+export const mayWrite = (definition: Definition, role: string, kind: string, table: string) =>
+  writers(definition.byName.tables.get(table), kind).includes(role);
+
+/**
+ * Whether `role` in a space of `kind` may write its encrypted tables, as the server checks a
+ * sealed write, whose table it can't see. `validate` keeps one set of those roles per kind, and
+ * none in a kind without keys.
+ */
+export const maySeal = (definition: Definition, role: string, kind: string) =>
+  definition.tables.some(
+    (table) => table.class === "encrypted" && writers(table, kind).includes(role),
+  );
 
 // Membership rules
 

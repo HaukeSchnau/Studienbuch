@@ -183,6 +183,13 @@ export interface Store extends Runner {
   ) => Effect.Effect<void, SqlError.SqlError>;
 }
 
+/** A row a transaction wrote or deleted. */
+export interface Written {
+  readonly space: string;
+  readonly table: string;
+  readonly id: string;
+}
+
 const parseJson = Schema.decodeEffect(Schema.fromJsonString(Schema.Unknown));
 
 const isId = Schema.is(Ids.Id);
@@ -320,6 +327,29 @@ export const make = (store: Store): Interface => {
       if (Option.isSome(stored)) yield* store.write(space, table.name, id, null);
     }),
   };
+};
+
+/**
+ * {@link make}, with the rows the transaction wrote so far, each once, in the order of their first
+ * write. Both engines check a command's roles on them after its run (`Sync.mayWrite`).
+ */
+export const tracked = (store: Store) => {
+  const written: Array<Written> = [];
+
+  const remember = (space: string, table: string, id: string) =>
+    Effect.sync(() => {
+      if (!written.some((row) => row.space === space && row.table === table && row.id === id)) {
+        written.push({ space, table, id });
+      }
+    });
+
+  const tx = make({
+    ...store,
+    write: (space, table, id, data) =>
+      Effect.andThen(store.write(space, table, id, data), remember(space, table, id)),
+  });
+
+  return { tx, written: (): ReadonlyArray<Written> => [...written] };
 };
 
 const indexFilter = Effect.fnUntraced(function* <T extends Sync.Any>(table: T, where: Where<T>) {

@@ -89,7 +89,7 @@ export const make = Effect.gen(function* () {
           if (version === locked.version) return result;
 
           const accounts = yield* Effect.provideService(
-            Membership.apply(definition, space, tables),
+            Membership.apply(definition, [space], tables),
             Tx.Service,
             tx,
           );

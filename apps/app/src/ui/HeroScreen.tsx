@@ -16,7 +16,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export interface HeroScreenProps {
   readonly title: string;
+  /** Draws the hand-drawn line under the title, as under "Moin, Lena!". */
+  readonly underline?: boolean;
   readonly subtitle: string;
+  /** Under the subtitle, such as the sync status. */
+  readonly status?: ReactNode;
   /** Art at the right of the title, such as the app icon on the sign-in screens. */
   readonly aside?: ReactNode;
   /**
@@ -24,14 +28,28 @@ export interface HeroScreenProps {
    * engine pulls on its own.
    */
   readonly refresh?: { readonly refreshing: boolean; readonly onRefresh: () => void };
-  readonly children: ReactNode;
+  /**
+   * A part as wide as the screen under the cards, such as the homework panel. It runs to the
+   * screen's bottom, and the bottom's overscroll takes its colour.
+   */
+  readonly footer?: { readonly color: string; readonly children: ReactNode };
+  readonly children?: ReactNode;
 }
 
 /**
  * A tab's root screen: the hero and the cards on its band. The hero is content, so it scrolls under
  * the native header and tab bar (design-language.md, section 3, rule 6).
  */
-export function HeroScreen({ title, subtitle, aside, refresh, children }: HeroScreenProps) {
+export function HeroScreen({
+  title,
+  underline,
+  subtitle,
+  status,
+  aside,
+  refresh,
+  footer,
+  children,
+}: HeroScreenProps) {
   const { color } = Theme.useTheme();
   const insets = useSafeAreaInsets();
   const { overCanvas, onHeroEnd, onScroll } = useHeroCover(insets.top);
@@ -41,6 +59,9 @@ export function HeroScreen({ title, subtitle, aside, refresh, children }: HeroSc
       <StatusBar style={overCanvas ? "auto" : "light"} />
       {/* Overscroll above the hero shows the hero's green, as it did in the legacy app. */}
       <View style={[styles.overscroll, { backgroundColor: color.hero }]} />
+      {footer === undefined ? null : (
+        <View style={[styles.underscroll, { backgroundColor: footer.color }]} />
+      )}
       <ScrollView
         style={styles.screen}
         contentContainerStyle={[styles.grow, { backgroundColor: color.canvas }]}
@@ -64,14 +85,20 @@ export function HeroScreen({ title, subtitle, aside, refresh, children }: HeroSc
       >
         <Hero
           title={title}
+          underline={underline}
           subtitle={subtitle}
+          status={status}
           aside={aside}
           top={heroTop(insets.top)}
           onColourEnd={onHeroEnd}
         >
           {children}
         </Hero>
-        <View style={styles.end} />
+        {footer === undefined ? (
+          <View style={styles.end} />
+        ) : (
+          <View style={[styles.footer, { backgroundColor: color.canvas }]}>{footer.children}</View>
+        )}
       </ScrollView>
       {overCanvas && Platform.OS !== "web" ? (
         <View style={[styles.statusStrip, { height: insets.top, backgroundColor: color.canvas }]} />
@@ -113,6 +140,8 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   grow: { flexGrow: 1 },
   overscroll: { position: "absolute", top: 0, left: 0, right: 0, height: "50%" },
+  underscroll: { position: "absolute", bottom: 0, left: 0, right: 0, height: "50%" },
+  footer: { flexGrow: 1, marginTop: Tokens.space.lg },
   end: { height: Tokens.space.xxl },
   statusStrip: { position: "absolute", top: 0, left: 0, right: 0, opacity: 0.94 },
 });

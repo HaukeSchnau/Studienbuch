@@ -27,7 +27,7 @@ import { SyncWriter } from "./SyncWriter.ts";
 
 export * as Fixture from "./Fixture.ts";
 
-/** A guest reads a notebook and may write none of its tables. */
+/** A guest reads a notebook and may write only its `Visit` rows. */
 export const Notebook = Sync.spaceKind("notebook", {
   encryption: "sealed",
   roles: ["owner", "guest"],
@@ -55,6 +55,13 @@ export const Enrollment = Sync.table("Enrollment", {
   class: "readable",
   fields: { termId: Schema.String, courseIds: Schema.Array(Schema.String) },
   writableBy: { notebook: ["owner"] },
+});
+
+/** Who looked at a notebook's term, by account. */
+export const Visit = Sync.table("Visit", {
+  class: "readable",
+  fields: { termId: Schema.String },
+  writableBy: { notebook: ["owner", "guest"] },
 });
 
 /** A term of a school, in the School space. */
@@ -132,6 +139,38 @@ export const createEnrollment = Sync.mutator("enrollment.create", {
   }),
 });
 
+/**
+ * Records a visit to a term of the notebook, and puts an empty enrollment in it or removes it. It
+ * declares the school it only reads and a table it only sometimes writes, as a guest's run does.
+ */
+export const visit = Sync.mutator("enrollment.visit", {
+  version: 1,
+  args: Schema.Struct({
+    notebook: Schema.String,
+    school: Schema.String,
+    termId: Schema.String,
+    enrollment: Schema.Literals(["keep", "put", "remove"]),
+  }),
+  error: UnknownTerm,
+  writes: [Visit, Enrollment],
+  spaces: (args) => [args.notebook, args.school],
+  run: Effect.fn("Fixture.visit")(function* (args) {
+    const tx = yield* Tx.Service;
+
+    if (Option.isNone(yield* tx.get(Term, args.school, args.termId))) {
+      return yield* new UnknownTerm({ termId: args.termId });
+    }
+
+    yield* tx.put(Visit, args.notebook, tx.actor, { termId: args.termId });
+
+    if (args.enrollment === "put") {
+      yield* tx.put(Enrollment, args.notebook, args.termId, { termId: args.termId, courseIds: [] });
+    }
+
+    if (args.enrollment === "remove") yield* tx.remove(Enrollment, args.notebook, args.termId);
+  }),
+});
+
 /** Dies, as a mutator with a bug does. */
 export const crash = Sync.mutator("enrollment.crash", {
   version: 1,
@@ -162,8 +201,8 @@ export const courses = Sync.membershipRule({
 export const definition = Sync.schema({
   version: 1,
   spaceKinds: [Notebook, School, Course],
-  tables: [Homework, Enrollment, Term, Offering, Lesson],
-  mutators: [setEnrollment, createEnrollment, crash, createHomework],
+  tables: [Homework, Enrollment, Visit, Term, Offering, Lesson],
+  mutators: [setEnrollment, createEnrollment, visit, crash, createHomework],
   membership: [courses],
 });
 
