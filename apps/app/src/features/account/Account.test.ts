@@ -32,7 +32,7 @@ const signedIn = (accountId: string, token: string): AuthApi.SignedIn => ({
 });
 
 const server = Layer.succeed(Ports.Server)({ origin: new URL("https://one.example") });
-const phone = Device.layer({ name: "phone", publicComputer: false });
+const phone = Device.layer({ name: "phone" });
 
 const store = SessionStore.layer.pipe(
   Layer.provide(DeviceSessions.layer),
@@ -42,13 +42,10 @@ const store = SessionStore.layer.pipe(
 );
 
 /** One run of the app on a device whose keychain is `keychain`, so a test can restart it. */
-const confirmations = (
-  keychain: Layer.Layer<Keychain.Store> = MemoryKeychain.layer(),
-  device: Layer.Layer<Device.Service> = phone,
-) =>
+const confirmations = (keychain: Layer.Layer<Keychain.Store> = MemoryKeychain.layer()) =>
   Account.confirmations.pipe(
     Layer.provideMerge(signUpStore),
-    Layer.provideMerge(Layer.mergeAll(keychain, device, server)),
+    Layer.provideMerge(Layer.mergeAll(keychain, phone, server)),
   );
 
 const reservation = (expiresAt: string) =>
@@ -117,40 +114,38 @@ const credential: AuthApi.Credential = {
   clientExtensionResults: {},
 };
 
-const withPasskeyDialog = (device = phone) =>
-  Layer.mergeAll(
-    store,
-    confirmations(MemoryKeychain.layer(), device),
-    Layer.unwrap(
-      Effect.map(Passkey, ({ dialog, revoked }) =>
-        Layer.mergeAll(
-          AuthApiTesting.layer({
-            passkeyCreationOptions: () =>
-              Effect.succeed({
-                challenge: "challenge",
-                options: {
-                  challenge: "challenge",
-                  rp: { name: "Studienbuch" },
-                  user: { id: "lena", name: "", displayName: "" },
-                  pubKeyCredParams: [],
-                },
-              }),
-            addPasskey: () => Effect.void,
-            signOut: (token) => Ref.update(revoked, (tokens) => [...tokens, Redacted.value(token)]),
-          }),
-          Layer.succeed(Passkeys.Authenticator)({
-            create: () =>
-              Effect.flatMap(Deferred.await(dialog), (answer) =>
-                answer === "created"
-                  ? Effect.succeed({ credential, prf: Passkeys.CreatedPrf.Unsupported() })
-                  : Effect.fail(new Passkeys.Cancelled()),
-              ),
-            get: () => Effect.die("no sign-in was asked for"),
-          }),
-        ),
+const creation: AuthApi.CreationOptions = {
+  challenge: "challenge",
+  rp: { name: "Studienbuch" },
+  user: { id: "lena", name: "", displayName: "" },
+  pubKeyCredParams: [],
+};
+
+const withPasskeyDialog = Layer.mergeAll(
+  store,
+  confirmations(),
+  Layer.unwrap(
+    Effect.map(Passkey, ({ dialog, revoked }) =>
+      Layer.mergeAll(
+        AuthApiTesting.layer({
+          passkeyCreationOptions: () =>
+            Effect.succeed({ challenge: "challenge", options: creation }),
+          addPasskey: () => Effect.void,
+          signOut: (token) => Ref.update(revoked, (tokens) => [...tokens, Redacted.value(token)]),
+        }),
+        Layer.succeed(Passkeys.Authenticator)({
+          create: () =>
+            Effect.flatMap(Deferred.await(dialog), (answer) =>
+              answer === "created"
+                ? Effect.succeed({ credential, prf: Passkeys.CreatedPrf.Unsupported() })
+                : Effect.fail(new Passkeys.Cancelled()),
+            ),
+          get: () => Effect.die("no sign-in was asked for"),
+        }),
       ),
     ),
-  ).pipe(Layer.provideMerge(passkeyDialog));
+  ),
+).pipe(Layer.provideMerge(passkeyDialog));
 
 describe("Account", () => {
   it.effect("refuses another account while the device holds one whose session ended", () =>
@@ -160,10 +155,12 @@ describe("Account", () => {
       yield* Effect.gen(function* () {
         const sessions = yield* SessionStore.Service;
 
-        yield* sessions.signedIn({ ...signedIn("lena", "token-lena"), demo: false });
+        yield* sessions.signedIn({ ...signedIn("lena", "token-lena"), demo: false }, false);
         yield* sessions.ended;
 
-        const refused = yield* Effect.flip(Account.signIn("tom@example.org", "geheim-genug"));
+        const refused = yield* Effect.flip(
+          Account.signIn("tom@example.org", "geheim-genug", false),
+        );
 
         assert.strictEqual(refused.reason, "other-account");
         assert.deepStrictEqual(yield* Ref.get(revoked), ["token-tom"]);
@@ -172,7 +169,7 @@ describe("Account", () => {
           Option.some("lena"),
         );
 
-        yield* Account.signIn("lena@example.org", "geheim-genug");
+        yield* Account.signIn("lena@example.org", "geheim-genug", false);
 
         assert.isTrue(
           Option.isSome(Option.flatMap(yield* sessions.current, (signed) => signed.token)),
@@ -312,8 +309,8 @@ describe("Account", () => {
       yield* Effect.gen(function* () {
         const sessions = yield* SessionStore.Service;
 
-        yield* sessions.signedIn({ ...signedIn("lena", "token-lena"), demo: false });
-        yield* Account.signOut((accountId) =>
+        yield* sessions.signedIn({ ...signedIn("lena", "token-lena"), demo: false }, false);
+        yield* Account.signOut(({ accountId }) =>
           Ref.update(forgotten, (accounts) => [...accounts, accountId]),
         );
 
@@ -341,12 +338,12 @@ describe("Account", () => {
 
       yield* confirmed("Lena@example.org", "lena", "token-lena");
 
-      const refused = yield* Effect.flip(Account.finish("tom@example.org", true));
+      const refused = yield* Effect.flip(Account.finish("tom@example.org", true, false));
 
       assert.deepStrictEqual(refused, new Account.Problem({ reason: "failed" }));
       assert.isTrue(Option.isNone(yield* sessions.current));
 
-      yield* Account.finish(" lena@example.org", false);
+      yield* Account.finish(" lena@example.org", false, false);
 
       assert.deepStrictEqual(
         Option.map(yield* sessions.current, (signed) => signed.accountId),
@@ -376,11 +373,11 @@ describe("Account", () => {
 
       yield* confirmed("lena@example.org", "lena", "token-lena");
 
-      const finishing = yield* Effect.forkChild(Account.finish("lena@example.org", true), {
+      const finishing = yield* Effect.forkChild(Account.finish("lena@example.org", true, false), {
         startImmediately: true,
       });
 
-      const leaving = yield* Effect.forkChild(Account.leave("lena@example.org"), {
+      const leaving = yield* Effect.forkChild(Account.leave("lena@example.org", false), {
         startImmediately: true,
       });
 
@@ -396,7 +393,7 @@ describe("Account", () => {
         ),
         Option.some("token-lena"),
       );
-    }).pipe(Effect.provide(withPasskeyDialog())),
+    }).pipe(Effect.provide(withPasskeyDialog)),
   );
 
   // The dialog was closed and the screen went without "Später": the student meant to go on, and only
@@ -410,13 +407,15 @@ describe("Account", () => {
 
           yield* confirmed("lena@example.org", "lena", "token-lena");
 
-          const finishing = yield* Effect.forkChild(Account.finish("lena@example.org", true), {
-            startImmediately: true,
-          });
+          const finishing = yield* Effect.forkChild(
+            Account.finish("lena@example.org", true, publicComputer),
+            { startImmediately: true },
+          );
 
-          const leaving = yield* Effect.forkChild(Account.leave("lena@example.org"), {
-            startImmediately: true,
-          });
+          const leaving = yield* Effect.forkChild(
+            Account.leave("lena@example.org", publicComputer),
+            { startImmediately: true },
+          );
 
           yield* Deferred.succeed(dialog, "closed");
           yield* Fiber.await(finishing);
@@ -426,7 +425,7 @@ describe("Account", () => {
             revoked: yield* Ref.get(revoked),
             signedIn: Option.map(yield* sessions.current, (signed) => signed.accountId),
           };
-        }).pipe(Effect.provide(withPasskeyDialog(Device.layer({ name: "phone", publicComputer }))));
+        }).pipe(Effect.provide(withPasskeyDialog));
 
       assert.deepStrictEqual(
         [yield* leaveAfterClosedDialog(false), yield* leaveAfterClosedDialog(true)],
@@ -438,13 +437,118 @@ describe("Account", () => {
     }),
   );
 
+  // A public computer's session stays in memory however the student got in, and a kept one doesn't.
+  it.effect("hands the tab's choice to the session on every way in", () =>
+    Effect.gen(function* () {
+      const lena = Effect.succeed(signedIn("lena", "token-lena"));
+
+      const api = AuthApiTesting.layer({
+        signIn: () => lena,
+        resetPassword: () => Effect.void,
+        passkeySignInOptions: Effect.succeed({ challenge: "c", options: { challenge: "c" } }),
+        passkeySignIn: () => lena,
+      });
+
+      const authenticator = Layer.succeed(Passkeys.Authenticator)({
+        create: () => Effect.die("no passkey was created"),
+        get: () => Effect.succeed({ credential, prf: Option.none() }),
+      });
+
+      const ways = {
+        password: (choice: boolean) => Account.signIn("lena@example.org", "geheim-genug", choice),
+        reset: (choice: boolean) =>
+          Account.resetPassword("lena@example.org", "145838", "ganz-neu-4567", choice),
+        passkey: (choice: boolean) => Account.signInWithPasskey(choice),
+        signUp: (choice: boolean) =>
+          Effect.andThen(
+            confirmed("lena@example.org", "lena", "token-lena"),
+            Account.finish("lena@example.org", false, choice),
+          ),
+      };
+
+      const kept = <E, R>(way: (choice: boolean) => Effect.Effect<unknown, E, R>) =>
+        Effect.forEach([false, true], (choice) =>
+          way(choice).pipe(
+            Effect.andThen(SessionStore.Service.use((sessions) => sessions.current)),
+            Effect.map(Option.map((signed) => signed.publicComputer)),
+            Effect.provide(Layer.mergeAll(store, confirmations(), api, authenticator)),
+          ),
+        );
+
+      const both = [Option.some(false), Option.some(true)];
+
+      assert.deepStrictEqual(
+        {
+          password: yield* kept(ways.password),
+          reset: yield* kept(ways.reset),
+          passkey: yield* kept(ways.passkey),
+          signUp: yield* kept(ways.signUp),
+        },
+        { password: both, reset: both, passkey: both, signUp: both },
+      );
+    }),
+  );
+
+  // A passkey a shared computer kept would sign the next person there in as the student, so a public
+  // computer's new passkey goes on the student's phone or a security key.
+  it.effect("puts a public computer's new passkey on another device", () =>
+    Effect.gen(function* () {
+      const api = AuthApiTesting.layer({
+        // As Better Auth answers `authenticatorAttachment` in the query.
+        passkeyCreationOptions: (_, offDevice) =>
+          Effect.succeed({
+            challenge: "challenge",
+            options: {
+              ...creation,
+              authenticatorSelection: offDevice
+                ? { authenticatorAttachment: "cross-platform" }
+                : {},
+            },
+          }),
+        addPasskey: () => Effect.void,
+      });
+
+      const asked = (publicComputer: boolean) =>
+        Effect.gen(function* () {
+          const created = yield* Ref.make(Option.none<AuthApi.CreationOptions>());
+
+          const authenticator = Layer.succeed(Passkeys.Authenticator)({
+            create: (options) =>
+              Effect.as(Ref.set(created, Option.some(options)), {
+                credential,
+                prf: Passkeys.CreatedPrf.Unsupported(),
+              }),
+            get: () => Effect.die("no sign-in was asked for"),
+          });
+
+          yield* Effect.andThen(
+            confirmed("lena@example.org", "lena", "token-lena"),
+            Account.finish("lena@example.org", true, publicComputer),
+          ).pipe(Effect.provide(Layer.mergeAll(store, confirmations(), api, authenticator)));
+
+          return Option.map(yield* Ref.get(created), (options) => ({
+            attachment: options.authenticatorSelection?.authenticatorAttachment,
+            hints: options.hints,
+          }));
+        });
+
+      assert.deepStrictEqual(
+        [yield* asked(false), yield* asked(true)],
+        [
+          Option.some({ attachment: undefined, hints: undefined }),
+          Option.some({ attachment: "cross-platform", hints: ["hybrid", "security-key"] }),
+        ],
+      );
+    }),
+  );
+
   // The reset code only sets the password; the device then signs in with it like any other.
   it.effect("resets a forgotten password, then signs in with the new one", () =>
     Effect.gen(function* () {
       const calls = yield* Ref.make<ReadonlyArray<string>>([]);
       const sessions = yield* SessionStore.Service;
 
-      yield* Account.resetPassword(" lena@example.org", "145 838", "ganz-neu-4567").pipe(
+      yield* Account.resetPassword(" lena@example.org", "145 838", "ganz-neu-4567", false).pipe(
         Effect.provide(
           AuthApiTesting.layer({
             resetPassword: (email, code, password) =>
@@ -482,15 +586,15 @@ describe("Account", () => {
           Option.map((signed) => signed.demo),
         );
 
-        yield* Account.signIn(" Lena@Demo.Studienbuch.App ", "review-passwort");
+        yield* Account.signIn(" Lena@Demo.Studienbuch.App ", "review-passwort", false);
         const typed = yield* demo;
-        yield* Account.signIn("lena@notdemo.studienbuch.app", "review-passwort");
+        yield* Account.signIn("lena@notdemo.studienbuch.app", "review-passwort", false);
         const lookalike = yield* demo;
-        yield* Account.signIn("lena@demo.studienbuch.app", "review-passwort");
-        yield* Account.signInWithPasskey();
+        yield* Account.signIn("lena@demo.studienbuch.app", "review-passwort", false);
+        yield* Account.signInWithPasskey(false);
         const passkey = yield* demo;
         yield* sessions.forget;
-        yield* Account.signIn("lena@demo.studienbuch.app", "echtes-konto");
+        yield* Account.signIn("lena@demo.studienbuch.app", "echtes-konto", false);
         const realAccount = yield* demo;
 
         assert.deepStrictEqual(
@@ -530,7 +634,7 @@ describe("Account", () => {
   it.effect("says the server failed rather than that the device is offline", () =>
     Effect.gen(function* () {
       const reasonFor = (error: AuthApi.Refused | AuthApi.Unreachable | AuthApi.ServerFailed) =>
-        Effect.flip(Account.signIn("lena@example.org", "lange-genug-123")).pipe(
+        Effect.flip(Account.signIn("lena@example.org", "lange-genug-123", false)).pipe(
           Effect.map((problem) => problem.reason),
           Effect.provide(
             Layer.merge(store, AuthApiTesting.layer({ signIn: () => Effect.fail(error) })),
@@ -552,7 +656,12 @@ describe("Account", () => {
   it("tells a signed-in device from one whose session ended or that can't hold an account", () => {
     const signed = (token: Option.Option<string>) =>
       AsyncResult.success(
-        Option.some({ accountId: "lena", token: Option.map(token, Redacted.make), demo: false }),
+        Option.some({
+          accountId: "lena",
+          token: Option.map(token, Redacted.make),
+          demo: false,
+          publicComputer: false,
+        }),
       );
 
     assert.deepStrictEqual(
@@ -564,6 +673,26 @@ describe("Account", () => {
         signed(Option.none()),
       ].map(Account.access),
       ["loading", "unavailable", "signed-out", "signed-in", "ended"],
+    );
+  });
+
+  // Storage outside an account, such as "Dieses Gerät"'s, reads this. A held account's choice
+  // wins over the tab's, and a device that can't hold an account still shows its diagnostics.
+  it("keeps nothing as the held account chose, else as the tab chose", () => {
+    const held = (publicComputer: boolean) =>
+      AsyncResult.success(
+        Option.some({ accountId: "lena", token: Option.none(), demo: false, publicComputer }),
+      );
+
+    assert.deepStrictEqual(
+      [
+        Account.keepsNothing(AsyncResult.initial(), true),
+        Account.keepsNothing(AsyncResult.fail("ServerOrigin.NoServer"), true),
+        Account.keepsNothing(AsyncResult.success(Option.none()), true),
+        Account.keepsNothing(held(false), true),
+        Account.keepsNothing(held(true), false),
+      ].map(AsyncResult.value),
+      [Option.none(), Option.some(true), Option.some(true), Option.some(false), Option.some(true)],
     );
   });
 

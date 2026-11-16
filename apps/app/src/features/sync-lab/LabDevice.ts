@@ -229,7 +229,7 @@ export const make = Effect.fn("LabDevice.make")(function* (spec: Spec) {
       AuthApi.layer,
       CryptoSuite.layer,
       Layer.fresh(Reactivity.layer),
-    ).pipe(Layer.provideMerge(Layers.device({ name: deviceName, publicComputer: false }))),
+    ).pipe(Layer.provideMerge(Layers.device({ name: deviceName }))),
   );
 
   const engine = yield* SubscriptionRef.make<Engine>(Engine.Starting());
@@ -247,7 +247,10 @@ export const make = Effect.fn("LabDevice.make")(function* (spec: Spec) {
     }
 
     const account = yield* accounts.signIn(spec.persona);
-    yield* store.signedIn({ accountId: account.accountId, token: account.token, demo: false });
+    yield* store.signedIn(
+      { accountId: account.accountId, token: account.token, demo: false },
+      false,
+    );
 
     return { accountId: account.accountId, rootKey: Option.some(account.rootKey) };
   });
@@ -261,7 +264,7 @@ export const make = Effect.fn("LabDevice.make")(function* (spec: Spec) {
       ),
       Layer.provideMerge(SessionStore.session(accountId)),
       Layer.provideMerge(LabLifecycle.layer(faults)),
-      Layer.provideMerge(Layers.account(accountId)),
+      Layer.provideMerge(Layers.account(accountId, false)),
     );
 
   const start = Effect.gen(function* () {

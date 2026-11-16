@@ -9,18 +9,23 @@ import { Layers } from "./Layers.ts";
 
 const origin = new URL(window.location.origin);
 
-const signedIn = (device: string, publicComputer: boolean) =>
-  Layers.account("lena").pipe(Layer.provideMerge(Layers.device({ name: device, publicComputer })));
+const device = "shared";
 
-/** Lena signs in, the engine stores her key and a row, and the tab closes. */
-const visit = (device: string, publicComputer: boolean) =>
+/** The account signs in on the shared device, stores its key and a row, and the tab closes. */
+const visit = (accountId: string, publicComputer: boolean) =>
   Effect.gen(function* () {
     const secrets = yield* Ports.DeviceSecrets;
     const sql = yield* SqlClient.SqlClient;
 
     yield* secrets.set("root-key", crypto.getRandomValues(new Uint8Array(32)));
     yield* sql`insert into base_row (space, tbl, id, version, data) values ('n', 'Homework', 'h', 1, '{}')`;
-  }).pipe(Effect.provide(signedIn(device, publicComputer)));
+  }).pipe(
+    Effect.provide(
+      Layers.account(accountId, publicComputer).pipe(
+        Layer.provideMerge(Layers.device({ name: device })),
+      ),
+    ),
+  );
 
 const keychainEntries = Effect.promise(
   () =>
@@ -40,32 +45,35 @@ const keychainEntries = Effect.promise(
     }),
 );
 
-const opfsDevices = Effect.promise(async () => {
+const opfsDatabases = Effect.promise(async () => {
   const root = await navigator.storage.getDirectory();
   const studienbuch = await root.getDirectoryHandle("studienbuch", { create: true });
+  const shared = await studienbuch.getDirectoryHandle(device, { create: true });
   const names: Array<string> = [];
 
-  for await (const [name] of studienbuch.entries()) names.push(name);
+  for await (const [name] of shared.entries()) names.push(name);
 
   return names;
 });
 
-// On a public computer, closing the tab must leave nothing of the account behind.
-it.effect("a public computer keeps nothing of the account in IndexedDB or OPFS", () =>
+// On a public computer, closing the tab must leave nothing of the account behind, even on a
+// device that keeps another account's data.
+it.effect("a public computer's account keeps nothing in IndexedDB or OPFS", () =>
   Effect.gen(function* () {
-    yield* visit("own", false);
-    yield* visit("public", true);
+    yield* visit("lena", false);
+    yield* visit("tom", true);
 
     const entries = yield* keychainEntries;
-    const devices = yield* opfsDevices;
+    const databases = yield* opfsDatabases;
 
-    const rootKey = (device: string) => `secret.${Names.secrets(origin, device, "lena")}.root-key`;
+    const rootKey = (accountId: string) =>
+      `secret.${Names.secrets(origin, device, accountId)}.root-key`;
 
-    // The same visit on a device of its own leaves both, so the checks can see them.
-    assert.include(entries, rootKey("own"));
-    assert.include(devices, "own");
+    // The same visit by an account the device keeps leaves both, so the checks can see them.
+    assert.include(entries, rootKey("lena"));
+    assert.include(databases, Names.database(origin, device, "lena"));
 
-    assert.notInclude(entries, rootKey("public"));
-    assert.notInclude(devices, "public");
+    assert.notInclude(entries, rootKey("tom"));
+    assert.notInclude(databases, Names.database(origin, device, "tom"));
   }),
 );

@@ -16,7 +16,7 @@ import { Forgetting } from "./Forgetting.ts";
 const origin = new URL("https://one.example");
 
 const device = Layer.mergeAll(
-  Device.layer({ name: "ipad", publicComputer: false }),
+  Device.layer({ name: "ipad" }),
   Layer.succeed(Ports.Server)({ origin }),
 );
 

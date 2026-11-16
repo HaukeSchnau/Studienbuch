@@ -38,7 +38,7 @@ it.effect("keeps both sessions when two accounts sign in at once", () =>
     Effect.provide(
       DeviceSessions.layer.pipe(
         Layer.provide(slowKeychain),
-        Layer.provide(Device.layer({ name: "phone", publicComputer: false })),
+        Layer.provide(Device.layer({ name: "phone" })),
         Layer.provide(Layer.succeed(Ports.Server)({ origin: new URL("https://one.example") })),
       ),
     ),

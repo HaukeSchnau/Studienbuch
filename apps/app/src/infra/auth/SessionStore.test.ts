@@ -16,7 +16,7 @@ import { SessionStore } from "./SessionStore.ts";
 const lena = { accountId: "lena", token: Redacted.make("token-1"), demo: true };
 
 const device = Layer.mergeAll(
-  Device.layer({ name: "phone", publicComputer: false }),
+  Device.layer({ name: "phone" }),
   Layer.succeed(Ports.Server)({ origin: new URL("https://one.example") }),
 );
 
@@ -38,7 +38,9 @@ describe("SessionStore", () => {
     "keeps the account and its demo sign-in across restarts, and forgets it at sign-out",
     () =>
       Effect.gen(function* () {
-        yield* restarted(Effect.flatMap(SessionStore.Service, (store) => store.signedIn(lena)));
+        yield* restarted(
+          Effect.flatMap(SessionStore.Service, (store) => store.signedIn(lena, false)),
+        );
 
         const afterRestart = yield* restarted(
           Effect.flatMap(SessionStore.Service, (store) => store.current),
@@ -60,6 +62,31 @@ describe("SessionStore", () => {
       }).pipe(Effect.provide(MemoryKeychain.layer())),
   );
 
+  // "Öffentlicher Computer" on the sign-in screen: the session stays in this run, and ticking it
+  // again can't move an account the device already keeps.
+  it.effect("keeps a public computer's session in memory, and a kept account where it is", () =>
+    Effect.gen(function* () {
+      const signedIn = (signed: typeof lena, publicComputer: boolean) =>
+        Effect.flatMap(SessionStore.Service, (store) =>
+          Effect.andThen(store.signedIn(signed, publicComputer), store.current),
+        );
+
+      const current = Effect.flatMap(SessionStore.Service, (store) => store.current);
+      const publicOnly = yield* restarted(signedIn(lena, true));
+      const afterRestart = yield* restarted(current);
+
+      yield* restarted(signedIn(lena, false));
+
+      const again = yield* restarted(signedIn({ ...lena, token: Redacted.make("token-2") }, true));
+
+      assert.deepStrictEqual(
+        [publicOnly, afterRestart, again].map(Option.map((signed) => signed.publicComputer)),
+        [Option.some(true), Option.none(), Option.some(false)],
+      );
+      assert.deepStrictEqual(tokenOf(yield* restarted(current)), Option.some("token-2"));
+    }).pipe(Effect.provide(MemoryKeychain.layer())),
+  );
+
   it.effect("ends the engine's session when the server forgot it while the app was away", () =>
     Effect.gen(function* () {
       const lifecycle = yield* Queue.unbounded<Ports.LifecycleState>();
@@ -79,7 +106,7 @@ describe("SessionStore", () => {
       yield* Effect.gen(function* () {
         const store = yield* SessionStore.Service;
 
-        yield* store.signedIn(lena);
+        yield* store.signedIn(lena, false);
 
         const engine = yield* Ports.Session;
         const tokens = yield* Stream.toQueue(engine.changes, { capacity: "unbounded" });

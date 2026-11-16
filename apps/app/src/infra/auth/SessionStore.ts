@@ -14,7 +14,7 @@ import { AuthApi } from "./AuthApi.ts";
 
 // Which account this device is signed in as. The token sits in `DeviceSessions`, so the app knows
 // at start which database to open without asking the network. A device holds one account at a
-// time: `Account.keep` refuses a second.
+// time: `Account.keep` refuses a second. A public computer's session stays in this run's memory.
 
 export * as SessionStore from "./SessionStore.ts";
 
@@ -27,6 +27,8 @@ export interface Signed {
   readonly token: Option.Option<Redacted.Redacted>;
   /** Signed in with a password at a demo account's address, as a persona (`Demo.isDemoSignIn`). */
   readonly demo: boolean;
+  /** `Device.PublicComputer` for the account, fixed while the device holds it. */
+  readonly publicComputer: boolean;
 }
 
 export class Service extends Context.Service<
@@ -35,8 +37,13 @@ export class Service extends Context.Service<
     readonly current: Effect.Effect<Option.Option<Signed>>;
     /** The account now, then each change. */
     readonly changes: Stream.Stream<Option.Option<Signed>>;
+    /**
+     * Keeps a new session, in memory only when `publicComputer`. An account the device holds
+     * already stays where it is.
+     */
     readonly signedIn: (
       session: DeviceSessions.Session,
+      publicComputer: boolean,
     ) => Effect.Effect<void, Keychain.Unavailable>;
     /**
      * The server ended the session. The device stops using the token until the account signs in
@@ -54,7 +61,12 @@ export const layer = Layer.effect(Service)(
 
     const stored = Option.map(
       Option.fromIterable(yield* sessions.all),
-      ({ accountId, token, demo }): Signed => ({ accountId, token: Option.some(token), demo }),
+      ({ accountId, token, demo }): Signed => ({
+        accountId,
+        token: Option.some(token),
+        demo,
+        publicComputer: false,
+      }),
     );
 
     const ref = yield* SubscriptionRef.make(stored);
@@ -62,14 +74,27 @@ export const layer = Layer.effect(Service)(
     return {
       current: SubscriptionRef.get(ref),
       changes: SubscriptionRef.changes(ref),
-      signedIn: ({ accountId, token, demo }) =>
-        sessions
-          .set({ accountId, token, demo })
-          .pipe(
-            Effect.andThen(
-              SubscriptionRef.set(ref, Option.some({ accountId, token: Option.some(token), demo })),
-            ),
-          ),
+      signedIn: Effect.fn("SessionStore.signedIn")(function* (
+        { accountId, token, demo }: DeviceSessions.Session,
+        chosen: boolean,
+      ) {
+        const held = Option.filter(
+          yield* SubscriptionRef.get(ref),
+          (signed) => signed.accountId === accountId,
+        );
+
+        const publicComputer = Option.match(held, {
+          onNone: () => chosen,
+          onSome: (signed) => signed.publicComputer,
+        });
+
+        if (!publicComputer) yield* sessions.set({ accountId, token, demo });
+
+        yield* SubscriptionRef.set(
+          ref,
+          Option.some({ accountId, token: Option.some(token), demo, publicComputer }),
+        );
+      }),
       ended: SubscriptionRef.update(
         ref,
         Option.map((signed) => ({ ...signed, token: Option.none() })),
@@ -77,10 +102,10 @@ export const layer = Layer.effect(Service)(
       forget: Effect.flatMap(SubscriptionRef.get(ref), (current) =>
         Option.match(current, {
           onNone: () => Effect.void,
-          onSome: ({ accountId }) =>
-            sessions
-              .remove(accountId)
-              .pipe(Effect.andThen(SubscriptionRef.set(ref, Option.none()))),
+          onSome: ({ accountId, publicComputer }) =>
+            (publicComputer ? Effect.void : sessions.remove(accountId)).pipe(
+              Effect.andThen(SubscriptionRef.set(ref, Option.none())),
+            ),
         }),
       ),
     };
