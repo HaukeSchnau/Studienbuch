@@ -380,8 +380,10 @@ export const make = Effect.fnUntraced(function* (
   });
 
   /**
-   * Runs `effect` in one transaction, then invalidates the tables it changed and reports how many
-   * commands wait, as counted in that transaction.
+   * Runs `effect` in one transaction, invalidates the tables it returns in one call, and reports
+   * how many commands wait. The tables come back as a value: Effect runs each `invalidate` made in
+   * a transaction on its own after the commit, outside any `withBatch`, so a screen would refresh
+   * once per written row.
    */
   const commit = <A extends { readonly tables: Iterable<string> }, E>(
     effect: Effect.Effect<A, E, SqlClient.SqlClient>,

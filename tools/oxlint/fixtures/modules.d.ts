@@ -2,6 +2,8 @@
 // needs its import to resolve.
 declare module "@effect/atom-react";
 
+declare module "@effect/sql-sqlite-wasm/SqliteClient";
+
 declare module "@effect/vitest";
 
 declare module "@react-navigation/native";

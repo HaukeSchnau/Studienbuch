@@ -21,6 +21,7 @@ import noManualEffectRuntimeInTests from "./no-manual-effect-runtime-in-tests.ts
 import noNativeTitleTooltip from "./no-native-title-tooltip.ts";
 import noPollingLoopInTests from "./no-polling-loop-in-tests.ts";
 import noRawResizeObserver from "./no-raw-resize-observer.ts";
+import noSqliteUpdateHooks from "./no-sqlite-update-hooks.ts";
 import noRealTimeWaitInTests from "./no-real-time-wait-in-tests.ts";
 import noTestInLoop from "./no-test-in-loop.ts";
 import noTestTimeoutOrUnreasonedSkip from "./no-test-timeout-or-unreasoned-skip.ts";
@@ -60,6 +61,7 @@ export default definePlugin({
     "no-native-title-tooltip": noNativeTitleTooltip,
     "no-polling-loop-in-tests": noPollingLoopInTests,
     "no-raw-resize-observer": noRawResizeObserver,
+    "no-sqlite-update-hooks": noSqliteUpdateHooks,
     "no-real-time-wait-in-tests": noRealTimeWaitInTests,
     "no-test-in-loop": noTestInLoop,
     "no-test-timeout-or-unreasoned-skip": noTestTimeoutOrUnreasonedSkip,
