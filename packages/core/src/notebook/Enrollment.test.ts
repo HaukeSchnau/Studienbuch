@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import { Sync } from "@stu/sync";
+import { Sync, Tx } from "@stu/sync";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import { Course } from "../school/Course.ts";
@@ -29,8 +29,10 @@ const courseSpaces = new Set<string>([Fixture.mathE, Fixture.mathG, Fixture.germ
 const granted = (db: MemoryTx.Database) =>
   db.transaction(
     { actor: "server", writes: [], location: "server" },
-    Sync.grants(Enrollment.courseMembership, notebook, (_kind, spaces) =>
-      Effect.succeed(spaces.filter((space) => courseSpaces.has(space))),
+    Effect.map(
+      Effect.flatMap(Tx.Service, (tx) => tx.list(Enrollment.Row, notebook)),
+      (rows) =>
+        Sync.grants(Enrollment.courseMembership, rows).filter((space) => courseSpaces.has(space)),
     ),
   );
 

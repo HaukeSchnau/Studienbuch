@@ -2,8 +2,6 @@ import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
-import { CanonicalJson } from "../transaction/CanonicalJson.ts";
-import { Tx } from "../transaction/Tx.ts";
 import { Sync } from "./Sync.ts";
 
 const Notebook = Sync.spaceKind("notebook", { encryption: "sealed", roles: ["owner"] });
@@ -281,52 +279,6 @@ describe("Sync.invoke", () => {
         "Sync.OlderVersion",
       ]);
     }),
-  );
-});
-
-/** A server `Tx` over rows held in memory, enough to read a space's rows. */
-const memoryTx = (rows: ReadonlyArray<{ readonly id: string; readonly row: unknown }>) =>
-  Tx.make({
-    actor: "server",
-    location: "server",
-    writes: [],
-    read: () => Effect.succeedNone,
-    list: () =>
-      Effect.succeed(
-        rows.map(({ id, row }) => ({
-          id,
-          data: Result.getOrElse(CanonicalJson.encode(row), () => ""),
-        })),
-      ),
-    write: () => Effect.void,
-  });
-
-describe("Sync.grants", () => {
-  it.effect(
-    "keeps only existing spaces of the rule's kind, so a notebook's id grants nothing",
-    () =>
-      Effect.gen(function* () {
-        const kinds = new Map([
-          ["course-ma", "course"],
-          ["course-de", "course"],
-          ["notebook-tom", "notebook"],
-        ]);
-
-        const existing = (kind: string, spaces: ReadonlyArray<string>) =>
-          Effect.succeed(spaces.filter((space) => kinds.get(space) === kind));
-
-        const granted = yield* Sync.grants(courses, "notebook-lena", existing).pipe(
-          Effect.provideService(
-            Tx.Service,
-            memoryTx([
-              { id: "e1", row: { courseIds: ["course-ma", "notebook-tom"] } },
-              { id: "e2", row: { courseIds: ["course-ma", "course-de", "course-gone"] } },
-            ]),
-          ),
-        );
-
-        expect(granted).toEqual(["course-ma", "course-de"]);
-      }),
   );
 });
 

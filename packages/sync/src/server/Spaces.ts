@@ -12,10 +12,8 @@ import * as SqlClient from "effect/sql/SqlClient";
 import type * as SqlError from "effect/sql/SqlError";
 import type { Sync } from "../definition/Sync.ts";
 import { Ids } from "../protocol/Ids.ts";
-import { Tx } from "../transaction/Tx.ts";
 import { Membership } from "./Membership.ts";
 import { Pokes } from "./Pokes.ts";
-import { PostgresTx } from "./PostgresTx.ts";
 import { SyncSchema } from "./SyncSchema.ts";
 
 export * as Spaces from "./Spaces.ts";
@@ -64,8 +62,6 @@ const fitsId = Schema.is(Ids.Id);
 
 const isId = (id: string): boolean => fitsId(id);
 
-const isTxRefusal = Schema.is(Tx.Refused);
-
 export const make = Effect.gen(function* () {
   const sql = yield* SqlClient.SqlClient;
   const definition = yield* SyncSchema.Service;
@@ -78,21 +74,8 @@ export const make = Effect.gen(function* () {
    * accounts whose memberships changed.
    */
   const regrant = Effect.fnUntraced(function* (spaces: ReadonlyArray<string>) {
-    if (membershipTables.length === 0 || spaces.length === 0) return;
-    const tx = yield* PostgresTx.make({ actor: "", writes: [] });
-    const changed = new Set<string>();
-
-    for (const space of spaces) {
-      const accounts = yield* Membership.apply(definition, space, membershipTables).pipe(
-        Effect.provideService(Tx.Service, tx),
-        // The rows a rule reads were written through their table's codec.
-        Effect.catchIf(isTxRefusal, Effect.die),
-      );
-
-      for (const account of accounts) changed.add(account);
-    }
-
-    yield* Pokes.notify({ spaces: [], accounts: [...changed].sort() });
+    const accounts = yield* Membership.apply(definition, spaces, membershipTables);
+    yield* Pokes.notify({ spaces: [], accounts });
   });
 
   const children = (parent: string, account?: string) =>

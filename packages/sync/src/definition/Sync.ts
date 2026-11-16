@@ -31,7 +31,7 @@ import * as Schema from "effect/Schema";
 import { Ids } from "../protocol/Ids.ts";
 import { Protocol } from "../protocol/Protocol.ts";
 import { CanonicalJson } from "../transaction/CanonicalJson.ts";
-import { Tx } from "../transaction/Tx.ts";
+import type { Tx } from "../transaction/Tx.ts";
 
 export * as Sync from "./Sync.ts";
 
@@ -332,24 +332,17 @@ export interface AnyMembershipRule {
 }
 
 /**
- * The spaces a rule grants the members of `space`, from that space's current rows. It keeps only
- * ids that `existing` reports as spaces of the rule's kind, so an enrollment that names a notebook
- * grants nothing.
+ * The keys a rule names in one space's rows of its table, each once. The server grants the spaces
+ * of the rule's kind with those keys under the space's parent, so a key that names a notebook, or
+ * no space at all, grants nothing.
  */
-export const grants = <E, R>(
+export const grants = (
   rule: AnyMembershipRule,
-  space: string,
-  existing: (
-    kind: string,
-    spaces: ReadonlyArray<string>,
-  ) => Effect.Effect<ReadonlyArray<string>, E, R>,
-): Effect.Effect<ReadonlyArray<string>, Tx.Error | E, Tx.Service | R> =>
-  Effect.flatMap(Tx.Service, (tx) => tx.list(rule.from, space)).pipe(
-    // `tx.list` decoded the rows with the rule's own table.
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- see above
-    Effect.map((rows) => [...new Set(rule.spaces(rows as never))]),
-    Effect.flatMap((spaces) => existing(rule.kind.name, spaces)),
-  );
+  rows: ReadonlyArray<Tx.Entry<Row<Any>>>,
+): ReadonlyArray<string> =>
+  // The server decoded the rows with the rule's own table.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- see above
+  [...new Set(rule.spaces(rows as never))];
 
 // The schema
 

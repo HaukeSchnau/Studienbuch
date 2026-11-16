@@ -88,11 +88,7 @@ export const make = Effect.gen(function* () {
 
           if (version === locked.version) return result;
 
-          const accounts = yield* Effect.provideService(
-            Membership.apply(definition, space, tables),
-            Tx.Service,
-            tx,
-          );
+          const accounts = yield* Membership.apply(definition, [space], tables);
 
           yield* Pokes.notify({
             spaces: version === undefined ? [] : [{ space, version }],
