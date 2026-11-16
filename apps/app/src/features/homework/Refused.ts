@@ -9,13 +9,16 @@ import * as Schema from "effect/Schema";
 export * as Refused from "./Refused.ts";
 
 // The fields a line names, from any of the notebook's mutators. Each is optional, so an argument
-// shape from an older or newer app still gives a line.
+// shape from an older or newer app still gives a line. The mutators' JSON codec stores an absent
+// field as `null`, so this reads them with the same codec.
 const decodeArgs = Schema.decodeUnknownOption(
-  Schema.Struct({
-    id: Schema.optional(Schema.String),
-    title: Schema.optional(Schema.String),
-    doneOn: Schema.optional(Schema.String),
-  }),
+  Schema.toCodecJson(
+    Schema.Struct({
+      id: Schema.optional(Schema.String),
+      title: Schema.optional(Schema.String),
+      doneOn: Schema.optional(Schema.String),
+    }),
+  ),
 );
 
 const about = (verb: string, title: string | undefined) =>
@@ -26,7 +29,10 @@ export const tick = (done: boolean, title: string | undefined) =>
   about(done ? "Abgehakt" : "Wieder geöffnet", title);
 
 /** "Neue Hausaufgabe: …", "Abgehakt: …", "Eine Änderung". */
-export const change = (rejected: Outbox.Rejected, titles: ReadonlyMap<string, string>): string => {
+export const change = (
+  rejected: Pick<Outbox.Rejected, "name" | "args">,
+  titles: ReadonlyMap<string, string>,
+): string => {
   const args = Option.getOrElse(decodeArgs(rejected.args), () => ({
     id: undefined,
     title: undefined,
