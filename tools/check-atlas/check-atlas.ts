@@ -1,4 +1,5 @@
-// Fails when docs/architecture/atlas.html names a repository path that doesn't exist in this tree.
+// Fails when docs/architecture/atlas.html names a repository path that doesn't exist in this tree,
+// or cites an ADR number its ADR map lacks.
 import * as NodeFS from "node:fs";
 import * as NodePath from "node:path";
 
@@ -13,7 +14,7 @@ const missing = AtlasPaths.missing(html, (path) => NodeFS.existsSync(NodePath.jo
 if (missing.length > 0) {
   console.error(
     [
-      `${atlas} names ${missing.length} path${missing.length === 1 ? "" : "s"} that no longer exist:`,
+      `${atlas} names ${missing.length} path${missing.length === 1 ? "" : "s"} or ADR${missing.length === 1 ? "" : "s"} that don't exist:`,
       ...missing.map((path) => `  ${path}`),
       "Update the atlas in the same change that moved or removed them.",
     ].join("\n"),
