@@ -335,56 +335,21 @@ export default defineConfig({
       {
         // packages/core and packages/domain-ui typecheck with the DOM lib for the e2ee and sync code
         // core imports. Core runs in mutators and domain-ui renders on every platform, so their own
-        // code reaches for none of the browser's APIs. packages/ui's `.web.tsx` files may.
+        // code opens no connection. `studienbuch/no-global-process-runtime` keeps them, and
+        // packages/e2ee, off the page, the device and the browser's storage.
         files: scope("packages/core/**", "packages/domain-ui/**"),
         rules: {
           "eslint/no-restricted-globals": [
             "error",
             temporal,
-            ...[
-              "window",
-              "self",
-              "document",
-              "navigator",
-              "location",
-              "history",
-              "screen",
-              "innerWidth",
-              "innerHeight",
-              "devicePixelRatio",
-              "matchMedia",
-              "getComputedStyle",
-              "scrollTo",
-              "addEventListener",
-              "removeEventListener",
-              "alert",
-              "confirm",
-              "prompt",
-              "IntersectionObserver",
-              "MutationObserver",
-              "fetch",
-              "XMLHttpRequest",
-              "WebSocket",
-              "EventSource",
-              "BroadcastChannel",
-              "localStorage",
-              "sessionStorage",
-              "indexedDB",
-              "caches",
-            ].map((name) => ({ name, message: platformNeutral })),
-          ],
-          "eslint/no-restricted-properties": [
-            "error",
-            ...["window", "document", "location"].map((property) => ({
-              object: "globalThis",
-              property,
+            ...["fetch", "XMLHttpRequest", "WebSocket", "EventSource"].map((name) => ({
+              name,
               message: platformNeutral,
             })),
           ],
         },
       },
       {
-        // packages/e2ee stores nothing and opens no connection.
         files: scope("packages/e2ee/**"),
         rules: {
           "eslint/no-restricted-globals": [
@@ -393,10 +358,6 @@ export default defineConfig({
             ...["fetch", "WebSocket", "XMLHttpRequest", "EventSource"].map((name) => ({
               name,
               message: "packages/e2ee opens no connection.",
-            })),
-            ...["localStorage", "sessionStorage", "indexedDB"].map((name) => ({
-              name,
-              message: "packages/e2ee stores nothing.",
             })),
           ],
         },

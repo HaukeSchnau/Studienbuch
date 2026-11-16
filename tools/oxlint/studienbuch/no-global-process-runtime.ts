@@ -13,11 +13,29 @@ const NODE_OS = new Set(["node:os", "os"]);
 
 // The browser's globals for the page, the device and its storage.
 const HOST_GLOBALS = new Set([
+  "addEventListener",
+  "alert",
   "BroadcastChannel",
+  "caches",
+  "confirm",
+  "devicePixelRatio",
   "document",
+  "getComputedStyle",
+  "history",
   "indexedDB",
+  "innerHeight",
+  "innerWidth",
+  "IntersectionObserver",
   "localStorage",
+  "location",
+  "matchMedia",
+  "MutationObserver",
   "navigator",
+  "prompt",
+  "removeEventListener",
+  "screen",
+  "scrollTo",
+  "self",
   "sessionStorage",
   "window",
 ]);
@@ -45,7 +63,7 @@ export default defineRule({
     type: "problem",
     docs: {
       description:
-        "Disallow reading the host in feature code: `process.platform`, `os.arch()`, React Native's `Platform`, `process.env.EXPO_OS` and the browser's `window`, `document`, `navigator`, storage and `BroadcastChannel`.",
+        "Disallow reading the host in feature code: `process.platform`, `os.arch()`, React Native's `Platform`, `process.env.EXPO_OS` and the browser's globals for the page, the device and its storage.",
     },
     messages: {
       hostProcess:
