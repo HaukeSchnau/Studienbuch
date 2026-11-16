@@ -5,7 +5,8 @@ import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 import { Icon } from "@stu/ui/Icon";
 import { Text } from "@stu/ui/Text";
 
-export type Status = "ok" | "pending" | "failed" | "missing";
+/** `warning` works now and puts something at risk, such as a notebook only this device opens. */
+export type Status = "ok" | "pending" | "failed" | "missing" | "warning";
 
 export interface StatusRowProps {
   /** The small line on top, like the time above a lesson. */
@@ -33,8 +34,13 @@ export function StatusRow({
 }: StatusRowProps) {
   const { color } = Theme.useTheme();
 
-  const titleColor =
-    status === "failed" ? color.danger : status === "ok" ? color.accent : color.inkSoft;
+  const titleColor = {
+    ok: color.accent,
+    pending: color.inkSoft,
+    failed: color.danger,
+    missing: color.inkSoft,
+    warning: color.warning,
+  }[status];
 
   return (
     <Pressable
@@ -77,6 +83,14 @@ function Trail({ status, navigates }: { readonly status: Status; readonly naviga
       return (
         <View style={[styles.badge, { backgroundColor: color.dangerTint }]}>
           <Icon name="alert" color={color.danger} size={20} />
+        </View>
+      );
+    case "warning":
+      return navigates ? (
+        <Icon name="chevron" color={color.inkSoft} size={26} />
+      ) : (
+        <View style={[styles.badge, { backgroundColor: color.warningTint }]}>
+          <Icon name="alert" color={color.warning} size={20} />
         </View>
       );
     case "missing":

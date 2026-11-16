@@ -10,6 +10,7 @@ import { StyleSheet, View } from "react-native";
 
 import { HeroScreen } from "../../ui/HeroScreen.tsx";
 import { ProblemText, reasonOf } from "../account/AccountForm.tsx";
+import { SignOutButton } from "../account/SignOutButton.tsx";
 import { KeyProblem, keyReasonOf, MethodRow } from "./KeysUi.tsx";
 import { KeysState } from "./KeysState.ts";
 
@@ -40,6 +41,7 @@ function Unlock({ accountId }: { readonly accountId: string }) {
     <HeroScreen
       title="Notizbuch entsperren"
       subtitle="Du bist angemeldet. Deine Hausaufgaben sind verschlüsselt."
+      back="/"
     >
       <Card padded>
         <View style={styles.rows}>
@@ -76,6 +78,8 @@ function Unlock({ accountId }: { readonly accountId: string }) {
         Studienbuch selbst hat keinen Schlüssel zu deinem Notizbuch. Nur deine Geräte, dein Passkey
         und deine Notfallkarte können es öffnen.
       </Text>
+      {/* Without a passkey or card the notebook stays shut, and the student needs a way out. */}
+      <SignOutButton />
     </HeroScreen>
   );
 }

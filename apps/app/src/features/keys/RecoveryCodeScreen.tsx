@@ -43,7 +43,11 @@ function EnterCode({ accountId }: { readonly accountId: string }) {
   };
 
   return (
-    <HeroScreen title="Notfallkarte" subtitle="Tipp den Code von deiner Karte ein.">
+    <HeroScreen
+      title="Notfallkarte"
+      subtitle="Tipp den Code von deiner Karte ein."
+      back="/notizbuch-entsperren"
+    >
       <Card padded>
         <Field
           label="Code von deiner Notfallkarte"

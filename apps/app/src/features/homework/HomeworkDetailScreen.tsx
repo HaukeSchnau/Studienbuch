@@ -10,8 +10,8 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import type { ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 
-import { confirm } from "../../ui/confirm.ts";
 import { PanelScreen } from "../../ui/PanelScreen.tsx";
+import { useConfirm } from "../../ui/useConfirm.tsx";
 import { KeysState } from "../keys/KeysState.ts";
 import { HomeworkRefusals } from "./HomeworkRefusals.tsx";
 import { HomeworkRoutes } from "./HomeworkRoutes.ts";
@@ -20,7 +20,8 @@ import { OfflineChip } from "../device-status/OfflineChip.tsx";
 
 /**
  * One homework's page, opened from a card or a row: its whole title and text, done or open, and
- * the ways to edit and delete it. Delete asks first, in the system's alert on the phones.
+ * the ways to edit and delete it. Delete asks first: the system's alert on the phones, our dialog
+ * on the web.
  */
 export function HomeworkDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -37,6 +38,7 @@ function AccountDetail({ accountId, id }: { readonly accountId: string; readonly
   const status = useAtomValue(HomeworkState.screen(accountId));
   const toggle = useAtomSet(HomeworkState.setDone(accountId));
   const remove = useAtomSet(HomeworkState.remove(accountId));
+  const confirm = useConfirm();
 
   if (Option.isNone(status)) {
     return <View style={[styles.blank, { backgroundColor: color.panel }]} />;
@@ -53,7 +55,13 @@ function AccountDetail({ accountId, id }: { readonly accountId: string; readonly
           const homework = value.homework.find((each) => each.id === id);
 
           const askToDelete = async (title: string) => {
-            if (!(await confirm("Hausaufgabe löschen?", title, "Löschen"))) return;
+            const answer = await confirm.ask({
+              title: "Hausaufgabe löschen?",
+              paragraphs: [title],
+              proceed: "Löschen",
+            });
+
+            if (answer !== "proceed") return;
 
             back();
             remove({ notebook: value.notebook, id });
@@ -91,6 +99,7 @@ function AccountDetail({ accountId, id }: { readonly accountId: string; readonly
           );
         },
       })}
+      {confirm.dialog}
     </PanelScreen>
   );
 }
