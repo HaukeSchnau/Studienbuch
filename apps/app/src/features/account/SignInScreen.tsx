@@ -14,10 +14,12 @@ import { Steps } from "./Steps.ts";
 
 /**
  * "Anmelden", in the old web's order: email and password, "Passwort vergessen?", then "oder" and
- * the passkey.
+ * the passkey. A device whose session ended goes back to its tabs from here, and a code can't add
+ * another account to it.
  */
 export function SignInScreen() {
   const router = useRouter();
+  const access = AccountState.useAccess();
   const { email, setEmail, password, setPassword, passwordField, toPassword } = useCredentials();
   const keepTyped = useAtomSet(Steps.forgotten);
   const keepSentTo = useAtomSet(Steps.resetSentTo);
@@ -102,11 +104,15 @@ export function SignInScreen() {
           </View>
         ),
       })}
-      <OtherWay
-        question="Zugangscode von deiner Schule?"
-        label="Zugang aktivieren"
-        href="/aktivieren"
-      />
+      {access === "ended" ? (
+        <OtherWay label="Zurück zur Übersicht" href="/" back />
+      ) : (
+        <OtherWay
+          question="Zugangscode von deiner Schule?"
+          label="Zugang aktivieren"
+          href="/aktivieren"
+        />
+      )}
     </>
   );
 }

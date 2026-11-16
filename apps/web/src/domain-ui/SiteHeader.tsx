@@ -60,7 +60,7 @@ export function SiteHeader() {
             wide={item.wide}
           />
         ))}
-        <NavLink href={Site.webApp} label="Anmelden" />
+        <NavLink href={Site.signIn} label="Anmelden" />
       </nav>
     </header>
   );

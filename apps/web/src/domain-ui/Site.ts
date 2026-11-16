@@ -9,8 +9,11 @@ export * as Site from "./Site.ts";
 export const appStore = "https://apps.apple.com/de/app/igs-lilienthal/id6449227364";
 export const playStore = "https://play.google.com/store/apps/details?id=dev.schnau.studienbuch";
 
-/** The web app, on the page's own origin. */
+/** The web app, on the page's own origin. A device without an account opens it at the code. */
 export const webApp = "/app/";
+
+/** The web app's "Anmelden", for someone who has an account. */
+export const signIn = "/app/anmelden";
 
 export const email = "info@urbs.one";
 export const schoolEnquiry = `mailto:${email}?subject=${encodeURIComponent("Studienbuch für unsere Schule")}`;

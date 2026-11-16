@@ -34,10 +34,9 @@ export const run = Effect.gen(function* () {
   yield* DemoKeys.seed;
 
   return yield* Effect.gen(function* () {
-    const today = yield* Schools.today(DemoSchool.timeZone);
-    const school = yield* DemoSchool.data(today);
-    const term = school.year.current.id;
-    yield* Schools.publish(school.data);
+    const today = yield* DemoSchool.today;
+    const { data, term } = yield* DemoSchool.data(today);
+    yield* Schools.publish(data);
 
     // Anyone may sign up to the demo school where anyone may sign in as its students.
     if (Deployment.isDevelopmentOrPreview((yield* Deployment.Current).environment)) {

@@ -1,5 +1,4 @@
 import {
-  CivilTime,
   Course,
   CourseOffering,
   Enrollment,
@@ -89,10 +88,7 @@ const read = Effect.gen(function* () {
     decode.profile,
   )).find((row) => row.space === notebook.id);
 
-  const today = CivilTime.dateIn(
-    yield* Clock.currentTimeMillis,
-    schoolRow?.timeZone ?? CivilTime.TimeZone.make("Europe/Berlin"),
-  );
+  const today = School.today(schoolRow, yield* Clock.currentTimeMillis);
 
   const terms = inSchool(yield* Effect.flatMap(db.select().from(Device.Term), decode.term));
 

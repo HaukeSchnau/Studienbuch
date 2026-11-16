@@ -106,7 +106,7 @@ const make = Effect.gen(function* () {
     latest: (id) => Option.fromNullishOr(newest.get(id)),
     server: Stream.tick(every).pipe(
       Stream.mapEffect(() => Effect.provide(ask, services)),
-      Stream.changesWith((a, b) => JSON.stringify(a) === JSON.stringify(b)),
+      Stream.changes,
     ),
   });
 });
