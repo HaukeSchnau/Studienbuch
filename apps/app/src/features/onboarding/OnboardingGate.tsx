@@ -4,6 +4,7 @@ import * as AsyncResult from "effect/reactivity/AsyncResult";
 import type { ReactNode } from "react";
 
 import { KeysState } from "../keys/KeysState.ts";
+import { NotebookKeys } from "../keys/NotebookKeys.ts";
 import { Onboarding } from "./Onboarding.ts";
 import { OnboardingScreen } from "./OnboardingScreen.tsx";
 import { OnboardingState } from "./OnboardingState.ts";
@@ -32,9 +33,11 @@ function Gate({
   const status = useAtomValue(KeysState.status(accountId));
   const reading = useAtomValue(OnboardingState.reading(accountId));
 
-  if (AsyncResult.isInitial(status)) return null;
+  const unlocked = NotebookKeys.unlocked(status);
 
-  if (!Option.exists(AsyncResult.value(status), (now) => now._tag === "Unlocked")) return children;
+  if (Option.isNone(unlocked)) return null;
+
+  if (!unlocked.value) return children;
 
   return AsyncResult.match(reading, {
     onInitial: () => null,

@@ -8,6 +8,7 @@ import type * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Redacted from "effect/Redacted";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
@@ -50,6 +51,15 @@ export type Status = Data.TaggedEnum<{
 }>;
 
 export const Status = Data.taggedEnum<Status>();
+
+/**
+ * Whether the device can read the notebook: `None` only while the status loads. A status that
+ * failed counts as locked, so the screens offer "Notizbuch entsperren", which reads it again.
+ */
+export const unlocked = (status: AsyncResult.AsyncResult<Status, unknown>) =>
+  AsyncResult.isInitial(status)
+    ? Option.none()
+    : Option.some(Option.exists(AsyncResult.value(status), (now) => now._tag === "Unlocked"));
 
 export const Reason = Schema.Literals([
   "typo",
