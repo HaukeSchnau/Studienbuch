@@ -8,6 +8,8 @@ declare module "@effect/sql-pg";
 
 declare module "@effect/sql-pglite";
 
+declare module "@effect/sql-sqlite-wasm/SqliteClient";
+
 declare module "@effect/vitest";
 
 declare module "@react-navigation/native";

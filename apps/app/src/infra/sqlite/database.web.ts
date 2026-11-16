@@ -68,7 +68,6 @@ export const layer: Databases.Open = (location) =>
               Effect.andThen(Effect.sync(() => worker.terminate())),
             ),
         ),
-        installReactivityHooks: true,
       });
     }),
   );

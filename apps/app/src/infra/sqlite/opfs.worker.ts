@@ -8,19 +8,15 @@ import wasmUrl from "@effect/wa-sqlite/dist/wa-sqlite.wasm";
 // Effect's `OpfsWorker.run`, ported for Metro: the wasm comes from a Metro asset URL, and the
 // worker's name says where the database lives (`<directory>/<file>`, or `:memory:`). If
 // `OpfsWorker.run` took both, this file could go. It keeps Effect's protocol, so the page uses
-// Effect's unchanged `SqliteClient.layer`.
+// Effect's unchanged `SqliteClient.layer`, apart from update hooks, which the app never installs.
 
-type Message =
-  | [id: number, sql: string, params: Array<SQLiteCompatibleType | null>]
-  | ["update_hook"]
-  | ["close"];
+type Message = [id: number, sql: string, params: Array<SQLiteCompatibleType | null>] | ["close"];
 
 type Failure = string | { readonly message: string; readonly code: number };
 
 type Reply =
   | ["ready", Failure | undefined, undefined]
   | ["closed"]
-  | ["update_hook", string, number]
   | [number, Failure | undefined, [Array<Array<string>>, Array<Array<SQLiteCompatibleType | null>>]]
   | [number, Failure, undefined];
 
@@ -76,14 +72,6 @@ const serve = ({ sqlite3, db, release }: Awaited<ReturnType<typeof open>>) => {
       return;
     }
 
-    if (message[0] === "update_hook") {
-      sqlite3.update_hook(db, (_operation, _database, table, rowid) => {
-        if (table !== null) reply(["update_hook", table, Number(rowid)]);
-      });
-
-      return;
-    }
-
     const [id, sql, params] = message;
 
     try {
@@ -121,7 +109,7 @@ const refuse = (cause: unknown) => {
     if (id === "close") {
       reply(["closed"]);
       self.close();
-    } else if (id !== "update_hook") {
+    } else {
       reply([id, reason, undefined]);
     }
   });
