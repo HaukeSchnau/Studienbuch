@@ -1,0 +1,1 @@
+CREATE VIEW `Profile` AS select space, id, data ->> '$."name"' as "name" from sync_row_view where tbl = 'Profile';

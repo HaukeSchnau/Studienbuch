@@ -1,8 +1,8 @@
 /**
  * The simulation's own domain, shaped like M1's and small enough to hold every path the engine
- * has: sealed inserts, patches and deletes, a readable command the server runs again and may
- * refuse, a membership rule, spaces only the server writes, and a refusal that a replay onto
- * another device's rows can hit although the first run passed (`Planner.Full`).
+ * has: sealed inserts, patches and deletes, a sealed row under a known id (`Profile`), a readable
+ * command the server runs again and may refuse, a membership rule, spaces only the server writes,
+ * and a refusal a replay onto another device's rows can hit after the first run passed (`Full`).
  */
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
@@ -30,6 +30,16 @@ export const Note = Sync.table("Note", {
   class: "encrypted",
   fields: { course: Schema.String, title: Schema.String, done: Schema.optional(Schema.Boolean) },
   indexes: ["course"],
+  writableBy: { notebook: ["owner"] },
+});
+
+/**
+ * The notebook's profile, as `NotebookProfile` in the app: one per notebook under the notebook's id,
+ * so a device writes it without having read it. Its name holds a `Leaks.marker`.
+ */
+export const Profile = Sync.table("Profile", {
+  class: "encrypted",
+  fields: { name: Schema.String },
   writableBy: { notebook: ["owner"] },
 });
 
@@ -122,6 +132,22 @@ export const remove = Sync.mutator("note.remove", {
   }),
 });
 
+/** Sets the profile's name, as `notebookProfile.set` does: it creates the row or changes it. */
+export const name = Sync.mutator("profile.set", {
+  version: 1,
+  args: Schema.Struct({ notebook: Schema.String, name: Schema.String }),
+  writes: [Profile],
+  spaces: (args) => [args.notebook],
+  run: Effect.fn("Planner.name")(function* (args) {
+    const tx = yield* Tx.Service;
+    const existing = yield* tx.get(Profile, args.notebook, args.notebook);
+
+    yield* existing._tag === "None"
+      ? tx.insert(Profile, args.notebook, args.notebook, { name: args.name })
+      : tx.patch(Profile, args.notebook, args.notebook, { name: args.name });
+  }),
+});
+
 /** Chooses courses the school offers, as `enrollment.set` does: the server runs it again. */
 export const choose = Sync.mutator("choice.set", {
   version: 1,
@@ -157,7 +183,7 @@ export const courses = Sync.membershipRule({
 export const schema = Sync.schema({
   version: 1,
   spaceKinds: [Notebook, School, Course],
-  tables: [Note, Choice, Offer, Topic],
-  mutators: [add, rename, toggle, remove, choose],
+  tables: [Note, Profile, Choice, Offer, Topic],
+  mutators: [add, rename, toggle, remove, name, choose],
   membership: [courses],
 });
