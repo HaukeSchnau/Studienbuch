@@ -17,10 +17,14 @@ import { DeviceStorage } from "./DeviceStorage.ts";
 import { ServerInfo } from "./ServerInfo.ts";
 import { StatusRow, type StatusRowProps } from "./StatusRow.tsx";
 import { SignOutButton } from "../account/SignOutButton.tsx";
+import { KeysState } from "../keys/KeysState.ts";
+import { keyReasonOf } from "../keys/KeysUi.tsx";
+import { NotebookKeys } from "../keys/NotebookKeys.ts";
 
 /**
- * "Dieses Gerät", behind the overview: what runs on this device, and whether its server, crypto and
- * storage work. Signing out sits here until "Mein Profil" exists.
+ * "Dieses Gerät", behind the overview: whether the notebook survives losing this device, what runs
+ * here, and whether its server, crypto and storage work. The way to Notizbuch-Schlüssel and signing
+ * out sit here until "Mein Profil" exists.
  */
 export function DiagnosticsScreen() {
   const server = useAtomValue(ServerInfo.info);
@@ -31,6 +35,7 @@ export function DiagnosticsScreen() {
   const refreshServer = useAtomRefresh(ServerInfo.info);
   const refreshSelfTest = useAtomRefresh(CryptoSelfTest.outcomes);
   const router = useRouter();
+  const account = KeysState.useAccountId();
 
   const refresh = () => {
     refreshServer();
@@ -45,6 +50,10 @@ export function DiagnosticsScreen() {
       subtitle="Das läuft hier:"
       refresh={{ refreshing: server.waiting || selfTest.waiting, onRefresh: refresh }}
     >
+      {Option.match(account, {
+        onNone: () => null,
+        onSome: (accountId) => <NotebookKeyCard accountId={accountId} />,
+      })}
       <Card>
         <StatusRow first {...appRow(serverRevision)} />
         <StatusRow
@@ -62,6 +71,55 @@ export function DiagnosticsScreen() {
 }
 
 type Row = Omit<StatusRowProps, "onPress" | "first">;
+
+/** Whether the notebook opens without this device, with the way to Notizbuch-Schlüssel. */
+function NotebookKeyCard({ accountId }: { readonly accountId: string }) {
+  const router = useRouter();
+  const summary = useAtomValue(KeysState.summary(accountId));
+
+  // Present from the first render, so a screen reader reads the result that replaces "Wird geprüft".
+  return (
+    <Card accessibilityLiveRegion="polite">
+      <StatusRow first {...keysRow(summary)} onPress={() => router.push("/notizbuch-schluessel")} />
+    </Card>
+  );
+}
+
+function keysRow(summary: AsyncResult.AsyncResult<NotebookKeys.Summary, unknown>): Row {
+  const label = "Notizbuch-Schlüssel";
+  const accent = Tokens.subject.green.fill;
+  const reason = keyReasonOf(summary);
+
+  return AsyncResult.match(summary, {
+    onInitial: () => ({ label, title: "Wird geprüft …", status: "pending", accent }),
+    onFailure: () => ({
+      label,
+      title: Option.contains(reason, "locked") ? "Gesperrt" : "Nicht geprüft",
+      detail: Option.match(reason, {
+        onNone: () => "Das hat nicht geklappt. Versuch es noch einmal.",
+        onSome: (found) => NotebookKeys.sentence[found],
+      }),
+      status: "missing",
+      accent,
+    }),
+    onSuccess: ({ value }) =>
+      value.secured
+        ? {
+            label,
+            title: "Abgesichert",
+            detail: "Du kommst auch ohne dieses Gerät an dein Notizbuch.",
+            status: "ok",
+            accent,
+          }
+        : {
+            label,
+            title: "Nicht abgesichert",
+            detail: "Geht dieses Gerät verloren, sind deine Hausaufgaben weg.",
+            status: "warning",
+            accent,
+          },
+  });
+}
 
 const short = (id: string) => id.slice(0, 7);
 

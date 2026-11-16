@@ -4,6 +4,8 @@ import { AuthHeading } from "@stu/ui/AuthHeading";
 import { Button } from "@stu/ui/Button";
 import { Field } from "@stu/ui/Field";
 import { Link } from "@stu/ui/Link";
+import { Text } from "@stu/ui/Text";
+import { Theme } from "@stu/ui/Theme";
 import * as Exit from "effect/Exit";
 import * as Option from "effect/Option";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
@@ -160,6 +162,7 @@ export function PasskeyOfferScreen() {
 }
 
 function PasskeyOffer({ email }: { readonly email: string }) {
+  const { color } = Theme.useTheme();
   const [result, finish] = useAtom(AccountState.finish, { mode: "promiseExit" });
   const offDevice = useAtomValue(publicComputer);
 
@@ -188,6 +191,14 @@ function PasskeyOffer({ email }: { readonly email: string }) {
           block
           onPress={() => void finish({ email, withPasskey: false })}
         />
+        {/* A public computer starts no notebook key, so there is nothing to secure there yet. */}
+        {offDevice ? null : (
+          <Text variant="subhead" style={[styles.later, { color: color.inkSoft }]}>
+            Ohne Passkey ist dein Notizbuch noch nicht abgesichert und hängt nur an diesem Gerät.
+            Eine Notfallkarte erstellst du später unter „Dieses Gerät“, oben rechts auf der
+            Übersicht.
+          </Text>
+        )}
       </Form>
     </>
   );
@@ -213,4 +224,5 @@ export function useCode(onEdit: () => void) {
 
 const styles = StyleSheet.create({
   center: { alignItems: "center" },
+  later: { textAlign: "center" },
 });

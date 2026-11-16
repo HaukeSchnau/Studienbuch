@@ -281,6 +281,7 @@ export default defineConfig({
           "studienbuch/no-baked-origin": "error",
           "studienbuch/no-raw-resize-observer": "error",
           "studienbuch/no-sqlite-update-hooks": "error",
+          "studienbuch/platform-twin-extension": "error",
         },
       },
       {
