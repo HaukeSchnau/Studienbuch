@@ -17,7 +17,7 @@ export const gradeLevel = 11;
 
 const school = { name: "Demoschule am Wiesengrund", timeZone: School.defaultTimeZone };
 
-/** One course of each subject, `ma-1` and so on. A student chooses Kunst or Musik. */
+/** One course of each subject, `ma-1` and so on. A student takes Kunst or Musik. */
 const subjects = [
   { id: "ma", name: "Mathematik", shortName: "MA" },
   { id: "de", name: "Deutsch", shortName: "DE" },
@@ -26,8 +26,8 @@ const subjects = [
   { id: "ch", name: "Chemie", shortName: "CH" },
   { id: "ge", name: "Geschichte", shortName: "GE" },
   { id: "pw", name: "Politik-Wirtschaft", shortName: "PW" },
-  { id: "ku", name: "Kunst", shortName: "KU", groupKey: "kunst-musik" },
-  { id: "mu", name: "Musik", shortName: "MU", groupKey: "kunst-musik" },
+  { id: "ku", name: "Kunst", shortName: "KU", groupKey: "kunst-musik", choiceRequired: true },
+  { id: "mu", name: "Musik", shortName: "MU", groupKey: "kunst-musik", choiceRequired: true },
   { id: "sp", name: "Sport", shortName: "SP" },
 ] as const satisfies ReadonlyArray<Schools.SimpleSubject>;
 

@@ -119,6 +119,8 @@ export interface SimpleSubject {
   readonly shortName: string;
   /** The elective group of its course, absent for a required course. */
   readonly groupKey?: string;
+  /** Whether a student must choose one course of its group. */
+  readonly choiceRequired?: boolean;
 }
 
 /** The one course of a {@link simple} school's subject, such as `ma-1`. */
@@ -174,9 +176,12 @@ export const simple = Effect.fn("Schools.simple")(function* (options: {
             classIds: [],
           };
 
+          const { groupKey, choiceRequired } = subject;
+          const elective = groupKey === undefined ? offering : { ...offering, groupKey };
+
           return [
             CourseOffering.idFor(courseId, termId(half)),
-            subject.groupKey === undefined ? offering : { ...offering, groupKey: subject.groupKey },
+            choiceRequired === true ? { ...elective, choiceRequired } : elective,
           ];
         }),
       ),

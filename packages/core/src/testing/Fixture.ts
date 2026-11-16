@@ -123,8 +123,8 @@ export const make = Effect.gen(function* () {
   const db = MemoryTx.make();
 
   yield* writeSchool(db, school, "Demo-Schule", term, [
-    [mathE, "MA-E", { gradeLevels: [11], classIds: [], groupKey: "MA" }],
-    [mathG, "MA-G", { gradeLevels: [11], classIds: [], groupKey: "MA" }],
+    [mathE, "MA-E", { gradeLevels: [11], classIds: [], groupKey: "MA", choiceRequired: true }],
+    [mathG, "MA-G", { gradeLevels: [11], classIds: [], groupKey: "MA", choiceRequired: true }],
     [german, "DE 11.2", { gradeLevels: [11], classIds: [class112] }],
     [art, "KU", { gradeLevels: [12, 13], classIds: [], groupKey: "KU" }],
   ]);

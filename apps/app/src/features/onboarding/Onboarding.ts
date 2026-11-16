@@ -1,6 +1,6 @@
 import {
   type Course,
-  CourseOffering,
+  type CourseOffering,
   Enrollment,
   type Notebook,
   type School,
@@ -141,58 +141,68 @@ export const classAnswered = (term: TermChoices, chooser: CourseOffering.Chooser
 /** One course the student may choose or leave, shown as a subject tile. */
 export interface Elective {
   readonly courseId: Course.Id;
-  readonly groupKey: string;
   readonly course: string;
   readonly subject: Option.Option<Subject.Row>;
 }
 
-const offered = (term: TermChoices, chooser: CourseOffering.Chooser) =>
-  term.offerings.filter((offering) => CourseOffering.isFor(offering, chooser));
-
-/** The elective courses open to `chooser`, by subject. Required courses never show. */
-export const electives = (
-  term: TermChoices,
-  chooser: CourseOffering.Chooser,
-): ReadonlyArray<Elective> =>
-  offered(term, chooser)
-    .flatMap((offering) =>
-      offering.groupKey === undefined
-        ? []
-        : [
-            {
-              courseId: offering.courseId,
-              groupKey: offering.groupKey,
-              course: term.courses.get(offering.courseId)?.name ?? offering.courseId,
-              subject: Option.fromNullishOr(
-                term.subjects.get(term.courses.get(offering.courseId)?.subjectId ?? ""),
-              ),
-            },
-          ],
-    )
-    .sort((a, b) => label(a).localeCompare(label(b), "de"));
+/** An elective group of `Enrollment.groups`, its courses as tiles by subject. */
+export interface ElectiveGroup {
+  readonly key: string;
+  readonly required: boolean;
+  readonly electives: ReadonlyArray<Elective>;
+}
 
 /** The tile's title: the subject, or the course where the school named none. */
 export const label = (elective: Elective) =>
   Option.match(elective.subject, { onNone: () => elective.course, onSome: (s) => s.name });
 
+const byLabel = (a: Elective, b: Elective) => label(a).localeCompare(label(b), "de");
+
+/** A group's name as one choice, such as "Kunst oder Musik". */
+export const groupLabel = (group: Pick<ElectiveGroup, "electives">) => {
+  const labels = group.electives.map(label);
+  const last = labels.pop() ?? "";
+
+  return labels.length === 0 ? last : `${labels.join(", ")} oder ${last}`;
+};
+
+/** The elective groups open to `chooser`, by name. Required courses never show. */
+export const electiveGroups = (
+  term: TermChoices,
+  chooser: CourseOffering.Chooser,
+): ReadonlyArray<ElectiveGroup> =>
+  Enrollment.groups(term.offerings, chooser)
+    .map(({ key, required, courseIds }) => ({
+      key,
+      required,
+      electives: courseIds
+        .map((courseId) => {
+          const course = term.courses.get(courseId);
+
+          return {
+            courseId,
+            course: course?.name ?? courseId,
+            subject: Option.fromNullishOr(term.subjects.get(course?.subjectId ?? "")),
+          };
+        })
+        .sort(byLabel),
+    }))
+    .sort((a, b) => groupLabel(a).localeCompare(groupLabel(b), "de"));
+
 /**
- * Chooses or leaves one elective. Choosing it leaves the others of its group, because a group
- * allows one (`Enrollment.TwoInOneGroup`).
+ * Presses one elective's tile: it leaves the others of its group, because a group allows one
+ * (`Enrollment.TwoInOneGroup`). Pressed again it stays in a required group and leaves otherwise.
  */
-export const toggle = (
+export const choose = (
   chosen: ReadonlySet<Course.Id>,
+  group: ElectiveGroup,
   elective: Elective,
-  all: ReadonlyArray<Elective>,
 ): ReadonlySet<Course.Id> => {
-  if (chosen.has(elective.courseId)) {
-    return new Set([...chosen].filter((id) => id !== elective.courseId));
-  }
+  const others = [...chosen].filter((id) => !group.electives.some((each) => each.courseId === id));
 
-  const sameGroup = new Set(
-    all.flatMap((each) => (each.groupKey === elective.groupKey ? [each.courseId] : [])),
-  );
+  if (!chosen.has(elective.courseId)) return new Set([...others, elective.courseId]);
 
-  return new Set([...[...chosen].filter((id) => !sameGroup.has(id)), elective.courseId]);
+  return group.required ? chosen : new Set(others);
 };
 
 /** The electives an earlier choice for this term holds, as the tiles start. */
@@ -200,7 +210,9 @@ export const startingChoice = (
   term: TermChoices,
   chooser: CourseOffering.Chooser,
 ): ReadonlySet<Course.Id> => {
-  const open = new Set(electives(term, chooser).map((each) => each.courseId));
+  const open = new Set(
+    electiveGroups(term, chooser).flatMap((group) => group.electives.map((each) => each.courseId)),
+  );
 
   return new Set(
     Option.match(term.enrollment, {

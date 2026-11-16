@@ -25,7 +25,9 @@ const cls = (id: string, name: string, gradeLevel: number) => ({
 
 const offering = (
   course: string,
-  extra: Partial<Pick<CourseOffering.Row, "classIds" | "groupKey" | "gradeLevels">> = {},
+  extra: Partial<
+    Pick<CourseOffering.Row, "classIds" | "groupKey" | "choiceRequired" | "gradeLevels">
+  > = {},
 ): CourseOffering.Row => ({
   courseId: Course.Id.make(course),
   termId: term,
@@ -42,8 +44,8 @@ const choices: Onboarding.TermChoices = {
     offering("de"),
     offering("fr", { groupKey: "sprache" }),
     offering("sn", { groupKey: "sprache" }),
-    offering("ku", { groupKey: "kunst-musik" }),
-    offering("mu", { groupKey: "kunst-musik" }),
+    offering("ku", { groupKey: "kunst-musik", choiceRequired: true }),
+    offering("mu", { groupKey: "kunst-musik", choiceRequired: true }),
     // Only class 9.2 has Informatik.
     offering("if", { groupKey: "informatik", classIds: [SchoolClass.Id.make("c2")] }),
     offering("ph", { gradeLevels: [11] }),
@@ -64,35 +66,41 @@ it("offers the grade levels of the term's courses and classes, and a grade's cla
   );
 });
 
-it("shows only electives open to the chooser's class, named by their subject", () => {
-  const tiles = Onboarding.electives(choices, chooser);
+it("shows the elective groups open to the chooser's class, each named by its subjects", () => {
+  const groups = Onboarding.electiveGroups(choices, chooser);
 
-  assert.deepStrictEqual(ids(tiles.map((tile) => tile.courseId)), ["fr", "ku", "mu", "sn"]);
-  assert.deepStrictEqual(tiles.map(Onboarding.label).slice(0, 2), ["Französisch", "ku"]);
+  assert.deepStrictEqual(groups.map(Onboarding.groupLabel), ["Französisch oder sn", "ku oder mu"]);
+  assert.deepStrictEqual(
+    groups.map((group) => group.required),
+    [false, true],
+  );
   assert.isTrue(
-    Onboarding.electives(choices, { ...chooser, classId: SchoolClass.Id.make("c2") }).some(
-      (tile) => tile.courseId === "if",
+    Onboarding.electiveGroups(choices, { ...chooser, classId: SchoolClass.Id.make("c2") }).some(
+      (group) => group.key === "informatik",
     ),
   );
 });
 
-it("choosing an elective leaves the other of its group, and choosing it again leaves it", () => {
-  const tiles = Onboarding.electives(choices, chooser);
+it("choosing an elective leaves the other of its group, and choosing it again leaves it only where the group allows none", () => {
+  const groups = Onboarding.electiveGroups(choices, chooser);
 
-  const tile = (id: string) => {
-    const found = tiles.find((each) => each.courseId === id);
+  const press = (chosen: ReadonlySet<Course.Id>, id: string) => {
+    const group = groups.find((each) => each.electives.some((tile) => tile.courseId === id));
+    const tile = group?.electives.find((each) => each.courseId === id);
 
-    assert.isDefined(found);
+    assert.isDefined(group);
+    assert.isDefined(tile);
 
-    return found;
+    return Onboarding.choose(chosen, group, tile);
   };
 
-  const kunst = Onboarding.toggle(new Set([Course.Id.make("fr")]), tile("ku"), tiles);
-  const musik = Onboarding.toggle(kunst, tile("mu"), tiles);
+  const kunst = press(new Set([Course.Id.make("fr")]), "ku");
+  const musik = press(kunst, "mu");
 
   assert.deepStrictEqual(ids(kunst), ["fr", "ku"]);
   assert.deepStrictEqual(ids(musik), ["fr", "mu"]);
-  assert.deepStrictEqual(ids(Onboarding.toggle(musik, tile("mu"), tiles)), ["fr"]);
+  assert.deepStrictEqual(ids(press(musik, "mu")), ["fr", "mu"]);
+  assert.deepStrictEqual(ids(press(musik, "fr")), ["mu"]);
 });
 
 it("starts the tiles from an earlier choice for the term", () => {
