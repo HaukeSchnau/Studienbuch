@@ -77,35 +77,6 @@ export const classFits = (
 ): boolean =>
   classId === undefined ? ofGradeLevel.length === 0 : ofGradeLevel.some(({ id }) => id === classId);
 
-/**
- * The course list `set` accepts for `chooser` out of `wanted`: every required course the term's
- * `offerings` open to it, and of the wanted electives open to it the first of each group, in the
- * offerings' order. Sorted, as `set` keeps it.
- */
-export const courses = (
-  offerings: ReadonlyArray<CourseOffering.Row>,
-  chooser: CourseOffering.Chooser,
-  wanted: ReadonlySet<Course.Id>,
-): ReadonlyArray<Course.Id> => {
-  const groups = new Set<string>();
-  const courseIds = new Set<Course.Id>();
-
-  for (const offering of offerings) {
-    if (!CourseOffering.isFor(offering, chooser)) continue;
-
-    const { courseId, groupKey } = offering;
-
-    if (groupKey === undefined) {
-      courseIds.add(courseId);
-    } else if (wanted.has(courseId) && !groups.has(groupKey)) {
-      groups.add(groupKey);
-      courseIds.add(courseId);
-    }
-  }
-
-  return [...courseIds].sort();
-};
-
 /** An elective group open to a chooser: its courses, of which they take at most one. */
 export interface Group {
   readonly key: string;
@@ -115,8 +86,8 @@ export interface Group {
   readonly courseIds: ReadonlyArray<Course.Id>;
 }
 
-/** The elective groups the term's `offerings` open to `chooser`, in the order they first appear. */
-export const groups = (
+/** Every group the offerings open to `chooser`, in the order they first appear. */
+const openGroups = (
   offerings: ReadonlyArray<CourseOffering.Row>,
   chooser: CourseOffering.Chooser,
 ): ReadonlyArray<Group> => {
@@ -135,10 +106,45 @@ export const groups = (
   return [...byKey].map(([key, group]) => ({ key, ...group }));
 };
 
+/** A required group with one course open to the chooser leaves nothing to choose. */
+const isChoice = (group: Group) => !group.required || group.courseIds.length > 1;
+
+/**
+ * The elective groups the term's `offerings` open to `chooser`, in the order they first appear. A
+ * required group with one course open to them isn't a choice: {@link courses} takes that course.
+ */
+export const groups = (
+  offerings: ReadonlyArray<CourseOffering.Row>,
+  chooser: CourseOffering.Chooser,
+): ReadonlyArray<Group> => openGroups(offerings, chooser).filter(isChoice);
+
+/**
+ * The course list `set` accepts for `chooser` out of `wanted`: every required course the term's
+ * `offerings` open to it, the one course of a required group that opens only that one, and of
+ * each other group the first wanted course, in the offerings' order. Sorted, as `set` keeps it.
+ */
+export const courses = (
+  offerings: ReadonlyArray<CourseOffering.Row>,
+  chooser: CourseOffering.Chooser,
+  wanted: ReadonlySet<Course.Id>,
+): ReadonlyArray<Course.Id> => {
+  const required = offerings.flatMap((offering) =>
+    offering.groupKey === undefined && CourseOffering.isFor(offering, chooser)
+      ? [offering.courseId]
+      : [],
+  );
+
+  const elective = openGroups(offerings, chooser).flatMap((group) =>
+    isChoice(group) ? group.courseIds.filter((id) => wanted.has(id)).slice(0, 1) : group.courseIds,
+  );
+
+  return Arr.dedupe([...required, ...elective]).sort();
+};
+
 /**
  * The required groups open to `chooser` of which `chosen` holds no course, by key. The course step
  * waits for them. `set` accepts a choice that leaves one out, because the app one release back
- * doesn't ask for them and knows no refusal for it.
+ * doesn't ask for them and would show its refusal only as "Nicht übernommen" without a reason.
  */
 export const unanswered = (
   offerings: ReadonlyArray<CourseOffering.Row>,

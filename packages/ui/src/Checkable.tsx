@@ -7,6 +7,7 @@ import {
   type ViewStyle,
 } from "react-native";
 
+import { spaceKey } from "./spaceKey.ts";
 import { Tokens } from "./Tokens.ts";
 import type { KeptFocus } from "./useKeptFocus.ts";
 
@@ -50,15 +51,7 @@ export function Checkable({
       aria-checked={checked}
       accessibilityLabel={label}
       onPress={press}
-      // react-native-web presses on Space only for role "button" (its PressResponder's
-      // `isValidKeyPress`), so Space presses here, on release as a browser's checkbox does. Its
-      // keydown would scroll the page. Remove once react-native-web takes Space on these roles.
-      onKeyDown={(event) => {
-        if (event.nativeEvent.key === " ") event.preventDefault();
-      }}
-      onKeyUp={(event) => {
-        if (event.nativeEvent.key === " ") press();
-      }}
+      {...spaceKey(press)}
       style={(state) => [styles.target, style?.(state)]}
     >
       {children}

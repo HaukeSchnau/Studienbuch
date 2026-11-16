@@ -209,6 +209,41 @@ describe("Enrollment.groups and Enrollment.unanswered", () => {
         expect(Enrollment.unanswered(rows, for12, new Set())).toEqual([]);
       }),
   );
+
+  it.effect(
+    "a required group with one course open to the chooser is no choice: its course is required",
+    () =>
+      Effect.gen(function* () {
+        const db = yield* Fixture.make;
+
+        // Werken or Informatik, each for one class of grade 11.
+        const crafts = Course.Id.make("demo-we");
+        const computing = Course.Id.make("demo-if");
+
+        const only = (courseId: Course.Id, classId: SchoolClass.Id) => ({
+          courseId,
+          termId: term,
+          gradeLevels: [11],
+          classIds: [classId],
+          groupKey: "WE-IF",
+          choiceRequired: true,
+        });
+
+        const rows = [
+          ...(yield* offeringsOf(db)),
+          only(crafts, Fixture.class111),
+          only(computing, Fixture.class112),
+        ];
+
+        expect(Enrollment.groups(rows, for112).map(({ key }) => key)).toEqual(["MA"]);
+        expect(Enrollment.unanswered(rows, for112, new Set([Fixture.mathE]))).toEqual([]);
+        expect(Enrollment.courses(rows, for112, new Set([Fixture.mathE]))).toEqual([
+          Fixture.german,
+          computing,
+          Fixture.mathE,
+        ]);
+      }),
+  );
 });
 
 describe("Enrollment.courseMembership", () => {
