@@ -329,50 +329,27 @@ const databaseFailure = (cause: Cause.Cause<unknown>) =>
 
 /**
  * The refusal a sealed command's replay ended with, encoded as the server would send it. Anything
- * the mutator's or `Tx`'s codecs don't know counts as arguments this build can't run.
+ * the mutator's codecs don't know counts as arguments this build can't run.
  */
 const refusalOf = Effect.fnUntraced(function* (
   mutator: Sync.AnyMutator,
   version: number,
   cause: Cause.Cause<{ readonly _tag: string }>,
 ) {
-  const invalid = Effect.orDie(
-    encodeEngine(new Refusal.InvalidArgs({ mutator: mutator.name, version })),
-  );
-
+  const invalid = encodeReason(new Refusal.InvalidArgs({ mutator: mutator.name, version }));
   const error = Cause.findErrorOption(cause);
 
-  if (Option.isNone(error)) return yield* invalid;
+  if (Option.isNone(error)) return yield* Effect.orDie(invalid);
 
-  return yield* encoderOf(mutator)(error.value).pipe(
-    Effect.flatMap(decodeReason),
-    Effect.catchTags({ SchemaError: () => invalid }),
-  );
+  return yield* (
+    isUnreadable(error.value) ? encodeReason(error.value) : Sync.encodeRefusal(mutator, error.value)
+  ).pipe(Effect.catchTags({ SchemaError: () => Effect.orDie(invalid) }));
 });
 
-const encodeEngine = Schema.encodeEffect(Refusal.Engine);
+const isUnreadable = Schema.is(Refusal.Unreadable);
 
-// A mutator's own refusals and `Tx`'s, compiled once per mutator.
-const encoders = new WeakMap<
-  Sync.AnyMutator,
-  (error: { readonly _tag: string }) => Effect.Effect<unknown, Schema.SchemaError>
->();
-
-const encoderOf = (mutator: Sync.AnyMutator) => {
-  const known = encoders.get(mutator);
-
-  if (known !== undefined) return known;
-
-  const encoder = Schema.encodeUnknownEffect(
-    Schema.Union([mutator.error, Tx.Refused, Sealing.Unreadable]),
-  );
-
-  encoders.set(mutator, encoder);
-
-  return encoder;
-};
-
-const decodeReason = Schema.decodeUnknownEffect(Refusal.Reason);
+/** The device's own refusals, `Refusal.Engine`'s and `Unreadable`, as a refusal travels. */
+const encodeReason = Schema.encodeEffect(Schema.Union([Refusal.Engine, Refusal.Unreadable]));
 
 /**
  * Clears the overlay and runs every waiting command again, one savepoint each, so one that fails

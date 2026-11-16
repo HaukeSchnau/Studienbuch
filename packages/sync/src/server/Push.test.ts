@@ -252,6 +252,58 @@ describe.skipIf(Postgres18.socket === null)("Push on PostgreSQL 18", () => {
       }),
     );
 
+    it.effect("a readable command's roles are checked on the rows it wrote, as on the device", () =>
+      Effect.gen(function* () {
+        const world = yield* Fixture.school("written");
+        const { lena, tom } = world;
+        yield* (yield* Spaces.Service).addMember(lena.notebook, tom.account, "guest");
+
+        const visit = (mutationId: number, enrollment: "keep" | "put" | "remove") =>
+          Command.Mutate.make({
+            mutationId,
+            name: Fixture.visit.name,
+            version: 1,
+            args: { notebook: lena.notebook, school: world.school, termId: world.term, enrollment },
+            at,
+          });
+
+        expect([
+          yield* answer(
+            push(lena.account, "written-c1", [
+              visit(1, "put"),
+              enroll(2, world, { courseIds: ["ma"] }),
+            ]),
+          ),
+          yield* answer(
+            push(tom.account, "written-c2", [
+              visit(1, "keep"),
+              visit(2, "put"),
+              visit(3, "remove"),
+            ]),
+          ),
+        ]).toEqual([
+          // The school is declared and only read.
+          { lastMutationId: 2, outcomes: ["1 Applied", "2 Applied"] },
+          // A guest may write a visit, never an enrollment, and a delete is a write.
+          { lastMutationId: 3, outcomes: ["1 Applied", "2 Sync.NotAllowed", "3 Sync.NotAllowed"] },
+        ]);
+
+        // The role check runs after the mutator wrote, so a refused run must leave nothing behind.
+        const { patches } = yield* pull(lena.account, "written-c1", 2);
+        const notebook = patches.find((patch) => patch.space === lena.notebook);
+
+        expect(notebook?.ops.map((op) => `${op.tbl}/${op.id} ${op.version}`)).toEqual([
+          `Visit/${lena.account} 1`,
+          `Enrollment/${world.term} 2`,
+          `Visit/${tom.account} 3`,
+        ]);
+        expect(notebook?.to).toBe(3);
+        expect(notebook?.ops[1]?.row).toEqual(
+          Protocol.Readable.make({ data: { courseIds: ["ma"], termId: world.term } }),
+        );
+      }),
+    );
+
     it.effect(
       "each Seal check refuses with its tag, in order, and Stale keeps the last mutation id",
       () =>

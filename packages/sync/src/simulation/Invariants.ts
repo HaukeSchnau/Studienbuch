@@ -10,7 +10,6 @@ import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import { Outbox } from "../client/Outbox.ts";
-import { Sealing } from "../client/Sealing.ts";
 import { SqliteTx } from "../client/SqliteTx.ts";
 import { Sync } from "../definition/Sync.ts";
 import { Refusal } from "../protocol/Refusal.ts";
@@ -92,7 +91,7 @@ const replayed = Effect.fn("Invariants.replayed")(function* (
         select 1 from sync_sealed_row where space = ${row.space} and id = ${row.id} and tbl is null
       `;
 
-      if (parked.length > 0) return yield* new Sealing.Unreadable({ space: row.space, id: row.id });
+      if (parked.length > 0) return yield* new Refusal.Unreadable({ space: row.space, id: row.id });
     }
   });
 

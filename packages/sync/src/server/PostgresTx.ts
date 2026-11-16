@@ -32,6 +32,15 @@ export interface Runner extends Tx.Runner {
 
 /** The server's `Tx` for a command of the connection's account, or for the server's own writes. */
 export const make = Effect.fnUntraced(function* (runner: Runner) {
+  return Tx.make(yield* store(runner));
+});
+
+/** The server's `Tx` and the rows it wrote so far (`Tx.tracked`), for a command's run. */
+export const tracked = Effect.fnUntraced(function* (runner: Runner) {
+  return Tx.tracked(yield* store(runner));
+});
+
+const store = Effect.fnUntraced(function* (runner: Runner) {
   const sql = yield* SqlClient.SqlClient;
   const versions = new Map<string, number>();
   const declared = runner.spaces === undefined ? undefined : new Set(runner.spaces);
@@ -73,7 +82,7 @@ export const make = Effect.fnUntraced(function* (runner: Runner) {
     );
   };
 
-  return Tx.make({
+  return {
     actor: runner.actor,
     writes: runner.writes,
     location: "server",
@@ -117,7 +126,7 @@ export const make = Effect.fnUntraced(function* (runner: Runner) {
             written_by_client = null, written_by_mutation = null
         `,
       ).pipe(Effect.asVoid),
-  });
+  } satisfies Tx.Store;
 });
 
 export const layer = (runner: Runner) => Layer.effect(Tx.Service, make(runner));

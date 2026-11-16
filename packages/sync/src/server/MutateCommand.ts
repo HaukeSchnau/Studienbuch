@@ -1,7 +1,8 @@
 /**
  * A readable table's command on the server: the same mutator runs again on the server's rows,
- * after the declared spaces are locked and the account's role in each is checked, and it may
- * refuse. Then the membership rules of the tables it wrote apply.
+ * after the declared spaces are locked and the account's membership in each is checked, and it
+ * may refuse. As on the device, the account's role decides on the rows it wrote. Then the
+ * membership rules of the tables it wrote apply.
  */
 import * as Effect from "effect/Effect";
 import * as Result from "effect/Result";
@@ -20,29 +21,12 @@ export * as MutateCommand from "./MutateCommand.ts";
 
 const isTxRefusal = Schema.is(Tx.Refused);
 
-const encodeTxRefusal = Schema.encodeEffect(Schema.toCodecJson(Tx.Refused));
-
-/** The role may write every declared table that the space's kind takes, and one at least. */
-const mayWrite = (mutator: Sync.AnyMutator, space: Decision.Locked) => {
-  const allowed = mutator.writes.flatMap((table) => {
-    const roles = table.writableBy[space.kind.name];
-
-    return roles === undefined ? [] : [space.role !== null && roles.includes(space.role)];
-  });
-
-  return allowed.length > 0 && allowed.every(Boolean);
-};
-
 /**
- * A mutator's own refusal through its error codec, or a `Tx` refusal from running it again. A
- * failure outside the codec is the mutator's bug, like a defect, so the command waits for a fix.
+ * A mutator's own refusal, or a `Tx` refusal from running it again. A failure outside its codecs
+ * is the mutator's bug, like a defect, so the command waits for a fix.
  */
 const refusal = (mutator: Sync.AnyMutator, error: { readonly _tag: string }) =>
-  (isTxRefusal(error)
-    ? encodeTxRefusal(error)
-    : Schema.encodeUnknownEffect(mutator.error)(error)
-  ).pipe(
-    Effect.flatMap(Decision.reason),
+  Sync.encodeRefusal(mutator, error).pipe(
     Effect.map((reason) => Decision.Refused({ reason })),
     Effect.catchTags({
       SchemaError: () =>
@@ -87,11 +71,9 @@ export const decide = Effect.fn("MutateCommand.decide")(function* (
     if (held?.role === undefined || held.role === null) {
       return yield* Decision.refuse(new Refusal.NotMember({ space }));
     }
-
-    if (!mayWrite(mutator, held)) return yield* Decision.refuse(new Refusal.NotAllowed({ space }));
   }
 
-  const tx = yield* PostgresTx.make({
+  const { tx, written } = yield* PostgresTx.tracked({
     actor: account,
     writes: mutator.writes,
     spaces,
@@ -118,6 +100,19 @@ export const decide = Effect.fn("MutateCommand.decide")(function* (
     return SqlError.isSqlError(ran.failure)
       ? yield* ran.failure
       : yield* refusal(mutator, ran.failure);
+  }
+
+  // `PostgresTx` dies on a write outside the declared spaces, so each row's space is locked.
+  for (const row of written()) {
+    const held = locked.get(row.space);
+
+    if (
+      held?.role === undefined ||
+      held.role === null ||
+      !Sync.mayWrite(definition, held.role, held.kind.name, row.table)
+    ) {
+      return yield* Decision.refuse(new Refusal.NotAllowed({ space: row.space }));
+    }
   }
 
   const advanced = yield* Decision.advanced(locked);
