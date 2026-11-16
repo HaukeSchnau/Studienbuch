@@ -1,12 +1,14 @@
 import { Hero } from "@stu/ui/Hero";
+import { Icon } from "@stu/ui/Icon";
 import { Pill } from "@stu/ui/Pill";
 import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
-import { type Href, useRouter } from "expo-router";
+import { type Href, Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState, type ReactNode } from "react";
 import {
   Platform,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -37,7 +39,8 @@ export interface HeroScreenProps {
   readonly footer?: { readonly color: string; readonly children: ReactNode };
   /**
    * A screen above the tabs gets "Zurück" in the hero's toolbar row on the web and Android, and
-   * iOS its native header. Without a screen before it, as after a reload, back leads here.
+   * iOS its native header. Without a screen before it, as after a reload or a deep link, back
+   * leads here, on iOS through a header button of its own.
    */
   readonly back?: Href;
   readonly children?: ReactNode;
@@ -70,6 +73,22 @@ export function HeroScreen({
 
   return (
     <View style={[styles.screen, { backgroundColor: color.canvas }]}>
+      {back !== undefined && Platform.OS === "ios" && !router.canGoBack() ? (
+        <Stack.Screen
+          options={{
+            headerLeft: () => (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Zurück"
+                hitSlop={12}
+                onPress={() => router.replace(back)}
+              >
+                <Icon name="back" color="#FFFFFF" size={28} />
+              </Pressable>
+            ),
+          }}
+        />
+      ) : null}
       <StatusBar style={overCanvas ? "auto" : "light"} />
       {/* Overscroll above the hero shows the hero's green, as it did in the legacy app. */}
       <View style={[styles.overscroll, { backgroundColor: color.hero }]} />
