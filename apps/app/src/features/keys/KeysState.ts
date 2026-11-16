@@ -179,14 +179,20 @@ export const summary = Atom.family((accountId: string) =>
   ),
 );
 
-/** `NotebookKeys.atSignOut` for "Abmelden", after the status as the summary. */
-export const atSignOut = Atom.family((accountId: string) =>
-  runtime(accountId).atom((get) =>
-    Effect.andThen(get.result(status(accountId)), NotebookKeys.atSignOut),
+/**
+ * `NotebookKeys.atSignOut` as "Abmelden" is pressed, so a way in that another device added or the
+ * server lost since counts. It gives up after a few seconds: a check that fails or hangs makes
+ * the question ask (`Account.signOutWarning`).
+ */
+export const checkSignOut = Atom.family((accountId: string) =>
+  runtime(accountId).fn<void>()((_, get) =>
+    Effect.andThen(get.result(status(accountId)), NotebookKeys.atSignOut).pipe(
+      Effect.timeout("3 seconds"),
+    ),
   ),
 );
 
-// The summary and `atSignOut` read the status, so refreshing the status runs them again, in order.
+// The summary reads the status, so refreshing the status alone runs both again, in order.
 const refresh = (accountId: string, get: Atom.FnContext) =>
   Effect.sync(() => get.refresh(status(accountId)));
 

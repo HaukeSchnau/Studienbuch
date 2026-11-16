@@ -1,6 +1,7 @@
-import { useAtomSet, useAtomValue } from "@effect/atom-react";
+import { useAtom, useAtomSet, useAtomValue } from "@effect/atom-react";
 import { Button } from "@stu/ui/Button";
 import * as Option from "effect/Option";
+import * as AsyncResult from "effect/reactivity/AsyncResult";
 import { useRouter } from "expo-router";
 
 import { type Answer, useConfirm } from "../../ui/useConfirm.tsx";
@@ -9,9 +10,10 @@ import { Account } from "./Account.ts";
 import { AccountState } from "./AccountState.ts";
 
 /**
- * "Abmelden": asks first unless nothing would be lost (`Account.signOutWarning`), then forgets this
- * device's account. When only this device opens the notebook, the question offers "Notfallkarte
- * erstellen" first. It shows only while the device holds an account, live or ended.
+ * "Abmelden": asks first unless nothing would be lost (`Account.signOutWarning`), with the notebook
+ * checked at the press, then forgets this device's account. When only this device opens the
+ * notebook, the question offers "Notfallkarte erstellen" first. It shows only while the device
+ * holds an account, live or ended.
  */
 export function SignOutButton() {
   const access = AccountState.useAccess();
@@ -28,11 +30,13 @@ export function SignOutButton() {
 function SignOut({ accountId }: { readonly accountId: string }) {
   const router = useRouter();
   const unsent = useAtomValue(AccountState.unsent);
-  const notebook = useAtomValue(KeysState.atSignOut(accountId));
+  const [checked, check] = useAtom(KeysState.checkSignOut(accountId), { mode: "promiseExit" });
   const signOut = useAtomSet(AccountState.signOut);
   const confirm = useConfirm();
 
   const press = async () => {
+    const notebook = AsyncResult.fromExit(await check());
+
     const answer = await Option.match(Account.signOutWarning(unsent, notebook), {
       onNone: () => Promise.resolve<Answer>("proceed"),
       onSome: ({ paragraphs, offerCard }) =>
@@ -51,7 +55,14 @@ function SignOut({ accountId }: { readonly accountId: string }) {
 
   return (
     <>
-      <Button kind="quiet" label="Abmelden" onPress={() => void press()} />
+      {/* Not `busy`: that disables the button, which then loses the focus the dialog returns. */}
+      <Button
+        kind="quiet"
+        label="Abmelden"
+        onPress={() => {
+          if (!checked.waiting) void press();
+        }}
+      />
       {confirm.dialog}
     </>
   );

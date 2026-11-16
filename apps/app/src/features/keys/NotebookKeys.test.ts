@@ -571,6 +571,12 @@ describe("NotebookKeys", () => {
       yield* Ref.set(server.offline, false);
       yield* phone.run(createCard);
       const withCard = yield* phone.run(NotebookKeys.atSignOut);
+      const { records, wrappers } = yield* Ref.get(server.stored);
+
+      // The server loses the card, as in a restore: the next check asks it again and knows.
+      yield* Ref.set(server.stored, { records, wrappers: wrappers.slice(0, 1) });
+      const cardLost = yield* phone.run(NotebookKeys.atSignOut);
+      yield* Ref.set(server.stored, { records, wrappers });
       const laptop = yield* device(server);
       yield* laptop.run(NotebookKeys.status);
       const locked = yield* laptop.run(NotebookKeys.atSignOut);
@@ -597,11 +603,21 @@ describe("NotebookKeys", () => {
       const pending = yield* tablet.run(NotebookKeys.atSignOut);
 
       assert.deepStrictEqual(
-        { alone, offline, withCard, locked, demoAccount, tabletStatus: tabletStatus._tag, pending },
+        {
+          alone,
+          offline,
+          withCard,
+          cardLost,
+          locked,
+          demoAccount,
+          tabletStatus: tabletStatus._tag,
+          pending,
+        },
         {
           alone: "lost",
           offline: "unknown",
           withCard: "kept",
+          cardLost: "lost",
           locked: "kept",
           demoAccount: "kept",
           tabletStatus: "Offline",
