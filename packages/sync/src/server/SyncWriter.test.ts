@@ -253,15 +253,22 @@ describe.skipIf(Postgres18.socket === null)("SyncWriter on PostgreSQL 18", () =>
       () =>
         Effect.gen(function* () {
           const spaces = yield* Spaces.Service;
-          const { lena } = yield* school("leaving", ["ma"]);
+          const { lena, tom } = yield* school("leaving", ["ma"]);
           // Physics has no space yet.
           yield* enroll("leaving-lena", ["ma", "ph"]);
+          yield* enroll("leaving-tom", ["ph"]);
           const enrolled = yield* memberships(lena);
           yield* spaces.create("leaving-ph", Fixture.Course, {
             parent: "leaving-school",
             key: "ph",
           });
           const opened = yield* memberships(lena);
+          // One course space opens for every notebook that named it.
+          expect(yield* memberships(tom)).toEqual([
+            ["leaving-ph", "leaving-tom"],
+            ["leaving-school", null],
+            ["leaving-tom", null],
+          ]);
           yield* spaces.removeMember("leaving-school", lena);
           const left = yield* memberships(lena);
           yield* enroll("leaving-lena", ["ma", "ph"]);

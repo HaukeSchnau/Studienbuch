@@ -80,19 +80,14 @@ export const make = Effect.gen(function* () {
   const regrant = Effect.fnUntraced(function* (spaces: ReadonlyArray<string>) {
     if (membershipTables.length === 0 || spaces.length === 0) return;
     const tx = yield* PostgresTx.make({ actor: "", writes: [] });
-    const changed = new Set<string>();
 
-    for (const space of spaces) {
-      const accounts = yield* Membership.apply(definition, space, membershipTables).pipe(
-        Effect.provideService(Tx.Service, tx),
-        // The rows a rule reads were written through their table's codec.
-        Effect.catchIf(isTxRefusal, Effect.die),
-      );
+    const accounts = yield* Membership.apply(definition, spaces, membershipTables).pipe(
+      Effect.provideService(Tx.Service, tx),
+      // The rows a rule reads were written through their table's codec.
+      Effect.catchIf(isTxRefusal, Effect.die),
+    );
 
-      for (const account of accounts) changed.add(account);
-    }
-
-    yield* Pokes.notify({ spaces: [], accounts: [...changed].sort() });
+    yield* Pokes.notify({ spaces: [], accounts });
   });
 
   const children = (parent: string, account?: string) =>
