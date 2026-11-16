@@ -34,15 +34,18 @@ const client = (driver: Driver) =>
     : NodeSqliteClient.layer({ filename: ":memory:" });
 
 /**
- * A fresh, migrated database with a `Reactivity` of its own, as each of the Sync Lab's devices in
- * one tab has.
+ * A fresh, migrated database on `client` with a `Reactivity` of its own, as each of the Sync Lab's
+ * devices in one tab has.
  */
-export const database = (driver: Driver) =>
+export const databaseOn = <A, E, R>(client: Layer.Layer<A, E, R>) =>
   Layer.effectDiscard(Effect.orDie(DeviceDatabase.migrate(NotesMigrations.migrations))).pipe(
-    Layer.provideMerge(client(driver)),
+    Layer.provideMerge(client),
     Layer.provideMerge(Layer.fresh(Reactivity.layer)),
     Layer.orDie,
   );
+
+/** A fresh, migrated database on `driver`. */
+export const database = (driver: Driver) => databaseOn(client(driver));
 
 const token = Redacted.make("token-lena");
 
