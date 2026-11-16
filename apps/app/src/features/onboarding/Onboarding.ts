@@ -11,6 +11,7 @@ import {
 import * as Arr from "effect/Array";
 import * as Data from "effect/Data";
 import * as Option from "effect/Option";
+import * as AsyncResult from "effect/reactivity/AsyncResult";
 
 // The answers of the first start after sign-up, in the Flutter app's order: name, Jahrgang and
 // "volljährig", then Klasse and the elective courses. The name and "volljährig" go to the encrypted
@@ -51,6 +52,21 @@ export type Reading = Data.TaggedEnum<{
 }>;
 
 export const Reading = Data.taggedEnum<Reading>();
+
+/**
+ * The name the home greets with: `None` only while the first reading loads. A reading that failed
+ * greets without a name, as the onboarding gate lets the student in then.
+ */
+export const greeting = (reading: AsyncResult.AsyncResult<Reading, unknown>) =>
+  AsyncResult.isInitial(reading)
+    ? Option.none()
+    : Option.some(
+        Option.flatMap(AsyncResult.value(reading), (now) =>
+          now._tag === "Ready"
+            ? Option.fromNullishOr(now.snapshot.profile.displayName)
+            : Option.none(),
+        ),
+      );
 
 /** Where the first start stands: "done" lets the student into the app. */
 export type Step = "waiting" | "who" | "courses" | "done";

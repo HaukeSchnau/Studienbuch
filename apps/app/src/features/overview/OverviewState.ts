@@ -14,6 +14,7 @@ import { HomeworkState } from "../homework/HomeworkState.ts";
 import { Refused } from "../homework/Refused.ts";
 import { KeysState } from "../keys/KeysState.ts";
 import { NotebookKeys } from "../keys/NotebookKeys.ts";
+import { Onboarding } from "../onboarding/Onboarding.ts";
 import { OnboardingState } from "../onboarding/OnboardingState.ts";
 import { Offline } from "./Offline.ts";
 
@@ -74,11 +75,11 @@ const connection = Atom.family((accountId: string) =>
 
 /**
  * The Übersicht of the account, `None` until the device has read who the student is, so the
- * greeting never shows without the name first.
+ * greeting never shows without the name first. A read that failed shows it without the name.
  */
 export const overview = Atom.family((accountId: string) =>
   Atom.make((get): Option.Option<Overview> => {
-    const onboarding = AsyncResult.value(get(OnboardingState.reading(accountId)));
+    const name = Onboarding.greeting(get(OnboardingState.reading(accountId)));
     const reading = Option.flatten(AsyncResult.value(get(HomeworkState.reading(accountId))));
 
     const today = AsyncResult.value(
@@ -92,7 +93,7 @@ export const overview = Atom.family((accountId: string) =>
       ),
     );
 
-    if (Option.isNone(onboarding) || Option.isNone(today)) return Option.none();
+    if (Option.isNone(name) || Option.isNone(today)) return Option.none();
 
     const disconnected = Option.filter(
       AsyncResult.value(get(connection(accountId))),
@@ -104,10 +105,7 @@ export const overview = Atom.family((accountId: string) =>
     const unlocked = NotebookKeys.unlocked(get(KeysState.status(accountId)));
 
     return Option.some({
-      name:
-        onboarding.value._tag === "Ready"
-          ? Option.fromNullishOr(onboarding.value.snapshot.profile.displayName)
-          : Option.none(),
+      name: name.value,
       today: today.value,
       locked: Option.contains(unlocked, false),
       offline: ended ? Option.none() : Option.map(disconnected, ([, waiting]) => ({ waiting })),
