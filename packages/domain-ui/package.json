@@ -6,7 +6,10 @@
   "exports": {
     "./calendar/DateText": "./src/calendar/DateText.ts",
     "./homework/Due": "./src/homework/Due.ts",
+    "./homework/HomeworkDetail": "./src/homework/HomeworkDetail.tsx",
+    "./homework/HomeworkForm": "./src/homework/HomeworkForm.tsx",
     "./homework/HomeworkItem": "./src/homework/HomeworkItem.ts",
+    "./homework/HomeworkList": "./src/homework/HomeworkList.tsx",
     "./homework/HomeworkPanel": "./src/homework/HomeworkPanel.tsx",
     "./refusal/RefusalCard": "./src/refusal/RefusalCard.tsx",
     "./refusal/RefusalText": "./src/refusal/RefusalText.ts",

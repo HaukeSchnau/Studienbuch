@@ -1,13 +1,16 @@
+import { Button } from "@stu/ui/Button";
+import { Icon } from "@stu/ui/Icon";
+import { PanelWave } from "@stu/ui/PanelWave";
 import { Text } from "@stu/ui/Text";
 import { Theme } from "@stu/ui/Theme";
 import { TickedBox } from "@stu/ui/TickBox";
 import { Tokens } from "@stu/ui/Tokens";
 import { useLayout } from "@stu/ui/useLayout";
 import { useLingeringOrder } from "@stu/ui/useLingeringOrder";
-import { Vector } from "@stu/ui/Vector";
 import * as Arr from "effect/Array";
 import type { ReactNode } from "react";
 import {
+  Pressable,
   ScrollView,
   StyleSheet,
   useWindowDimensions,
@@ -17,7 +20,7 @@ import {
 } from "react-native";
 
 import { HomeworkCard } from "./HomeworkCard.tsx";
-import type { HomeworkItem } from "./HomeworkItem.ts";
+import { HomeworkItem } from "./HomeworkItem.ts";
 
 export interface HomeworkPanelProps {
   /** The homework to show, `undefined` while the device still reads it. */
@@ -29,6 +32,12 @@ export interface HomeworkPanelProps {
   readonly locked?: boolean;
   /** Ticks a homework done, or opens it again. */
   readonly onToggle: (id: string, done: boolean) => void;
+  /** Opens a homework's page. */
+  readonly onOpen: (id: string) => void;
+  /** "Alle": the full list. */
+  readonly onAll: () => void;
+  /** "+": a new homework. Absent while the notebook is locked. */
+  readonly onAdd?: (() => void) | undefined;
   /** The app runs the panel to the screen's bottom. */
   readonly style?: StyleProp<ViewStyle>;
 }
@@ -38,7 +47,15 @@ export interface HomeworkPanelProps {
  * (D67). Narrower than the wide breakpoint, up to three cards make one row and from four on two rows
  * scroll sideways, as Flutter's grid did. Wider, the cards stand in rows of three.
  */
-export function HomeworkPanel({ items, locked, onToggle, style }: HomeworkPanelProps) {
+export function HomeworkPanel({
+  items,
+  locked,
+  onToggle,
+  onOpen,
+  onAll,
+  onAdd,
+  style,
+}: HomeworkPanelProps) {
   const { color } = Theme.useTheme();
   const screen = useWindowDimensions();
   const { layout, onLayout } = useLayout();
@@ -49,35 +66,40 @@ export function HomeworkPanel({ items, locked, onToggle, style }: HomeworkPanelP
 
   return (
     <View onLayout={onLayout} style={[styles.panel, { backgroundColor: color.panel }, style]}>
-      {/* A box of its own: the phones size an absolute child's 100 % without the padding. */}
-      <View style={StyleSheet.absoluteFill}>
-        <Vector
-          width="100%"
-          height="100%"
-          viewBox="0 0 390 330"
-          stretch
-          paths={[{ d: wave, fill: color.panelFold }]}
-        />
-      </View>
+      <PanelWave color={color.panelFold} />
       <View style={styles.column}>
-        <Text variant="title1" accessibilityRole="header" aria-level={2} style={styles.title}>
-          Hausaufgaben
-        </Text>
+        <View style={styles.head}>
+          <Text variant="title1" accessibilityRole="header" aria-level={2} style={styles.title}>
+            Hausaufgaben
+          </Text>
+          <PanelAction label="Alle" onPress={onAll} />
+          {onAdd === undefined ? null : (
+            <PanelAction label="Hausaufgabe hinzufügen" icon="plus" onPress={onAdd} />
+          )}
+        </View>
         {locked === true ? (
-          <Notice
-            title="Dein Notizbuch ist gesperrt"
-            text="Deine Hausaufgaben sind verschlüsselt. Entsperr dein Notizbuch, dann stehen sie hier."
-          />
+          <Notice title={HomeworkItem.locked.title} text={HomeworkItem.locked.text} />
         ) : items === undefined ? null : shown.length === 0 ? (
           <Notice
             title="Keine Hausaufgaben offen"
             text="Genieß die freie Zeit!"
             picture={<TickedBox color={onPanel} size={44} />}
+            action={
+              onAdd === undefined ? undefined : (
+                <Button small kind="quiet" label="Hausaufgabe eintragen" onPress={onAdd} />
+              )
+            }
           />
         ) : wide ? (
           <View style={styles.wrap}>
             {shown.map((item) => (
-              <HomeworkCard key={item.id} item={item} onToggle={onToggle} width={wideCard} />
+              <HomeworkCard
+                key={item.id}
+                item={item}
+                onToggle={onToggle}
+                onOpen={onOpen}
+                width={wideCard}
+              />
             ))}
           </View>
         ) : (
@@ -93,6 +115,7 @@ export function HomeworkPanel({ items, locked, onToggle, style }: HomeworkPanelP
                     key={item.id}
                     item={item}
                     onToggle={onToggle}
+                    onOpen={onOpen}
                     width={narrowCard(width)}
                   />
                 ))}
@@ -116,10 +139,6 @@ const columns = (items: ReadonlyArray<HomeworkItem.Item>) =>
 // moves to the done ones at the end.
 const linger = 1200;
 
-// Legacy's AufgabenClipper on a 390 by 330 panel: down from the left edge, then up to the right.
-const wave =
-  "M0 198Q96 318.4 156 214.5C216 110.6 272 201.3 312 132C352 62.7 390 66 390 66L390 330L0 330Z";
-
 const onPanel = "#FFFFFF";
 
 const inset = Tokens.layout.cardPadding;
@@ -132,14 +151,44 @@ const narrowCard = (width: number) => Math.min(240, Math.max(196, Math.round(wid
 // Three to a row in the content column.
 const wideCard = (Tokens.layout.contentMaxWidth - 2 * inset - 2 * gap) / 3;
 
+/** White on the panel, as the Flutter app's "+" beside the title: a word, or a glyph read out. */
+function PanelAction({
+  label,
+  icon,
+  onPress,
+}: {
+  readonly label: string;
+  readonly icon?: "plus";
+  readonly onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      style={({ pressed }) => [styles.action, pressed ? styles.pressed : null]}
+    >
+      {icon === undefined ? (
+        <Text variant="headline" weight="bold" style={{ color: onPanel }}>
+          {label}
+        </Text>
+      ) : (
+        <Icon name={icon} color={onPanel} size={28} />
+      )}
+    </Pressable>
+  );
+}
+
 function Notice({
   title,
   text,
   picture,
+  action,
 }: {
   readonly title: string;
   readonly text: string;
   readonly picture?: ReactNode;
+  readonly action?: ReactNode;
 }) {
   const { color } = Theme.useTheme();
 
@@ -155,6 +204,7 @@ function Notice({
       <Text variant="subhead" style={[styles.noticeText, { color: color.panelSoft }]}>
         {text}
       </Text>
+      {action === undefined ? null : <View style={styles.noticeAction}>{action}</View>}
     </View>
   );
 }
@@ -168,7 +218,24 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   column: { width: "100%", maxWidth: Tokens.layout.contentMaxWidth, alignSelf: "center" },
-  title: { color: onPanel, paddingHorizontal: inset + Tokens.space.xs },
+  head: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Tokens.space.xs,
+    paddingLeft: inset + Tokens.space.xs,
+    paddingRight: inset - Tokens.space.sm,
+  },
+  title: { flex: 1, color: onPanel },
+  action: {
+    minWidth: Tokens.layout.minTarget,
+    minHeight: Tokens.layout.minTarget,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: Tokens.space.sm,
+    borderRadius: Tokens.radius.pill,
+    cursor: "pointer",
+  },
+  pressed: { opacity: 0.6 },
   grid: { flexDirection: "row", gap, paddingHorizontal: inset, paddingTop: Tokens.space.lg },
   gridColumn: { gap },
   wrap: {
@@ -189,4 +256,5 @@ const styles = StyleSheet.create({
   },
   noticeTitle: { color: onPanel, textAlign: "center", marginTop: Tokens.space.sm },
   noticeText: { textAlign: "center" },
+  noticeAction: { marginTop: Tokens.space.md },
 });

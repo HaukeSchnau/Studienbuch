@@ -4,7 +4,7 @@ import { Theme } from "@stu/ui/Theme";
 import { TickBox } from "@stu/ui/TickBox";
 import { Tokens } from "@stu/ui/Tokens";
 import { useKeptFocus } from "@stu/ui/useKeptFocus";
-import { StyleSheet, useWindowDimensions, View } from "react-native";
+import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 
 import { SubjectMarker } from "../subject/SubjectMarker.tsx";
 import type { HomeworkItem } from "./HomeworkItem.ts";
@@ -13,15 +13,18 @@ export interface HomeworkCardProps {
   readonly item: HomeworkItem.Item;
   /** Ticks the homework done, or opens it again. */
   readonly onToggle: (id: string, done: boolean) => void;
+  /** Opens the homework's page. */
+  readonly onOpen: (id: string) => void;
   /** Set by the panel, so that on a phone the next card peeks in at the screen's edge. */
   readonly width: number;
 }
 
 /**
  * One homework as the Flutter app's navy card on the blue panel: the subject with its blob, the
- * title in green, and when it is due. The box at the top right ticks it done with a pen stroke.
+ * title in green, and when it is due. The box at the top right ticks it done with a pen stroke; the
+ * rest of the card opens the homework. The box sits beside the card's button, not inside it.
  */
-export function HomeworkCard({ item, onToggle, width }: HomeworkCardProps) {
+export function HomeworkCard({ item, onToggle, onOpen, width }: HomeworkCardProps) {
   const { color } = Theme.useTheme();
   const { fontScale } = useWindowDimensions();
   const size = titleSize(item.title, width - padding.left - padding.right, fontScale);
@@ -29,9 +32,55 @@ export function HomeworkCard({ item, onToggle, width }: HomeworkCardProps) {
 
   return (
     <View ref={card} style={[styles.card, { width, backgroundColor: color.panelCard }]}>
-      <View style={[styles.top, item.dimmed ? styles.dimmed : null]}>
-        {/* Dark pastels hide some art on the navy, which the card keeps in dark mode too. */}
-        <SubjectMarker mark={item.mark} size={34} light />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${item.subject}: ${item.title}, ${item.due}`}
+        onPress={() => onOpen(item.id)}
+        style={({ pressed }) => [styles.open, pressed ? styles.pressed : null]}
+      >
+        <View style={item.dimmed ? styles.dimmed : null}>
+          {/* Dark pastels hide some art on the navy, which the card keeps in dark mode too. */}
+          <SubjectMarker mark={item.mark} size={34} light />
+        </View>
+        <Text
+          variant="footnote"
+          weight="semibold"
+          numberOfLines={1}
+          style={[styles.subject, { color: color.panelSoft }]}
+        >
+          {item.subject}
+        </Text>
+        <Text
+          variant="headline"
+          weight="bold"
+          numberOfLines={3}
+          style={[
+            styles.title,
+            { color: color.panelTitle, fontSize: size, lineHeight: Math.round(size * 1.3) },
+            item.done ? styles.struck : null,
+          ]}
+        >
+          {item.title}
+        </Text>
+        <View style={styles.bottom}>
+          <Text
+            variant="subhead"
+            weight="bold"
+            style={[styles.due, item.overdue ? { color: color.panelDue } : null]}
+          >
+            {item.due}
+          </Text>
+          {item.waiting ? (
+            <View style={styles.waiting}>
+              <Icon name="cloudUp" color={color.panelSoft} size={16} />
+              <Text variant="footnote" weight="bold" style={{ color: color.panelSoft }}>
+                wartet
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      </Pressable>
+      <View style={[styles.tick, item.dimmed ? styles.dimmed : null]}>
         <TickBox
           checked={item.done}
           onChange={(done) => onToggle(item.id, done)}
@@ -39,43 +88,6 @@ export function HomeworkCard({ item, onToggle, width }: HomeworkCardProps) {
           color={onPanel}
           kept={control}
         />
-      </View>
-      <Text
-        variant="footnote"
-        weight="semibold"
-        numberOfLines={1}
-        style={[styles.subject, { color: color.panelSoft }]}
-      >
-        {item.subject}
-      </Text>
-      <Text
-        variant="headline"
-        weight="bold"
-        numberOfLines={3}
-        style={[
-          styles.title,
-          { color: color.panelTitle, fontSize: size, lineHeight: Math.round(size * 1.3) },
-          item.done ? styles.struck : null,
-        ]}
-      >
-        {item.title}
-      </Text>
-      <View style={styles.bottom}>
-        <Text
-          variant="subhead"
-          weight="bold"
-          style={[styles.due, item.overdue ? { color: color.panelDue } : null]}
-        >
-          {item.due}
-        </Text>
-        {item.waiting ? (
-          <View style={styles.waiting}>
-            <Icon name="cloudUp" color={color.panelSoft} size={16} />
-            <Text variant="footnote" weight="bold" style={{ color: color.panelSoft }}>
-              wartet
-            </Text>
-          </View>
-        ) : null}
       </View>
     </View>
   );
@@ -95,20 +107,25 @@ const titleSize = (title: string, width: number, fontScale: number) => {
 const onPanel = "#FFFFFF";
 
 const padding = { left: Tokens.space.lg, right: Tokens.space.md + Tokens.space.xxs };
+const paddingY = Tokens.space.md + Tokens.space.xxs;
 
 const styles = StyleSheet.create({
-  card: {
-    minHeight: 184,
+  card: { minHeight: 184, borderRadius: Tokens.radius.tile + 6 },
+  open: {
+    flexGrow: 1,
     borderRadius: Tokens.radius.tile + 6,
-    paddingTop: Tokens.space.md + Tokens.space.xxs,
-    paddingBottom: Tokens.space.md + Tokens.space.xxs,
+    paddingTop: paddingY,
+    paddingBottom: paddingY,
     paddingLeft: padding.left,
     paddingRight: padding.right,
+    cursor: "pointer",
   },
+  pressed: { opacity: 0.85 },
+  // Level with the subject's blob, which is 34 points tall.
+  tick: { position: "absolute", top: paddingY + 2, right: padding.right },
   // As the Flutter app greyed done and long-forgotten homework, but only the art and the box, so
   // the text keeps its contrast.
   dimmed: { opacity: 0.6 },
-  top: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   subject: { marginTop: Tokens.space.sm },
   title: { marginTop: Tokens.space.xxs },
   struck: { textDecorationLine: "line-through" },

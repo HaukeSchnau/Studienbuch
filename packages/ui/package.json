@@ -18,6 +18,7 @@
     "./Hero": "./src/Hero.tsx",
     "./Icon": "./src/Icon.tsx",
     "./Link": "./src/Link.tsx",
+    "./PanelWave": "./src/PanelWave.tsx",
     "./Pill": "./src/Pill.tsx",
     "./RevisionCard": "./src/RevisionCard.tsx",
     "./SubjectBlob": "./src/SubjectBlob.tsx",

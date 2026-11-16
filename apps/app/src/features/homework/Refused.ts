@@ -28,6 +28,9 @@ const about = (verb: string, title: string | undefined) =>
 export const tick = (done: boolean, title: string | undefined) =>
   about(done ? "Abgehakt" : "Wieder geöffnet", title);
 
+/** "Gelöscht: Vocabulary Unit 4 lernen" */
+export const removal = (title: string | undefined) => about("Gelöscht", title);
+
 /** "Neue Hausaufgabe: …", "Abgehakt: …", "Eine Änderung". */
 export const change = (
   rejected: Pick<Outbox.Rejected, "name" | "args">,
@@ -49,7 +52,7 @@ export const change = (
     case Homework.setDone.name:
       return tick(args.doneOn !== undefined, title);
     case Homework.delete.name:
-      return about("Gelöscht", title);
+      return removal(title);
     case NotebookProfile.set.name:
       return "Dein Name im Notizbuch";
     default:
