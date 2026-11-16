@@ -131,6 +131,7 @@ export default defineConfig({
       "studienbuch/namespace-node-imports": "error",
       "studienbuch/no-file-kind-directories": "error",
       "studienbuch/no-inline-schema-compile": "error",
+      "studienbuch/no-json-stringify-equality": "error",
       "studienbuch/no-low-value-comments": "error",
       "studienbuch/no-native-title-tooltip": "error",
       "studienbuch/no-throwing-errors": "error",
@@ -288,11 +289,12 @@ export default defineConfig({
       },
       {
         // Feature code receives the platform it runs on. Adapters in infra/, the design system in
-        // ui/ and the routes' navigation options may read it.
+        // ui/, the routes' navigation options, platform files and browser tests may read it.
         files: scope(
           "apps/*/src/{features,domain-ui}/**",
           "packages/{core,sync,e2ee,api,domain-ui}/**",
         ),
+        excludeFiles: ["**/*.{web,native,ios,android}.{ts,tsx}", "**/*.browser.test.{ts,tsx}"],
         rules: { "studienbuch/no-global-process-runtime": "error" },
       },
       {
@@ -336,58 +338,27 @@ export default defineConfig({
         rules: { "studienbuch/no-frame-waits-in-browser-tests": "error" },
       },
       {
+        files: scope("packages/core/**"),
+        rules: { "studienbuch/no-ambient-clock-or-random": "error" },
+      },
+      {
         // packages/core and packages/domain-ui typecheck with the DOM lib for the e2ee and sync code
         // core imports. Core runs in mutators and domain-ui renders on every platform, so their own
-        // code reaches for none of the browser's APIs. packages/ui's `.web.tsx` files may.
+        // code opens no connection. `studienbuch/no-global-process-runtime` keeps them, and
+        // packages/e2ee, off the page, the device and the browser's storage.
         files: scope("packages/core/**", "packages/domain-ui/**"),
         rules: {
           "eslint/no-restricted-globals": [
             "error",
             temporal,
-            ...[
-              "window",
-              "self",
-              "document",
-              "navigator",
-              "location",
-              "history",
-              "screen",
-              "innerWidth",
-              "innerHeight",
-              "devicePixelRatio",
-              "matchMedia",
-              "getComputedStyle",
-              "scrollTo",
-              "addEventListener",
-              "removeEventListener",
-              "alert",
-              "confirm",
-              "prompt",
-              "IntersectionObserver",
-              "MutationObserver",
-              "fetch",
-              "XMLHttpRequest",
-              "WebSocket",
-              "EventSource",
-              "BroadcastChannel",
-              "localStorage",
-              "sessionStorage",
-              "indexedDB",
-              "caches",
-            ].map((name) => ({ name, message: platformNeutral })),
-          ],
-          "eslint/no-restricted-properties": [
-            "error",
-            ...["window", "document", "location"].map((property) => ({
-              object: "globalThis",
-              property,
+            ...["fetch", "XMLHttpRequest", "WebSocket", "EventSource"].map((name) => ({
+              name,
               message: platformNeutral,
             })),
           ],
         },
       },
       {
-        // packages/e2ee stores nothing and opens no connection.
         files: scope("packages/e2ee/**"),
         rules: {
           "eslint/no-restricted-globals": [
@@ -396,10 +367,6 @@ export default defineConfig({
             ...["fetch", "WebSocket", "XMLHttpRequest", "EventSource"].map((name) => ({
               name,
               message: "packages/e2ee opens no connection.",
-            })),
-            ...["localStorage", "sessionStorage", "indexedDB"].map((name) => ({
-              name,
-              message: "packages/e2ee stores nothing.",
             })),
           ],
         },

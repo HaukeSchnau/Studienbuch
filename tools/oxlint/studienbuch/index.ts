@@ -7,6 +7,7 @@ import selfExportingModules from "./module-shape.ts";
 import mutatorKeepsTxErrors from "./mutator-keeps-tx-errors.ts";
 import namespaceNodeImports from "./namespace-node-imports.ts";
 import noAdHocStateOrEffects from "./no-ad-hoc-state-or-effects.ts";
+import noAmbientClockOrRandom from "./no-ambient-clock-or-random.ts";
 import noBakedOrigin from "./no-baked-origin.ts";
 import noDomTestEnvironment from "./no-dom-test-environment.ts";
 import noEmDashCopy from "./no-em-dash-copy.ts";
@@ -16,6 +17,7 @@ import noGlobalProcessRuntime from "./no-global-process-runtime.ts";
 import noHermesUnsupportedApis from "./no-hermes-unsupported-apis.ts";
 import noHooklessUseFunction from "./no-hookless-use-function.ts";
 import noInlineSchemaCompile from "./no-inline-schema-compile.ts";
+import noJsonStringifyEquality from "./no-json-stringify-equality.ts";
 import noLiteralTimeZone from "./no-literal-time-zone.ts";
 import noLowValueComments from "./no-low-value-comments.ts";
 import noManualEffectRuntimeInTests from "./no-manual-effect-runtime-in-tests.ts";
@@ -47,6 +49,7 @@ export default definePlugin({
     "mutator-keeps-tx-errors": mutatorKeepsTxErrors,
     "namespace-node-imports": namespaceNodeImports,
     "no-ad-hoc-state-or-effects": noAdHocStateOrEffects,
+    "no-ambient-clock-or-random": noAmbientClockOrRandom,
     "no-baked-origin": noBakedOrigin,
     "no-dom-test-environment": noDomTestEnvironment,
     "no-em-dash-copy": noEmDashCopy,
@@ -56,6 +59,7 @@ export default definePlugin({
     "no-hermes-unsupported-apis": noHermesUnsupportedApis,
     "no-hookless-use-function": noHooklessUseFunction,
     "no-inline-schema-compile": noInlineSchemaCompile,
+    "no-json-stringify-equality": noJsonStringifyEquality,
     "no-literal-time-zone": noLiteralTimeZone,
     "no-low-value-comments": noLowValueComments,
     "no-manual-effect-runtime-in-tests": noManualEffectRuntimeInTests,
