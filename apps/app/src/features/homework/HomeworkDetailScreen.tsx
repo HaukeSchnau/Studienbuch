@@ -16,7 +16,7 @@ import { KeysState } from "../keys/KeysState.ts";
 import { HomeworkRefusals } from "./HomeworkRefusals.tsx";
 import { HomeworkRoutes } from "./HomeworkRoutes.ts";
 import { HomeworkState } from "./HomeworkState.ts";
-import { OfflineChip } from "./OfflineChip.tsx";
+import { OfflineChip } from "../device-status/OfflineChip.tsx";
 
 /**
  * One homework's page, opened from a card or a row: its whole title and text, done or open, and
@@ -34,7 +34,7 @@ export function HomeworkDetailScreen() {
 function AccountDetail({ accountId, id }: { readonly accountId: string; readonly id: string }) {
   const router = useRouter();
   const { color } = Theme.useTheme();
-  const status = useAtomValue(HomeworkState.status(accountId));
+  const status = useAtomValue(HomeworkState.screen(accountId));
   const toggle = useAtomSet(HomeworkState.setDone(accountId));
   const remove = useAtomSet(HomeworkState.remove(accountId));
 

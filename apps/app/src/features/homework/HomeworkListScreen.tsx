@@ -12,7 +12,7 @@ import { KeysState } from "../keys/KeysState.ts";
 import { HomeworkRefusals } from "./HomeworkRefusals.tsx";
 import { HomeworkRoutes } from "./HomeworkRoutes.ts";
 import { HomeworkState } from "./HomeworkState.ts";
-import { OfflineChip } from "./OfflineChip.tsx";
+import { OfflineChip } from "../device-status/OfflineChip.tsx";
 
 /**
  * "Alle" from the Übersicht's panel: every homework in "Offen" and "Erledigt" on the blue page of
@@ -28,7 +28,7 @@ export function HomeworkListScreen() {
 function AccountList({ accountId }: { readonly accountId: string }) {
   const router = useRouter();
   const { color } = Theme.useTheme();
-  const status = useAtomValue(HomeworkState.status(accountId));
+  const status = useAtomValue(HomeworkState.screen(accountId));
   const toggle = useAtomSet(HomeworkState.setDone(accountId));
 
   if (Option.isNone(status)) {

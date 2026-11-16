@@ -43,7 +43,7 @@ function AccountSheet({
 }) {
   const router = useRouter();
   const key = id ?? "new";
-  const status = useAtomValue(HomeworkState.status(accountId));
+  const status = useAtomValue(HomeworkState.screen(accountId));
   const [draft, setDraft] = useAtom(HomeworkState.draft(accountId)(key));
   const [saved, reset] = useAtom(HomeworkState.save(accountId));
   const save = useAtomSet(HomeworkState.save(accountId), { mode: "promiseExit" });

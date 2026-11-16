@@ -1,5 +1,5 @@
 import {
-  CivilTime,
+  type CivilTime,
   Course,
   Enrollment,
   Homework,
@@ -12,9 +12,7 @@ import type { CourseChoice } from "@stu/domain-ui/homework/HomeworkForm";
 import { HomeworkItem } from "@stu/domain-ui/homework/HomeworkItem";
 import type { Tx } from "@stu/sync";
 import { DeviceDatabase, DeviceSchema, type Outbox, SyncClient, SyncQuery } from "@stu/sync/client";
-import * as Clock from "effect/Clock";
 import * as Data from "effect/Data";
-import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
@@ -23,17 +21,12 @@ import * as KeyValueStore from "effect/persistence/KeyValueStore";
 import * as Atom from "effect/reactivity/Atom";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
-import * as Stream from "effect/Stream";
 import * as Struct from "effect/Struct";
 
 import { AccountEngine } from "../../infra/runtime/AccountEngine.ts";
 import { Schema as Device } from "../../infra/sqlite/Schema.ts";
-import { Account } from "../account/Account.ts";
-import { AccountState } from "../account/AccountState.ts";
-import { KeysState } from "../keys/KeysState.ts";
-import { NotebookKeys } from "../keys/NotebookKeys.ts";
+import { DeviceStatus } from "../device-status/DeviceStatus.ts";
 import { HomeworkInput } from "./HomeworkInput.ts";
-import { Offline } from "./Offline.ts";
 
 // The notebook's homework as atoms for the screens, on the account's engine: the rows with their
 // courses, which of them wait for the server, the refused changes, the courses to choose from,
@@ -194,21 +187,6 @@ export const query = SyncQuery.read({
 /** The notebook's homework, again whenever a table it reads changes. `None` without a notebook. */
 export const reading = Atom.family((accountId: string) =>
   SyncQuery.family(runtime(accountId), query)(),
-);
-
-/**
- * Today at the school, read again every minute, so "Bis morgen" turns into "Heute fällig" at
- * midnight on a screen that stays open.
- */
-export const today = Atom.family((timeZone: CivilTime.TimeZone) =>
-  Atom.make(
-    Stream.tick(Duration.minutes(1)).pipe(
-      Stream.mapEffect(() =>
-        Effect.map(Clock.currentTimeMillis, (now) => School.today({ timeZone }, now)),
-      ),
-      Stream.changesWith((a, b) => CivilTime.order(a, b) === 0),
-    ),
-  ),
 );
 
 /** A homework to tick done on `doneOn`, or to open again without it. */
@@ -392,59 +370,25 @@ export const remove = Atom.family((accountId: string) =>
   ),
 );
 
-/** What every homework screen and the Übersicht show around their content. */
-export interface Status {
+/** What every homework screen and the Übersicht show: the device's status, today and the notebook. */
+export interface Screen extends DeviceStatus.Status {
   readonly today: CivilTime.PlainDate;
-  /**
-   * The device doesn't hold the notebook's key: it is `Locked`, `Offline` or `NotHere`, or its status
-   * failed (`NotebookKeys.unlocked`).
-   */
-  readonly locked: boolean;
-  /**
-   * The device holds the notebook's key. Until then the homework rows stay sealed, and an empty
-   * list would say there is no homework, so the screens show none.
-   */
-  readonly readable: boolean;
-  /**
-   * `Some` with the changes that wait for the server while the device has no connection. Not while
-   * the session has ended, which the account's notice says instead.
-   */
-  readonly offline: Option.Option<{ readonly waiting: number }>;
   /** `None` until the device has read the notebook, or when the account has none. */
   readonly reading: Option.Option<Reading>;
 }
 
-/** Whether the engine is offline (`Offline.shown`), and how many changes wait for the server. */
-const connection = Atom.family((accountId: string) =>
-  runtime(accountId).atom(
-    Stream.unwrap(
-      Effect.map(SyncClient.Service, (sync) =>
-        Stream.zipLatest(
-          Offline.shown(
-            sync.status.changes.pipe(Stream.map((status) => status.connection !== "online")),
-          ),
-          sync.status.changes.pipe(
-            Stream.map((status) => status.waiting),
-            Stream.changes,
-          ),
-        ),
-      ),
-    ),
-  ),
-);
-
 /**
- * Today at the school, the key and the connection, with what the device holds of the notebook.
- * `None` until today is known. A homework's waiting marker shows only offline: online, a change
- * settles within a second, so the marker would only flicker.
+ * The device's status, today at the school and what the device holds of the notebook. `None` until
+ * today is known. A homework's waiting marker shows only offline: online, a change settles within a
+ * second, so the marker would only flicker.
  */
-export const status = Atom.family((accountId: string) =>
-  Atom.make((get): Option.Option<Status> => {
+export const screen = Atom.family((accountId: string) =>
+  Atom.make((get): Option.Option<Screen> => {
     const held = Option.flatten(AsyncResult.value(get(reading(accountId))));
 
     const now = AsyncResult.value(
       get(
-        today(
+        DeviceStatus.today(
           Option.match(held, {
             onNone: () => School.defaultTimeZone,
             onSome: (r) => r.timeZone,
@@ -455,25 +399,16 @@ export const status = Atom.family((accountId: string) =>
 
     if (Option.isNone(now)) return Option.none();
 
-    const disconnected = Option.filter(
-      AsyncResult.value(get(connection(accountId))),
-      ([offline]) => offline,
-    );
-
-    const ended = Account.access(get(AccountState.current)) === "ended";
-
-    const unlocked = NotebookKeys.unlocked(get(KeysState.status(accountId)));
+    const device = get(DeviceStatus.status(accountId));
 
     return Option.some({
+      ...device,
       today: now.value,
-      locked: Option.contains(unlocked, false),
-      readable: Option.contains(unlocked, true),
-      offline: ended ? Option.none() : Option.map(disconnected, ([, waiting]) => ({ waiting })),
       reading: Option.map(held, (value) => ({
         ...value,
         homework: value.homework.map((each) => ({
           ...each,
-          waiting: each.waiting && Option.isSome(disconnected),
+          waiting: each.waiting && device.disconnected,
         })),
       })),
     });

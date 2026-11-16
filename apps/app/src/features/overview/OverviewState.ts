@@ -11,7 +11,7 @@ import { OnboardingState } from "../onboarding/OnboardingState.ts";
 
 export * as OverviewState from "./OverviewState.ts";
 
-export interface Overview extends HomeworkState.Status {
+export interface Overview extends HomeworkState.Screen {
   /** The first name from the encrypted profile, which a locked device can't read. */
   readonly name: Option.Option<string>;
   /** `None` until the device has read the notebook, or when the account has none. */
@@ -35,7 +35,7 @@ export interface Panel {
 export const overview = Atom.family((accountId: string) =>
   Atom.make((get): Option.Option<Overview> => {
     const name = Onboarding.greeting(get(OnboardingState.reading(accountId)));
-    const current = get(HomeworkState.status(accountId));
+    const current = get(HomeworkState.screen(accountId));
 
     if (Option.isNone(name) || Option.isNone(current)) return Option.none();
 

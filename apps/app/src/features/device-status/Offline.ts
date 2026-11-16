@@ -2,7 +2,7 @@ import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Stream from "effect/Stream";
 
-// When the homework screens say that the device is offline.
+// When the screens say that the device is offline.
 
 export * as Offline from "./Offline.ts";
 

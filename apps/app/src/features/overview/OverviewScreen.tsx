@@ -13,7 +13,7 @@ import { HeroScreen } from "../../ui/HeroScreen.tsx";
 import { HomeworkRefusals } from "../homework/HomeworkRefusals.tsx";
 import { HomeworkRoutes } from "../homework/HomeworkRoutes.ts";
 import { HomeworkState } from "../homework/HomeworkState.ts";
-import { OfflineChip } from "../homework/OfflineChip.tsx";
+import { OfflineChip } from "../device-status/OfflineChip.tsx";
 import { KeysState } from "../keys/KeysState.ts";
 import { OverviewState } from "./OverviewState.ts";
 
