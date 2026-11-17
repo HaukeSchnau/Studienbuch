@@ -608,6 +608,8 @@ export class Service extends Context.Service<
      * for any account the seed didn't make, whatever the caller checked.
      */
     readonly signInDemo: (accountId: string) => Effect.Effect<string, NotDemo>;
+    /** Tells the resolver of sessions deleted outside Better Auth, as a new card deletes them. */
+    readonly ended: (sessionIds: ReadonlyArray<string>) => Effect.Effect<void>;
   }
 >()("Auth.Service") {}
 
@@ -1074,6 +1076,8 @@ const make = Effect.gen(function* () {
     origin: new URL(settings.publicUrl).origin,
     sessions: { resolve, revoked: Stream.fromPubSub(deleted) },
     signInDemo,
+    ended: (sessionIds: ReadonlyArray<string>) =>
+      Effect.asVoid(PubSub.publishAll(deleted, sessionIds)),
   };
 });
 

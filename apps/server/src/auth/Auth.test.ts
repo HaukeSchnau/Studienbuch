@@ -386,7 +386,7 @@ const passkeySignUp = Effect.fnUntraced(function* (reservation: string) {
 });
 
 const decodeUserName = Schema.decodeUnknownEffect(
-  Schema.Struct({ user: Schema.Struct({ name: Schema.String }) }),
+  Schema.Struct({ user: Schema.Struct({ name: Schema.String, displayName: Schema.String }) }),
 );
 
 /** Revocations from now on, `count` of them. */
@@ -1871,6 +1871,46 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
             );
           }),
       );
+      it.effect("makes one account of a code's last use, however many sign-ups race for it", () =>
+        Effect.gen(function* () {
+          const sql = yield* SqlClient.SqlClient;
+          const minted = yield* AccessCodes.mint({ school, kind: "student", maxUses: 1 });
+          const logins = Array.from({ length: 6 }, (_, index) => loginOf(20 + index));
+
+          const reservations = yield* Effect.forEach(logins, () =>
+            Effect.map(AccessCodes.reserve(minted.code), ({ token }) => token),
+          );
+
+          const answers = yield* Effect.forEach(
+            logins,
+            (login, index) =>
+              call("POST", Accounts.cardSignUpPath, {
+                body: { login },
+                reservation: reservations[index] ?? "",
+              }),
+            { concurrency: "unbounded" },
+          );
+
+          const owners = yield* Effect.forEach(logins, CardLogins.owner);
+
+          const [code] = yield* sql<{ readonly uses: number }>`
+            select uses from access_code where id = ${minted.id}
+          `;
+
+          assert.deepStrictEqual(
+            {
+              answers: answers.map((answer) => answer.status).sort((a, b) => a - b),
+              refused: answers.every(
+                (answer) =>
+                  answer.status === 200 || answer.text.includes(Access.reservationRefused),
+              ),
+              accounts: owners.filter(Option.isSome).length,
+              uses: code?.uses,
+            },
+            { answers: [200, 400, 400, 400, 400, 400], refused: true, accounts: 1, uses: 1 },
+          );
+        }),
+      );
       it.effect(
         "mails nothing to an account without an address, and no email route takes its placeholder",
         () =>
@@ -2058,13 +2098,13 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
 
             assert.deepStrictEqual(
               {
-                name: (yield* decodeUserName(offered.json)).user.name,
+                user: (yield* decodeUserName(offered.json)).user,
                 stale: [stale.status, yield* decodeCode(stale.json)],
                 passkeys: passkeys?.count,
                 uses: yield* code.uses,
               },
               {
-                name: "Studienbuch",
+                user: { name: "Studienbuch", displayName: "Studienbuch" },
                 stale: [403, { code: "SESSION_NOT_FRESH" }],
                 passkeys: 0,
                 uses: 1,
@@ -2091,7 +2131,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
 
           const last = yield* remove;
 
-          yield* sql.withTransaction(CardLogins.replace(account, loginOf(9)));
+          yield* sql.withTransaction(CardLogins.replace(account, loginOf(9), ""));
           const withCard = yield* remove;
 
           assert.deepStrictEqual(

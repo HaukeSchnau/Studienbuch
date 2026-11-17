@@ -297,6 +297,8 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
           yield* withoutAddress("noa");
           const noa = yield* firstDevice("noa", 100);
           const session = yield* signedIn("noa", 0);
+          // The device of someone who found the first card and signed in with it.
+          const finder = yield* signedIn("noa", 30);
           const first = Option.some({ wrapper: noa.device, session });
           yield* sql.withTransaction(KeyStore.publishFirst("noa", noa.record, first));
 
@@ -315,12 +317,24 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
             Option.some(loginOf(1)),
           );
 
+          const sessions = Effect.map(
+            sql<{
+              readonly id: string;
+            }>`select id from auth_session where "userId" = 'noa' order by id`,
+            (rows) => rows.map(({ id }) => id),
+          );
+
           const firstCard = {
             owner: yield* owner(1),
             wrappers: (yield* KeyStore.state("noa")).wrappers.length,
+            sessions: yield* sessions,
           };
 
-          yield* add(yield* cardFrom("noa-card-2", 102, noa.keys), Option.some(loginOf(2)));
+          // A new card signs out the finder of the old one, as a new password would.
+          const ended = yield* add(
+            yield* cardFrom("noa-card-2", 102, noa.keys),
+            Option.some(loginOf(2)),
+          );
 
           // Another account can't take Noa's card, nor an email account's card sign in.
           yield* withoutAddress("eli");
@@ -372,15 +386,23 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
             seals: (yield* sql`select 1 from key_wrapper_seal where account_id = 'noa'`).length,
             taken: taken._tag === "Keys.Invalid" ? taken.reason : taken._tag,
             email: yield* owner(3),
+            ended,
+            sessions: yield* sessions,
           }).toEqual({
             withoutLogin: "statement",
-            firstCard: { owner: Option.some("noa"), wrappers: 3 },
+            firstCard: {
+              owner: Option.some("noa"),
+              wrappers: 3,
+              sessions: [session, finder].sort(),
+            },
             card1: Option.none(),
             card2: Option.some("noa"),
             wrappers: ["noa-device", "noa-card-2"],
             seals: 2,
             taken: "statement",
             email: Option.none(),
+            ended: [finder],
+            sessions: [session],
           });
         }),
     );

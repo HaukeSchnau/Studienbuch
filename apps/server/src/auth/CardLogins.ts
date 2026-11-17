@@ -50,10 +50,14 @@ export const hasAddress = Effect.fn("CardLogins.hasAddress")(function* (account:
 });
 
 /**
- * Makes the login the account's only card login, in the caller's transaction. Answers false, and
- * changes nothing, when the login is another account's.
+ * Makes the login the account's only card login, in the caller's transaction, and answers the
+ * sessions it ended. Answers none, and changes nothing, when the login is another account's.
  */
-export const replace = Effect.fn("CardLogins.replace")(function* (account: string, login: string) {
+export const replace = Effect.fn("CardLogins.replace")(function* (
+  account: string,
+  login: string,
+  session: string,
+) {
   const sql = yield* SqlClient.SqlClient;
   const accountId = yield* digest(login);
 
@@ -68,12 +72,21 @@ export const replace = Effect.fn("CardLogins.replace")(function* (account: strin
     select "userId" from auth_account where "providerId" = ${provider} and "accountId" = ${accountId}
   `;
 
-  if (row?.userId !== account) return false;
+  if (row?.userId !== account) return Option.none<ReadonlyArray<string>>();
 
-  yield* sql`
+  const retired = yield* sql`
     delete from auth_account
     where "userId" = ${account} and "providerId" = ${provider} and "accountId" <> ${accountId}
+    returning 1
   `;
 
-  return true;
+  if (retired.length === 0) return Option.some<ReadonlyArray<string>>([]);
+
+  // Whoever found the old card may have signed in with it, so a new card signs out every other
+  // device, as a new password does. These rows pass no Better Auth hook.
+  const ended = yield* sql<{ readonly id: string }>`
+    delete from auth_session where "userId" = ${account} and id <> ${session} returning id
+  `;
+
+  return Option.some(ended.map(({ id }) => id));
 });

@@ -10,6 +10,7 @@ import type * as Headers from "effect/http/Headers";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as SqlClient from "effect/sql/SqlClient";
+import { Auth } from "../auth/Auth.ts";
 import { KeyStore } from "./KeyStore.ts";
 
 export * as KeyCalls from "./KeyCalls.ts";
@@ -17,6 +18,7 @@ export * as KeyCalls from "./KeyCalls.ts";
 export const handlers = Keys.Rpcs.toLayer(
   Effect.gen(function* () {
     const sessions = yield* Ports.SessionResolver;
+    const auth = yield* Auth.Service;
     const sql = yield* SqlClient.SqlClient;
 
     const caller = Effect.fn("KeyCalls.caller")(function* (headers: Headers.Headers) {
@@ -59,12 +61,15 @@ export const handlers = Keys.Rpcs.toLayer(
         function* ({ wrapper, login }, { headers }) {
           const session = yield* caller(headers);
 
-          yield* KeyStore.addWrapper(
+          const ended = yield* KeyStore.addWrapper(
             session.accountId,
             session.sessionId,
             wrapper,
             Option.fromUndefinedOr(login),
           );
+
+          // After the commit, so a signed-out device's sockets close once its session is gone.
+          yield* auth.ended(ended);
         },
         Effect.catchTags({ SqlError: Effect.die }),
       ),

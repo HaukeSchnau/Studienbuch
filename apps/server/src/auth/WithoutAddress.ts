@@ -1,7 +1,7 @@
 /**
  * Accounts without an email address (D97): a passkey signs up, or on a device without passkeys the
- * Notfallkarte, which then signs in anywhere. Each sign-up spends a code's use at once, since
- * nobody confirms anything. The account's placeholder address takes no mail and no email route.
+ * Notfallkarte, which then signs in anywhere. Each sign-up takes a code's use before the account
+ * exists, since nobody confirms anything. Its placeholder address takes no mail and no email route.
  */
 import { runWithTransaction } from "@better-auth/core/context";
 import { createPlaceholderEmail } from "@better-auth/core/utils/email";
@@ -161,7 +161,7 @@ const isLastWayIn = Effect.fn("WithoutAddress.isLastWayIn")(function* (passkey: 
   );
 });
 
-/** Admits a new account without an address. A failure leaves it without a school, which works. */
+/** Admits a new account without an address, whose use is spent. A failure leaves it without a school. */
 const admit = (account: string, reservation: string) =>
   AccessCodes.admitSignedUp(account, reservation).pipe(
     Effect.catchCause((cause) =>
@@ -247,14 +247,14 @@ export const plugin = (callbacks: Callbacks) => {
 
           const reservation = Option.getOrNull(reservationOf(ctx));
 
-          if (reservation === null || !(yield* AccessCodes.claimSignUp(reservation))) {
+          if (reservation === null || !(yield* AccessCodes.takeUse(reservation))) {
             return yield* refused("BAD_REQUEST", reservationRefused);
           }
 
           const accountId = yield* CardLogins.digest(login);
 
           const created = yield* Effect.promise(() => create(ctx, accountId)).pipe(
-            Effect.onError(() => AccessCodes.releaseSignUp(reservation).pipe(Effect.ignore)),
+            Effect.onError(() => AccessCodes.returnUse(reservation).pipe(Effect.ignore)),
           );
 
           yield* Effect.promise(() => setSessionCookie(ctx, created));
@@ -300,7 +300,7 @@ export const plugin = (callbacks: Callbacks) => {
           const reservation = Option.getOrElse(reservationOf(ctx), () => "");
 
           const allowed = verifying
-            ? yield* AccessCodes.claimSignUp(reservation)
+            ? yield* AccessCodes.takeUse(reservation)
             : yield* AccessCodes.usable(reservation);
 
           if (!allowed) return yield* refused("BAD_REQUEST", reservationRefused);
@@ -323,7 +323,7 @@ export const plugin = (callbacks: Callbacks) => {
         }
 
         // A new passkey signs nobody in, so a fresh sign-in can't be stretched by registering
-        // again. The keychain never shows a placeholder address.
+        // again. The passkey's name and display name (the passkey patch) are never a placeholder.
         return verifying
           ? { context: { body: { ...ctx.body, createSession: false } } }
           : Accounts.isPlaceholder(found.user.email)
@@ -351,7 +351,7 @@ export const plugin = (callbacks: Callbacks) => {
 
     return run(
       isAPIError(ctx.context.returned) || Result.isFailure(created)
-        ? AccessCodes.releaseSignUp(reservation)
+        ? AccessCodes.returnUse(reservation)
         : admit(created.success.user.id, reservation),
     );
   });

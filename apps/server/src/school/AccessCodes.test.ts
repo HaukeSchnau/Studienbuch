@@ -134,7 +134,7 @@ describe.skipIf(Postgres18.socket === null)("AccessCodes on PostgreSQL 18", () =
     );
 
     it.effect(
-      "a sign-up without an address spends its use when it creates the account, once for two at once",
+      "a sign-up without an address takes the use before its account exists, and of two racing for the last one, one gets it",
       () =>
         Effect.gen(function* () {
           yield* Schools.publish(data);
@@ -147,38 +147,41 @@ describe.skipIf(Postgres18.socket === null)("AccessCodes on PostgreSQL 18", () =
             yield* AccessCodes.usable(cem.token),
           ];
 
-          yield* SchoolTesting.account("ada");
-          yield* SchoolTesting.account("cem");
-
-          const claimed = [
-            yield* AccessCodes.claimSignUp(ada.token),
-            yield* AccessCodes.claimSignUp(cem.token),
-          ];
-
           const [one, other] = yield* atOnce(
-            AccessCodes.admitSignedUp("ada", ada.token),
-            AccessCodes.admitSignedUp("cem", cem.token),
+            AccessCodes.takeUse(ada.token),
+            AccessCodes.takeUse(cem.token),
           );
+
+          // A sign-up that made no account gives its use back, and can take it again.
+          yield* AccessCodes.returnUse(ada.token);
+          const returned = yield* uses(minted.id);
+          const again = yield* AccessCodes.takeUse(ada.token);
+
+          yield* SchoolTesting.account("ada");
+          const admitted = yield* AccessCodes.admitSignedUp("ada", ada.token);
+          // Once it admitted its account, the use stays spent.
+          yield* AccessCodes.returnUse(ada.token);
 
           expect({
             usable,
-            claimed,
-            one: one._tag === "Success" && Option.isSome(one.value),
-            other: other._tag === "Success" && Option.isNone(other.value),
+            one: one._tag === "Success" && one.value,
+            other: other._tag === "Success" && !other.value,
+            returned,
+            again,
+            admitted: Option.isSome(admitted),
             ada: (yield* SchoolTesting.memberships("ada")).filter((line) =>
               line.startsWith("school"),
             ),
-            cem: yield* SchoolTesting.memberships("cem"),
             stored: yield* uses(minted.id),
-            // Used up, so neither reservation lets anyone in any more.
             after: [yield* AccessCodes.usable(ada.token), yield* AccessCodes.usable(cem.token)],
           }).toEqual({
             usable: [true, true],
-            claimed: [true, true],
             one: true,
             other: true,
+            returned: { uses: 0, reserved: 2 },
+            again: true,
+            admitted: true,
             ada: ["school am-see reader"],
-            cem: [],
             stored: { uses: 1, reserved: 2 },
             after: [false, false],
           });

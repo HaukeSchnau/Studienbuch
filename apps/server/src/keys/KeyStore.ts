@@ -204,6 +204,28 @@ const retireOtherCards = Effect.fn("KeyStore.retireOtherCards")(function* (
   }
 });
 
+/**
+ * Makes the card of an account without an address its only card: its login signs in, and the old
+ * card's login and wrappers go. Answers the sessions that ended with the old card.
+ */
+const replaceCard = Effect.fn("KeyStore.replaceCard")(function* (
+  account: string,
+  session: string,
+  statement: Wrapper.Statement,
+  login: Option.Option<string>,
+) {
+  const replaced = Option.isNone(login)
+    ? Option.none<ReadonlyArray<string>>()
+    : yield* CardLogins.replace(account, login.value, session);
+
+  // The app one release back sends no login, and knows no newer reason than `statement`.
+  if (Option.isNone(replaced)) return yield* new Keys.Invalid({ reason: "statement" });
+
+  yield* retireOtherCards(account, statement);
+
+  return replaced.value;
+});
+
 const boxJson = Schema.toCodecJson(SpaceKey.KeyBox);
 
 /**
@@ -379,8 +401,9 @@ export const state = Effect.fn("KeyStore.state")(function* (account: string) {
 });
 
 /**
- * Adds a wrapper at the newest generation. A passkey or Notfallkarte needs the session to be at
- * most `Keys.freshSignInMinutes` old, so a thief with an unlocked phone can't quietly add one.
+ * Adds a wrapper at the newest generation, and answers the other sessions a new card ended. A
+ * passkey or Notfallkarte needs the session to be at most `Keys.freshSignInMinutes` old, so a thief
+ * with an unlocked phone can't quietly add one.
  */
 export const addWrapper = Effect.fn("KeyStore.addWrapper")(function* (
   account: string,
@@ -424,18 +447,15 @@ export const addWrapper = Effect.fn("KeyStore.addWrapper")(function* (
         if (count >= Keys.wrappersPerPasskey) return yield* new Keys.Invalid({ reason: "limit" });
       }
 
-      // The card of an account without an address signs in with its login and replaces the old
-      // card, login and wrappers. An email account's card never signs in, so its login is ignored.
-      if (statement.kind === Wrapper.kindByte.code && !(yield* CardLogins.hasAddress(account))) {
-        // The app one release back sends no login, and knows no newer reason than `statement`.
-        if (Option.isNone(login) || !(yield* CardLogins.replace(account, login.value))) {
-          return yield* new Keys.Invalid({ reason: "statement" });
-        }
-
-        yield* retireOtherCards(account, statement);
-      }
+      // An email account's card never signs in, so its login is ignored.
+      const ended =
+        statement.kind === Wrapper.kindByte.code && !(yield* CardLogins.hasAddress(account))
+          ? yield* replaceCard(account, session, statement, login)
+          : [];
 
       yield* insertWrapper(account, wrapper, session);
+
+      return ended;
     }),
   );
 });
