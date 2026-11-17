@@ -525,7 +525,7 @@ svg .st { font-size: 12.5px; font-weight: 700; fill: var(--ink); }
 
 <section id="repo">
   <h2><span class="n">2</span>The monorepo map</h2>
-  <p>Three apps on top, six packages underneath. Grey arrows are the dependencies that exist in each <code>package.json</code>. Red dashed arrows are imports the lint plugin refuses; the table below lists every rule it enforces.</p>
+  <p>Three apps on top, six packages underneath. Grey arrows are the dependencies that exist in each <code>package.json</code>. Red dashed arrows are imports the lint plugin refuses; the table below lists every boundary it enforces.</p>
   <div class="dia wide" data-d="repo"></div>
   <p class="scrollhint">Scroll the diagram sideways.</p>
   <div class="tbl"><table>
@@ -553,7 +553,7 @@ svg .st { font-size: 12.5px; font-weight: 700; fill: var(--ink); }
       <tr><th>everything</th><td>the global Temporal polyfill; <code>vitest</code> in tests</td><td>Civil time uses the functional API (ADR 0001); tests use <code>@effect/vitest</code>.</td></tr>
     </tbody>
   </table></div>
-  <p class="hint">Source: <a href="https://git.schnau.dev/schnau/Studienbuch/src/branch/main/tools/oxlint/studienbuch/boundaries">tools/oxlint/studienbuch/boundaries</a>, and <a href="https://git.schnau.dev/schnau/Studienbuch/src/branch/main/tools/oxlint/studienbuch/no-ambient-clock-or-random.ts">no-ambient-clock-or-random.ts</a> for core's clock reads. The same plugin also checks mutator purity, host reads in feature code, deterministic tests, test machinery outside tests (<code>@stu/*/testing</code>, a package's <code>testing/</code>, sync's simulation, <code>&lt;Name&gt;Testing.ts</code> modules), baked-in origins, Hermes-unsafe APIs, directory names and em dashes in copy.</p>
+  <p class="hint">Source: <a href="https://git.schnau.dev/schnau/Studienbuch/src/branch/main/tools/oxlint/studienbuch/boundaries">tools/oxlint/studienbuch/boundaries</a>, and <a href="https://git.schnau.dev/schnau/Studienbuch/src/branch/main/tools/oxlint/studienbuch/rules/no-ambient-clock-or-random.ts">no-ambient-clock-or-random.ts</a> for core's clock reads. The plugin's other rules sit beside it in <a href="https://git.schnau.dev/schnau/Studienbuch/src/branch/main/tools/oxlint/studienbuch/rules">tools/oxlint/studienbuch/rules</a>, one file each, and each file says what it checks and where.</p>
 </section>
 
 <section id="app">
@@ -1397,220 +1397,408 @@ DIAGRAMS.ship = {
 const INFO = {
   /* system */
   cfdns: { t: "Cloudflare DNS", k: "infra", d: ["The Alchemy stack writes one A record, <code>beta.studienbuch.app</code>, pointing at srv-2's public IPv4. It adopted the record that was there before.", "Whether Cloudflare proxies it isn't set in code, so it is probably DNS only."], f: ["deploy/alchemy.run.ts", "deploy/environments.ts"], a: [6] },
+
   tsdns: { t: "Tailnet DNS", k: "infra", d: ["Hauke's infra writes a private wildcard <code>*.studienbuch.schnau.dev</code> that points at srv-2's Tailnet address. Every preview <code>pr-N</code> lives under it, with a DNS-01 wildcard certificate.", "It lives in <code>~/infra</code>, not in this repository."], a: [7] },
+
   gitea: { t: "Gitea", k: "infra", d: ["The real home of the code at git.schnau.dev. Agents push a bookmark with jj and open the PR with <code>tea</code>; GitHub is a mirror for outside contributors.", "Every PR and every push to main starts a Calder run."], a: [8] },
+
   calder: { t: "Calder", k: "infra", d: ["Hauke's CI and deploy system. It runs <code>.calder/ci.ts</code>: checks, the bundle, the flake checks, then the preview or beta deploy.", "It runs on srv-2 and builds the x86_64 bundle on the tower or dev-hauke, the aarch64 checks elsewhere. It reuses results that <code>calder check</code> already produced."], f: [".calder/ci.ts", ".calder/flake.ts"], a: [7, 10] },
+
   alstate: { t: "Alchemy state", k: "infra", d: ["Alchemy keeps what each stage created (the Fleet service, the DNS record, generated secrets such as the auth secret of a preview) in a Cloudflare worker called <code>alchemy-state-store-fleet</code>."], f: ["deploy/alchemy.run.ts"], a: [6] },
+
   native: { t: "iOS and Android app", k: "plain", d: ["The Expo app as a store build. It keeps one SQLCipher database per account, its secrets in the keychain, and talks to the server named in <code>EXPO_PUBLIC_API_URL</code>.", "No store build exists yet: EAS isn't wired into CI."], f: ["apps/app/app.config.ts", "apps/app/eas.json", "apps/app/src/infra/api/ServerOrigin.ts"], a: [13, 15] },
+
   webapp: { t: "Browser at /app", k: "plain", d: ["The same Expo app exported for the web, served by the server under <code>/app</code> as a single-page app. SQLite runs as wa-sqlite in a worker on OPFS, one tab owns a device's database, and a service worker lets it start offline.", "It always calls its own origin, so one build serves every preview and beta."], f: ["apps/app/src/infra/sqlite/database.web.ts", "apps/app/public/sw.js", "apps/server/src/routes/WebBuilds.ts"], a: [14, 16, 5] },
+
   site: { t: "Landing page and console", k: "plain", d: ["TanStack Start pages, prerendered: the landing page, Impressum, Datenschutz and the console SPA under <code>/console</code>.", "Today the console shows the server's revision and, on dev and previews, the captured mail. The landing page draws its app screens with stand-in components in <code>apps/web/src/domain-ui/app/</code>, not yet with the app's own."], f: ["apps/web/src/routes/index.tsx", "apps/web/src/routes/console.tsx", "apps/web/src/features/marketing/Screens.tsx"], a: [3] },
+
   stores: { t: "TestFlight and Play internal", k: "plain", ms: "M0", d: ["Store builds for testers, pointing at beta. The profiles exist in <code>eas.json</code>, and Calder already holds an Expo token and the Play upload keystore, but no CI job builds or uploads yet.", "The mobile release pipeline is M0-WP17, not started yet; the store release train for production is M5.4."], f: ["apps/app/eas.json"] },
+
   eas: { t: "EAS Build and EAS Update", k: "infra", ms: "M0", d: ["Two profiles, <code>beta</code> and <code>production</code>, each with its own update channel. The runtime version is the native fingerprint, so a JS-only change can reach phones as an update while a native change needs a new build.", "Nothing calls EAS from CI today, and <code>eas-cli</code> isn't a dependency."], f: ["apps/app/eas.json", "apps/app/app.config.ts", "apps/app/fingerprint.config.js"] },
+
   caddy: { t: "Caddy", k: "wire", d: ["srv-2's front door. It terminates TLS and proxies each hostname to the loopback port of its service. Preview routes answer 403 to anyone outside the Tailnet.", "The routes come from the service controller through infra's agent-service route sources."], a: [6, 7] },
+
   ctrl: { t: "Service controller", k: "infra", d: ["The Fleet service controller from nix-infra-modules, on srv-2. Calder's Alchemy deploy declares a <code>Fleet.Service</code>, and the controller turns it into a systemd unit <code>fleet-service@&lt;name&gt;</code> with a dynamic user, a loopback port, <code>DATABASE_URL</code> and secrets as files under <code>/run/fleet</code>.", "Studienbuch's grant: 4 services, 4 GB."], f: ["deploy/platform/fleet.ts", "deploy/alchemy.run.ts"], a: [6] },
+
   beta: { t: "studienbuch-beta", k: "plain", d: ["One Node 26 process runs the whole product: the landing page, the console, the web app, RPC, auth and sync, from one architecture-independent bundle. It gets 1 GB.", "It sends real mail, holds the demo school with a review password, and doesn't import from WebUntis yet."], f: ["apps/server/src/main.ts", "nix/bundle.nix"], a: [3, 4, 5] },
+
   prN: { t: "studienbuch-pr-N", k: "plain", d: ["A preview per open pull request, at 512 MB, with its own database, the demo school, an open access code and captured mail. Alchemy refuses a fourth.", "Closing the PR dumps and drops its database."], f: ["deploy/environments.ts", "deploy/alchemy.run.ts"], a: [7] },
+
   pg: { t: "PostgreSQL 18", k: "infra", d: ["One cluster on srv-2, with a database and role per service, at most 40 connections each. It stores accounts, keys, every synced row and the command log.", "Pokes travel on it too: writers call <code>pg_notify</code> inside their transaction, and every server process listens."], f: ["apps/server/src/infra/database/Database.ts", "packages/sync/src/server/Pokes.ts"], a: [12, 18, 19] },
+
   smtp: { t: "Mail", k: "infra", d: ["Beta sends the confirmation and reset codes over SMTP from <code>konto@studienbuch.app</code>, with the URL from SOPS. Dev and previews set <code>MAIL_URL=capture:</code> and keep each mail in the <code>captured_mail</code> table for the console.", "A mail's content never reaches a log."], f: ["apps/server/src/infra/mail/Mail.ts", "apps/web/src/features/mail/CapturedMail.tsx"] },
+
   r2: { t: "Cloudflare R2", k: "infra", ms: "M4", d: ["Buckets for previews (objects expire after 14 days) and beta exist, made by infra's tokens stack, and the server gets <code>S3_*</code> variables. No server code reads them yet.", "They wait for photos and signatures, blob sync in M4."] },
+
   webuntis: { t: "WebUntis", k: "infra", ms: "M2", d: ["The school's timetable and substitutions. The import will be a job inside the server that turns provider records into rows of the school and course spaces through <code>SyncWriter</code>.", "No import code exists on main, so beta doesn't import yet."], f: ["packages/sync/src/server/SyncWriter.ts"], a: [11] },
+
   otlp: { t: "OTLP export", k: "infra", ms: "M5", d: ["The server exports traces, logs and metrics over OTLP as soon as <code>OTEL_EXPORTER_OTLP_ENDPOINT</code> is set. No environment sets it today.", "Crash reporting and server OTLP are M5.3."], f: ["apps/server/src/infra/telemetry/Telemetry.ts"] },
+
   devserver: { t: "Dev server", k: "plain", d: ["<code>devenv up</code> starts the same server process as production. It proxies <code>/</code> and <code>/console</code> to Vite and <code>/app</code> to Metro, with hot reload, and serves <code>/api</code> itself.", "Ports count up from 3000 per worktree, so several agents can run instances side by side."], f: ["devenv.nix", "apps/server/src/routes/DevServers.ts"], a: [6, 9] },
+
   devpg: { t: "Dev PostgreSQL 18", k: "infra", d: ["PostgreSQL 18 from the Nix toolchain on a Unix socket inside the devenv state. Tests start their own throwaway PG 18 the same way."], f: ["devenv.nix", "nix/toolchain.nix", "packages/sync/src/testing/Postgres18.setup.ts"] },
+
   vite: { t: "Vite", k: "plain", d: ["Serves apps/web (landing, legal, console) during development. A release build prerenders it into <code>web/</code> beside the server."], f: ["apps/web/vite.config.ts"] },
+
   metro: { t: "Metro", k: "plain", d: ["Bundles the Expo app for <code>/app</code> during development. A release uses the Expo web export in <code>app/</code> beside the server."], f: ["apps/app/metro.config.js"] },
+
   garage: { t: "Garage", k: "infra", ms: "M4", d: ["A local S3 store with a bucket and a fixed key, the dev twin of R2. Like R2, nothing uses it until blob sync."], f: ["devenv.nix"] },
+
   mailcap: { t: "Captured mail", k: "infra", d: ["On dev and previews, mail lands in <code>captured_mail</code> and the console shows it, so testers can sign up with any address and read the code."], f: ["apps/server/src/infra/mail/MailTables.ts", "apps/web/src/features/mail/CapturedMail.tsx"] },
 
   /* repo */
   "p-app": { t: "apps/app", d: ["The Expo app for iOS, Android and the web. Routes in <code>src/app</code>, one directory per domain area in <code>src/features</code>, and everything that exists because of a technology in <code>src/infra</code>.", "It may import every package except the sync server and the server app."], f: ["apps/app/package.json", "apps/app/src/app/_layout.tsx"], a: [13, 15, 16] },
+
   "p-web": { t: "apps/web", d: ["The landing page, legal pages and the operator console, on TanStack Start. It must not import <code>@stu/sync</code>: sync belongs to the Expo app.", "The landing page draws the app's stickers from <code>packages/domain-ui</code>, so a subject looks the same on the page and in the app."], f: ["apps/web/package.json", "apps/web/src/router.tsx"], a: [3] },
+
   "p-server": { t: "apps/server", d: ["The one server process: HTTP routes, RPC handlers, Better Auth, Drizzle schema and migrations, jobs and the CLI commands. No Expo or React Native package may load here."], f: ["apps/server/src/main.ts", "apps/server/package.json"], a: [3, 4, 11, 12] },
+
   "p-domainui": { t: "packages/domain-ui", d: ["Dumb components and helpers shared by the app and the landing page: rows and callbacks in. Today that is the home's homework panel and its cards, the refusal card, subject colors, the stickers for subjects, grade kinds and states, refusal sentences and date text. The landing page takes its stickers from here. It may not read SQLite or the sync engine."], f: ["packages/domain-ui/src/homework/HomeworkPanel.tsx", "packages/domain-ui/src/homework/HomeworkItem.ts", "packages/domain-ui/src/subject/SubjectMark.ts", "packages/domain-ui/src/subject/SubjectArt.ts", "packages/domain-ui/src/refusal/RefusalText.ts", "packages/domain-ui/src/homework/Due.ts"] },
+
   "p-ui": { t: "packages/ui", d: ["The design system: tokens in light and dark, Nunito, line icons for actions, the sticker style (<code>Sticker.ts</code>: palette, white die-cut edge, shadow) and domain-free components, several with a <code>.web.tsx</code> twin. It knows no domain type, so it may import none of core, sync, e2ee, api or domain-ui.", "Its hooks keep lists usable while rows change: <code>useLingeringOrder</code> leaves a ticked item in place for a moment, and <code>useKeptFocus</code> gives the keyboard's focus back to a box that moved (web only; the native file does nothing).", "Every checkbox and choice is built on <code>Checkable</code>, which answers Space on the web as react-native-web doesn't for these roles; <code>studienbuch/no-raw-checkable</code> keeps the roles there."], f: ["packages/ui/src/Tokens.ts", "packages/ui/src/Theme.ts", "packages/ui/src/Sticker.ts", "packages/ui/src/useLingeringOrder.ts", "packages/ui/src/useKeptFocus.web.ts", "packages/ui/src/Checkable.tsx"], a: [15] },
+
   "p-api": { t: "packages/api", d: ["Effect RPC groups and their schemas outside sync: System, Access, Keys, Demo, Dev and Mail. Handlers live in apps/server, so this package may not import <code>RpcServer</code> or a platform package."], f: ["packages/api/src/Api.ts", "packages/api/src/Keys.ts", "packages/api/src/Access.ts"] },
+
   "p-core": { t: "packages/core", k: "read", d: ["The domain: row tables, mutators, membership rules, the School row's rule fields, refusal tags and civil time. <code>Studienbuch.RefusalTag</code> is every tag a command can end with, the engine's included, so the refusal sentences cover each one. It also holds the school rules the app and the server share: today at the school (<code>School.today</code>), the usual school year and its halves (<code>SchoolYear.around</code>), which class and courses a choice may name (<code>Enrollment.classFits</code>, <code>Enrollment.courses</code>), and which elective groups still need a course (<code>Enrollment.groups</code>, <code>Enrollment.unanswered</code>, from the offerings' <code>groupKey</code> and <code>choiceRequired</code>). Mutators run on devices and, for readable tables, again on the server, so core imports no UI, platform API, SQL client, sync engine, clock or randomness.", "<code>Studienbuch.schema</code> collects 11 tables and 6 mutators at schema version 3."], f: ["packages/core/src/registry/Studienbuch.ts", "packages/core/src/homework/Homework.ts", "packages/core/src/notebook/Enrollment.ts", "packages/core/src/school/School.ts"], a: [1, 17] },
-  "p-plat": { t: "What core never imports", k: "stop", d: ["React, React Native, Expo, <code>node:*</code>, SQL clients, e2ee, api, the sync client, server, Lab and conformance suite, and <code>Clock</code>, <code>Random</code> and <code>Crypto</code> from Effect. Nor does it read <code>DateTime.now</code> or the host's time zone, sleep, or take randomness from <code>crypto</code>. Ids and timestamps reach a mutator as arguments, so a replay gives the same result on every device and on the server."], f: ["tools/oxlint/studienbuch/boundaries/packages.ts", "tools/oxlint/studienbuch/no-ambient-clock-or-random.ts"] },
+
+  "p-plat": { t: "What core never imports", k: "stop", d: ["React, React Native, Expo, <code>node:*</code>, SQL clients, e2ee, api, the sync client, server, Lab and conformance suite, and <code>Clock</code>, <code>Random</code> and <code>Crypto</code> from Effect. Nor does it read <code>DateTime.now</code> or the host's time zone, sleep, or take randomness from <code>crypto</code>. Ids and timestamps reach a mutator as arguments, so a replay gives the same result on every device and on the server."], f: ["tools/oxlint/studienbuch/boundaries/packages.ts", "tools/oxlint/studienbuch/rules/no-ambient-clock-or-random.ts"] },
+
   "p-sync": { t: "@stu/sync", k: "wire", d: ["The sync engine's shared root: the definition API (<code>Sync.spaceKind</code>, <code>Sync.table</code>, <code>Sync.mutator</code>, <code>Sync.membershipRule</code>), the transaction <code>Tx</code> that mutators run through on both sides, and the wire protocol. Both engines ask it who may write (<code>Sync.mayWrite</code>, <code>Sync.maySeal</code>) and encode a run's refusal with it (<code>Sync.encodeRefusal</code>).", "Further entry points: <code>./lab</code> for the Sync Lab's faults, <code>./testing</code> for the throwaway PostgreSQL 18 that tests run on, <code>./conformance</code> for the cross-engine cases."], f: ["packages/sync/src/definition/Sync.ts", "packages/sync/src/transaction/Tx.ts", "packages/sync/src/protocol/Protocol.ts"], a: [17, 18] },
+
   "p-client": { t: "@stu/sync/client", k: "wire", d: ["The device engine, one per device database: <code>mutate</code>, live queries, the outbox, sealing at push, rebase after pull, and the supervisor that owns the connection. It never imports the server side."], f: ["packages/sync/src/client/SyncClient.ts", "packages/sync/src/client/Outbox.ts", "packages/sync/src/client/Rebase.ts", "packages/sync/src/client/Supervisor.ts"], a: [17, 20] },
+
   "p-sserver": { t: "@stu/sync/server", k: "wire", d: ["The server engine over Effect's SqlClient on PostgreSQL 18 (and PGlite in the simulation): push, pull, pokes, connections, tickets, spaces and SyncWriter. It never imports the client side."], f: ["packages/sync/src/server/SyncServer.ts", "packages/sync/src/server/Push.ts", "packages/sync/src/server/Pull.ts", "packages/sync/src/server/Tables.ts"], a: [17, 19, 28] },
+
   "p-e2ee": { t: "packages/e2ee", k: "seal", d: ["Every encryption format: account keys, space keys with key boxes and history links, sealed rows, recovery wrappers and the Notfallkarte code, over a <code>CryptoSuite</code> service (AES-256-GCM, HKDF-SHA256, X-Wing, Ed25519). Test vectors pin each format on WebCrypto and noble.", "It stores nothing and opens no connection."], f: ["packages/e2ee/src/suite/CryptoSuite.ts", "packages/e2ee/src/rows/SealedRow.ts", "packages/e2ee/src/space-keys/SpaceKey.ts", "packages/e2ee/src/recovery/Wrapper.ts"], a: [22, 24, 26] },
+
   "p-store": { t: "What e2ee never imports", k: "stop", d: ["SQL clients, SecureStore, the file system, async storage, Node's network and file modules, and Effect's HTTP, socket, RPC, persistence, reactivity, worker, cluster and event log modules. The app and the engine store keys; e2ee only seals and opens."], f: ["tools/oxlint/studienbuch/boundaries/packages.ts"] },
-  "p-tools": { t: "tools/", k: "infra", d: ["The oxlint plugin enforces the boundaries on this map, mutator purity, mutators that let every error through, one home for role checks, test determinism, no em dashes in copy, no baked-in origins and more. <code>check-changed</code> runs format, lint, knip, typecheck and nearby tests for the files one change touches."], f: ["tools/oxlint/studienbuch/index.ts", "tools/oxlint/studienbuch/import-boundaries.ts", "tools/check-changed/check-changed.ts"], a: [10] },
+
+  "p-tools": { t: "tools/", k: "infra", d: ["The oxlint plugin enforces the boundaries on this map and the other conventions in AGENTS.md that a linter can check. Each rule is one file in <code>tools/oxlint/studienbuch/rules</code> that also says where the rule runs; the plugin loads every file there and turns each rule on where it says, so a new rule edits no shared file. <code>check-changed</code> runs format, lint, knip, typecheck and nearby tests for the files one change touches."], f: ["tools/oxlint/studienbuch/index.ts", "tools/oxlint/studienbuch/rules/import-boundaries.ts", "tools/check-changed/check-changed.ts"], a: [10] },
+
   "p-deploy": { t: "deploy/, .calder/, nix/", k: "infra", d: ["The Alchemy stack that declares each stage's Fleet service and DNS, Calder's CI plan, and the Nix derivations for the bundle, the server smoke test and the closure guard."], f: ["deploy/alchemy.run.ts", ".calder/ci.ts", "nix/bundle.nix", "nix/server-smoke.nix"], a: [5, 6, 7] },
 
   /* app */
   "r-nf": { t: "Route +not-found", d: ["Any address no other route matches: a typo, an old link or a wrong deep link, on all three platforms. It shows the sign-in card with one way back to <code>/</code>, which is the Übersicht when signed in and the access code when not.", "Expo Router's <code>/_sitemap</code> is off in every build, so no page lists the routes."], f: ["apps/app/src/app/+not-found.tsx", "apps/app/src/features/account/NotFoundScreen.tsx", "apps/app/app.config.ts"] },
+
   "r-auth": { t: "Routes (auth)", d: ["Willkommen with the access code (<code>aktivieren</code>), sign-in, sign-up, the email code, forgotten password and the success screen. Screens hand the email and reservation along in memory, never in the URL."], f: ["apps/app/src/app/(auth)/_layout.tsx", "apps/app/src/features/account/Steps.ts"] },
+
   "r-keys": { t: "Routes (keys)", d: ["Notfallkarte, Notizbuch entsperren and Notizbuch-Schlüssel: the screens for the notebook's root key."], f: ["apps/app/src/app/(keys)/notizbuch-entsperren.tsx", "apps/app/src/features/keys/KeysScreen.tsx"], a: [25] },
+
   "r-tabs": { t: "Routes (tabs)", d: ["The signed-in app: Übersicht, and the device's diagnostics and self test. Only one tab exists so far."], f: ["apps/app/src/app/(tabs)/_layout.tsx", "apps/app/src/ui/navigation/AppTabs.tsx"] },
+
   "r-check": { t: "Route (check)", d: ["A passkey test that checks whether this device's authenticator gives a PRF output, the thing the passkey unlock depends on."], f: ["apps/app/src/app/(check)/passkey-test.tsx", "apps/app/src/features/account/PasskeyCheck.ts"] },
+
   "r-lab": { t: "Route dev/sync-lab", d: ["The Sync Lab at <code>/app/dev/sync-lab</code>. It ships in every build but loads only when <code>System.info</code> reports development or preview. The native build shows a sentence instead."], f: ["apps/app/src/app/dev/sync-lab.tsx", "apps/app/src/features/sync-lab/SyncLabRoute.native.tsx"] },
+
   "f-account": { t: "features/account", d: ["Signing up, in and out. <code>AccountGates</code> decides between the sign-in screens and the tabs. A device holds one account at a time: while another account is still signed in here, even with an ended session, a new sign-in is refused, because that account's database may hold changes the server never got.", "Each sign-in hands the tab's \"Öffentlicher Computer\" choice to its session, which keeps it while the device holds the account. <code>AccountState.keepsNothing</code> is the device's one answer: the held account's choice, else the tab's.", "Sign-out warns first, in one question, when it would lose commands the engine counted as unsent, or the notebook when this device holds its only way in (<code>NotebookKeys.atSignOut</code>). In that case the question offers Notfallkarte erstellen first."], f: ["apps/app/src/features/account/Account.ts", "apps/app/src/features/account/AccountGates.tsx", "apps/app/src/features/account/SignOutButton.tsx"], a: [28] },
+
   "f-keys": { t: "features/keys", d: ["The notebook's root key on this device: the first device makes it, a new device unlocks with a passkey's PRF output or the Notfallkarte, and the keys screen adds methods. It accepts a key only after <code>Wrapper.recover</code> checked the anchor, the chain and the endorsement."], f: ["apps/app/src/features/keys/NotebookKeys.ts", "apps/app/src/features/keys/KeysState.ts", "apps/app/src/features/keys/AccountNotice.tsx"], a: [25, 26] },
+
   "f-onb": { t: "features/onboarding", d: ["The first start, in the Flutter app's order: name and volljährig go to the encrypted profile, Jahrgang, Klasse and Kurse to the readable course choice that the server checks again. The course step builds and checks that choice with core's <code>Enrollment</code> rules: a group such as Kunst and Musik shows as one choice, a required one holds Fertig back until it is answered, and a class answered for another Jahrgang drops out, so it sends only a choice the server accepts. Drafts live in the account's own database."], f: ["apps/app/src/features/onboarding/Onboarding.ts", "apps/app/src/features/onboarding/OnboardingState.ts"] },
+
   "f-over": { t: "features/overview", d: ["Übersicht, with \"Moin, Lena!\" in the hero and the homework panel below it: what is due, ticked in place, refusals with their reason, and an offline chip while changes wait.", "<code>OverviewState</code> puts it together from the account, keys, onboarding and homework atoms, so the screen only draws. A device without the notebook key says so with a banner instead of claiming there is no homework; <code>NotebookKeys.unlocked</code> is the one rule for that, shared with the banner and the onboarding gate."], f: ["apps/app/src/features/overview/OverviewScreen.tsx", "apps/app/src/features/overview/OverviewState.ts", "apps/app/src/features/overview/Offline.ts", "apps/app/src/features/overview/OfflineChip.tsx"] },
+
   "f-diag": { t: "features/diagnostics", d: ["Dieses Gerät and Selbsttest: the crypto test vectors on this platform's WebCrypto with timings, the conformance replay on its SQLite, storage persistence and the server's revision. The start counter and the self-test open where <code>AccountState.keepsNothing</code> says, so a public computer keeps nothing of them."], f: ["apps/app/src/features/diagnostics/CryptoSelfTest.ts", "apps/app/src/features/diagnostics/SqliteSelfTest.ts"] },
+
   "f-lab": { t: "features/sync-lab", d: ["Three virtual devices in one tab, A and B for Lena and C for Tom, each with its own engine, storage and faults, beside a server pane that shows spaces, the command log and ciphertext sizes. A green bar shows when every device agrees with the server."], f: ["apps/app/src/features/sync-lab/Lab.ts", "apps/app/src/features/sync-lab/LabDevice.ts", "apps/app/src/features/sync-lab/Agreement.ts"] },
+
   "f-hw": { t: "features/homework", d: ["The homework rows the home reads: <code>HomeworkState</code> reads homework with its course and subject, ticks it and retries or dismisses a refusal, and <code>Refused</code> turns a refused change into one line for its card. The homework screens themselves come later in M1."], f: ["apps/app/src/features/homework/HomeworkState.ts", "apps/app/src/features/homework/Refused.ts", "packages/core/src/homework/Homework.ts"] },
+
   "a-devlayers": { t: "Layers.device", k: "wire", d: ["Everything a device has before anyone signs in: the server origin, the sessions signed in here, the app lifecycle, HTTP and WebSocket, and the keychain (memory only on a public computer). One build of it per device, so its secrets have a single writer.", "At start it finishes any sign-out that an earlier run left half done."], f: ["apps/app/src/infra/runtime/Layers.ts"] },
+
   "a-engines": { t: "AccountEngine.Engines", k: "wire", d: ["The device's running sync engines, keyed by account. An engine starts at first use and runs until sign-out closes it, because its database may be open only once and only a closed one can be deleted. It opens an account's storage on disk only for a session the device keeps, and in memory for a public computer's account or one without a session. The Sync Lab runs one per virtual device."], f: ["apps/app/src/infra/runtime/AccountEngine.ts"] },
+
   "a-acct": { t: "Layers.account", d: ["What a signed-in account adds: its secrets in its own keychain namespace and its own database, per server origin, device and account. Signing in as someone else never opens another account's rows."], f: ["apps/app/src/infra/runtime/Layers.ts", "apps/app/src/infra/sqlite/AccountDatabase.ts"] },
-  "a-sync": { t: "SyncClient", k: "wire", d: ["The device engine over Studienbuch's schema. A screen writes with <code>mutate</code> and reads with a <code>SyncQuery</code> over the views, which runs again only when a table or engine query it names changes; a lint rule keeps feature code from picking its keys by hand. Each write lands in <code>pending_row</code> and <code>sync_outbox</code> in one transaction, so it shows at once and survives a crash."], f: ["packages/sync/src/client/SyncClient.ts", "packages/sync/src/client/SyncQuery.ts", "tools/oxlint/studienbuch/no-hand-rolled-live-query.ts"], a: [17] },
+
+  "a-sync": { t: "SyncClient", k: "wire", d: ["The device engine over Studienbuch's schema. A screen writes with <code>mutate</code> and reads with a <code>SyncQuery</code> over the views, which runs again only when a table or engine query it names changes; a lint rule keeps feature code from picking its keys by hand. Each write lands in <code>pending_row</code> and <code>sync_outbox</code> in one transaction, so it shows at once and survives a crash."], f: ["packages/sync/src/client/SyncClient.ts", "packages/sync/src/client/SyncQuery.ts", "tools/oxlint/studienbuch/rules/no-hand-rolled-live-query.ts"], a: [17] },
+
   "a-transport": { t: "WebSocketTransport", k: "wire", d: ["Before each connect the device posts its bearer token to <code>/api/sync/ticket</code>, then opens <code>/api/sync?ticket=…</code>. A browser can't set headers on a WebSocket upgrade, and one tab may hold devices of several accounts. Pings every 5 seconds."], f: ["packages/sync/src/client/WebSocketTransport.ts", "packages/sync/src/protocol/Connection.ts"], a: [28] },
-  "a-atoms": { t: "Atoms", k: "wire", d: ["Data and subscriptions for screens live in effect-atom atoms, each on an atom runtime built from the device's or the account's layers. React's own state and effect hooks are allowed only inside a documented <code>use…</code> hook; a lint rule checks it."], f: ["apps/app/src/features/account/AccountState.ts", "apps/app/src/features/keys/KeysState.ts", "apps/app/src/features/onboarding/OnboardingState.ts", "apps/app/src/features/overview/OverviewState.ts", "tools/oxlint/studienbuch/no-ad-hoc-state-or-effects.ts"] },
-  "a-ui": { t: "UI pieces", d: ["The design system from packages/ui, plus app-only pieces in <code>src/ui</code>: AppTabs, the question before a destructive step (<code>useConfirm</code>, the system alert on the phones and our dialog on the web) and WebStyles, each with a <code>.web.tsx</code> or <code>.web.ts</code> twin where the browser needs something else, and RouteLink, the one way to link to a screen, which the browser follows without loading the page. A twin shares its file's extension, because Metro tries every platform for one extension before the next; a lint rule checks it."], f: ["apps/app/src/ui/navigation/AppTabs.web.tsx", "apps/app/src/ui/useConfirm.web.tsx", "apps/app/src/ui/navigation/RouteLink.tsx", "packages/ui/src/Tokens.ts", "tools/oxlint/studienbuch/platform-twin-extension.ts"], a: [15] },
+
+  "a-atoms": { t: "Atoms", k: "wire", d: ["Data and subscriptions for screens live in effect-atom atoms, each on an atom runtime built from the device's or the account's layers. React's own state and effect hooks are allowed only inside a documented <code>use…</code> hook; a lint rule checks it."], f: ["apps/app/src/features/account/AccountState.ts", "apps/app/src/features/keys/KeysState.ts", "apps/app/src/features/onboarding/OnboardingState.ts", "apps/app/src/features/overview/OverviewState.ts", "tools/oxlint/studienbuch/rules/no-ad-hoc-state-or-effects.ts"] },
+
+  "a-ui": { t: "UI pieces", d: ["The design system from packages/ui, plus app-only pieces in <code>src/ui</code>: AppTabs, the question before a destructive step (<code>useConfirm</code>, the system alert on the phones and our dialog on the web) and WebStyles, each with a <code>.web.tsx</code> or <code>.web.ts</code> twin where the browser needs something else, and RouteLink, the one way to link to a screen, which the browser follows without loading the page. A twin shares its file's extension, because Metro tries every platform for one extension before the next; a lint rule checks it."], f: ["apps/app/src/ui/navigation/AppTabs.web.tsx", "apps/app/src/ui/useConfirm.web.tsx", "apps/app/src/ui/navigation/RouteLink.tsx", "packages/ui/src/Tokens.ts", "tools/oxlint/studienbuch/rules/platform-twin-extension.ts"], a: [15] },
+
   "a-dui": { i: "p-domainui" },
+
   "a-core": { i: "p-core" },
+
   "i-sqlite": { t: "SQLite on every device", k: "infra", d: ["iOS and Android: SQLCipher through expo-sqlite, each database with its own random key in the keychain. The web: Effect's wasm client in a worker, each database in its own OPFS directory, unencrypted at rest; a public computer or a private window keeps it in memory.", "One tab owns a device's database (Web Locks); other tabs park until \"Hier verwenden\"."], f: ["apps/app/src/infra/sqlite/database.ts", "apps/app/src/infra/sqlite/database.web.ts", "apps/app/src/infra/sqlite/opfs.worker.ts", "apps/app/src/infra/device/TabOwner.ts"], a: [13, 14] },
+
   "i-keychain": { t: "Keychain", k: "key", d: ["Secrets that never leave the device: the root key, the device seed, a pending key, the bearer tokens. iOS keychain and Android Keystore storage through SecureStore; in a browser, IndexedDB with each value sealed under a non-extractable WebCrypto key. The content security policy on <code>/app</code> keeps foreign scripts out."], f: ["apps/app/src/infra/keychain/Keychain.ts", "apps/app/src/infra/keychain/IndexedDbKeychain.ts", "apps/app/src/infra/keychain/SecureStoreKeychain.ts"], a: [22] },
+
   "i-passkeys": { t: "Passkeys with PRF", k: "key", d: ["The platform's passkey sheet with the PRF extension: WebAuthn in the browser, react-native-passkeys on phones. The PRF output stays on the device and unlocks the notebook; the server sees the credential only.", "Sign-in and unlock happen in one prompt."], f: ["apps/app/src/infra/passkeys/Passkeys.ts", "apps/app/src/infra/passkeys/platform.web.ts", "apps/app/src/features/keys/OfferedPrf.ts"], a: [25, 26] },
+
   "i-files": { t: "Device files", k: "infra", d: ["A small Expo module on iOS keeps the databases out of the iCloud backup (the keys stay behind anyway). Android leaves them out through backup rules at build time. The browser has neither."], f: ["apps/app/modules/device-files/ios/DeviceFilesModule.swift", "apps/app/src/infra/device/files.ts"] },
+
   "i-crypto": { t: "WebCrypto everywhere", k: "infra", d: ["Hermes has no WebCrypto, so quick-crypto installs <code>crypto.subtle</code> and <code>getRandomValues</code> natively. Browsers bring their own. Every platform runs the same e2ee code."], f: ["apps/app/src/infra/crypto/runtime.ts", "apps/app/src/infra/crypto/runtime.web.ts"] },
+
   "i-auth": { t: "Auth client", k: "infra", d: ["Better Auth's routes the app uses, with every response parsed. The device keeps a bearer token, no cookies. A sign-up waiting for its code survives a restart in the keychain (sessionStorage on the web), without its password."], f: ["apps/app/src/infra/auth/AuthApi.ts", "apps/app/src/infra/auth/SessionStore.ts", "apps/app/src/infra/auth/PendingSignUp.ts"], a: [28] },
+
   "i-device": { t: "Device", k: "infra", d: ["Which device a set of layers runs as. In a browser <code>?device=a</code> and <code>?device=b</code> are two devices side by side. The tab's \"Öffentlicher Computer\" choice for the next sign-in lives here, in sessionStorage."], f: ["apps/app/src/infra/device/VirtualDevice.ts", "apps/app/src/infra/device/publicComputer.web.ts", "apps/app/src/infra/device/DeviceGate.web.tsx"], a: [14] },
+
   "i-life": { t: "Lifecycle", k: "infra", d: ["Foreground and background from React Native's AppState (the tab's visibility on the web), and the network from expo-network or the browser's events. The supervisor connects only when the device may."], f: ["apps/app/src/infra/lifecycle/AppLifecycle.ts", "apps/app/src/infra/lifecycle/network.web.ts"] },
+
   "i-offline": { t: "Offline start", k: "infra", d: ["On the web the service worker serves the last build of <code>/app</code> when the network is gone, so the app starts offline with its local data. Development builds run without one."], f: ["apps/app/src/infra/offline/ServiceWorker.ts", "apps/app/public/sw.js", "docs/operations/service-worker.md"], a: [16] },
-  "i-origin": { t: "Server origin", k: "infra", d: ["The web app calls its own origin, so one build serves every preview and beta. Native builds name their server in <code>EXPO_PUBLIC_API_URL</code>, set per EAS environment. A lint rule refuses baked-in origins."], f: ["apps/app/src/infra/api/ServerOrigin.ts", "tools/oxlint/studienbuch/no-baked-origin.ts"], a: [3] },
+
+  "i-origin": { t: "Server origin", k: "infra", d: ["The web app calls its own origin, so one build serves every preview and beta. Native builds name their server in <code>EXPO_PUBLIC_API_URL</code>, set per EAS environment. A lint rule refuses baked-in origins."], f: ["apps/app/src/infra/api/ServerOrigin.ts", "tools/oxlint/studienbuch/rules/no-baked-origin.ts"], a: [3] },
 
   /* server */
   "h-rpc": { t: "/api/rpc", k: "wire", d: ["Effect RPC over HTTP POST, JSON. One endpoint for every group in packages/api. Answers carry <code>cache-control: no-store</code>, because some hold sessions or demo root keys."], f: ["apps/server/src/routes/Rpc.ts", "packages/api/src/Api.ts"] },
+
   "h-auth": { t: "/api/auth/*", k: "wire", d: ["Better Auth's routes. Devices keep no cookies, so the route drops cookies both ways, except the passkey challenge, which crosses as a header."], f: ["apps/server/src/auth/Auth.ts", "packages/api/src/Accounts.ts"], a: [28] },
+
   "h-ticket": { t: "POST /api/sync/ticket", k: "wire", d: ["Takes <code>Authorization: Bearer</code>, checks the session once, and answers a single-use ticket valid for 30 seconds, at most 8 per session."], f: ["packages/sync/src/server/Tickets.ts", "packages/sync/src/server/Routes.ts"], a: [28] },
+
   "h-ws": { t: "WSS /api/sync", k: "wire", d: ["The sync socket: <code>Sync.push</code>, <code>Sync.pull</code> and the <code>Sync.events</code> stream as JSON frames, at most 16 MiB each. It closes with 4401 when the session ends, 4426 when the client is too old, 1012 on shutdown."], f: ["packages/sync/src/protocol/Protocol.ts", "packages/sync/src/protocol/Connection.ts"], a: [17, 28] },
+
   "h-inspect": { t: "/api/sync/inspect", k: "wire", d: ["What the server holds of some spaces and clients, for the Sync Lab: memberships, readable rows, ciphertext sizes (never ciphertext) and the command log. Only development and preview servers answer, and they answer any signed-in account about any space it names."], f: ["packages/sync/src/server/Inspection.ts", "apps/server/src/sync/Sync.ts"] },
+
   "h-health": { t: "Health", k: "wire", d: ["<code>live</code> always answers. <code>ready</code> answers 200 only when the database responds and has every migration of this release; a database ahead of the release still counts, so a rollback keeps working. A database that hasn't answered within two seconds counts as unavailable. Deploys wait on it."], f: ["apps/server/src/routes/Health.ts"], a: [4] },
+
   "h-wk": { t: "/.well-known", k: "wire", d: ["apple-app-site-association and assetlinks.json, which iOS and Android fetch before they offer this environment's passkeys inside the native apps. A wrong entry fails silently."], f: ["apps/server/src/routes/WellKnown.ts", "apps/server/src/auth/NativeApps.ts"] },
+
   "h-web": { t: "Web builds", k: "wire", d: ["A release serves the Expo web export under <code>/app</code> (with the service worker and a content security policy), the console shell under <code>/console</code>, and prerendered pages for the rest. In dev the same paths go to Metro and Vite."], f: ["apps/server/src/routes/WebBuilds.ts", "apps/server/src/routes/DevServers.ts"], a: [3, 16] },
+
   "h-cli": { t: "The four commands", k: "infra", d: ["<code>serve</code> (the default) refuses to start unless the schema is at head. <code>prepare</code> migrates, sets the sync epoch and seeds the demo school; the host runs it before switching traffic. <code>console</code> holds operator commands such as access codes. <code>verify</code> checks the schema and two invariants."], f: ["apps/server/src/main.ts", "apps/server/src/school/AccessCommand.ts"], a: [4] },
+
   "s-sys": { t: "System.info", d: ["The server's revision, environment and time. The app uses it to decide whether the Sync Lab and persona sign-in show."], f: ["packages/api/src/System.ts", "apps/server/src/routes/Rpc.ts"] },
+
   "s-mail": { t: "Mail.captured", d: ["The mail a development or preview server kept instead of sending. Beta answers that it captures nothing."], f: ["packages/api/src/Mail.ts"] },
+
   "s-redeem": { t: "Access.redeem", d: ["Turns a typed Zugangscode into a reservation for the sign-up that follows. Every failure looks the same. Failures count per code (20 per window) and per client address; right codes never count, so nobody can block a code by redeeming it."], f: ["apps/server/src/school/Redemption.ts", "apps/server/src/school/AccessCodes.ts", "packages/api/src/Access.ts"] },
+
   "s-keys": { t: "Keys.*", k: "key", d: ["<code>state</code>, <code>init</code> (the first device publishes generation 0 and its device wrapper), <code>addWrapper</code> (a passkey or Notfallkarte needs a sign-in in the last 10 minutes) and <code>fetchSeals</code> (a new device's unlock, 20 per day)."], f: ["packages/api/src/Keys.ts", "apps/server/src/keys/KeyCalls.ts"], a: [25, 26] },
+
   "s-demo": { t: "Demo.*", d: ["On dev and previews anyone can sign in as Lena or Tom without a password. Every server hands a signed-in demo account its root key, which the server derives from <code>DEMO_KEY_SEED</code>; beta's store review account needs that."], f: ["apps/server/src/demo/PersonaSignIn.ts", "apps/server/src/demo/DemoKeys.ts"], a: [27] },
+
   "s-dev": { t: "Dev.*", d: ["A fresh school per call and the caller's admission to it, for the Sync Lab and future E2E runs. Every server has the handlers, only development and preview answer."], f: ["apps/server/src/dev/Shortcuts.ts", "packages/api/src/Dev.ts"] },
+
   "s-ba": { t: "Better Auth", d: ["Email and password with required confirmation, a 6-digit email code (keyed hash, 5 tries, 15 minutes), passkeys with user verification, and signed bearer tokens. Sessions last 90 days and renew at most daily. Unused flows are switched off by path."], f: ["apps/server/src/auth/Auth.ts", "apps/server/src/auth/AuthTables.ts"], a: [28] },
+
   "s-hooks": { t: "Auth hooks", k: "stop", d: ["A sign-up needs a reservation header, and its password is swapped for a random one until the email code proves the address; confirming sets the real password and deletes passkeys and sessions made before. A new password ends other sessions. Registering a passkey signs nobody in. A new user gets an empty name, a new session no IP address.", "A deleted session reaches the sync server's revocations, which close its sockets."], f: ["apps/server/src/auth/Auth.ts"] },
+
   "s-limits": { t: "Limits", k: "stop", d: ["A school's whole network reaches the server from one address, so a client address gets only a ceiling (100 per route in 15 minutes). The limits that stop guessing count per email address (5 code mails an hour, 10 wrong passwords) and per access code.", "They live in this process's memory, so a restart clears them."], f: ["apps/server/src/limits/Limits.ts", "apps/server/src/auth/Auth.ts"] },
+
   "m-access": { t: "Access and AccessCodes", k: "read", d: ["Zugang: admitting an account to a school in one transaction: the notebook space and its <code>Notebook</code> row, the account as owner, the account as school reader, and the first course choice through <code>enrollment.set</code>. Confirmed sign-ups, the console, the demo seed and the dev shortcuts all admit through it.", "Codes are stored as SHA-256 digests; a use is spent under the code row's lock."], f: ["apps/server/src/school/Access.ts", "apps/server/src/school/AccessCodes.ts", "apps/server/src/sync/Notebooks.ts"] },
+
   "m-keystore": { t: "KeyStore", k: "key", d: ["Stores key records, wrappers and seals after checking every signature it can, and hands out seals for an unlock. It never holds a root key, a seed or a PRF output, except the derived keys of demo accounts. The sync server asks it for an account's newest record to check key-box signatures."], f: ["apps/server/src/keys/KeyStore.ts", "apps/server/src/keys/KeyTables.ts", "apps/server/src/sync/Sync.ts"], a: [24, 25, 27] },
+
   "m-schools": { t: "Schools", k: "read", d: ["Publishes a school's shared data to its School space and its course spaces, and reads what the school offers today through core's course-choice rules. <code>Schools.simple</code> builds the dev schools and the demo school from core's usual school year, and they publish through here; the import joins in M2."], f: ["apps/server/src/school/Schools.ts"] },
+
   "m-demo": { t: "Demo seed", k: "read", d: ["The demo school for the current school year, and Lena and Tom with their key records, courses and encrypted notebook content. <code>prepare</code> runs it when <code>STUDIENBUCH_DEMO_SCHOOL=seed</code>; a second run writes nothing."], f: ["apps/server/src/demo/Seed.ts", "apps/server/src/demo/DemoSchool.ts", "apps/server/src/demo/DemoNotebooks.ts"], a: [27] },
+
   "m-mail": { i: "smtp" },
+
   "m-tele": { i: "otlp", t: "Telemetry" },
+
   "m-jobs": { t: "Jobs", d: ["Scheduled work runs inside the server through Effect's ClusterCron on a single-node cluster in Postgres, so runs never overlap across processes. The only job is <code>heartbeat</code>, which proves the machinery before the import depends on it."], f: ["apps/server/src/infra/jobs/Jobs.ts"], a: [11] },
+
   "m-migr": { t: "Migrations", d: ["drizzle-kit writes the SQL from the Drizzle schema, the sync engine's tables included. <code>prepare</code> applies them; <code>serve</code> refuses a database behind the release. Eight migrations so far."], f: ["apps/server/src/infra/database/Migrations.ts", "apps/server/drizzle.config.ts", "apps/server/src/infra/database/Schema.ts"], a: [12] },
+
   "m-import": { i: "webuntis" },
+
   "y-tickets": { i: "h-ticket" },
+
   "y-conn": { t: "Connections", k: "wire", d: ["One RPC server per socket, with the session's account closed over. At most 4 per session. Closes with 4401 when the session ends, 4426 for a too-old client, 1000 at the session's term, 1012 on shutdown, 1008 past the limit."], f: ["packages/sync/src/server/Connections.ts"], a: [28] },
+
   "y-revoke": { t: "Revocations", k: "wire", d: ["Sessions as Better Auth deletes them, from one fiber per process. A session revoked within a ticket's lifetime is remembered for a minute, so a ticket issued just before opens nothing. Kept in memory, so a second server process would hear of a revocation only when its connection checks the session again, every 4 to 6 minutes."], f: ["packages/sync/src/server/Revocations.ts"], a: [28] },
+
   "y-push": { t: "Push", k: "wire", d: ["Commands in mutation id order, each in its own transaction whose first statement bumps and locks the client's row. A refusal still advances the last mutation id, recorded in a second transaction. The batch stops at <code>Retry</code>, <code>Stale</code> or a key answer."], f: ["packages/sync/src/server/Push.ts", "packages/sync/src/server/Decision.ts"], a: [19] },
+
   "y-mutate": { t: "MutateCommand", k: "read", d: ["A readable table's command: the server locks the declared spaces, checks the author is a member of each, runs the same mutator from core against Postgres, and may refuse. Like the device, it then asks <code>Sync.mayWrite</code> for each row the run wrote. Then the membership rules of the tables it wrote apply in the same transaction."], f: ["packages/sync/src/server/MutateCommand.ts", "packages/sync/src/server/Membership.ts", "packages/sync/src/definition/Sync.ts"], a: [17, 20] },
+
   "y-seal": { t: "SealCommand", k: "seal", d: ["An encrypted table's command, which the server can't read. In order: is the author a member, may the role write, is the key epoch current and each base unchanged (else <code>Stale</code>), are format and suite known, do the key boxes' signatures verify against the newest account key, is each ciphertext at most 64 KiB. Then it stores what came."], f: ["packages/sync/src/server/SealCommand.ts"], a: [23, 24] },
+
   "y-pull": { t: "Pull", k: "wire", d: ["Everything a device receives, read in one <code>REPEATABLE READ READ ONLY</code> snapshot: the account's spaces, patches per space from the device's cursor, removed spaces, the last mutation id and refusals. Pages cut at a version, so no commit arrives in parts."], f: ["packages/sync/src/server/Pull.ts"], a: [19] },
+
   "y-events": { t: "Events and pokes", k: "wire", d: ["One <code>LISTEN stu_sync</code> per process feeds an in-process PubSub. Each connection takes the pokes of the spaces its account reads, coalesced over 50 ms. A poke is a hint: the device pulls."], f: ["packages/sync/src/server/Events.ts", "packages/sync/src/server/Pokes.ts", "packages/sync/src/server/Listener.ts"] },
+
   "y-spaces": { t: "Spaces", k: "read", d: ["Spaces and memberships for server code outside commands, such as admitting an account. Each membership change pokes the account's devices on commit with <code>AccountChanged</code>, so they pull their new list of spaces."], f: ["packages/sync/src/server/Spaces.ts"] },
+
   "y-writer": { t: "SyncWriter", k: "read", d: ["How server code writes readable rows outside commands: admissions, the demo school and later the import. Each write is an ordinary versioned change with membership rules applied and a poke on commit."], f: ["packages/sync/src/server/SyncWriter.ts"], a: [11, 19] },
+
   "y-member": { t: "Membership rules", k: "read", d: ["Memberships that follow rows. Today there is one: a notebook's owner reads the Course space of every course its Enrollment lists. A rule only removes the memberships it granted itself (<code>granted_by</code>)."], f: ["packages/sync/src/server/Membership.ts", "packages/core/src/notebook/Enrollment.ts"] },
+
   "t-auth": { t: "Better Auth's tables", k: "infra", d: ["auth_user (email, empty name), auth_session (no IP address), auth_account (password hash), auth_passkey and auth_verification (keyed hashes of email codes). Better Auth writes them through its own pool."], f: ["apps/server/src/auth/AuthTables.ts"] },
+
   "t-access": { t: "Access tables", k: "read", d: ["access_code (SHA-256 digests, uses, expiry), access_reservation, access_sign_up (which reservation each sign-up carried), and school_access (account, school, notebook)."], f: ["apps/server/src/school/SchoolTables.ts"] },
+
   "t-keys": { t: "Key tables", k: "key", d: ["account_key holds one signed record per generation; key_wrapper holds each recovery method's statement and public key; key_wrapper_seal holds the root key sealed to each wrapper; recovery_event records every seal fetch. Only public keys, signatures and sealed keys."], f: ["apps/server/src/keys/KeyTables.ts"], a: [24, 26] },
+
   "t-space": { t: "space, space_member", k: "wire", d: ["A space has a kind, a parent (a notebook's or course's school), a version bumped under its row lock by every commit, and for sealed spaces the current key epoch. space_member gives an account a role, with <code>granted_by</code> for rule-made memberships."], f: ["packages/sync/src/server/Tables.ts"], a: [19] },
+
   "t-row": { t: "sync_row", k: "seal", d: ["Every synced row in one table, keyed by space, table and id. A readable row keeps canonical JSONB in <code>data</code>. A sealed row keeps its envelope and ciphertext under an empty table name, because the real one travels inside the ciphertext. Deletes leave tombstones."], f: ["packages/sync/src/server/Tables.ts"], a: [18] },
+
   "t-log": { t: "command_log, sync_client", k: "wire", d: ["sync_client binds a device's client id to its account with the last processed mutation id. command_log keeps every processed command: for <code>Mutate</code> its arguments, for <code>Seal</code> only ids, sizes and SHA-256 hashes, plus whether it applied and why not. Pulls read refusals from it."], f: ["packages/sync/src/server/Tables.ts"] },
+
   "t-epoch": { t: "sync_epoch", k: "wire", d: ["One random id written when <code>prepare</code> first meets the database and rewritten by a restore. Combined with Postgres's system identifier and timeline, it tells devices that the server rewound, so they resend what it lost."], f: ["packages/sync/src/server/SyncEpoch.ts"], a: [21] },
+
   "t-misc": { t: "Everything else", k: "infra", d: ["demo_account marks the seed's accounts, captured_mail keeps dev and preview mail, job_run records the last run of each job, and Effect's cluster creates its own cluster_* tables."], f: ["apps/server/src/demo/DemoTables.ts", "apps/server/src/infra/mail/MailTables.ts"] },
 
   /* seq lanes */
   "seq-A": { t: "Device A", d: ["The device that writes. Its engine runs the mutator on local SQLite and keeps the command in the outbox until a pull settles it. Readable and encrypted writes look the same here; they differ at push."], f: ["packages/sync/src/client/SyncClient.ts", "packages/sync/src/client/Outbox.ts", "packages/sync/src/client/Sealing.ts"], a: [17, 23] },
+
   "seq-S": { t: "Server", d: ["Push decides each command in its own transaction: <code>Mutate</code> runs the mutator again and may refuse; <code>Seal</code> checks what it can see. Events turns commits into pokes, Pull serves snapshots."], f: ["packages/sync/src/server/Push.ts", "packages/sync/src/server/MutateCommand.ts", "packages/sync/src/server/SealCommand.ts"], a: [19, 23] },
+
   "seq-P": { t: "PostgreSQL", d: ["sync_row, space versions, the command log and the <code>stu_sync</code> notification channel. A space's version is bumped under its row lock, so version order is commit order."], f: ["packages/sync/src/server/Tables.ts", "packages/sync/src/server/PostgresTx.ts"], a: [18, 19] },
+
   "seq-B": { t: "Device B", d: ["Another device of the same account. It pulls on a poke, on reconnect and every 2.5 to 5 minutes, applies each page in one transaction, opens sealed rows with its keys and replays its own outbox on top."], f: ["packages/sync/src/client/Replication.ts", "packages/sync/src/client/Rebase.ts", "packages/sync/src/client/Supervisor.ts"], a: [20] },
 
   /* keys */
   "k-R": { t: "Root key R", k: "key", d: ["32 random bytes per account and key generation, made by the account's first device. It lives in the keychain as <code>root-key</code> and never reaches the server in any form it can open. The server keeps it only sealed to recovery wrappers.", "Demo accounts are the one exception: the server derives their R from a seed (ADR 0027)."], f: ["packages/e2ee/src/accounts/AccountKey.ts", "apps/app/src/features/keys/NotebookKeys.ts"], a: [22, 25] },
+
   "k-aik": { t: "AIK, the identity key", k: "key", d: ["Ed25519, derived from R with HKDF per generation. It signs the account's key record, every key box and history link it writes, and wrapper endorsements, so the server can check them without opening anything."], f: ["packages/e2ee/src/accounts/AccountKey.ts"], a: [24] },
+
   "k-ask": { t: "ASK, the sealing key", k: "key", d: ["An X-Wing key pair (post-quantum hybrid KEM), derived from R. Other members box space keys to its public half; only this account's devices can open those boxes."], f: ["packages/e2ee/src/accounts/AccountKey.ts", "packages/e2ee/src/suite/Primitives.ts"], a: [24] },
+
   "k-space": { t: "Space keys", k: "key", d: ["Each encrypted space has one 32-byte key per epoch. The device that writes a notebook first makes epoch 0 and boxes it to its own account. Opened keys live in <code>sync_space_key</code> in the account's database.", "On the web that database is plain OPFS, so a copied browser profile holds the space keys in the clear."], f: ["packages/e2ee/src/space-keys/SpaceKey.ts", "packages/sync/src/client/Keyring.ts", "packages/sync/src/client/EngineTables.ts"], a: [24] },
+
   "k-plain": { t: "Plaintext rows on the device", k: "read", d: ["Content exists in plaintext only on devices: in base_row, pending_row and the outbox. On phones SQLCipher encrypts the file at rest; on the web the browser profile is what protects it."], f: ["packages/sync/src/client/DeviceSchema.ts", "packages/sync/src/client/EngineTables.ts"], a: [13, 22] },
+
   "k-seed": { t: "Device seed", k: "key", d: ["32 random bytes in the keychain (<code>device-seed</code>). They derive this device's own wrapper key pair, so the server keeps R sealed to this device too. A public computer has none."], f: ["packages/e2ee/src/recovery/Wrapper.ts"], a: [26] },
+
   "k-prf": { t: "Passkey PRF output", k: "key", d: ["The authenticator's PRF output for a fixed salt, asked for at sign-in. It derives a wrapper key pair, and the server keeps R sealed to it, so signing in with the passkey on a new device also unlocks the notebook. Up to 4 wrappers per passkey."], f: ["apps/app/src/infra/passkeys/Passkeys.ts", "packages/e2ee/src/recovery/Wrapper.ts"], a: [25, 26] },
+
   "k-card": { t: "Notfallkarte", k: "key", d: ["128 random bits plus a CRC-12, shown as 28 Crockford base32 characters in groups of four. e2ee defines a QR payload too, but the app shows and reads only the typed code so far. The CRC catches a typo before anything leaves the device. Its wrapper lets a new device recover R when no passkey is around."], f: ["packages/e2ee/src/recovery/RecoveryCode.ts", "apps/app/src/features/keys/RecoveryCodeScreen.tsx"], a: [25, 26] },
+
   "k-shamir": { t: "Shamir shares", k: "key", ms: "later", d: ["Wrapper kind 4 is reserved for split recovery shares. The format byte exists, nothing else."], f: ["packages/e2ee/src/recovery/Wrapper.ts"] },
+
   "k-pair": { t: "QR pairing", k: "key", ms: "M3", d: ["Moving the key to a new device by QR code, with key renewal after a lost device and device removal, is planned for M3. None of it is on main."] },
+
   "k-box": { t: "Key boxes and history links", k: "seal", d: ["A key box delivers space keys to one member: X-Wing to the member's ASK, AES-256-GCM, signed by the author's AIK. A history link holds the previous epoch's key under the current one, so the newest key walks back to epoch 0."], f: ["packages/e2ee/src/space-keys/SpaceKey.ts"], a: [24] },
+
   "k-row": { t: "SealedRow", k: "seal", d: ["The table name and the row's JSON, padded to a power of two of at least 1,024 bytes, encrypted with AES-256-GCM under the epoch key. The AAD binds the space, row id, key epoch and author, so the server can't move a ciphertext to another row."], f: ["packages/e2ee/src/rows/SealedRow.ts"], a: [22, 23] },
+
   "k-wrap": { t: "Wrapper", k: "seal", d: ["Every way back to R is a wrapper: the method's secret derives an X-Wing key pair, the server stores the public key in a statement and R sealed to it. An anchor proves the secret was there at creation; an endorsement signed by the newest AIK says the wrapper is still trusted. A recovering device checks all of it, so the server can't plant a key."], f: ["packages/e2ee/src/recovery/Wrapper.ts"], a: [25, 26] },
+
   "k-record": { t: "account_key", k: "read", d: ["One signed record per generation: the account id, the generation, the AIK and ASK public keys and a reset flag, self-signed, and linked from the previous generation by its AIK. Devices and the sync server verify against the newest."], f: ["apps/server/src/keys/KeyTables.ts", "packages/e2ee/src/wire/AccountKey.ts"], a: [24] },
+
   "k-boxes": { t: "Boxes on the server", k: "seal", d: ["Key boxes and history links travel with a <code>Seal</code> command and are stored as readable rows of the tables <code>_key</code> and <code>_keychain</code> in the notebook space. The server checks their signatures; their content is sealed."], f: ["packages/sync/src/protocol/Protocol.ts", "packages/sync/src/server/SealCommand.ts"], a: [23, 24] },
+
   "k-rows": { i: "t-row" },
+
   "k-kw": { t: "key_wrapper", k: "read", d: ["One row per recovery method: its kind (device, prf, code), the passkey's credential id for prf, and the signed statement with the public key. A device wrapper is tied to the session that made it."], f: ["apps/server/src/keys/KeyTables.ts"], a: [26] },
+
   "k-kws": { t: "key_wrapper_seal", k: "seal", d: ["R of one generation sealed to one wrapper's public key. A new device fetches the seals of one method and opens them with that method's secret."], f: ["apps/server/src/keys/KeyTables.ts"], a: [26] },
+
   "k-ev": { t: "recovery_event", k: "read", d: ["Every seal fetch that found seals, so the student can later see every unlock. It also counts against 20 fetches per 24 hours. Fetches that find nothing don't count."], f: ["apps/server/src/keys/KeyStore.ts"], a: [25] },
 
   /* spaces */
   "sp-school": { t: "School space", k: "read", d: ["One space per school, its id a slug such as <code>igs-lilienthal</code>. It holds the School row with its rule fields, years, terms, subjects, classes, courses and offerings. Only the server writes it; every admitted account reads it."], f: ["packages/core/src/school/School.ts", "packages/core/src/school/CourseOffering.ts"] },
+
   "sp-ma": { t: "Course spaces", k: "read", d: ["One space per course, a child of its school. Choosing the course in an Enrollment makes the student a reader. It holds nothing yet: lessons arrive with the import in M2."], f: ["packages/core/src/school/Course.ts", "packages/core/src/notebook/Enrollment.ts"] },
+
   "sp-de": { i: "sp-ma" },
+
   "sp-lesson": { t: "Lesson rows", k: "read", ms: "M2", d: ["Dated lessons with teacher, room and any change, imported from WebUntis into course spaces, so each student receives the lessons of exactly the courses they chose."] },
+
   "sp-nbrow": { t: "Notebook row", k: "read", d: ["The notebook's school, under the notebook's id. Only the server writes it, at admission, so <code>enrollment.set</code> can't choose another school's courses. <code>verify</code> checks that it agrees with the space's parent."], f: ["packages/core/src/notebook/Notebook.ts", "apps/server/src/sync/Notebooks.ts"] },
+
   "sp-enr": { t: "Enrollment (Kurswahl)", k: "read", d: ["The courses a student takes in one term, one row per term. It stays readable because the server derives course memberships from it, so <code>enrollment.set</code> is the one mutator the server runs again and may refuse (unknown term, class required, course not offered, two in one group)."], f: ["packages/core/src/notebook/Enrollment.ts"], a: [17] },
+
   "sp-keys": { i: "k-boxes" },
+
   "sp-prof": { t: "NotebookProfile", k: "seal", d: ["The display name and volljährig, encrypted. The account's own name on the server stays empty, so the student's name never reaches it."], f: ["packages/core/src/notebook/NotebookProfile.ts"], a: [22] },
+
   "sp-hw": { t: "Homework", k: "seal", d: ["Hausaufgaben: course, title (200), description (4,000), due date and done date. Ids are random UUIDv4, because a UUIDv7 would tell the server when it was created. Updates patch only the fields they change, so edits on two devices to different fields both survive."], f: ["packages/core/src/homework/Homework.ts"], a: [20, 23] },
+
   "sp-m4": { t: "Grades, absences, signatures", k: "seal", ms: "M4", d: ["Noten, Fehltage and Unterschriften, all encrypted in the notebook. The refusal <code>Sync.Locked</code> is already in the protocol for rows a confirmation froze, but nothing raises it yet."], f: ["packages/sync/src/protocol/Refusal.ts"] },
+
   "sp-tom": { t: "Another student's notebook", k: "seal", d: ["Tom's notebook has the same tables under his own keys. Lena's account is no member, so the server never sends her a row of it, and a modified app that writes into it gets <code>Sync.NotMember</code>."], f: ["packages/sync/src/protocol/Refusal.ts", "packages/sync/src/server/SealCommand.ts"] },
+
   "sp-lena": { t: "Lena's account", d: ["One account, owner of one notebook per school, reader of the school and of her chosen courses. Every device she signs in on pulls exactly those spaces."], f: ["apps/server/src/school/Access.ts"] },
+
   "sp-tomacc": { i: "sp-lena", t: "Tom's account" },
+
   "sp-family": { t: "Later space kinds", k: "seal", ms: "Later", d: ["Teachers, parents, chats and sharing join as new space kinds with their own roles, on the same engine. Membership stays the only read rule."] },
 
   /* way in, by column */
   w1: { t: "Willkommen!", d: ["The student types the Zugangscode from the school's letter. <code>Access.redeem</code> answers a reservation with the school's name, valid for 2 hours. Redeeming holds no use, so nobody can block a code."], f: ["apps/app/src/features/account/WelcomeScreen.tsx", "apps/server/src/school/Redemption.ts", "apps/server/src/school/AccessCodes.ts"] },
+
   w2: { t: "Konto erstellen", d: ["Email and password. The reservation travels in the <code>access-reservation</code> header so no request log holds it. The server claims one of three sign-ups for the reservation, then Better Auth creates the user with a random throwaway password and mails a 6-digit code."], f: ["apps/app/src/features/account/SignUpScreen.tsx", "apps/server/src/auth/Auth.ts"] },
+
   w3: { t: "E-Mail bestätigen", d: ["The code and the password together. Before the address counts as confirmed, the server sets the password, deletes passkeys and sessions of the account, then admits it to the reservation's school and spends one use of the code in the same transaction. The device is signed in."], f: ["apps/app/src/features/account/ConfirmEmailScreen.tsx", "apps/server/src/school/AccessCodes.ts", "apps/server/src/school/Access.ts"] },
+
   w4: { t: "Geschafft", d: ["The device keeps the signed bearer token in its keychain and offers a passkey. Registering one creates no session. If another account with an ended session still holds the device, the new session is refused and ends on the server."], f: ["apps/app/src/features/account/Account.ts", "apps/app/src/infra/auth/SessionStore.ts"], a: [28] },
+
   w5: { t: "First start", d: ["Name and volljährig go to <code>notebookProfile.set</code> (sealed); Jahrgang, Klasse and Kurse to <code>enrollment.set</code> (readable, rerun by the server). Both work offline and sync later; a refused course choice brings the course step back."], f: ["apps/app/src/features/onboarding/Onboarding.ts", "apps/app/src/features/onboarding/OnboardingState.ts"] },
+
   w6: { t: "The notebook's key", k: "key", d: ["The account's first device makes R and a device seed, keeps them as <code>pending-key</code> until <code>Keys.init</code> succeeded, then they become <code>root-key</code>. Any later device starts locked and unlocks with a passkey's PRF output or the Notfallkarte through <code>Keys.fetchSeals</code>, then adds its own device wrapper."], f: ["apps/app/src/features/keys/NotebookKeys.ts", "apps/server/src/keys/KeyStore.ts"], a: [25, 26] },
+
   v1: { i: "w1" }, v2: { i: "w2" }, v3: { i: "w3" }, v4: { i: "w4" }, v5: { i: "w5" }, v6: { i: "w6" },
+
   s1: { i: "t-access" }, s2: { i: "t-auth" }, s3: { i: "m-access" }, s4: { i: "t-auth" }, s5: { i: "t-row" }, s6: { i: "t-keys" },
+
   g1: { t: "One answer for every bad code", k: "stop", d: ["Unknown, revoked, expired and used-up codes all fail as <code>Access.CodeUnavailable</code>, so a guess learns nothing. A code has 80 random bits. Failures count per code (20) and per client address (100 per 15 minutes); right codes never count."], f: ["apps/server/src/school/Redemption.ts", "packages/api/src/Access.ts"] },
+
   g2: { t: "Proof before password", k: "stop", d: ["Anyone may sign up any address, so the password a sign-up names counts only once that address's code confirms it. Until then the account holds a random one nobody knows. Code mails are capped at 5 per address per hour, and answers about unknown addresses are byte for byte the same."], f: ["apps/server/src/auth/Auth.ts"] },
+
   g3: { t: "A clean slate at confirmation", k: "stop", d: ["Confirming deletes every passkey and session the account had, so nothing made before the proof survives. The confirming device names its own reservation, so a later sign-up of the address by someone else can't choose the school. One use is spent under the code row's lock."], f: ["apps/server/src/auth/Auth.ts", "apps/server/src/school/AccessCodes.ts"] },
+
   g4: { t: "Sessions and tokens", k: "stop", d: ["Devices hold signed bearer tokens, so a raw token from a database dump doesn't work. A new password ends every other session; a reset ends all of them and the reset mail lists the account's passkeys. Sessions store no IP address. Unused Better Auth paths are disabled."], f: ["apps/server/src/auth/Auth.ts"], a: [28] },
-  g5: { t: "The server's own rules", k: "stop", d: ["The server reruns <code>enrollment.set</code> and refuses courses that aren't offered. Demo accounts can only ever enter the demo school, because everyone with beta's review password signs in to one. No route can turn an account into a demo account."], f: ["apps/server/src/school/Access.ts", "apps/server/src/demo/DemoAccounts.ts", "tools/oxlint/studienbuch/demo-account-boundaries.ts"], a: [27] },
+
+  g5: { t: "The server's own rules", k: "stop", d: ["The server reruns <code>enrollment.set</code> and refuses courses that aren't offered. Demo accounts can only ever enter the demo school, because everyone with beta's review password signs in to one. No route can turn an account into a demo account."], f: ["apps/server/src/school/Access.ts", "apps/server/src/demo/DemoAccounts.ts", "tools/oxlint/studienbuch/rules/demo-account-boundaries.ts"], a: [27] },
+
   g6: { t: "No planted keys", k: "stop", d: ["A recovering device accepts R only after <code>Wrapper.recover</code> checked the anchor, every chain link and the newest endorsement. Seal fetches are limited to 20 a day and recorded. Adding a passkey or Notfallkarte needs a sign-in less than 10 minutes old."], f: ["packages/e2ee/src/recovery/Wrapper.ts", "apps/server/src/keys/KeyStore.ts", "packages/api/src/Keys.ts"], a: [25, 26] },
 
   /* life */
   "l-out": { t: "Signed out", d: ["No account on this device. Before anyone signs in, the device finishes any sign-out an earlier run left half done, guided by a note in the keychain."], f: ["apps/app/src/infra/runtime/Forgetting.ts", "apps/app/src/features/account/AccountGates.tsx"] },
+
   "l-code": { t: "Waiting for the code", d: ["A sign-up waiting for its email code. Address and reservation survive a reload or restart (keychain, or the tab's sessionStorage on the web); the password stays in memory, so after a restart the code screen asks for it again. An expired reservation drops the entry."], f: ["apps/app/src/features/account/Account.ts", "apps/app/src/infra/auth/PendingSignUp.ts"] },
+
   "l-open": { t: "Signed in, unlocked", k: "read", d: ["The normal state. Screens read local SQLite, writes land in the outbox and show at once, and the supervisor keeps one connection: a round of push and pull after each connect, after pokes, and every 2.5 to 5 minutes."], f: ["packages/sync/src/client/Supervisor.ts", "apps/app/src/features/keys/NotebookKeys.ts"] },
+
   "l-locked": { t: "Signed in, locked", k: "key", d: ["The account has a key and this device doesn't hold it. School data and the course choice sync; sealed rows stay parked until the key arrives, and sealed writes wait. A banner leads to Notizbuch entsperren."], f: ["apps/app/src/features/keys/AccountNotice.tsx", "apps/app/src/features/keys/UnlockScreen.tsx"] },
+
   "l-off": { t: "Offline", k: "wire", d: ["A normal state, not an error. Writes keep landing in the outbox. The supervisor reconnects with a jittered backoff up to 5 minutes, because every beta deploy drops all sockets at once. A web device starts offline from the service worker."], f: ["packages/sync/src/client/Supervisor.ts"] },
+
   "l-held": { t: "Held", k: "key", d: ["The push answered that the server has no key record for the account (<code>NoKeyRecord</code>, as after a restore), so the device publishes its own record again and resends. Or the account's key is newer than this device's (<code>KeysBehind</code>), which needs key renewal from M3. A key the server's chain doesn't derive shows a support notice."], f: ["apps/app/src/features/keys/KeysState.ts", "packages/sync/src/protocol/Protocol.ts"], a: [25] },
+
   "l-ended": { t: "Session ended", k: "stop", d: ["Close code 4401: the session was revoked or expired. The device keeps its data and outbox, stops reconnecting and asks for sign-in. The same account picks up where it was; another account is refused until this one signs out."], f: ["packages/sync/src/protocol/Connection.ts", "apps/app/src/features/account/Account.ts"], a: [28] },
+
   "l-update": { t: "Update required", k: "stop", d: ["Close code 4426: the client's contract is below the server's minimum. The device waits for a newer app. The server deploys first and sends each message tag only to clients that know it, so this should be rare."], f: ["packages/sync/src/server/Contract.ts"] },
+
   "l-signout": { t: "Abmelden", k: "stop", d: ["Asks first when the engine counted changes the server hasn't received (PR 99), or when no passkey, Notfallkarte or other device opens the notebook without this one. Then it closes the engine, deletes the account's database, secrets and session, and revokes the session on the server."], f: ["apps/app/src/features/account/SignOutButton.tsx", "apps/app/src/infra/runtime/Forgetting.ts"] },
+
   "l-revoked": { t: "Removed by another device", k: "stop", ms: "M3", d: ["The client already handles <code>Sync.DeviceRevoked</code> and close code 4403 by wiping itself after one more pull, but the server never sends either: device removal is M3."], f: ["packages/sync/src/client/SyncClient.ts", "packages/sync/src/protocol/Connection.ts"] },
+
   "l-public": { t: "Public computer", k: "infra", d: ["A choice on the web sign-in. Session, secrets and database stay in the tab's memory, so closing it leaves nothing. A public computer never starts an account's notebook key (<code>NotHere</code>); an account that has one unlocks with a passkey or the Notfallkarte on every visit, and keeps no device seed."], f: ["apps/app/src/infra/device/publicComputer.web.ts", "apps/app/src/features/keys/PublicComputerChoice.web.tsx"] },
 
   /* ship */
   "c-push": { t: "Push a bookmark", d: ["Agents work in their own jj workspace, push a bookmark to Gitea and open the PR with <code>tea</code>. Before that, <code>calder check</code> runs the same plan on the working copy, and the push reuses its results."], a: [8] },
+
   "c-plan": { t: "Calder's plan", k: "infra", d: ["<code>.calder/ci.ts</code> declares every job and their order. The format, lint, typecheck and test jobs time out after 15 minutes; the Nix builds have no limit of their own."], f: [".calder/ci.ts"] },
+
   "c-checks": { t: "Checks", d: ["fmt, lint (oxlint with type information and the local plugin), knip, typecheck, and the test jobs: test, test-app, test-server and test-sync (both on a real PostgreSQL 18), typecheck-deploy and test-deploy, plus the flake checks serverSmoke and closureGuard. Browser tests don't run in CI yet."], f: [".calder/ci.ts", "vite.config.ts"], a: [10] },
+
   "c-build": { t: "Artifacts", k: "infra", d: ["The architecture-independent bundle (server, landing, console, Expo web export), built on x86_64 on the tower or dev-hauke, Node for aarch64, and the pnpm dependencies' hash."], f: ["nix/bundle.nix", "flake.nix"], a: [5] },
+
   "c-smoke": { t: "serverSmoke", d: ["serverSmoke runs the bundle against PostgreSQL 18: prepare, verify, serve, readiness with the revision, pages and ETags, then SIGTERM. It is the only check a preview waits for.", "closureGuard, which fails when the bundle drags in other store paths, runs with the other checks; beta waits for it, a preview doesn't."], f: ["nix/server-smoke.nix", "nix/closure-guard.nix", ".calder/ci.ts"], a: [5, 7] },
+
   "c-preview": { t: "Preview deploy", k: "wire", d: ["After serverSmoke only, not after all checks: Hauke can look at <code>pr-N.studienbuch.schnau.dev</code> while tests still run. <code>alchemy deploy --stage pr-N</code> declares the Fleet service."], f: ["deploy/alchemy.run.ts", "deploy/environments.ts"], a: [7] },
+
   "c-url": { t: "preview-url", k: "wire", d: ["Waits until readiness reports the new revision, then comments \"Preview: url\" on the PR."], f: [".calder/ci.ts"] },
+
   "c-destroy": { t: "destroy-preview", d: ["Closing the PR removes the service; its database is dumped, then dropped. The planned removal after 7 idle days isn't built."], f: ["deploy/alchemy.run.ts"], a: [7] },
+
   "c-merge": { t: "Merge", d: ["The orchestrator merges once checks pass and the preview looks right. Hauke reviews previews, not code."], a: [8] },
+
   "c-mchecks": { i: "c-checks" },
+
   "c-beta": { t: "deploy-beta", k: "wire", d: ["After every check on main, holding a lease and a fence so two deploys never overlap. It hands the bundle and the revision to the service controller."], f: [".calder/ci.ts", "deploy/alchemy.run.ts"], a: [6] },
+
   "c-prepare": { t: "prepare, then serve", k: "infra", d: ["The host runs <code>prepare</code> (migrations, sync epoch, demo seed) before switching traffic, then <code>serve</code>, which refuses a database behind the release. Devices reconnect with jittered backoff."], f: ["apps/server/src/main.ts"], a: [4] },
+
   "c-ready": { t: "ready-beta", k: "wire", d: ["Waits until <code>/api/health/ready</code> on beta reports the new revision."], f: ["apps/server/src/routes/Health.ts"] },
+
   "c-nightly": { t: "Nightly", d: ["At 03:00 the whole plan runs again without reuse. The simulation could run with more seeds here; it doesn't yet."], f: [".calder/ci.ts"] },
+
   "c-eas": { i: "eas" },
+
   "c-stores": { i: "stores" },
+
   "c-ota": { t: "EAS Update", k: "infra", ms: "M0", d: ["JS-only changes reach phones on the <code>beta</code> channel without a store build, as long as the native fingerprint (the runtime version) didn't change. Not wired into CI yet."], f: ["apps/app/app.config.ts", "apps/app/fingerprint.config.js"] },
+
   "c-phone": { t: "Lena's phone", d: ["Talks to beta. The web app needs no store at all: beta serves it at <code>/app</code>, and every deploy reaches it on the next load."], f: ["apps/app/src/infra/updates/BuildInfo.ts"] },
 };
 for (const [k, v] of Object.entries(INFO)) {

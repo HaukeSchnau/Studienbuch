@@ -31,15 +31,17 @@ describe("Environments.of", () => {
     }
   });
 
-  it("lets a fourth preview wait for one of three running previews, but redeploys a running one", () => {
-    const stages = ["beta", "pr-3", "pr-7", "pr-9"];
+  it("lets a seventh preview wait for one of six running previews, but redeploys a running one", () => {
+    const stages = ["beta", "pr-3", "pr-4", "pr-5", "pr-6", "pr-7", "pr-9"];
 
     assert.deepStrictEqual(
       Environments.noRoomFor("pr-12", stages),
-      Option.some("3 previews are running (pr-3, pr-7, pr-9); close a PR or wait"),
+      Option.some(
+        "6 previews are running (pr-3, pr-4, pr-5, pr-6, pr-7, pr-9); close a PR or wait",
+      ),
     );
     assert.isTrue(Option.isNone(Environments.noRoomFor("pr-7", stages)));
-    assert.isTrue(Option.isNone(Environments.noRoomFor("pr-12", ["beta", "pr-3", "pr-7"])));
+    assert.isTrue(Option.isNone(Environments.noRoomFor("pr-12", stages.slice(0, 6))));
   });
 
   it("knows no stage besides beta, prod and a pull request's", () => {
