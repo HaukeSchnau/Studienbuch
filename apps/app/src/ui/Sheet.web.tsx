@@ -1,27 +1,28 @@
 import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
-import { Modal, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from "react-native";
+import { Modal, ScrollView, StyleSheet, useWindowDimensions, View } from "react-native";
 
 import type { SheetProps } from "./Sheet.tsx";
 
 /**
  * Sheet.tsx on the web, which has no system sheet: a bottom sheet on narrow windows and a centred
  * dialog from the wide breakpoint on (m1-screens.md), over the whole dimmed window, tab bar and
- * rail included. react-native-web's Modal makes it a dialog, keeps the focus inside and closes on
- * Escape; a click beside it closes it too.
+ * rail included. react-native-web's Modal makes it a dialog named by `label`, keeps the focus
+ * inside and closes on Escape; a click beside it closes it too.
  */
-export function Sheet({ onClose, children }: SheetProps) {
+export function Sheet({ label, onClose, children }: SheetProps) {
   const { color, elevation } = Theme.useTheme();
   const wide = useWindowDimensions().width >= Tokens.layout.wideBreakpoint;
 
   return (
-    <Modal transparent visible animationType="fade" onRequestClose={onClose}>
+    <Modal transparent visible animationType="fade" onRequestClose={onClose} aria-label={label}>
       <View style={[styles.backdrop, wide ? styles.centred : styles.bottom]}>
-        <Pressable
-          accessibilityLabel="Schließen"
-          // A pointer target only; Escape and "Abbrechen" close it from the keyboard.
-          tabIndex={-1}
-          onPress={onClose}
+        {/* A click beside the sheet closes it. A plain View, as in useConfirm.web.tsx: the
+            modal's focus trap moves to anything with a tabindex, which every Pressable gets. */}
+        <View
+          aria-hidden
+          onStartShouldSetResponder={() => true}
+          onResponderRelease={onClose}
           style={StyleSheet.absoluteFill}
         />
         <View

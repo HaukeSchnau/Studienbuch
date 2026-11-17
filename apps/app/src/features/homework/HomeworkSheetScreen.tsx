@@ -3,6 +3,7 @@ import { Homework } from "@stu/core";
 import { HomeworkForm } from "@stu/domain-ui/homework/HomeworkForm";
 import { HomeworkItem } from "@stu/domain-ui/homework/HomeworkItem";
 import { RefusalText } from "@stu/domain-ui/refusal/RefusalText";
+import { Button } from "@stu/ui/Button";
 import { Text } from "@stu/ui/Text";
 import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
@@ -70,17 +71,24 @@ function AccountSheet({
 
   useDropWhenGone(gone, () => void discard(key));
 
+  const heading = id === undefined ? "Hausaufgabe hinzufügen" : "Hausaufgabe bearbeiten";
+
   // Opened by its address on a device without the notebook's key, as after a reload.
   if (Option.exists(status, (current) => current.locked)) {
     return (
-      <Sheet onClose={close}>
-        <Notice title={HomeworkItem.locked.title} text={HomeworkItem.locked.text} />
+      <Sheet label={heading} onClose={close}>
+        <Notice title={HomeworkItem.locked.title} text={HomeworkItem.locked.text} onClose={close} />
       </Sheet>
     );
   }
 
+  // Until the notebook is read, a way out only: an empty sheet would trap the focus on nothing.
   if (Option.isNone(status) || Option.isNone(reading) || !AsyncResult.isSuccess(draft)) {
-    return <Sheet onClose={close}>{null}</Sheet>;
+    return (
+      <Sheet label={heading} onClose={close}>
+        <Button small kind="secondary" label="Schließen" onPress={close} />
+      </Sheet>
+    );
   }
 
   const { today } = status.value;
@@ -89,10 +97,11 @@ function AccountSheet({
 
   if (id !== undefined && stored === undefined) {
     return (
-      <Sheet onClose={close}>
+      <Sheet label={heading} onClose={close}>
         <Notice
           title="Diese Hausaufgabe gibt es nicht mehr"
           text="Vielleicht wurde sie auf einem anderen Gerät gelöscht."
+          onClose={close}
         />
       </Sheet>
     );
@@ -136,9 +145,9 @@ function AccountSheet({
   };
 
   return (
-    <Sheet onClose={close}>
+    <Sheet label={heading} onClose={close}>
       <HomeworkForm
-        heading={id === undefined ? "Hausaufgabe hinzufügen" : "Hausaufgabe bearbeiten"}
+        heading={heading}
         values={values}
         onChange={(changes) => setDraft({ ...touched, ...changes })}
         choices={choices}
@@ -170,7 +179,15 @@ export function useDropWhenGone(gone: boolean, drop: () => void) {
   }, [gone, dropOnce]);
 }
 
-function Notice({ title, text }: { readonly title: string; readonly text: string }) {
+function Notice({
+  title,
+  text,
+  onClose,
+}: {
+  readonly title: string;
+  readonly text: string;
+  readonly onClose: () => void;
+}) {
   const { color } = Theme.useTheme();
 
   return (
@@ -181,8 +198,14 @@ function Notice({ title, text }: { readonly title: string; readonly text: string
       <Text variant="callout" style={{ color: color.inkSoft }}>
         {text}
       </Text>
+      <View style={styles.close}>
+        <Button small kind="secondary" label="Schließen" onPress={onClose} />
+      </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({ notice: { gap: Tokens.space.sm } });
+const styles = StyleSheet.create({
+  notice: { gap: Tokens.space.sm },
+  close: { alignItems: "flex-end", marginTop: Tokens.space.sm },
+});

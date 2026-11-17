@@ -5,6 +5,8 @@ import { Keyboard, Platform, ScrollView, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export interface SheetProps {
+  /** The sheet's name for screen readers, such as its heading. The system sheet takes the route's. */
+  readonly label: string;
   /** What closes it from outside its content, which the system sheet does by its swipe. */
   readonly onClose: () => void;
   readonly children: ReactNode;
