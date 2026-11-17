@@ -3,14 +3,12 @@ import { Accounts } from "@stu/api/Accounts";
 import { AuthHeading } from "@stu/ui/AuthHeading";
 import { Button } from "@stu/ui/Button";
 import { Field } from "@stu/ui/Field";
-import { Link } from "@stu/ui/Link";
 import { Text } from "@stu/ui/Text";
 import { Theme } from "@stu/ui/Theme";
 import * as Exit from "effect/Exit";
 import * as Option from "effect/Option";
-import * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Atom from "effect/reactivity/Atom";
-import { Keyboard, StyleSheet, View } from "react-native";
+import { Keyboard } from "react-native";
 
 import { PublicComputerChoice } from "../keys/PublicComputerChoice.tsx";
 import {
@@ -23,14 +21,13 @@ import {
   useCredentials,
 } from "./AccountForm.tsx";
 import { AccountState } from "./AccountState.ts";
-import { CodeField, codeLength } from "./CodeField.tsx";
-import { useCode } from "./ConfirmEmailScreen.tsx";
+import { CodeField, ResendCode, useCode } from "./CodeField.tsx";
 import { Steps } from "./Steps.ts";
 
 /**
  * "Passwort vergessen?", the old web's screen with a code instead of a link: the address first,
- * then, once the mail is on its way, the code and a new password in the same card. A new password
- * doesn't touch the notebook's key, so nothing on any device is lost.
+ * then, once the mail is on its way, the code and a new password in the same card, also after a
+ * reload. A new password doesn't touch the notebook's key, so nothing on any device is lost.
  */
 export function ForgotPasswordScreen() {
   return Option.match(useAtomValue(Steps.resetSentTo), {
@@ -62,6 +59,7 @@ function Address() {
           label="E-Mail-Adresse"
           value={email}
           onChangeText={setEmail}
+          invalid={Option.contains(reasonOf(sent), "invalid-email")}
           autoComplete="email"
           textContentType="username"
           keyboardType="email-address"
@@ -100,9 +98,9 @@ function NewPassword({ email }: { readonly email: string }) {
   const keepTyped = useAtomSet(Steps.forgotten);
   const code = useCode(() => forget(Atom.Reset));
   const { password, setPassword } = useCredentials();
-  const [resent, request] = useAtom(AccountState.requestPasswordReset);
+  const [resent, request] = useAtom(AccountState.requestPasswordReset, { mode: "promiseExit" });
   const short = password.length < Accounts.minPasswordLength;
-  const complete = code.value.length === codeLength && !short;
+  const complete = code.complete && !short;
 
   const submit = async () => {
     if (!complete) return;
@@ -160,21 +158,16 @@ function NewPassword({ email }: { readonly email: string }) {
           busy={result.waiting}
           onPress={() => void submit()}
         />
-        <View style={styles.center}>
-          <Link
-            variant="subhead"
-            label={AsyncResult.isSuccess(resent) ? "Code ist unterwegs" : "Neuen Code schicken"}
-            busy={resent.waiting}
-            onPress={() => request(email)}
-          />
-        </View>
-        <ProblemText reason={reasonOf(resent)} />
+        <ResendCode
+          result={resent}
+          send={() => request(email).then(Exit.isSuccess)}
+          onSent={() => {
+            code.clear();
+            forget(Atom.Reset);
+          }}
+        />
       </Form>
       <OtherWay label="Zurück zur Anmeldung" href="/anmelden" back />
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  center: { alignItems: "center" },
-});

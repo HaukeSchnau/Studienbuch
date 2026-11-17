@@ -88,13 +88,16 @@ export const accessReservation = pgTable(
 
 /**
  * The reservations sign-ups for an account's address carried, until the address is confirmed.
- * Anyone may sign up any address, so the confirming device names which of them admits it.
+ * Anyone may sign up any address, so the confirming device names which of them admits it, and
+ * which password it must confirm with.
  */
 export const accessSignUp = pgTable(
   "access_sign_up",
   {
     accountId: text("account_id").notNull(),
     reservationId: uuid("reservation_id").notNull(),
+    /** The hash of the password the last sign-up with this reservation chose (D88). */
+    passwordHash: text("password_hash"),
   },
   (table) => [
     primaryKey({ columns: [table.accountId, table.reservationId] }),

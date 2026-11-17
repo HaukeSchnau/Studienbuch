@@ -38,6 +38,10 @@
       "react-native": "./src/useFocusOnMount.ts",
       "default": "./src/useFocusOnMount.web.ts"
     },
+    "./useFocusWhenLost": {
+      "react-native": "./src/useFocusWhenLost.ts",
+      "default": "./src/useFocusWhenLost.web.ts"
+    },
     "./useKeptFocus": {
       "react-native": "./src/useKeptFocus.ts",
       "default": "./src/useKeptFocus.web.ts"

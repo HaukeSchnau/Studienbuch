@@ -6,6 +6,7 @@ import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
 import { useAnnounce } from "@stu/ui/useAnnounce";
 import { useFocusOnMount } from "@stu/ui/useFocusOnMount";
+import { useFocusWhenLost } from "@stu/ui/useFocusWhenLost";
 import * as Cause from "effect/Cause";
 import * as Exit from "effect/Exit";
 import * as Option from "effect/Option";
@@ -82,23 +83,30 @@ export function Form({ children }: { readonly children: ReactNode }) {
 /**
  * What went wrong, as the old web's one error box per form, read out as soon as it shows (the
  * phones announce it, the web's alert role reads it). One box rather than one per field, because
- * a sign-in can't tell which of its two fields was wrong.
+ * a sign-in can't tell which of its two fields was wrong. A submit that failed left the focus
+ * nowhere, so the box takes it.
  */
 export function ProblemBox({ children }: { readonly children: string }) {
+  return <Problem key={children}>{children}</Problem>;
+}
+
+function Problem({ children }: { readonly children: string }) {
   const { color } = Theme.useTheme();
+  const focus = useFocusWhenLost();
 
   useAnnounce(children);
 
   return (
-    <Arrive
-      key={children}
-      from="above"
-      duration={320}
-      style={[styles.problem, { backgroundColor: color.dangerTint }]}
-    >
-      <Text variant="subhead" role="alert" style={[styles.problemText, { color: color.danger }]}>
-        {children}
-      </Text>
+    <Arrive from="above" duration={320}>
+      <View
+        ref={focus}
+        tabIndex={-1}
+        style={[styles.problem, styles.focusable, { backgroundColor: color.dangerTint }]}
+      >
+        <Text variant="subhead" role="alert" style={[styles.problemText, { color: color.danger }]}>
+          {children}
+        </Text>
+      </View>
     </Arrive>
   );
 }
