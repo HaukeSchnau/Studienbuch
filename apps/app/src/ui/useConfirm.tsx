@@ -17,11 +17,19 @@ export type Answer = "proceed" | "instead" | "cancel";
 /**
  * Asks before a destructive step with the system alert. React Native Web's Alert does nothing, so
  * `useConfirm.web.tsx` draws our dialog, and a screen renders `dialog` for it. Here it is empty.
+ * While `askable` is false, as once the notebook locks, a question answers `cancel` without
+ * showing. The app can't close a system alert, so one already open stays until answered.
  */
-export function useConfirm() {
+export function useConfirm(askable = true) {
   const ask = useCallback(
     (question: Question) =>
       new Promise<Answer>((resolve) => {
+        if (!askable) {
+          resolve("cancel");
+
+          return;
+        }
+
         const cancel: AlertButton = {
           text: "Abbrechen",
           style: "cancel",
@@ -53,7 +61,7 @@ export function useConfirm() {
           onDismiss: () => resolve("cancel"),
         });
       }),
-    [],
+    [askable],
   );
 
   return { ask, dialog: null };

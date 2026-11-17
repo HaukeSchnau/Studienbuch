@@ -10,11 +10,20 @@ const glyphs = {
   check: stroked("M5 12.5l4.5 4.5L19 7.5"),
   chevron: stroked("M9.5 6l6 6-6 6"),
   back: stroked("M14.5 6l-6 6 6 6"),
+  /** The Flutter app's way back: an arrow with its shaft. */
+  arrowBack: stroked("M19.5 12h-15M11 5.5 4.5 12l6.5 6.5"),
   plus: stroked("M12 5v14M5 12h14"),
   alert: stroked("M12 7.5v6M12 17v.01"),
   alertCircle: stroked("M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0M12 7.5v5M12 16.25v.01"),
   /** A bin, for deleting. */
   delete: stroked("M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5"),
+  /** A pencil, for editing. */
+  edit: stroked("M4.5 19.5l1-4.5L15.5 5a2.1 2.1 0 0 1 3 3l-10 10zM13.5 7l3 3"),
+  /** A cross, for a step not done yet. */
+  cross: stroked("M6.5 6.5l11 11M17.5 6.5l-11 11"),
+  calendar: stroked(
+    "M5.5 5.5h13a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1v-12a1 1 0 0 1 1-1zM4.5 10h15M8.5 3.5v4M15.5 3.5v4",
+  ),
   clock: stroked("M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0M12 7.5V12l3 2"),
   cloudOff: stroked(
     "M7 19h10a4 4 0 0 0 .7-7.94A6 6 0 0 0 6.1 10.6 4.25 4.25 0 0 0 7 19zM4 4l16 16",
