@@ -38,7 +38,8 @@ function AccountDetail({ accountId, id }: { readonly accountId: string; readonly
   const status = useAtomValue(HomeworkState.screen(accountId));
   const toggle = useAtomSet(HomeworkState.setDone(accountId));
   const remove = useAtomSet(HomeworkState.remove(accountId));
-  const confirm = useConfirm();
+  // The question names the homework, so it closes once the notebook locks.
+  const confirm = useConfirm(Option.exists(status, (current) => current.readable));
 
   if (Option.isNone(status)) {
     return <View style={[styles.blank, { backgroundColor: color.panel }]} />;
