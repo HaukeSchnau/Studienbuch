@@ -2,16 +2,14 @@ import { effectNative, strict } from "@effect/tsgo/oxlint-presets";
 import { defineConfig } from "vite-plus";
 import { defaultExclude } from "vite-plus/test/config";
 
+import { enabled as studienbuch } from "./tools/oxlint/studienbuch/index.ts";
+import { reactCode, withFixtures } from "./tools/oxlint/studienbuch/scope.ts";
+
 const errors = (rules: ReadonlyArray<string>) =>
   Object.fromEntries(rules.map((rule): [string, "error"] => [rule, "error"]));
 
 const platformNeutral =
   "packages/core and packages/domain-ui run on every platform and take their data from the caller.";
-
-// The fixtures in tools/oxlint/fixtures mirror the repository layout, so every scoped override
-// also covers the fixture that proves it.
-const scope = (...globs: ReadonlyArray<string>) =>
-  globs.flatMap((glob) => [glob, `tools/oxlint/fixtures/${glob}`]);
 
 const strictEffectRules = Object.keys(strict.rules ?? {});
 const effectNativeRules = Object.keys(effectNative.rules ?? {});
@@ -124,23 +122,8 @@ export default defineConfig({
       "anti-slop-effect/no-manual-tagged-construction": "error",
       "anti-slop-effect/no-service-constructor-imports": "error",
 
-      "studienbuch/effect-fn-name": "error",
-      "studienbuch/import-boundaries": "error",
-      "studienbuch/module-shape": "error",
-      "studienbuch/mutator-keeps-tx-errors": "error",
-      "studienbuch/namespace-node-imports": "error",
-      "studienbuch/no-file-kind-directories": "error",
-      "studienbuch/no-inline-schema-compile": "error",
-      "studienbuch/no-json-stringify-equality": "error",
-      "studienbuch/no-low-value-comments": "error",
-      "studienbuch/no-native-title-tooltip": "error",
-      "studienbuch/no-throwing-errors": "error",
-      "studienbuch/one-role-check": "error",
-      "studienbuch/prefer-catch-tags": "error",
-      "studienbuch/prefer-effect-fn": "error",
-      "studienbuch/require-suppression-reason": "error",
-      "studienbuch/tagged-error-name": "error",
-      "studienbuch/test-only-imports": "error",
+      // Each rule in tools/oxlint/studienbuch/rules/ says where it runs.
+      ...studienbuch.rules,
 
       // Every Effect module we use is marked unstable.
       // https://github.com/Effect-TS/tsgo/blob/main/docs/rules/unstable-api-usage.md
@@ -227,13 +210,13 @@ export default defineConfig({
     overrides: [
       {
         // Effect code outside React gets the outside-Effect variants as well.
-        files: scope("apps/server/**", "packages/{core,sync,e2ee,api}/**"),
+        files: withFixtures("apps/server/**", "packages/{core,sync,e2ee,api}/**"),
         rules: errors(effectNativeRules),
       },
       {
         // Native Array, String and Object methods are correct and readable. Rewriting them into
         // Effect's modules catches no bug, so only effect-native's other rules apply.
-        files: scope("apps/server/**", "packages/{core,sync,e2ee,api}/**"),
+        files: withFixtures("apps/server/**", "packages/{core,sync,e2ee,api}/**"),
         rules: {
           // https://github.com/Effect-TS/tsgo/blob/main/docs/rules/prefer-effect-array.md
           "effecttsgo/prefer-effect-array": "off",
@@ -255,112 +238,16 @@ export default defineConfig({
         ),
       },
       {
-        // Demo sessions, the seed's permission and demo_account writes stay in their own modules.
-        files: scope("apps/server/**"),
-        excludeFiles: ["**/*.test.ts"],
-        rules: { "studienbuch/demo-account-boundaries": "error" },
+        files: reactCode,
+        rules: { "react/rules-of-hooks": "error" },
       },
-      {
-        // React code. Elsewhere a function named `use`, such as `HttpRouter.use`, is no hook.
-        files: scope("apps/app/**", "apps/web/**", "packages/{ui,domain-ui}/**"),
-        rules: {
-          "react/rules-of-hooks": "error",
-          "studienbuch/no-hookless-use-function": "error",
-        },
-      },
-      {
-        // Code that runs on devices, under Hermes.
-        files: scope("apps/app/**", "packages/**"),
-        rules: { "studienbuch/no-hermes-unsupported-apis": "error" },
-      },
-      {
-        // Code in a web or native client bundle.
-        files: scope("apps/app/**", "apps/web/**", "packages/**"),
-        rules: {
-          "studienbuch/no-ad-hoc-state-or-effects": "error",
-          "studienbuch/no-baked-origin": "error",
-          "studienbuch/no-raw-resize-observer": "error",
-          "studienbuch/no-sqlite-update-hooks": "error",
-        },
-      },
-      {
-        // The app's screens scroll under the native stack header and the native tabs.
-        files: scope("apps/app/src/**"),
-        rules: { "studienbuch/require-registered-list-scroll": "error" },
-      },
-      {
-        // RouteLink is the one place that wraps expo-router's Link.
-        files: scope("apps/app/src/**"),
-        excludeFiles: ["apps/app/src/ui/navigation/RouteLink.tsx"],
-        rules: { "studienbuch/no-raw-router-link": "error" },
-      },
-      {
-        // Feature code receives the platform it runs on. Adapters in infra/, the design system in
-        // ui/, the routes' navigation options, platform files and browser tests may read it.
-        files: scope(
-          "apps/*/src/{features,domain-ui}/**",
-          "packages/{core,sync,e2ee,api,domain-ui}/**",
-        ),
-        excludeFiles: ["**/*.{web,native,ios,android}.{ts,tsx}", "**/*.browser.test.{ts,tsx}"],
-        rules: { "studienbuch/no-global-process-runtime": "error" },
-      },
-      {
-        // Copy that people or agents read.
-        files: scope("apps/*/src/**", "packages/*/src/**"),
-        excludeFiles: ["**/*.{test,spec}.{ts,tsx}"],
-        rules: { "studienbuch/no-em-dash-copy": "error" },
-      },
-      {
-        files: scope("apps/*/src/**", "packages/*/src/**"),
-        rules: { "studienbuch/no-dom-test-environment": "error" },
-      },
-      {
-        // "Today" at a school comes from its row through `School.today`. Core holds the default
-        // zone, which the demo and dev schools use too.
-        files: scope("apps/*/src/**", "packages/*/src/**"),
-        excludeFiles: [...scope("packages/core/**"), "**/*.{test,spec}.{ts,tsx}"],
-        rules: { "studienbuch/no-literal-time-zone": "error" },
-      },
-      {
-        // A screen's live read is a `SyncQuery`, keyed on what it reads. The Sync Lab shows every
-        // table and the engine's own state, so it follows every key.
-        files: scope("apps/app/src/{features,domain-ui}/**"),
-        excludeFiles: [...scope("apps/app/src/features/sync-lab/**"), "**/*.{test,spec}.{ts,tsx}"],
-        rules: { "studienbuch/no-hand-rolled-live-query": "error" },
-      },
-      {
-        // Tests are deterministic: they await events and drive the TestClock (AGENTS.md, "Verifying").
-        files: ["**/*.{test,spec}.{ts,tsx}"],
-        rules: {
-          "studienbuch/no-manual-effect-runtime-in-tests": "error",
-          "studienbuch/no-polling-loop-in-tests": "error",
-          "studienbuch/no-real-time-wait-in-tests": "error",
-          "studienbuch/no-test-in-loop": "error",
-          "studienbuch/no-test-timeout-or-unreasoned-skip": "error",
-          "studienbuch/no-wall-clock-in-tests": "error",
-          // Test helpers build inline programs, not reusable services.
-          "studienbuch/prefer-effect-fn": "off",
-        },
-      },
-      {
-        // Component tests in the client apps and packages.
-        files: scope("{apps/app,apps/web,packages/ui,packages/domain-ui}/**/*.test.{ts,tsx}"),
-        rules: { "studienbuch/require-disposable-render": "error" },
-      },
-      {
-        files: ["**/*.browser.test.{ts,tsx}"],
-        rules: { "studienbuch/no-frame-waits-in-browser-tests": "error" },
-      },
-      {
-        files: scope("packages/core/**"),
-        rules: { "studienbuch/no-ambient-clock-or-random": "error" },
-      },
+      ...studienbuch.overrides,
       {
         // packages/core and packages/domain-ui typecheck with the DOM lib for the e2ee and sync code
         // core imports. Core runs in mutators and domain-ui renders on every platform, so their own
         // code opens no connection. `studienbuch/no-global-process-runtime` keeps them, and
         // packages/e2ee, off the page, the device and the browser's storage.
-        files: scope("packages/core/**", "packages/domain-ui/**"),
+        files: withFixtures("packages/core/**", "packages/domain-ui/**"),
         rules: {
           "eslint/no-restricted-globals": [
             "error",
@@ -373,7 +260,7 @@ export default defineConfig({
         },
       },
       {
-        files: scope("packages/e2ee/**"),
+        files: withFixtures("packages/e2ee/**"),
         rules: {
           "eslint/no-restricted-globals": [
             "error",

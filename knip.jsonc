@@ -10,6 +10,10 @@
   // PostgreSQL 18 comes from Nix, not npm. The sync tests start a throwaway server with it.
   "ignoreBinaries": ["pg_ctl", "postgres"],
   "workspaces": {
+    ".": {
+      // The lint plugin loads every file in its rules/ directory by name.
+      "entry": ["tools/oxlint/studienbuch/rules/*.ts"],
+    },
     "apps/web": {
       // vite.config.ts resolves `react-native` to it by name.
       "ignoreDependencies": ["react-native-web"],

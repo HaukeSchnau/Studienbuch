@@ -11,9 +11,10 @@ export interface ButtonProps {
   /**
    * "filled" is the primary action in green, "quiet" a white pill as on the hero, "outline" a
    * secondary action beside a primary one, "action" the one blue step forward of a sign-in or
-   * setup card (the old web's `brand` button), "secondary" the white way beside it (its `outline`).
+   * setup card (the old web's `brand` button), "secondary" the white way beside it (its `outline`),
+   * "danger" a step that deletes something, such as "Trotzdem abmelden".
    */
-  readonly kind?: "filled" | "quiet" | "outline" | "action" | "secondary";
+  readonly kind?: "filled" | "quiet" | "outline" | "action" | "secondary" | "danger";
   /** A glyph before the label. */
   readonly icon?: IconName;
   readonly busy?: boolean;
@@ -79,6 +80,12 @@ export function Button({
             foreground: color.ink,
             shadow: elevation.card,
             edge: color.hairline,
+          },
+          danger: {
+            background: color.dangerTint,
+            foreground: color.danger,
+            shadow: "none",
+            edge: "transparent",
           },
         }[kind];
 

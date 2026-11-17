@@ -1,34 +1,31 @@
-import { Pressable, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
+import { Checkable } from "./Checkable.tsx";
 import { Icon } from "./Icon.tsx";
 import { Text } from "./Text.tsx";
 import { Theme } from "./Theme.ts";
 import { Tokens } from "./Tokens.ts";
 
 export interface CheckboxProps {
-  /** Such as "Ich bin volljährig." */
+  /** Such as "Öffentlicher Computer". */
   readonly label: string;
+  /** A line under the label that says what ticking it does. */
+  readonly description?: string;
   readonly checked: boolean;
   readonly onChange: (checked: boolean) => void;
 }
 
-/**
- * A statement to tick, the label first and the box at the right end of the row, as the Flutter
- * app's CheckboxListTile. The whole row takes the touch.
- */
-export function Checkbox({ label, checked, onChange }: CheckboxProps) {
+/** A box to tick before its label, the whole row taking the touch. */
+export function Checkbox({ label, description, checked, onChange }: CheckboxProps) {
   const { color } = Theme.useTheme();
 
   return (
-    <Pressable
-      accessibilityRole="checkbox"
-      aria-checked={checked}
+    <Checkable
+      kind="checkbox"
+      checked={checked}
       onPress={() => onChange(!checked)}
       style={({ pressed }) => [styles.row, pressed ? styles.pressed : null]}
     >
-      <Text variant="callout" style={styles.label}>
-        {label}
-      </Text>
       <View
         style={[
           styles.box,
@@ -38,28 +35,33 @@ export function Checkbox({ label, checked, onChange }: CheckboxProps) {
           },
         ]}
       >
-        {checked ? <Icon name="check" color={color.onAccent} size={18} /> : null}
+        {checked ? <Icon name="check" color={color.onAccent} size={16} /> : null}
       </View>
-    </Pressable>
+      <View style={styles.text}>
+        <Text variant="callout" weight={description === undefined ? "regular" : "semibold"}>
+          {label}
+        </Text>
+        {description === undefined ? null : (
+          <Text variant="subhead" style={{ color: color.inkSoft }}>
+            {description}
+          </Text>
+        )}
+      </View>
+    </Checkable>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
-    minHeight: Tokens.layout.minTarget,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Tokens.space.md,
-    cursor: "pointer",
-  },
-  label: { flex: 1 },
+  row: { flexDirection: "row", gap: Tokens.space.md, alignItems: "flex-start" },
   box: {
-    width: 24,
-    height: 24,
+    width: 22,
+    height: 22,
+    marginTop: 1,
     borderRadius: 6,
     borderWidth: 2,
     alignItems: "center",
     justifyContent: "center",
   },
+  text: { flex: 1, gap: 2 },
   pressed: { opacity: 0.6 },
 });

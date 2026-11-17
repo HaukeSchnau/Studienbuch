@@ -6,5 +6,5 @@
     "types": ["node"]
   },
   "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["anti-slop"]
+  "exclude": ["anti-slop", "fixtures"]
 }

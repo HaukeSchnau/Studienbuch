@@ -20,7 +20,7 @@ import { Term } from "../school/Term.ts";
 
 export * as Studienbuch from "./Studienbuch.ts";
 
-export const version = 2;
+export const version = 3;
 
 export const tables = [
   School.Row,

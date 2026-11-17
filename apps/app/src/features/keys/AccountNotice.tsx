@@ -73,7 +73,7 @@ function Notice({
         }
       : Option.contains(unlocked, false)
         ? {
-            text: "Dein Notizbuch ist gesperrt.",
+            text: "Dein Notizbuch ist gesperrt. Du entsperrst es mit deinem Passkey oder deiner Notfallkarte.",
             action: "Entsperren",
             go: () => router.push("/notizbuch-entsperren"),
           }
