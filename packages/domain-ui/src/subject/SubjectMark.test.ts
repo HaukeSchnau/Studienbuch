@@ -53,6 +53,7 @@ describe("SubjectMark", () => {
     ["Politik-Wirtschaft", "PW", "politics"],
     ["Religion (kath.)", "RK", "religion"],
     ["Mathematik (erhöhtes Niveau)", "MA", "math"],
+    ["Erdkunde", "EK", "geography"],
     ["Astronomie", "AST", undefined],
   ])("gives %s the art of its subject, or its letters", (name, short, art) => {
     const mark = SubjectMark.ofSubject({ name, shortName: short });

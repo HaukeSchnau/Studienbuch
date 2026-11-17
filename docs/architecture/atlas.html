@@ -900,7 +900,7 @@ DIAGRAMS.repo = {
     { id: "p-web", x: 430, y: 36, w: 300, h: 74, t: "apps/web", s: "TanStack Start: landing, legal\nand the console SPA" },
     { id: "p-server", x: 820, y: 36, w: 300, h: 74, t: "apps/server", s: "the Effect server: serve, prepare,\nconsole, verify" },
     { id: "p-domainui", x: 40, y: 190, w: 200, h: 68, t: "domain-ui", s: "dumb domain components\nrows and callbacks in" },
-    { id: "p-ui", x: 300, y: 190, w: 200, h: 68, t: "ui", s: "tokens, Nunito, icons\nknows no domain type" },
+    { id: "p-ui", x: 300, y: 190, w: 200, h: 68, t: "ui", s: "tokens, icons, stickers\nknows no domain type" },
     { id: "p-api", x: 620, y: 190, w: 220, h: 68, t: "api", s: "RPC groups and schemas\nno handlers" },
     { id: "p-core", x: 380, y: 340, w: 260, h: 68, t: "core", s: "the domain: tables, mutators,\nmembership, civil time", k: "read" },
     { id: "p-plat", x: 40, y: 340, w: 280, h: 68, t: "React, Expo, node:*, SQL\nClock, Random", k: "stop" },
@@ -920,6 +920,7 @@ DIAGRAMS.repo = {
     { a: "p-app", b: "p-client", as: "l", bs: "l", via: [[28, 73], [28, 470], [150, 470], [150, 537]] },
     { a: "p-app", b: "p-e2ee", as: "l", bs: "b", via: [[24, 90], [24, 612], [1030, 612]] },
     { a: "p-web", b: "p-ui" },
+    { a: "p-web", b: "p-domainui", as: "b", bs: "t", ao: -120, bo: 60, via: [[460, 136], [200, 136]] },
     { a: "p-web", b: "p-api" },
     { a: "p-server", b: "p-api" },
     { a: "p-server", b: "p-core", as: "b", bs: "t", ao: -90, bo: 60, via: [[880, 300], [570, 300]] },
@@ -975,7 +976,7 @@ DIAGRAMS.app = {
 
     { id: "a-atoms", x: 670, y: 312, w: 220, h: 96, t: "Atoms", s: "AccountState, KeysState,\nOnboarding-, HomeworkState,\nOverviewState for screens", k: "wire" },
     { id: "a-ui", x: 910, y: 312, w: 220, h: 96, t: "packages/ui, src/ui", s: "tokens, AppTabs, useConfirm,\nWebStyles, RouteLink;\n.web.tsx twins" },
-    { id: "a-dui", x: 670, y: 440, w: 220, h: 70, t: "packages/domain-ui", s: "HomeworkPanel, SubjectMark,\nRefusalCard, Due" },
+    { id: "a-dui", x: 670, y: 440, w: 220, h: 70, t: "packages/domain-ui", s: "HomeworkPanel, SubjectMark,\nstickers, RefusalCard, Due" },
     { id: "a-core", x: 910, y: 440, w: 220, h: 70, t: "packages/core", s: "Studienbuch.schema, mutators", k: "read" },
 
     { id: "i-sqlite", x: 40, y: 624, w: 205, h: 70, t: "SQLite", s: "native: SQLCipher, key in keychain\nweb: wa-sqlite worker in OPFS", k: "infra" },
@@ -1448,13 +1449,13 @@ const INFO = {
   /* repo */
   "p-app": { t: "apps/app", d: ["The Expo app for iOS, Android and the web. Routes in <code>src/app</code>, one directory per domain area in <code>src/features</code>, and everything that exists because of a technology in <code>src/infra</code>.", "It may import every package except the sync server and the server app."], f: ["apps/app/package.json", "apps/app/src/app/_layout.tsx"], a: [13, 15, 16] },
 
-  "p-web": { t: "apps/web", d: ["The landing page, legal pages and the operator console, on TanStack Start. It must not import <code>@stu/sync</code>: sync belongs to the Expo app."], f: ["apps/web/package.json", "apps/web/src/router.tsx"], a: [3] },
+  "p-web": { t: "apps/web", d: ["The landing page, legal pages and the operator console, on TanStack Start. It must not import <code>@stu/sync</code>: sync belongs to the Expo app.", "The landing page draws the app's stickers from <code>packages/domain-ui</code>, so a subject looks the same on the page and in the app."], f: ["apps/web/package.json", "apps/web/src/router.tsx"], a: [3] },
 
   "p-server": { t: "apps/server", d: ["The one server process: HTTP routes, RPC handlers, Better Auth, Drizzle schema and migrations, jobs and the CLI commands. No Expo or React Native package may load here."], f: ["apps/server/src/main.ts", "apps/server/package.json"], a: [3, 4, 11, 12] },
 
-  "p-domainui": { t: "packages/domain-ui", d: ["Dumb components and helpers shared by the app and the landing page: rows and callbacks in. Today that is the home's homework panel and its cards, the refusal card, subject colors and art, refusal sentences and date text. It may not read SQLite or the sync engine."], f: ["packages/domain-ui/src/homework/HomeworkPanel.tsx", "packages/domain-ui/src/homework/HomeworkItem.ts", "packages/domain-ui/src/subject/SubjectMark.ts", "packages/domain-ui/src/refusal/RefusalText.ts", "packages/domain-ui/src/homework/Due.ts"] },
+  "p-domainui": { t: "packages/domain-ui", d: ["Dumb components and helpers shared by the app and the landing page: rows and callbacks in. Today that is the home's homework panel and its cards, the refusal card, subject colors, the stickers for subjects, grade kinds and states, refusal sentences and date text. The landing page takes its stickers from here. It may not read SQLite or the sync engine."], f: ["packages/domain-ui/src/homework/HomeworkPanel.tsx", "packages/domain-ui/src/homework/HomeworkItem.ts", "packages/domain-ui/src/subject/SubjectMark.ts", "packages/domain-ui/src/subject/SubjectArt.ts", "packages/domain-ui/src/refusal/RefusalText.ts", "packages/domain-ui/src/homework/Due.ts"] },
 
-  "p-ui": { t: "packages/ui", d: ["The design system: tokens in light and dark, Nunito, icons and domain-free components, several with a <code>.web.tsx</code> twin. It knows no domain type, so it may import none of core, sync, e2ee, api or domain-ui.", "Its hooks keep lists usable while rows change: <code>useLingeringOrder</code> leaves a ticked item in place for a moment, and <code>useKeptFocus</code> gives the keyboard's focus back to a box that moved (web only; the native file does nothing).", "Every checkbox and choice is built on <code>Checkable</code>, which answers Space on the web as react-native-web doesn't for these roles; <code>studienbuch/no-raw-checkable</code> keeps the roles there."], f: ["packages/ui/src/Tokens.ts", "packages/ui/src/Theme.ts", "packages/ui/src/useLingeringOrder.ts", "packages/ui/src/useKeptFocus.web.ts", "packages/ui/src/Checkable.tsx"], a: [15] },
+  "p-ui": { t: "packages/ui", d: ["The design system: tokens in light and dark, Nunito, line icons for actions, the sticker style (<code>Sticker.ts</code>: palette, white die-cut edge, shadow) and domain-free components, several with a <code>.web.tsx</code> twin. It knows no domain type, so it may import none of core, sync, e2ee, api or domain-ui.", "Its hooks keep lists usable while rows change: <code>useLingeringOrder</code> leaves a ticked item in place for a moment, and <code>useKeptFocus</code> gives the keyboard's focus back to a box that moved (web only; the native file does nothing).", "Every checkbox and choice is built on <code>Checkable</code>, which answers Space on the web as react-native-web doesn't for these roles; <code>studienbuch/no-raw-checkable</code> keeps the roles there."], f: ["packages/ui/src/Tokens.ts", "packages/ui/src/Theme.ts", "packages/ui/src/Sticker.ts", "packages/ui/src/useLingeringOrder.ts", "packages/ui/src/useKeptFocus.web.ts", "packages/ui/src/Checkable.tsx"], a: [15] },
 
   "p-api": { t: "packages/api", d: ["Effect RPC groups and their schemas outside sync: System, Access, Keys, Demo, Dev and Mail. Handlers live in apps/server, so this package may not import <code>RpcServer</code> or a platform package."], f: ["packages/api/src/Api.ts", "packages/api/src/Keys.ts", "packages/api/src/Access.ts"] },
 

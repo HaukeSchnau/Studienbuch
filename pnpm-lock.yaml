@@ -637,6 +637,9 @@ importers:
       '@stu/api':
         specifier: workspace:*
         version: link:../../packages/api
+      '@stu/domain-ui':
+        specifier: workspace:*
+        version: link:../../packages/domain-ui
       '@stu/ui':
         specifier: workspace:*
         version: link:../../packages/ui
