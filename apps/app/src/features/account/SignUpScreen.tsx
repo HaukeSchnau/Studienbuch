@@ -30,7 +30,11 @@ export function SignUpScreen() {
 
 function SignUpForm({ reservation }: { readonly reservation: Access.Reservation }) {
   const router = useRouter();
-  const { email, setEmail, password, setPassword, passwordField, toPassword } = useCredentials();
+  const typed = Option.getOrElse(useAtomValue(Steps.signUpEmail), () => "");
+
+  const { email, setEmail, password, setPassword, passwordField, toPassword } =
+    useCredentials(typed);
+
   const [result, signUp] = useAtom(AccountState.signUp, { mode: "promiseExit" });
   const short = password.length < Accounts.minPasswordLength;
   const complete = email.trim() !== "" && !short;
@@ -55,6 +59,7 @@ function SignUpForm({ reservation }: { readonly reservation: Access.Reservation 
           label="E-Mail-Adresse"
           value={email}
           onChangeText={setEmail}
+          invalid={Option.contains(reasonOf(result), "invalid-email")}
           autoComplete="email"
           textContentType="username"
           keyboardType="email-address"

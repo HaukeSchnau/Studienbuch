@@ -37,7 +37,12 @@ export function SignInScreen() {
     router.push("/passwort-vergessen");
   };
 
+  // An empty field would only go to the server and back.
+  const complete = email.trim() !== "" && password !== "";
+
   const submit = async () => {
+    if (!complete) return;
+
     Keyboard.dismiss();
     await signIn({ email, password });
   };
@@ -81,6 +86,7 @@ export function SignInScreen() {
           kind="action"
           label={withPassword.waiting ? "Anmeldung läuft …" : "Anmelden"}
           block
+          disabled={!complete}
           busy={withPassword.waiting}
           onPress={() => void submit()}
         />

@@ -1,0 +1,1 @@
+ALTER TABLE "access_sign_up" ADD COLUMN "password_hash" text;

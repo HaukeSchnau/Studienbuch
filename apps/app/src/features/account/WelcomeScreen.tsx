@@ -1,4 +1,4 @@
-import { useAtom, useAtomSet } from "@effect/atom-react";
+import { useAtom, useAtomSet, useAtomValue } from "@effect/atom-react";
 import { Access } from "@stu/api/Access";
 import { AuthHeading } from "@stu/ui/AuthHeading";
 import { Button } from "@stu/ui/Button";
@@ -10,24 +10,27 @@ import * as Option from "effect/Option";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Atom from "effect/reactivity/Atom";
 import { useRouter } from "expo-router";
-import { useState } from "react";
-import { Keyboard, StyleSheet } from "react-native";
+import { useRef, useState } from "react";
+import { Keyboard, StyleSheet, type TextInputSelectionChangeEvent } from "react-native";
 
 import { AccessCode } from "./AccessCode.ts";
 import { Form, Lead, OtherWay, ProblemBox } from "./AccountForm.tsx";
 import { Steps } from "./Steps.ts";
+import { TypedCode } from "./TypedCode.ts";
 
 /**
  * "Willkommen!": the access code from the school, the old web's first step. A whole code earns a
  * tick before the server is asked, and a code the server takes leads to "Konto erstellen" with its
- * school named. Changing the code clears the last refusal.
+ * school named. Changing the code clears the last refusal, and the way back finds the code again.
  */
 export function WelcomeScreen() {
   const router = useRouter();
   const [result, redeem] = useAtom(AccessCode.redeem, { mode: "promiseExit" });
   const forget = useAtomSet(AccessCode.redeem);
   const keep = useAtomSet(Steps.reservation);
-  const code = useAccessCode(() => forget(Atom.Reset));
+  const keepCode = useAtomSet(Steps.accessCode);
+  const typed = Option.getOrElse(useAtomValue(Steps.accessCode), () => "");
+  const code = useAccessCode(typed, () => forget(Atom.Reset));
   const complete = Access.isCode(code.value);
   const reason = reasonOf(result);
 
@@ -39,6 +42,7 @@ export function WelcomeScreen() {
 
     if (Exit.isSuccess(exit)) {
       keep(Option.some(exit.value));
+      keepCode(Option.some(code.value));
       router.push("/konto-erstellen");
     }
   };
@@ -54,18 +58,22 @@ export function WelcomeScreen() {
           hint="Groß- und Kleinschreibung sind egal, die Bindestriche setzen wir selbst."
           value={code.value}
           onChangeText={code.set}
+          selection={code.selection}
+          onSelectionChange={code.onSelectionChange}
           placeholder="XXXX-XXXX-XXXX-XXXX"
           autoCapitalize="characters"
           autoComplete="off"
           autoCorrect={false}
           spellCheck={false}
-          maxLength={Access.length + 3}
           returnKeyType="go"
           onSubmitEditing={() => void submit()}
           invalid={Option.isSome(reason)}
           inputStyle={styles.code}
           trailing={
-            complete ? <SuccessTick size={24} delay={0} label="Code vollständig" /> : undefined
+            // The tick says the code is whole; a code the server refused gets the error alone.
+            complete && Option.isNone(reason) ? (
+              <SuccessTick size={24} delay={0} label="Code vollständig" />
+            ) : undefined
           }
         />
         {Option.match(reason, {
@@ -87,19 +95,30 @@ export function WelcomeScreen() {
 }
 
 /**
- * The code as printed on the school's paper: repaired as it is typed, hyphens set in. `onEdit`
- * runs when the code changes, so an answer about the old code goes.
+ * The code as printed on the school's paper, from `initial`: repaired as it is typed, hyphens set
+ * in, and the caret behind what was typed (`TypedCode.access`). Rewriting the text would move the
+ * caret to the end, so `selection` sets it once after each edit and lets go at the next move.
+ * `onEdit` runs when the code changes, so an answer about the old code goes.
  */
-export function useAccessCode(onEdit: () => void) {
-  const [value, setValue] = useState("");
+export function useAccessCode(initial: string, onEdit: () => void) {
+  const [value, setValue] = useState(initial);
+  const [selection, setSelection] = useState<TypedCode.Selection | undefined>(undefined);
+  const before = useRef<TypedCode.Selection>({ start: initial.length, end: initial.length });
 
   return {
     value,
+    selection,
+    onSelectionChange: (event: TextInputSelectionChangeEvent) => {
+      before.current = event.nativeEvent.selection;
+      setSelection(undefined);
+    },
     set: (text: string) => {
-      const next = Access.format(Access.repair(text));
+      const next = TypedCode.access(value, text, before.current);
 
-      if (next !== value) onEdit();
-      setValue(next);
+      if (next.value !== value) onEdit();
+      before.current = { start: next.caret, end: next.caret };
+      setValue(next.value);
+      setSelection(before.current);
     },
   };
 }
