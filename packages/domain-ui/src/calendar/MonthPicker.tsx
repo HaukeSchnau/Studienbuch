@@ -1,4 +1,4 @@
-import { CivilTime } from "@stu/core";
+import type { CivilTime } from "@stu/core";
 import { Icon } from "@stu/ui/Icon";
 import { Text } from "@stu/ui/Text";
 import { Theme } from "@stu/ui/Theme";
@@ -9,6 +9,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 import * as PlainDateFns from "temporal-polyfill/fns/PlainDate";
 
 import { DateText } from "./DateText.ts";
+import { Pickable } from "./Pickable.ts";
 
 declare module "react-native" {
   // react-native-web writes them to the DOM; native ignores them.
@@ -22,7 +23,7 @@ export interface MonthPickerProps {
   readonly value: CivilTime.PlainDate | null;
   readonly onChange: (date: CivilTime.PlainDate) => void;
   /** The days that can be picked. The others show greyed out. */
-  readonly range: CivilTime.DateRange;
+  readonly days: Pickable.Days;
   readonly today: CivilTime.PlainDate;
 }
 
@@ -30,9 +31,9 @@ export interface MonthPickerProps {
  * A month of days to pick one from, Monday first, as the Flutter app's date picker showed it. Our
  * own on every platform, so the sheet looks and behaves the same on iOS, Android and the web.
  */
-export function MonthPicker({ value, onChange, range, today }: MonthPickerProps) {
+export function MonthPicker({ value, onChange, days, today }: MonthPickerProps) {
   const { color } = Theme.useTheme();
-  const { month, previous, next } = useShownMonth(value ?? range.start, range);
+  const { month, previous, next } = useShownMonth(value ?? days.range.start, Pickable.reach(days));
 
   return (
     <View style={styles.picker}>
@@ -57,7 +58,7 @@ export function MonthPicker({ value, onChange, range, today }: MonthPickerProps)
 
             if (day.month !== month.month) return <View key={key} style={styles.cell} />;
 
-            const enabled = CivilTime.contains(range, day);
+            const enabled = Pickable.contains(days, day);
             const selected = value !== null && PlainDateFns.equals(day, value);
             const isToday = PlainDateFns.equals(day, today);
 

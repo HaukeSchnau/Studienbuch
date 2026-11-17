@@ -12,6 +12,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 
 import { DateText } from "../calendar/DateText.ts";
 import { MonthPicker } from "../calendar/MonthPicker.tsx";
+import type { Pickable } from "../calendar/Pickable.ts";
 import { SubjectMarker } from "../subject/SubjectMarker.tsx";
 import type { SubjectMark } from "../subject/SubjectMark.ts";
 
@@ -46,7 +47,7 @@ export interface HomeworkFormProps {
   readonly onChange: (changes: Change) => void;
   readonly choices: ReadonlyArray<CourseChoice>;
   /** The due dates the calendar offers. */
-  readonly range: CivilTime.DateRange;
+  readonly days: Pickable.Days;
   readonly today: CivilTime.PlainDate;
   /** "Speichern" stays disabled until the values decode. */
   readonly canSave: boolean;
@@ -65,7 +66,7 @@ export function HomeworkForm({
   values,
   onChange,
   choices,
-  range,
+  days,
   today,
   canSave,
   problem,
@@ -160,7 +161,7 @@ export function HomeworkForm({
               backToDate();
               calendar.close();
             }}
-            range={range}
+            days={days}
             today={today}
           />
         ) : null}

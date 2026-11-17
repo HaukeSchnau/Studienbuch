@@ -1,5 +1,6 @@
 import { CivilTime, Course, Homework, Term } from "@stu/core";
 import type { Tx } from "@stu/sync";
+import { Pickable } from "@stu/domain-ui/calendar/Pickable";
 import type { Values } from "@stu/domain-ui/homework/HomeworkForm";
 import * as Arr from "effect/Array";
 import * as Option from "effect/Option";
@@ -99,6 +100,18 @@ export interface Valid {
   readonly dueOn: CivilTime.PlainDate;
 }
 
+/**
+ * The due dates the sheet offers: today to a year ahead, and in an edit the homework's own due date,
+ * which may have passed and stays pickable after the student tries another one.
+ */
+export const dueDays = (
+  today: CivilTime.PlainDate,
+  current: Current | undefined,
+): Pickable.Days => ({
+  range: Homework.dueDates(today),
+  kept: current?.dueOn,
+});
+
 const decodeTitle = Schema.decodeUnknownOption(Homework.Title);
 const decodeDescription = Schema.decodeUnknownOption(Homework.Description);
 const decodeCourse = Schema.decodeUnknownOption(Course.Id);
@@ -115,11 +128,9 @@ export const decode = (values: Values, context: Context): Option.Option<Valid> =
 
   const courseAllowed = context.offered.includes(courseId) || current?.courseId === courseId;
 
-  const dueAllowed =
-    CivilTime.contains(Homework.dueDates(context.today), dueOn) ||
-    (current !== undefined && CivilTime.order(current.dueOn, dueOn) === 0);
-
-  if (!courseAllowed || !dueAllowed) return Option.none();
+  if (!courseAllowed || !Pickable.contains(dueDays(context.today, current), dueOn)) {
+    return Option.none();
+  }
 
   const description =
     values.description.trim() === ""

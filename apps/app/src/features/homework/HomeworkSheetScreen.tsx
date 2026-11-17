@@ -1,5 +1,4 @@
 import { useAtom, useAtomSet, useAtomValue } from "@effect/atom-react";
-import { Homework } from "@stu/core";
 import { HomeworkForm } from "@stu/domain-ui/homework/HomeworkForm";
 import { HomeworkItem } from "@stu/domain-ui/homework/HomeworkItem";
 import { RefusalText } from "@stu/domain-ui/refusal/RefusalText";
@@ -151,7 +150,7 @@ function AccountSheet({
         values={values}
         onChange={(changes) => setDraft({ ...touched, ...changes })}
         choices={choices}
-        range={Homework.dueDates(today)}
+        days={HomeworkInput.dueDays(today, current)}
         today={today}
         canSave={Option.isSome(valid)}
         problem={Option.getOrUndefined(problem)}

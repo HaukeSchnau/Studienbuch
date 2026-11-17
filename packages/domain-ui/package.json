@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./calendar/DateText": "./src/calendar/DateText.ts",
+    "./calendar/Pickable": "./src/calendar/Pickable.ts",
     "./grade/GradeMarker": "./src/grade/GradeMarker.tsx",
     "./homework/Due": "./src/homework/Due.ts",
     "./homework/HomeworkDetail": "./src/homework/HomeworkDetail.tsx",
