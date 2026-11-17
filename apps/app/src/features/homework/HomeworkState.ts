@@ -428,16 +428,23 @@ export const remove = Atom.family((accountId: string) =>
 /** A tick or a delete this device refused itself. */
 export type LocalRefusal = NotToggled | NotDeleted;
 
+/** How the account's database keeps the ticks and deletes this device refused itself. */
+export const HeldRefusals = Schema.Array(Schema.Union([NotToggled, NotDeleted]));
+
 /**
  * The ticks and deletes this device refused itself, per homework, until the student retries or
- * dismisses them (`LocalRefusals`). A fn atom keeps only its latest result, so a second tick would
- * otherwise hide the first one's refusal.
+ * dismisses them (`LocalRefusals`), kept across a restart like the drafts. A fn atom keeps only its
+ * latest result, so a second tick would otherwise hide the first one's refusal. Kept alive, as its
+ * write runs on an atom of its own that unmounting would interrupt.
  */
 export const localRefusals = Atom.family((accountId: string) =>
-  Atom.make<LocalRefusals.Held<LocalRefusal>>(new Map()).pipe(
-    Atom.withLabel(`homework-local-refusals-${accountId}`),
-    Atom.keepAlive,
-  ),
+  Atom.kvs({
+    runtime: runtime(accountId),
+    key: "homework-local-refusals",
+    schema: HeldRefusals,
+    defaultValue: (): LocalRefusals.Held<LocalRefusal> => [],
+    mode: "sync",
+  }).pipe(Atom.keepAlive),
 );
 
 /** Holds the change's refusal, or lets an earlier one for the same homework go once it worked. */

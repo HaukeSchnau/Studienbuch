@@ -11,9 +11,11 @@ export interface Refusal {
   readonly id: string;
 }
 
-export type Held<A extends Refusal> = ReadonlyMap<string, A>;
+/** Oldest first. A list, so the device can keep it as JSON across a restart. */
+export type Held<A extends Refusal> = ReadonlyArray<A>;
 
-const keyOf = (kind: string, id: string) => `${kind} ${id}`;
+const isOf = (kind: string, id: string) => (refusal: Refusal) =>
+  refusal._tag === kind && refusal.id === id;
 
 /**
  * After a change of `kind` to homework `id`: holds its refusal, or lets an earlier one of that kind
@@ -24,20 +26,8 @@ export const settle = <A extends Refusal>(
   kind: A["_tag"],
   id: string,
   refused: Option.Option<A>,
-): Held<A> => {
-  const next = new Map(held);
-
-  if (Option.isSome(refused)) next.set(keyOf(kind, id), refused.value);
-  else next.delete(keyOf(kind, id));
-
-  return next;
-};
+): Held<A> => [...held.filter((each) => !isOf(kind, id)(each)), ...Option.toArray(refused)];
 
 /** "Verwerfen": lets one refusal go. */
-export const dismiss = <A extends Refusal>(held: Held<A>, refusal: A): Held<A> => {
-  const next = new Map(held);
-
-  next.delete(keyOf(refusal._tag, refusal.id));
-
-  return next;
-};
+export const dismiss = <A extends Refusal>(held: Held<A>, refusal: A): Held<A> =>
+  held.filter((each) => !isOf(refusal._tag, refusal.id)(each));

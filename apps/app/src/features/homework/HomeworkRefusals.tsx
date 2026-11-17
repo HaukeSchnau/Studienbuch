@@ -38,7 +38,7 @@ export function HomeworkRefusals({
           onDismiss={() => dismiss(rejected)}
         />
       ))}
-      {[...local.values()].flatMap((refused) => {
+      {local.flatMap((refused) => {
         const title = titles.get(refused.id);
 
         // One for homework the screens don't show, as while the notebook is locked, waits.

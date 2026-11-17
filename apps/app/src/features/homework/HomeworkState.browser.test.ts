@@ -101,3 +101,25 @@ it.layer(fullForCreated)((it) => {
     }),
   );
 });
+
+it.layer(KeyValueStore.layerMemory)((it) => {
+  it.effect("a tick and a delete this device refused come back from the store as refusals", () =>
+    Effect.gen(function* () {
+      const stored = KeyValueStore.toSchemaStore(
+        yield* KeyValueStore.KeyValueStore,
+        HomeworkState.HeldRefusals,
+      );
+
+      const held = [
+        new HomeworkState.NotToggled({ id: "a", done: true, reason: "Homework.NotFound" }),
+        new HomeworkState.NotDeleted({ id: "b", reason: "Homework.NotFound" }),
+      ];
+
+      yield* stored.set("homework-local-refusals", held);
+      const back = Option.getOrElse(yield* stored.get("homework-local-refusals"), () => []);
+
+      assert.deepStrictEqual(back, held);
+      assert.instanceOf(back[0], HomeworkState.NotToggled);
+    }),
+  );
+});
