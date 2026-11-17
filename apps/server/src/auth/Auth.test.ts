@@ -34,6 +34,7 @@ import { MailTables } from "../infra/mail/MailTables.ts";
 import { Limits } from "../limits/Limits.ts";
 import { AccessCodes } from "../school/AccessCodes.ts";
 import { Auth } from "./Auth.ts";
+import { CardLogins } from "./CardLogins.ts";
 import { AuthTables } from "./AuthTables.ts";
 
 const publicUrl = "http://localhost:3000";
@@ -98,12 +99,9 @@ const server = (
       // A school whose code every test's sign-up redeems.
       yield* sql`insert into space (id, kind) values (${school}, 'school'), (${otherSchool}, 'school')`;
 
-      yield* AccessCodes.ensure({ school, kind: "student", maxUses: Option.none() }, schoolCode);
+      yield* AccessCodes.ensure({ school, kind: "student", maxUses: 1000 }, schoolCode);
 
-      yield* AccessCodes.ensure(
-        { school: otherSchool, kind: "student", maxUses: Option.none() },
-        otherCode,
-      );
+      yield* AccessCodes.ensure({ school: otherSchool, kind: "student", maxUses: 1000 }, otherCode);
 
       const socket = encodeURIComponent(Postgres18.socket ?? "");
 
@@ -322,6 +320,74 @@ const signUp = Effect.fnUntraced(function* (email: string) {
 
   return verified.token ?? "no signed token";
 });
+
+/** A card's login as the device sends it: 32 bytes, base64url. */
+const loginOf = (fill: number) => Base64Url.encode(new Uint8Array(32).fill(fill));
+
+/** The account a signed token signs in to. */
+const accountOf = (token: string | undefined) =>
+  Effect.map(
+    Effect.flatMap(Ports.SessionResolver, (resolver) => resolver.resolve(bearer(token ?? ""))),
+    Option.map(({ accountId }) => accountId),
+  );
+
+/** What the server keeps of an account without an address. */
+const kept = (account: Option.Option<string>) =>
+  Effect.flatMap(SqlClient.SqlClient, (sql) =>
+    Effect.map(
+      sql<{ readonly email: string; readonly name: string; readonly schools: number }>`
+        select u.email, u.name,
+          (select count(*)::int from school_access a where a.account_id = u.id) as schools
+        from auth_user u where u.id = ${Option.getOrElse(account, () => "")}
+      `,
+      ([user]) => ({
+        placeholder: user?.email.endsWith("@konto.placeholder.invalid"),
+        name: user?.name,
+        schools: user?.schools,
+      }),
+    ),
+  );
+
+/** A code of the test school's with its own count of uses, and that count. */
+const freshCode = Effect.map(
+  AccessCodes.mint({ school, kind: "student", maxUses: 5 }),
+  ({ id, code }) => ({
+    reserve: Effect.map(AccessCodes.reserve(code), ({ token }) => token),
+    uses: Effect.flatMap(SqlClient.SqlClient, (sql) =>
+      Effect.map(
+        sql<{ readonly uses: number }>`select uses from access_code where id = ${id}`,
+        ([row]) => row?.uses,
+      ),
+    ),
+  }),
+);
+
+/** Whether the reservation has all its sign-ups left, which a refused sign-up gives back. */
+const untouched = (token: string) =>
+  Effect.map(
+    Effect.forEach([1, 2, 3], () => AccessCodes.claimSignUp(token)),
+    (claims) => claims.every(Boolean),
+  );
+
+/** Signs up without an address with a passkey first, and returns the signed token. */
+const passkeySignUp = Effect.fnUntraced(function* (reservation: string) {
+  const authenticator = yield* VirtualAuthenticator.make;
+  const offered = yield* call("GET", "/passkey/generate-register-options", { reservation });
+
+  const registered = yield* call("POST", "/passkey/verify-registration", {
+    reservation,
+    challenge: offered.challenge,
+    body: {
+      response: authenticator.create(yield* decodeChallenge(offered.json), { verified: true }),
+    },
+  });
+
+  return { registered, authenticator };
+});
+
+const decodeUserName = Schema.decodeUnknownEffect(
+  Schema.Struct({ user: Schema.Struct({ name: Schema.String }) }),
+);
 
 /** Revocations from now on, `count` of them. */
 const revocations = (count: number) =>
@@ -1158,22 +1224,27 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
         Effect.gen(function* () {
           const from = "192.0.2.10";
 
-          const statuses = (path: string) =>
+          const byAddress = (index: number) => ({ email: `lena.ceiling${index}@example.org` });
+
+          const statuses = (path: string, body: (index: number) => Record<string, string>) =>
             Effect.map(
               Effect.forEach(
                 Array.from({ length: Limits.perClient + 1 }, (_, index) => index),
-                (index) =>
-                  call("POST", path, { from, body: { email: `lena.ceiling${index}@example.org` } }),
+                (index) => call("POST", path, { from, body: body(index) }),
                 { concurrency: "unbounded" },
               ),
-              (answers) =>
-                [200, 429].map(
-                  (status) => answers.filter((answer) => answer.status === status).length,
-                ),
+              (answers) => [
+                answers.filter((answer) => answer.status !== 429).length,
+                answers.filter((answer) => answer.status === 429).length,
+              ],
             );
 
-          const resends = yield* statuses("/send-verification-email");
-          const resets = yield* statuses("/email-otp/request-password-reset");
+          const resends = yield* statuses("/send-verification-email", byAddress);
+          const resets = yield* statuses("/email-otp/request-password-reset", byAddress);
+
+          const cards = yield* statuses(Accounts.cardSignInPath, (index) => ({
+            login: loginOf(index),
+          }));
 
           const elsewhere = yield* call("POST", "/send-verification-email", {
             from: "192.0.2.11",
@@ -1188,10 +1259,11 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
           });
 
           assert.deepStrictEqual(
-            { resends, resets, elsewhere: elsewhere.status, later: later.status },
+            { resends, resets, cards, elsewhere: elsewhere.status, later: later.status },
             {
               resends: [Limits.perClient, 1],
               resets: [Limits.perClient, 1],
+              cards: [Limits.perClient, 1],
               elsewhere: 200,
               later: 200,
             },
@@ -1397,7 +1469,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
             const { code } = yield* AccessCodes.mint({
               school,
               kind: "student",
-              maxUses: Option.some(180),
+              maxUses: 180,
             });
 
             // A sign-up without a code and a confirmation without a password fail before any hash.
@@ -1472,7 +1544,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
           const { code } = yield* AccessCodes.mint({
             school,
             kind: "student",
-            maxUses: Option.some(4),
+            maxUses: 4,
           });
 
           const { token: junk } = yield* AccessCodes.reserve(code);
@@ -1516,7 +1588,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
           const { code } = yield* AccessCodes.mint({
             school,
             kind: "student",
-            maxUses: Option.some(1),
+            maxUses: 1,
           });
 
           yield* signUp(known);
@@ -1738,6 +1810,295 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
               { stale: 403, registered: 200, token: undefined, sessions: 1 },
             );
           }),
+      );
+      it.effect(
+        "signs up without an address with the card and a code, makes one account for a retry, and signs in with the card",
+        () =>
+          Effect.gen(function* () {
+            const code = yield* freshCode;
+            const login = loginOf(1);
+            const none = yield* call("POST", Accounts.cardSignUpPath, { body: { login } });
+
+            const forged = yield* call("POST", Accounts.cardSignUpPath, {
+              body: { login },
+              reservation: "a reservation this server never gave out",
+            });
+
+            const reservation = yield* code.reserve;
+
+            const created = yield* call("POST", Accounts.cardSignUpPath, {
+              body: { login },
+              reservation,
+            });
+
+            // A retry after a lost answer finds its account, though the reservation is spent.
+            const again = yield* call("POST", Accounts.cardSignUpPath, {
+              body: { login },
+              reservation,
+            });
+
+            const signedIn = yield* call("POST", Accounts.cardSignInPath, { body: { login } });
+
+            const wrong = yield* call("POST", Accounts.cardSignInPath, {
+              body: { login: loginOf(2) },
+            });
+
+            const other = yield* call("POST", Accounts.cardSignInPath, {
+              body: { login: loginOf(3) },
+            });
+
+            const account = yield* accountOf(created.token);
+
+            assert.deepStrictEqual(
+              {
+                refused: [none.status, yield* decodeCode(none.json), forged.status],
+                created: [created.status, created.cookies, Option.isSome(account)],
+                again: yield* accountOf(again.token),
+                signedIn: yield* accountOf(signedIn.token),
+                wrong: [wrong.status, yield* decodeCode(wrong.json), wrong.text === other.text],
+                kept: yield* kept(account),
+                uses: yield* code.uses,
+              },
+              {
+                refused: [400, { code: Access.reservationRefused }, 400],
+                created: [200, null, true],
+                again: account,
+                signedIn: account,
+                wrong: [401, { code: Accounts.unknownCard }, true],
+                kept: { placeholder: true, name: "", schools: 1 },
+                uses: 1,
+              },
+            );
+          }),
+      );
+      it.effect(
+        "mails nothing to an account without an address, and no email route takes its placeholder",
+        () =>
+          Effect.gen(function* () {
+            const sql = yield* SqlClient.SqlClient;
+            const code = yield* freshCode;
+
+            const created = yield* call("POST", Accounts.cardSignUpPath, {
+              body: { login: loginOf(4) },
+              reservation: yield* code.reserve,
+            });
+
+            const id = Option.getOrElse(yield* accountOf(created.token), () => "");
+
+            const [user] = yield* sql<{
+              readonly email: string;
+            }>`select email from auth_user where id = ${id}`;
+
+            const email = user?.email ?? "";
+            const held = yield* code.reserve;
+
+            const refused = yield* Effect.forEach(
+              [
+                ["/sign-up/email", { email, password, name: "" }],
+                ["/sign-in/email", { email, password }],
+                ["/send-verification-email", { email }],
+                ["/email-otp/verify-email", { email, otp: "123456", password }],
+                ["/email-otp/reset-password", { email, otp: "123456", password }],
+              ] as const,
+              ([path, body]) =>
+                Effect.flatMap(call("POST", path, { body, reservation: held }), (answer) =>
+                  Effect.map(decodeCode(answer.json), ({ code }) => `${answer.status} ${code}`),
+                ),
+            );
+
+            const reset = yield* call("POST", "/email-otp/request-password-reset", {
+              body: { email },
+            });
+
+            // The jobs run in order; once this one mailed, the one before it is done.
+            yield* signUp("lena.after.placeholder@example.org");
+            yield* call("POST", "/email-otp/request-password-reset", {
+              body: { email: "lena.after.placeholder@example.org" },
+            });
+            yield* resetMailTo("lena.after.placeholder@example.org");
+
+            assert.deepStrictEqual(
+              {
+                placeholder: Accounts.isPlaceholder(email),
+                refused,
+                reset: `${reset.status} ${reset.text}`,
+                mails: yield* mailCount(email),
+                // The refused email sign-up gave its reservation's sign-up back.
+                untouched: yield* untouched(held),
+              },
+              {
+                placeholder: true,
+                refused: Array.from({ length: 5 }, () => "400 INVALID_EMAIL"),
+                reset: `200 {"success":true}`,
+                mails: 0,
+                untouched: true,
+              },
+            );
+          }),
+      );
+      it.effect(
+        "signs up without an address with a passkey first, only with a code, and the passkey signs in",
+        () =>
+          Effect.gen(function* () {
+            const code = yield* freshCode;
+            const authenticator = yield* VirtualAuthenticator.make;
+            const signedOut = yield* call("GET", "/passkey/generate-register-options");
+
+            const lapsed = yield* call("GET", "/passkey/generate-register-options", {
+              reservation: "a reservation this server never gave out",
+            });
+
+            const reservation = yield* code.reserve;
+
+            const offered = yield* call("GET", "/passkey/generate-register-options", {
+              reservation,
+            });
+
+            const ceremony = yield* decodeChallenge(offered.json);
+
+            // The same ceremony without the reservation makes no account.
+            const stolen = yield* call("POST", "/passkey/verify-registration", {
+              challenge: offered.challenge,
+              body: { response: authenticator.create(ceremony, { verified: true }) },
+            });
+
+            // A failed ceremony gives its reservation's sign-up back.
+            const failing = yield* code.reserve;
+
+            const unverifiedOffer = yield* call("GET", "/passkey/generate-register-options", {
+              reservation: failing,
+            });
+
+            const unverified = yield* call("POST", "/passkey/verify-registration", {
+              reservation: failing,
+              challenge: unverifiedOffer.challenge,
+              body: {
+                response: authenticator.create(yield* decodeChallenge(unverifiedOffer.json), {
+                  verified: false,
+                }),
+              },
+            });
+
+            const { registered, authenticator: phone } = yield* passkeySignUp(reservation);
+            const account = yield* accountOf(registered.token);
+            const asked = yield* call("GET", "/passkey/generate-authenticate-options");
+
+            const signedIn = yield* call("POST", "/passkey/verify-authentication", {
+              challenge: asked.challenge,
+              body: {
+                response: yield* phone.get(yield* decodeChallenge(asked.json), { verified: true }),
+              },
+            });
+
+            assert.deepStrictEqual(
+              {
+                signedOut: signedOut.status,
+                lapsed: [lapsed.status, yield* decodeCode(lapsed.json)],
+                name: (yield* decodeUserName(offered.json)).user.name,
+                stolen: stolen.status,
+                unverified: yield* decodeCode(unverified.json),
+                untouched: yield* untouched(failing),
+                registered: [registered.status, registered.cookies, Option.isSome(account)],
+                signedIn: yield* accountOf(signedIn.token),
+                kept: yield* kept(account),
+                uses: yield* code.uses,
+              },
+              {
+                signedOut: 401,
+                lapsed: [400, { code: Access.reservationRefused }],
+                name: "Studienbuch",
+                stolen: 401,
+                unverified: { code: "FAILED_TO_VERIFY_REGISTRATION" },
+                untouched: true,
+                registered: [200, null, true],
+                signedIn: account,
+                kept: { placeholder: true, name: "", schools: 1 },
+                uses: 1,
+              },
+            );
+          }),
+      );
+      it.effect(
+        "adds a passkey to an account without an address within ten minutes of a sign-in, named for the keychain",
+        () =>
+          Effect.gen(function* () {
+            const sql = yield* SqlClient.SqlClient;
+            const code = yield* freshCode;
+
+            const created = yield* call("POST", Accounts.cardSignUpPath, {
+              body: { login: loginOf(5) },
+              reservation: yield* code.reserve,
+            });
+
+            const token = created.token ?? "";
+            const offered = yield* call("GET", "/passkey/generate-register-options", { token });
+            const authenticator = yield* VirtualAuthenticator.make;
+
+            yield* sql`
+              update auth_session set "createdAt" = now() - interval '11 minutes'
+              where token = ${token.split(".")[0] ?? ""}
+            `;
+
+            // Signed in, a reservation changes nothing: the request adds to its own account.
+            const stale = yield* call("POST", "/passkey/verify-registration", {
+              token,
+              reservation: yield* code.reserve,
+              challenge: offered.challenge,
+              body: {
+                response: authenticator.create(yield* decodeChallenge(offered.json), {
+                  verified: true,
+                }),
+              },
+            });
+
+            const [passkeys] = yield* sql<{ readonly count: number }>`
+              select count(*)::int as count from auth_passkey p join auth_session s on s."userId" = p."userId"
+              where s.token = ${token.split(".")[0] ?? ""}
+            `;
+
+            assert.deepStrictEqual(
+              {
+                name: (yield* decodeUserName(offered.json)).user.name,
+                stale: [stale.status, yield* decodeCode(stale.json)],
+                passkeys: passkeys?.count,
+                uses: yield* code.uses,
+              },
+              {
+                name: "Studienbuch",
+                stale: [403, { code: "SESSION_NOT_FRESH" }],
+                passkeys: 0,
+                uses: 1,
+              },
+            );
+          }),
+      );
+      it.effect("keeps an account without an address from deleting its last way in", () =>
+        Effect.gen(function* () {
+          const sql = yield* SqlClient.SqlClient;
+          const code = yield* freshCode;
+          const { registered } = yield* passkeySignUp(yield* code.reserve);
+          const token = registered.token;
+          const account = Option.getOrElse(yield* accountOf(token), () => "");
+
+          const [passkey] = yield* sql<{ readonly id: string }>`
+            select id from auth_passkey where "userId" = ${account}
+          `;
+
+          const remove = call("POST", "/passkey/delete-passkey", {
+            token,
+            body: { id: passkey?.id },
+          });
+
+          const last = yield* remove;
+
+          yield* sql.withTransaction(CardLogins.replace(account, loginOf(9)));
+          const withCard = yield* remove;
+
+          assert.deepStrictEqual(
+            [last.status, yield* decodeCode(last.json), withCard.status],
+            [400, { code: Accounts.lastWayIn }, 200],
+          );
+        }),
       );
     });
 

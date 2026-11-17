@@ -56,10 +56,15 @@ export const handlers = Keys.Rpcs.toLayer(
         Effect.catchTags({ SqlError: Effect.die }),
       ),
       "Keys.addWrapper": Effect.fn("KeyCalls.addWrapper")(
-        function* ({ wrapper }, { headers }) {
+        function* ({ wrapper, login }, { headers }) {
           const session = yield* caller(headers);
 
-          yield* KeyStore.addWrapper(session.accountId, session.sessionId, wrapper);
+          yield* KeyStore.addWrapper(
+            session.accountId,
+            session.sessionId,
+            wrapper,
+            Option.fromUndefinedOr(login),
+          );
         },
         Effect.catchTags({ SqlError: Effect.die }),
       ),

@@ -1,7 +1,8 @@
 /**
  * `console access`: an operator admits an account to a school directly, and mints, lists and
- * revokes the school's access codes. `admit` with `--grade` and `--course` chooses those courses
- * for today's term.
+ * revokes the school's access codes. `admit` finds the account by `--email`, or by `--account` for
+ * an account without an address, and with `--grade` and `--course` chooses those courses for
+ * today's term.
  */
 import { Access as Api } from "@stu/api/Access";
 import { Course, School, Studienbuch } from "@stu/core";
@@ -19,11 +20,17 @@ import { Schools } from "./Schools.ts";
 
 export * as AccessCommand from "./AccessCommand.ts";
 
-/** No account has the address. */
-export class UnknownEmail extends Schema.TaggedError<
-  UnknownEmail,
+/** No account has the address or the id. */
+export class UnknownAccount extends Schema.TaggedError<
+  UnknownAccount,
   { readonly brand: unique symbol }
->()("AccessCommand.UnknownEmail", { email: Schema.String }) {}
+>()("AccessCommand.UnknownAccount", { account: Schema.String }) {}
+
+/** `admit` names the account by `--email` or by `--account`, and not both. */
+export class AccountRequired extends Schema.TaggedError<
+  AccountRequired,
+  { readonly brand: unique symbol }
+>()("AccessCommand.AccountRequired", {}) {}
 
 /** Courses need a grade level, and a term that holds today. */
 export class NoChoice extends Schema.TaggedError<NoChoice, { readonly brand: unique symbol }>()(
@@ -37,18 +44,28 @@ const decodeCourses = Schema.decodeUnknownEffect(Schema.Array(Course.Id));
 
 const admit = Effect.fn("AccessCommand.admit")(
   function* (options: {
-    readonly email: string;
+    readonly email: Option.Option<string>;
+    readonly account: Option.Option<string>;
     readonly school: string;
     readonly grade: Option.Option<number>;
     readonly course: ReadonlyArray<string>;
   }) {
     const sql = yield* SqlClient.SqlClient;
 
-    const [found] = yield* sql<{ readonly id: string }>`
-    select id from auth_user where lower(email) = lower(${options.email})
-  `;
+    if (Option.isSome(options.email) === Option.isSome(options.account)) {
+      return yield* new AccountRequired();
+    }
 
-    if (found === undefined) return yield* new UnknownEmail({ email: options.email });
+    const named = Option.getOrElse(
+      Option.orElse(options.email, () => options.account),
+      () => "",
+    );
+
+    const [found] = yield* Option.isSome(options.email)
+      ? sql<{ readonly id: string }>`select id from auth_user where lower(email) = lower(${named})`
+      : sql<{ readonly id: string }>`select id from auth_user where id = ${named}`;
+
+    if (found === undefined) return yield* new UnknownAccount({ account: named });
 
     const school = School.Id.makeOption(options.school);
 
@@ -78,8 +95,8 @@ const admit = Effect.fn("AccessCommand.admit")(
 
     yield* Console.log(
       admitted.created
-        ? `Admitted ${options.email} to ${options.school}, notebook ${admitted.notebook}`
-        : `${options.email} already has access to ${options.school}, notebook ${admitted.notebook}`,
+        ? `Admitted ${named} to ${options.school}, notebook ${admitted.notebook}`
+        : `${named} already has access to ${options.school}, notebook ${admitted.notebook}`,
     );
   },
   Effect.provide(SyncServer.writers(Studienbuch.schema)),
@@ -108,30 +125,18 @@ const schoolOf = Effect.fn("AccessCommand.schoolOf")(function* (school: string) 
   return id.value;
 });
 
-/** A code needs `--uses`, such as a class's size, or `--unlimited`, and not both. */
-export class UsesRequired extends Schema.TaggedError<
-  UsesRequired,
-  { readonly brand: unique symbol }
->()("AccessCommand.UsesRequired", {}) {}
-
 const decodeUses = Schema.decodeUnknownEffect(Schema.Int.check(Schema.isGreaterThanOrEqualTo(1)));
 
 const createCode = Effect.fn("AccessCommand.createCode")(function* (options: {
   readonly school: string;
   readonly kind: string;
-  readonly uses: Option.Option<number>;
-  readonly unlimited: boolean;
+  readonly uses: number;
   readonly expires: Option.Option<string>;
 }) {
-  // Every use mails a code to an address of the user's choosing, so a code stops somewhere.
-  if (Option.isSome(options.uses) === options.unlimited) return yield* new UsesRequired();
-
   const minted = yield* AccessCodes.mint({
     school: yield* schoolOf(options.school),
     kind: yield* decodeKind(options.kind),
-    maxUses: Option.isNone(options.uses)
-      ? Option.none()
-      : Option.some(yield* decodeUses(options.uses.value)),
+    maxUses: yield* decodeUses(options.uses),
     expiresAt: Option.isNone(options.expires)
       ? Option.none()
       : Option.some(yield* decodeExpiry(options.expires.value)),
@@ -148,7 +153,7 @@ const listCodes = Effect.fn("AccessCommand.listCodes")(function* (options: {
   const codes = yield* AccessCodes.list(yield* schoolOf(options.school));
 
   for (const code of codes) {
-    const uses = `${code.uses}/${code.maxUses ?? "unbegrenzt"}`;
+    const uses = `${code.uses}/${code.maxUses}`;
     const ends = code.expiresAt === null ? "" : ` bis ${code.expiresAt.toISOString()}`;
     const revoked = code.revokedAt === null ? "" : " widerrufen";
     yield* Console.log(`${code.id} ${code.kind} ${uses}${ends}${revoked}`);
@@ -171,14 +176,13 @@ const codes = Command.make("code").pipe(
       {
         school: Flag.String("school"),
         kind: Flag.String("kind"),
-        uses: Flag.Int("uses").pipe(Flag.optional),
-        unlimited: Flag.Boolean("unlimited").pipe(Flag.withDefault(false)),
+        uses: Flag.Int("uses"),
         expires: Flag.String("expires").pipe(Flag.optional),
       },
       createCode,
     ).pipe(
       Command.withDescription(
-        "Prints a new code for --uses admissions, such as a class's size, or --unlimited ones",
+        "Prints a new code for --uses admissions, such as a class's size and a margin",
       ),
     ),
     Command.make("list", { school: Flag.String("school") }, listCodes).pipe(
@@ -196,7 +200,8 @@ export const command = Command.make("access").pipe(
     Command.make(
       "admit",
       {
-        email: Flag.String("email"),
+        email: Flag.String("email").pipe(Flag.optional),
+        account: Flag.String("account").pipe(Flag.optional),
         school: Flag.String("school"),
         grade: Flag.Int("grade").pipe(Flag.optional),
         course: Flag.String("course").pipe(Flag.atLeast(0)),
@@ -204,7 +209,7 @@ export const command = Command.make("access").pipe(
       admit,
     ).pipe(
       Command.withDescription(
-        "Admits the account to the school with a notebook there, and the courses for today's term",
+        "Admits the account of --email or --account to the school with a notebook there, and the courses for today's term",
       ),
     ),
     codes,

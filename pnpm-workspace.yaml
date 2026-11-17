@@ -116,6 +116,9 @@ catalog:
   # `bundledNativeModules.json`. babel-preset-expo adds the worklets plugin once it resolves.
   react-native-reanimated: 4.7.1
   react-native-worklets: 0.13.0
+  # Better Auth's placeholder address and its transactions for our own sign-in routes, at the
+  # version Better Auth itself depends on, so both share one instance.
+  "@better-auth/core": 1.7.14
 
 overrides:
   vite@*: "catalog:"

@@ -2,6 +2,8 @@
 
 Status: accepted 2026-10-29 ([D43](https://files.schnau.dev/html/studienbuch-roadmap/#D43), [D58](https://files.schnau.dev/html/studienbuch-roadmap/#D58), [D65](https://files.schnau.dev/html/studienbuch-roadmap/#D65))
 
+[ADR 0030](0030-accounts-without-an-email-address.md) adds a passkey that signs up an account without an address: it registers without a session and signs the new account in. The rule below holds for every passkey a signed-in device adds.
+
 Only the student's own methods open the notebook's root key. Neither the operator nor the school holds a copy, a key that opens one, or a secret derived from the password. The demo accounts are the one exception: the server derives their keys from its own secret (ADR 0027). A student who loses every method loses the encrypted notebook. The account, the timetable and the course choice come back at once, because they are readable. Copy never promises more than that, and says plainly that nobody, Studienbuch included, can bring the entries back.
 
 M1 builds three methods, each a wrapper of ADR 0026:

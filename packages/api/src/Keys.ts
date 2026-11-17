@@ -2,6 +2,7 @@ import { AccountKey, Wrapper } from "@stu/e2ee/schemas";
 import * as Rpc from "effect/rpc/Rpc";
 import * as RpcGroup from "effect/rpc/RpcGroup";
 import * as Schema from "effect/Schema";
+import { Accounts } from "./Accounts.ts";
 
 // An account's key chain and its recovery wrappers (recovery.md, section 7). They aren't sync
 // rows, because nobody but the account reads them, and the server holds public keys, signatures
@@ -123,10 +124,11 @@ export const Rpcs = RpcGroup.make(
   }),
   /**
    * A device that holds the root key adds a wrapper at the newest generation: its own device
-   * wrapper after an unlock, or a passkey or Notfallkarte, which need a fresh sign-in.
+   * wrapper after an unlock, or a passkey or Notfallkarte, which need a fresh sign-in. The card of
+   * an account without an address needs its `login` (`KeyStore.addWrapper`).
    */
   Rpc.make("Keys.addWrapper", {
-    payload: { wrapper: Sealed },
+    payload: { wrapper: Sealed, login: Schema.optional(Accounts.Login) },
     error: Schema.Union([SignedOut, Invalid, Stale, NotFresh]),
   }),
   /**

@@ -100,7 +100,7 @@ describe.skipIf(Postgres18.socket === null)("AccessCodes on PostgreSQL 18", () =
         const minted = yield* AccessCodes.mint({
           school,
           kind: "student",
-          maxUses: Option.some(1),
+          maxUses: 1,
         });
 
         const ben = yield* AccessCodes.reserve(minted.code);
@@ -134,11 +134,63 @@ describe.skipIf(Postgres18.socket === null)("AccessCodes on PostgreSQL 18", () =
     );
 
     it.effect(
+      "a sign-up without an address spends its use when it creates the account, once for two at once",
+      () =>
+        Effect.gen(function* () {
+          yield* Schools.publish(data);
+          const minted = yield* AccessCodes.mint({ school, kind: "student", maxUses: 1 });
+          const ada = yield* AccessCodes.reserve(minted.code);
+          const cem = yield* AccessCodes.reserve(minted.code);
+
+          const usable = [
+            yield* AccessCodes.usable(ada.token),
+            yield* AccessCodes.usable(cem.token),
+          ];
+
+          yield* SchoolTesting.account("ada");
+          yield* SchoolTesting.account("cem");
+
+          const claimed = [
+            yield* AccessCodes.claimSignUp(ada.token),
+            yield* AccessCodes.claimSignUp(cem.token),
+          ];
+
+          const [one, other] = yield* atOnce(
+            AccessCodes.admitSignedUp("ada", ada.token),
+            AccessCodes.admitSignedUp("cem", cem.token),
+          );
+
+          expect({
+            usable,
+            claimed,
+            one: one._tag === "Success" && Option.isSome(one.value),
+            other: other._tag === "Success" && Option.isNone(other.value),
+            ada: (yield* SchoolTesting.memberships("ada")).filter((line) =>
+              line.startsWith("school"),
+            ),
+            cem: yield* SchoolTesting.memberships("cem"),
+            stored: yield* uses(minted.id),
+            // Used up, so neither reservation lets anyone in any more.
+            after: [yield* AccessCodes.usable(ada.token), yield* AccessCodes.usable(cem.token)],
+          }).toEqual({
+            usable: [true, true],
+            claimed: [true, true],
+            one: true,
+            other: true,
+            ada: ["school am-see reader"],
+            cem: [],
+            stored: { uses: 1, reserved: 2 },
+            after: [false, false],
+          });
+        }),
+    );
+
+    it.effect(
       "admits through the confirming device's reservation, if this address carried it",
       () =>
         Effect.gen(function* () {
           yield* Schools.publish(data);
-          const code = yield* AccessCodes.mint({ school, kind: "student", maxUses: Option.none() });
+          const code = yield* AccessCodes.mint({ school, kind: "student", maxUses: 30 });
           const mine = yield* AccessCodes.reserve(code.code);
           const someone = yield* AccessCodes.reserve(code.code);
           yield* signUp("mia", mine.token);
@@ -164,7 +216,7 @@ describe.skipIf(Postgres18.socket === null)("AccessCodes on PostgreSQL 18", () =
         const minted = yield* AccessCodes.mint({
           school,
           kind: "student",
-          maxUses: Option.some(1),
+          maxUses: 1,
         });
 
         const { token } = yield* AccessCodes.reserve(minted.code);
@@ -205,7 +257,7 @@ describe.skipIf(Postgres18.socket === null)("AccessCodes on PostgreSQL 18", () =
 
           yield* Schools.publish(data);
 
-          const code = yield* AccessCodes.mint({ school, kind: "student", maxUses: Option.none() });
+          const code = yield* AccessCodes.mint({ school, kind: "student", maxUses: 30 });
           const spent = yield* AccessCodes.reserve(code.code);
 
           // A mistyped address, then the right one, which confirms and spends the reservation.
@@ -241,7 +293,7 @@ describe.skipIf(Postgres18.socket === null)("AccessCodes on PostgreSQL 18", () =
       Effect.gen(function* () {
         yield* Schools.publish(data);
 
-        const minted = yield* AccessCodes.mint({ school, kind: "student", maxUses: Option.none() });
+        const minted = yield* AccessCodes.mint({ school, kind: "student", maxUses: 30 });
         const { token } = yield* AccessCodes.reserve(minted.code);
         const claims = [];
 
@@ -266,7 +318,7 @@ describe.skipIf(Postgres18.socket === null)("AccessCodes on PostgreSQL 18", () =
     it.effect("refuses a code that is revoked, expired, used up or mistyped", () =>
       Effect.gen(function* () {
         yield* Schools.publish(data);
-        const once = yield* AccessCodes.mint({ school, kind: "student", maxUses: Option.some(1) });
+        const once = yield* AccessCodes.mint({ school, kind: "student", maxUses: 1 });
         const { token } = yield* AccessCodes.reserve(once.code);
         yield* signUp("tom", token);
         yield* AccessCodes.admitConfirmed("tom", Option.some(token));
@@ -274,7 +326,7 @@ describe.skipIf(Postgres18.socket === null)("AccessCodes on PostgreSQL 18", () =
         const revoked = yield* AccessCodes.mint({
           school,
           kind: "student",
-          maxUses: Option.none(),
+          maxUses: 30,
         });
 
         yield* AccessCodes.revoke(revoked.id);
@@ -282,7 +334,7 @@ describe.skipIf(Postgres18.socket === null)("AccessCodes on PostgreSQL 18", () =
         const expired = yield* AccessCodes.mint({
           school,
           kind: "student",
-          maxUses: Option.none(),
+          maxUses: 30,
           // The TestClock starts at 0, so this is past.
           expiresAt: Option.some(DateTime.toDateUtc(DateTime.makeUnsafe(-1))),
         });
@@ -299,7 +351,7 @@ describe.skipIf(Postgres18.socket === null)("AccessCodes on PostgreSQL 18", () =
           mistyped: yield* outcome(`${revoked.code.slice(0, -1)}0`),
           // Lower case and no hyphens still name the code.
           retyped: yield* Effect.flatMap(
-            AccessCodes.mint({ school, kind: "student", maxUses: Option.none() }),
+            AccessCodes.mint({ school, kind: "student", maxUses: 30 }),
             (fresh) => outcome(fresh.code.replaceAll("-", "").toLowerCase()),
           ),
         }).toEqual({

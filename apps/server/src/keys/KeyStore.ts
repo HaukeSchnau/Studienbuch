@@ -13,6 +13,8 @@ import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
+import { CardLogins } from "../auth/CardLogins.ts";
+import { FreshSignIn } from "../auth/FreshSignIn.ts";
 
 export * as KeyStore from "./KeyStore.ts";
 
@@ -169,6 +171,37 @@ const insertWrapper = Effect.fn("KeyStore.insertWrapper")(function* (
     values (${account}, ${statement.id}, ${seal.generation}, ${yield* sealText(seal)})
     on conflict (account_id, wrapper_id, generation) do nothing
   `;
+});
+
+/**
+ * Deletes the account's code wrappers of any other card than the statement's, with their seals.
+ * The same card saved twice derives the same public key, so its other wrappers stay.
+ */
+const retireOtherCards = Effect.fn("KeyStore.retireOtherCards")(function* (
+  account: string,
+  statement: Wrapper.Statement,
+) {
+  const sql = yield* SqlClient.SqlClient;
+
+  const codes = yield* sql<{
+    readonly id: string;
+    readonly statement: typeof statementJson.Encoded;
+  }>`
+    select id, statement from key_wrapper
+    where account_id = ${account} and kind = ${statement.kind} and id <> ${statement.id}
+  `;
+
+  const retired: Array<string> = [];
+
+  for (const code of codes) {
+    if (!sameBytes((yield* decodeStatement(code.statement)).publicKey, statement.publicKey)) {
+      retired.push(code.id);
+    }
+  }
+
+  if (retired.length > 0) {
+    yield* sql`delete from key_wrapper where account_id = ${account} and id in ${sql.in(retired)}`;
+  }
 });
 
 const boxJson = Schema.toCodecJson(SpaceKey.KeyBox);
@@ -353,20 +386,18 @@ export const addWrapper = Effect.fn("KeyStore.addWrapper")(function* (
   account: string,
   session: string,
   wrapper: Keys.Sealed,
+  login: Option.Option<string>,
 ) {
   const sql = yield* SqlClient.SqlClient;
   const { statement } = wrapper;
 
   return yield* sql.withTransaction(
     Effect.gen(function* () {
-      if (statement.kind !== Wrapper.kindByte.device) {
-        const [fresh] = yield* sql`
-          select 1 from auth_session
-          where id = ${session} and "userId" = ${account}
-            and "createdAt" > now() - make_interval(mins => ${Keys.freshSignInMinutes})
-        `;
-
-        if (fresh === undefined) return yield* new Keys.NotFresh();
+      if (
+        statement.kind !== Wrapper.kindByte.device &&
+        !(yield* FreshSignIn.isFresh(account, session))
+      ) {
+        return yield* new Keys.NotFresh();
       }
 
       const newest = yield* lockNewest(account);
@@ -391,6 +422,17 @@ export const addWrapper = Effect.fn("KeyStore.addWrapper")(function* (
         `;
 
         if (count >= Keys.wrappersPerPasskey) return yield* new Keys.Invalid({ reason: "limit" });
+      }
+
+      // The card of an account without an address signs in with its login and replaces the old
+      // card, login and wrappers. An email account's card never signs in, so its login is ignored.
+      if (statement.kind === Wrapper.kindByte.code && !(yield* CardLogins.hasAddress(account))) {
+        // The app one release back sends no login, and knows no newer reason than `statement`.
+        if (Option.isNone(login) || !(yield* CardLogins.replace(account, login.value))) {
+          return yield* new Keys.Invalid({ reason: "statement" });
+        }
+
+        yield* retireOtherCards(account, statement);
       }
 
       yield* insertWrapper(account, wrapper, session);

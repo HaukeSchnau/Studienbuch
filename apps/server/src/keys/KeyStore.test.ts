@@ -4,11 +4,13 @@ import { AccountKey, SpaceKey, Wrapper } from "@stu/e2ee";
 import { TestCrypto } from "@stu/e2ee/testing";
 import { Postgres18 } from "@stu/sync/testing";
 import * as Effect from "effect/Effect";
+import * as Base64Url from "effect/encoding/Base64Url";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Redacted from "effect/Redacted";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
+import { CardLogins } from "../auth/CardLogins.ts";
 import { SchoolTesting } from "../school/SchoolTesting.ts";
 import { KeyStore } from "./KeyStore.ts";
 
@@ -77,6 +79,31 @@ const card = (account: string, keys: AccountKey.Keys) =>
     ),
     (created) => new Keys.Sealed(created),
   );
+
+/** Another Notfallkarte of the account, from the card `fill` makes, saved in `place`. */
+const cardFrom = (
+  id: string,
+  fill: number,
+  keys: AccountKey.Keys,
+  place: "card" | "passwordManager" = "card",
+) =>
+  Effect.map(
+    Wrapper.create({ id, kind: "code", place, credentialId: "" }, secret(fill, 16), keys),
+    (created) => new Keys.Sealed(created),
+  );
+
+/** An account without an address, as a sign-up without one leaves it. */
+const withoutAddress = (id: string) =>
+  Effect.flatMap(
+    SqlClient.SqlClient,
+    (sql) => sql`
+      insert into auth_user (id, name, email, "emailVerified")
+      values (${id}, '', ${`${id}x9@konto.placeholder.invalid`}, false)
+    `,
+  );
+
+/** A card's login as the device sends it: 32 bytes, base64url. */
+const loginOf = (fill: number) => Base64Url.encode(new Uint8Array(32).fill(fill));
 
 /** A session of the account that signed in `minutes` ago. */
 const signedIn = (account: string, minutes: number) =>
@@ -180,9 +207,12 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
 
           const laptop = yield* device("mia-laptop", 51, mia.keys);
 
-          const refused = yield* Effect.flip(KeyStore.addWrapper("mia", old, notfallkarte));
-          yield* KeyStore.addWrapper("mia", old, laptop);
-          yield* KeyStore.addWrapper("mia", fresh, notfallkarte);
+          const refused = yield* Effect.flip(
+            KeyStore.addWrapper("mia", old, notfallkarte, Option.none()),
+          );
+
+          yield* KeyStore.addWrapper("mia", old, laptop, Option.none());
+          yield* KeyStore.addWrapper("mia", fresh, notfallkarte, Option.none());
 
           expect({
             refused: refused._tag,
@@ -214,6 +244,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
             "ben",
             yield* signedIn("ben", 0),
             yield* card("ben", ben.keys),
+            Option.none(),
           );
 
           // A fetch from yesterday no longer counts.
@@ -259,6 +290,101 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
         }),
     );
     it.effect(
+      "signs in with the card of an account without an address, and a new card retires the old one's login and wrappers",
+      () =>
+        Effect.gen(function* () {
+          const sql = yield* SqlClient.SqlClient;
+          yield* withoutAddress("noa");
+          const noa = yield* firstDevice("noa", 100);
+          const session = yield* signedIn("noa", 0);
+          const first = Option.some({ wrapper: noa.device, session });
+          yield* sql.withTransaction(KeyStore.publishFirst("noa", noa.record, first));
+
+          const add = (wrapper: Keys.Sealed, login: Option.Option<string>) =>
+            KeyStore.addWrapper("noa", session, wrapper, login);
+
+          const owner = (fill: number) => CardLogins.owner(loginOf(fill));
+
+          const card1 = yield* cardFrom("noa-card-1", 101, noa.keys);
+          // The app one release back sends no login: such a card couldn't sign in.
+          const withoutLogin = yield* Effect.flip(add(card1, Option.none()));
+          yield* add(card1, Option.some(loginOf(1)));
+          // The same card in the password manager is the same card.
+          yield* add(
+            yield* cardFrom("noa-card-1-saved", 101, noa.keys, "passwordManager"),
+            Option.some(loginOf(1)),
+          );
+
+          const firstCard = {
+            owner: yield* owner(1),
+            wrappers: (yield* KeyStore.state("noa")).wrappers.length,
+          };
+
+          yield* add(yield* cardFrom("noa-card-2", 102, noa.keys), Option.some(loginOf(2)));
+
+          // Another account can't take Noa's card, nor an email account's card sign in.
+          yield* withoutAddress("eli");
+          const eli = yield* firstDevice("eli", 110);
+          const eliSession = yield* signedIn("eli", 0);
+          yield* sql.withTransaction(
+            KeyStore.publishFirst(
+              "eli",
+              eli.record,
+              Option.some({ wrapper: eli.device, session: eliSession }),
+            ),
+          );
+
+          const taken = yield* Effect.flip(
+            KeyStore.addWrapper(
+              "eli",
+              eliSession,
+              yield* cardFrom("eli-card", 111, eli.keys),
+              Option.some(loginOf(2)),
+            ),
+          );
+
+          yield* SchoolTesting.account("max");
+          const max = yield* firstDevice("max", 120);
+          const maxSession = yield* signedIn("max", 0);
+          yield* sql.withTransaction(
+            KeyStore.publishFirst(
+              "max",
+              max.record,
+              Option.some({ wrapper: max.device, session: maxSession }),
+            ),
+          );
+          yield* KeyStore.addWrapper(
+            "max",
+            maxSession,
+            yield* card("max", max.keys),
+            Option.some(loginOf(3)),
+          );
+
+          expect({
+            withoutLogin:
+              withoutLogin._tag === "Keys.Invalid" ? withoutLogin.reason : withoutLogin._tag,
+            firstCard,
+            card1: yield* owner(1),
+            card2: yield* owner(2),
+            wrappers: (yield* KeyStore.state("noa")).wrappers.map(
+              (wrapper) => wrapper.statement.id,
+            ),
+            seals: (yield* sql`select 1 from key_wrapper_seal where account_id = 'noa'`).length,
+            taken: taken._tag === "Keys.Invalid" ? taken.reason : taken._tag,
+            email: yield* owner(3),
+          }).toEqual({
+            withoutLogin: "statement",
+            firstCard: { owner: Option.some("noa"), wrappers: 3 },
+            card1: Option.none(),
+            card2: Option.some("noa"),
+            wrappers: ["noa-device", "noa-card-2"],
+            seals: 2,
+            taken: "statement",
+            email: Option.none(),
+          });
+        }),
+    );
+    it.effect(
       "names the session that made a device wrapper, takes one per session, and keeps wrapper ids per account",
       () =>
         Effect.gen(function* () {
@@ -271,8 +397,12 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
           const first = Option.some({ wrapper: ida.device, session: phone });
           yield* sql.withTransaction(KeyStore.publishFirst("ida", ida.record, first));
           const second = yield* device("ida-laptop", 72, ida.keys);
-          const refused = yield* Effect.flip(KeyStore.addWrapper("ida", phone, second));
-          yield* KeyStore.addWrapper("ida", laptop, second);
+
+          const refused = yield* Effect.flip(
+            KeyStore.addWrapper("ida", phone, second, Option.none()),
+          );
+
+          yield* KeyStore.addWrapper("ida", laptop, second, Option.none());
 
           // Another account may pick the same id for its own wrapper.
           const jan = yield* firstDevice("jan", 73);
@@ -326,7 +456,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
             }),
           });
 
-          const short = yield* Effect.flip(KeyStore.addWrapper("kai", session, cut));
+          const short = yield* Effect.flip(KeyStore.addWrapper("kai", session, cut, Option.none()));
           const keys1 = yield* AccountKey.derive(secret(81), "kai", 1);
           const record1 = yield* AccountKey.record(keys1, { keys: kai.keys, record: kai.record });
 
