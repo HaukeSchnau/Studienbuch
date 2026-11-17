@@ -204,13 +204,16 @@ describe("Account", () => {
       const api = AuthApiTesting.layer({
         signUp: () => Effect.void,
         confirmEmail: (email, _code, password, reservation) =>
-          Effect.as(
-            Ref.update(sent, (made) => [
-              ...made,
-              `${email} ${Redacted.value(password)} ${Option.getOrElse(reservation, () => "none")}`,
-            ]),
-            signedIn(email, `token-${email}`),
-          ),
+          // The server takes only a password a sign-up of the address chose (D88).
+          Redacted.value(password).endsWith("-typo")
+            ? Effect.fail(new AuthApi.Refused({ status: 401, code: "INVALID_EMAIL_OR_PASSWORD" }))
+            : Effect.as(
+                Ref.update(sent, (made) => [
+                  ...made,
+                  `${email} ${Redacted.value(password)} ${Option.getOrElse(reservation, () => "none")}`,
+                ]),
+                signedIn(email, `token-${email}`),
+              ),
       });
 
       // Lena signs up and confirms in one run, with the password she signed up with.
@@ -243,13 +246,17 @@ describe("Account", () => {
           const before = yield* kept;
           const asked = yield* Effect.flip(Account.confirmEmail("tom@example.org", "654321"));
 
+          const typo = yield* Effect.flip(
+            Account.confirmEmail("tom@example.org", "654321", Option.some("toms-passwort-typo")),
+          );
+
           yield* Account.confirmEmail(
             "tom@example.org",
             "654321",
             Option.some("toms-passwort-456"),
           );
 
-          return { before, asked: asked.reason };
+          return { before, asked: asked.reason, typo: typo.reason };
         }),
         api,
       );
@@ -261,13 +268,45 @@ describe("Account", () => {
         [
           Option.none(),
           Option.none(),
-          { before: Option.some(["tom@example.org", "am-see", false]), asked: "password-needed" },
+          {
+            before: Option.some(["tom@example.org", "am-see", false]),
+            asked: "password-needed",
+            typo: "password-mismatch",
+          },
           Option.none(),
           [
             "lena@example.org lenas-passwort-123 am-see",
             "tom@example.org toms-passwort-456 am-see",
           ],
         ],
+      );
+    }),
+  );
+
+  // The server would answer some of these with an error of its own, and one not at all.
+  it.effect("refuses an address that can't be one before asking the server", () =>
+    Effect.gen(function* () {
+      const run = yield* restarts;
+      const api = AuthApiTesting.layer({});
+
+      const addresses = ["lena.qa-t1", "lena@", "lena@example"];
+
+      const reason = <A, R>(effect: Effect.Effect<A, Account.Problem, R>) =>
+        Effect.map(Effect.flip(effect), (problem) => problem.reason);
+
+      const refused = yield* run(
+        Effect.forEach(addresses, (email) =>
+          Effect.all([
+            reason(Account.signUp(email, "lenas-passwort-123", soon)),
+            reason(Account.requestPasswordReset(email)),
+          ]),
+        ),
+        api,
+      );
+
+      assert.deepStrictEqual(
+        refused,
+        addresses.map(() => ["invalid-email", "invalid-email"]),
       );
     }),
   );

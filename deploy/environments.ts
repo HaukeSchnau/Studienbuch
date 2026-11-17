@@ -19,7 +19,7 @@ export interface Environment {
    */
   readonly storage: "previews" | "beta" | "prod";
   readonly blobPrefix: string;
-  /** The service's memory limit. At most 3 previews run at a time. */
+  /** The service's memory limit. At most six previews run at a time. */
   readonly memory: string;
   /** Only a preview's database goes with it; the host dumps it first. */
   readonly dropDatabase: boolean;
@@ -92,8 +92,8 @@ export const of = (stage: string): Option.Option<Environment> => {
   return pr === undefined ? Option.none() : Option.some(preview(Number(pr)));
 };
 
-/** At most three previews run at a time (ADR 0007). */
-const maxPreviews = 3;
+/** At most six previews run at a time (ADR 0007). */
+const maxPreviews = 6;
 
 /**
  * Why a new preview can't start beside the stages that have state, or none. A preview that runs

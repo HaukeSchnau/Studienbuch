@@ -27,7 +27,10 @@ export interface FieldProps extends Omit<TextInputProps, "style"> {
   readonly hint?: string | undefined;
   /** "486/500" at the hint's right: how much of a limit the text uses. */
   readonly counter?: { readonly count: number; readonly limit: number } | undefined;
-  /** Outlines the field and turns the hint red, for a value that can't be saved. The hint says why. */
+  /**
+   * Outlines the field in red, for a value that can't be saved. The form's error box says why, so
+   * the hint keeps its own colour.
+   */
   readonly invalid?: boolean;
   /**
    * The old web's grey pill with a blue ring on focus, for the sign-in and setup cards. The label
@@ -62,7 +65,6 @@ export function Field({
   const hintId = useId();
   const readOnly = input.readOnly === true || input.editable === false;
   const edge = invalid ? color.danger : focus.focused ? color.accent : color.hairline;
-  const hintColor = invalid ? color.danger : color.inkSoft;
 
   return (
     <View style={[styles.field, pill ? styles.pillField : null]}>
@@ -125,13 +127,13 @@ export function Field({
             id={hintId}
             aria-live="polite"
             variant="footnote"
-            weight={pill ? "regular" : invalid ? "bold" : "medium"}
-            style={[styles.hintText, pill ? styles.pillHint : null, { color: hintColor }]}
+            weight={pill ? "regular" : "medium"}
+            style={[styles.hintText, pill ? styles.pillHint : null, { color: color.inkSoft }]}
           >
             {hint}
           </Text>
           {counter === undefined ? null : (
-            <Text variant="footnote" weight="medium" style={{ color: hintColor }}>
+            <Text variant="footnote" weight="medium" style={{ color: color.inkSoft }}>
               {`${String(counter.count)}/${String(counter.limit)}`}
             </Text>
           )}

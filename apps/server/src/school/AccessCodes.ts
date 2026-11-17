@@ -5,6 +5,7 @@
  */
 import { Access as Api } from "@stu/api/Access";
 import { School } from "@stu/core";
+import * as Arr from "effect/Array";
 import * as Crypto from "effect/Crypto";
 import * as DateTime from "effect/DateTime";
 import * as Duration from "effect/Duration";
@@ -171,6 +172,14 @@ export const reserve = Effect.fn("AccessCodes.reserve")(function* (typed: string
     values (${code.id}, ${tokenHash}, ${at(expiresAt)})
   `;
 
+  // A lapsed reservation confirms nothing, so each redemption clears the passwords that sign-ups
+  // with lapsed reservations chose. On a quiet server they stay until the next redemption.
+  yield* sql`
+    update access_sign_up s set password_hash = null
+    from access_reservation r
+    where r.id = s.reservation_id and s.password_hash is not null and r.expires_at <= ${at(now)}
+  `;
+
   return { token, schoolName: code.schoolName ?? "", kind: code.kind, expiresAt };
 });
 
@@ -223,21 +232,53 @@ export const releaseSignUp = Effect.fn("AccessCodes.releaseSignUp")(function* (t
 
 /**
  * Notes the reservation a sign-up for `email` carried, beside those of earlier sign-ups for that
- * address. A confirmed address keeps its school.
+ * address, with the hash of the password it chose. Signing up again with the same reservation
+ * replaces that password, as the device holding the reservation then holds the new one. A
+ * confirmed address keeps its school.
  */
 export const rememberSignUp = Effect.fn("AccessCodes.rememberSignUp")(function* (
   token: string,
   email: string,
+  passwordHash: Option.Option<string>,
 ) {
   const sql = yield* SqlClient.SqlClient;
 
   yield* sql`
-    insert into access_sign_up (account_id, reservation_id)
-    select u.id, r.id from access_reservation r, auth_user u
+    insert into access_sign_up (account_id, reservation_id, password_hash)
+    select u.id, r.id, ${Option.getOrNull(passwordHash)} from access_reservation r, auth_user u
     where r.token_hash = ${yield* digest(token)} and lower(u.email) = lower(${email})
       and not u."emailVerified"
-    on conflict do nothing
+    on conflict (account_id, reservation_id) do update set password_hash = excluded.password_hash
   `;
+});
+
+/**
+ * The hash of the password the sign-ups with `token` chose for the account, which the
+ * confirmation that carries `token` must match. None when no sign-up with it kept one.
+ */
+export const signUpPassword = Effect.fn("AccessCodes.signUpPassword")(function* (
+  account: string,
+  token: string,
+) {
+  const sql = yield* SqlClient.SqlClient;
+
+  const rows = yield* sql<{ readonly passwordHash: string }>`
+    select s.password_hash as "passwordHash"
+    from access_sign_up s join access_reservation r on r.id = s.reservation_id
+    where s.account_id = ${account} and r.token_hash = ${yield* digest(token)}
+      and s.password_hash is not null
+  `;
+
+  return Option.map(Arr.head(rows), (row) => row.passwordHash);
+});
+
+/** Drops the passwords the account's sign-ups chose, so its confirmation sets the one typed. */
+export const forgetSignUpPasswords = Effect.fn("AccessCodes.forgetSignUpPasswords")(function* (
+  account: string,
+) {
+  const sql = yield* SqlClient.SqlClient;
+
+  yield* sql`update access_sign_up set password_hash = null where account_id = ${account}`;
 });
 
 /**
@@ -312,12 +353,16 @@ export const admitConfirmed = Effect.fn("AccessCodes.admitConfirmed")(function* 
         }),
       );
 
-      // An account that had access already used up nothing.
+      // An account that had access already used up nothing. A spent reservation confirms no
+      // other sign-up, so the passwords they chose go.
       if (Option.isSome(admitted) && admitted.value.created) {
         yield* sql`update access_code set uses = uses + 1 where id = ${held.id}`;
         yield* sql`
           update access_reservation set spent_at = ${now}, spent_by = ${account}
           where id = ${held.reservation}
+        `;
+        yield* sql`
+          update access_sign_up set password_hash = null where reservation_id = ${held.reservation}
         `;
       }
 

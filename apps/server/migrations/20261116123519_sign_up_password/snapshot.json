@@ -1,0 +1,37 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "3beee407-7193-4c83-a46f-54c359f66249",
+  "prevIds": ["a52a1272-c055-42e8-b4e0-1470af2ea893"],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": ["column", "public", "access_sign_up", "password_hash"],
+      "writes": [
+        "s|col|public.access_sign_up.password_hash",
+        "n|col|public.access_sign_up.password_hash",
+        "e|col|public.access_sign_up.password_hash"
+      ],
+      "reads": ["n|tbl|public.access_sign_up", "n|sch|public"]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "access_sign_up",
+        "name": "password_hash",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    }
+  ]
+}
