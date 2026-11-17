@@ -35,13 +35,10 @@ const encodeEngine = Schema.encodeEffect(Schema.toCodecJson(Refusal.Engine));
 
 const toReason = Schema.decodeUnknownEffect(Refusal.Reason);
 
-/** A refusal from a JSON value that carries `_tag`, as every refusal codec encodes one. */
-export const reason = (json: Schema.Json) => Effect.orDie(toReason(json));
-
 /** A refusal by the engine itself. */
 export const refuse = (error: Refusal.Engine) =>
   encodeEngine(error).pipe(
-    Effect.flatMap(reason),
+    Effect.flatMap(toReason),
     Effect.orDie,
     Effect.map((encoded) => Refused({ reason: encoded })),
   );

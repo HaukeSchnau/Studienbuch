@@ -4,15 +4,15 @@ import {
   NotebookProfile,
   SchoolClass,
   type CourseOffering,
-  type Enrollment,
+  Enrollment,
   type School,
 } from "@stu/core";
 import { RefusalText } from "@stu/domain-ui/refusal/RefusalText";
 import { AuthHeading } from "@stu/ui/AuthHeading";
 import { Button } from "@stu/ui/Button";
-import { Checkbox } from "@stu/ui/Checkbox";
 import { Field } from "@stu/ui/Field";
 import { Link } from "@stu/ui/Link";
+import { PillChoice } from "@stu/ui/PillChoice";
 import * as Option from "effect/Option";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Schema from "effect/Schema";
@@ -21,7 +21,7 @@ import { Keyboard, StyleSheet, View } from "react-native";
 import { AuthShell } from "../../ui/AuthShell.tsx";
 import { Form, Lead, ProblemBox } from "../account/AccountForm.tsx";
 import { SignOutButton } from "../account/SignOutButton.tsx";
-import { CourseTiles, PillChoice } from "./Choices.tsx";
+import { CourseTiles } from "./Choices.tsx";
 import { Onboarding } from "./Onboarding.ts";
 import { OnboardingState } from "./OnboardingState.ts";
 
@@ -168,9 +168,10 @@ function WhoStep({
             }
           />
         ) : null}
-        <Checkbox
-          label="Ich bin volljährig."
-          checked={answers.adult}
+        <PillChoice
+          label="Bist du volljährig?"
+          options={adultAnswers}
+          value={Option.some(answers.adult)}
           onChange={(adult) => save({ ...draft, adult })}
         />
         {canChoose ? (
@@ -192,6 +193,12 @@ function WhoStep({
   );
 }
 
+/** Asked as a question with a visible answer, so nobody reads it as consent (D87). */
+const adultAnswers = [
+  { value: true, label: "Ja" },
+  { value: false, label: "Nein" },
+];
+
 function CoursesStep({ accountId, snapshot, draft }: Omit<StepsProps, "start">) {
   const answers = answersOf(snapshot, draft);
   const save = useAtomSet(OnboardingState.draft(accountId));
@@ -201,15 +208,13 @@ function CoursesStep({ accountId, snapshot, draft }: Omit<StepsProps, "start">) 
     onSome: ([term, gradeLevel]) => {
       const classes = Onboarding.classesOf(term, gradeLevel);
 
-      const chooser = {
-        termId: term.id,
-        gradeLevel,
-        classId: Option.getOrUndefined(answers.classId),
-      };
-
-      const electives = Onboarding.electives(term, chooser);
+      const chooser = Onboarding.chooser(term, gradeLevel, answers.classId);
+      const groups = Onboarding.electiveGroups(term, chooser);
       const chosen = answers.chosen(term, chooser);
-      const ready = classes.length === 0 || Option.isSome(answers.classId);
+
+      const ready =
+        Onboarding.classAnswered(term, chooser) &&
+        Enrollment.unanswered(term.offerings, chooser, chosen).length === 0;
 
       return (
         <>
@@ -224,16 +229,16 @@ function CoursesStep({ accountId, snapshot, draft }: Omit<StepsProps, "start">) 
               <PillChoice
                 label="Klasse"
                 options={classes.map((each) => ({ value: each.id, label: each.name }))}
-                value={answers.classId}
+                value={Option.fromNullishOr(chooser.classId)}
                 onChange={(id: string) => save({ ...draft, classId: id, chosen: null })}
               />
             )}
-            {electives.length === 0 ? null : (
+            {groups.length === 0 ? null : (
               <CourseTiles
-                electives={electives}
+                groups={groups}
                 chosen={chosen}
-                onToggle={(elective) =>
-                  save({ ...draft, chosen: [...Onboarding.toggle(chosen, elective, electives)] })
+                onPress={(group, elective) =>
+                  save({ ...draft, chosen: [...Onboarding.choose(chosen, group, elective)] })
                 }
               />
             )}
@@ -250,7 +255,7 @@ function CoursesStep({ accountId, snapshot, draft }: Omit<StepsProps, "start">) 
                 termId: term.id,
                 gradeLevel,
                 classId: chooser.classId,
-                courseIds: Onboarding.courseIds(term, chooser, chosen),
+                courseIds: Enrollment.courses(term.offerings, chooser, chosen),
               }}
             />
             <View style={styles.center}>

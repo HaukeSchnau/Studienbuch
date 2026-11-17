@@ -17,7 +17,7 @@ import { Link } from "../simulation/Link.ts";
 import { Postgres18 } from "../testing/Postgres18.ts";
 import { Connections } from "./Connections.ts";
 import { Contract } from "./Contract.ts";
-import { Fixture } from "./Fixture.ts";
+import { Fixture } from "../testing/Fixture.ts";
 import type { Ports } from "./Ports.ts";
 import { Pull } from "./Pull.ts";
 import { Revocations } from "./Revocations.ts";

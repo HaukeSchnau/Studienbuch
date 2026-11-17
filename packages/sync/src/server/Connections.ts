@@ -15,8 +15,10 @@ import * as Layer from "effect/Layer";
 import * as NetAddress from "effect/net/NetAddress";
 import * as Option from "effect/Option";
 import * as Random from "effect/Random";
+import * as RcMap from "effect/RcMap";
 import type * as RpcMessage from "effect/rpc/RpcMessage";
 import * as RpcServer from "effect/rpc/RpcServer";
+import * as Schema from "effect/Schema";
 import type * as Scope from "effect/Scope";
 import * as Semaphore from "effect/Semaphore";
 import * as Socket from "effect/socket/Socket";
@@ -52,6 +54,8 @@ const recheck = { least: Duration.minutes(4), most: Duration.minutes(6) };
 /** How long a shutdown waits for its connections to close before the server drains. */
 const shutdownGrace = Duration.seconds(2);
 
+const updateRequired = Schema.is(Protocol.UpdateRequired);
+
 export class Service extends Context.Service<
   Service,
   {
@@ -73,6 +77,32 @@ export class Service extends Context.Service<
   }
 >()("@stu/sync/server/Connections") {}
 
+/**
+ * Effect's RPC socket protocol on `socket` alone, in the WebSocket route's framing, and `ended`,
+ * which completes when the socket closes. Effect 4.0.7 keeps its one-socket constructor
+ * (`makeSocketProtocol`) private; once it exports one, this one-socket `SocketServer` can go.
+ */
+export const socketProtocol = Effect.fnUntraced(function* (socket: Socket.Socket) {
+  const ended = yield* Deferred.make<void>();
+
+  const protocol = yield* RpcServer.makeProtocolSocketServer.pipe(
+    Effect.provideService(
+      SocketServer.SocketServer,
+      SocketServer.SocketServer.of({
+        address: NetAddress.unixPathAddress(Connection.socketPath),
+        run: (handler) =>
+          Effect.andThen(
+            Effect.ensuring(Effect.orDie(handler(socket)), Deferred.succeed(ended, undefined)),
+            Effect.never,
+          ),
+      }),
+    ),
+    Effect.provide(Protocol.serialization),
+  );
+
+  return { protocol, ended };
+});
+
 export const make = Effect.fn("Connections.make")(function* (minimum: Contract.Minimum) {
   const push = yield* Push.Service;
   const pull = yield* Pull.Service;
@@ -91,27 +121,7 @@ export const make = Effect.fn("Connections.make")(function* (minimum: Contract.M
    * One push or pull at a time per session, shared by its connections, so a session's sockets
    * take one pool connection between them whatever client ids they push for.
    */
-  const turns = new Map<string, { readonly semaphore: Semaphore.Semaphore; holders: number }>();
-
-  const turnOf = (sessionId: string) =>
-    Effect.acquireRelease(
-      Effect.sync(() => {
-        const turn = turns.get(sessionId) ?? { semaphore: Semaphore.makeUnsafe(1), holders: 0 };
-        turn.holders += 1;
-        turns.set(sessionId, turn);
-
-        return turn.semaphore;
-      }),
-      () =>
-        Effect.sync(() => {
-          const turn = turns.get(sessionId);
-
-          if (turn === undefined) return;
-          turn.holders -= 1;
-
-          if (turn.holders === 0) turns.delete(sessionId);
-        }),
-    );
+  const turns = yield* RcMap.make({ lookup: (_sessionId: string) => Semaphore.make(1) });
 
   let shuttingDown = false;
 
@@ -162,9 +172,9 @@ export const make = Effect.fn("Connections.make")(function* (minimum: Contract.M
     socket: Socket.Socket,
     headers?: Headers.Headers,
   ) {
-    const socketEnded = yield* Deferred.make<void>();
+    const { protocol: server, ended: socketEnded } = yield* socketProtocol(socket);
     const closing = yield* Deferred.make<number>();
-    const turn = yield* turnOf(session.sessionId);
+    const turn = yield* RcMap.get(turns, session.sessionId);
     /** Requests whose answer ends the connection, by request id, with the close code. */
     const closeAfter = new Map<string, number>();
     let subscribed = false;
@@ -189,20 +199,6 @@ export const make = Effect.fn("Connections.make")(function* (minimum: Contract.M
       { discard: true },
     );
 
-    const oneSocket = SocketServer.SocketServer.of({
-      address: NetAddress.unixPathAddress(Connection.socketPath),
-      run: (handler) =>
-        Effect.andThen(
-          Effect.ensuring(Effect.orDie(handler(socket)), Deferred.succeed(socketEnded, undefined)),
-          Effect.never,
-        ),
-    });
-
-    const server = yield* RpcServer.makeProtocolSocketServer.pipe(
-      Effect.provideService(SocketServer.SocketServer, oneSocket),
-      Effect.provide(Protocol.serialization),
-    );
-
     // The close frame follows the error it explains, so a device that reads one has the other.
     const protocol = RpcServer.Protocol.of({
       ...server,
@@ -215,16 +211,13 @@ export const make = Effect.fn("Connections.make")(function* (minimum: Contract.M
         }),
     });
 
-    const answer = <A, E extends { readonly _tag: string }>(
-      requestId: RpcMessage.RequestId,
-      work: Effect.Effect<A, E>,
-    ) =>
+    const answer = <A, E>(requestId: RpcMessage.RequestId, work: Effect.Effect<A, E>) =>
       turn
         .withPermits(1)(work)
         .pipe(
           Effect.tapError((error) =>
             Effect.sync(() => {
-              if (error._tag === "Sync.UpdateRequired") {
+              if (updateRequired(error)) {
                 closeAfter.set(String(requestId), Connection.CloseCode.updateRequired);
               }
             }),

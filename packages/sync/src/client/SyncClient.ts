@@ -11,6 +11,7 @@
  */
 import type { AccountKey } from "@stu/e2ee";
 import { CryptoSuite, SealedRow } from "@stu/e2ee";
+import * as Arr from "effect/Array";
 import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
@@ -76,7 +77,7 @@ export type MutateError<E> =
   | Refusal.InvalidArgs
   | Refusal.TooLarge
   | Refusal.BadEnvelope
-  | Sealing.Unreadable;
+  | Refusal.Unreadable;
 
 export interface Status {
   /** Whether the engine has a connection to the server. */
@@ -156,13 +157,32 @@ export class Service extends Context.Service<Service, Interface>()("@stu/sync/cl
 export const keys = DeviceSchema.keys;
 
 /** The device's refused commands, oldest first. */
-export const refusals: SyncQuery.SyncQuery<void, Outbox.Rejected, SqlError.SqlError> = {
+export const refusals: SyncQuery.SyncQuery<
+  void,
+  ReadonlyArray<Outbox.Rejected>,
+  SqlError.SqlError
+> = {
   keys: [keys.refusals],
   run: () => Outbox.rejected,
 };
 
+/** The newest refused command of the mutator named `mutator`, for a screen that shows one. */
+export const latestRefusal: SyncQuery.SyncQuery<
+  string,
+  Option.Option<Outbox.Rejected>,
+  SqlError.SqlError
+> = {
+  keys: [keys.refusals],
+  run: (mutator) =>
+    Effect.map(Outbox.rejected, (all) => Arr.findLast(all, (each) => each.name === mutator)),
+};
+
 /** The commands waiting for the server, oldest first, as the Sync Lab lists them. */
-export const pending: SyncQuery.SyncQuery<void, Outbox.Command, SqlError.SqlError> = {
+export const pending: SyncQuery.SyncQuery<
+  void,
+  ReadonlyArray<Outbox.Command>,
+  SqlError.SqlError
+> = {
   keys: [keys.outbox],
   run: () => Outbox.pending,
 };
@@ -182,7 +202,7 @@ const decodeSynced = Schema.decodeUnknownEffect(Schema.Array(SyncedSpace));
 /** The spaces the account reads as of the last pull, apart from the connection's state. */
 export const spaces: SyncQuery.SyncQuery<
   void,
-  typeof SyncedSpace.Type,
+  ReadonlyArray<typeof SyncedSpace.Type>,
   SqlError.SqlError | Schema.SchemaError
 > = {
   keys: [keys.spaces],
@@ -294,7 +314,7 @@ export const make = Effect.fnUntraced(function* (
   /**
    * Runs one command on the device's rows and queues it, inside the caller's transaction. The
    * declared spaces must be valid ids the device knows, the mutator must succeed, and the
-   * account's role must allow each table it wrote in each space it wrote.
+   * account's role must allow each row it wrote (`Sync.mayWrite`), as the server checks.
    */
   const queue = Effect.fnUntraced(function* <E>(
     mutator: Sync.AnyMutator,
@@ -336,9 +356,9 @@ export const make = Effect.fnUntraced(function* (
         return yield* Effect.die(`${mutator.name} wrote ${row.space}, which it doesn't declare`);
       }
 
-      const roles = definition.byName.tables.get(row.table)?.writableBy[space.kind] ?? [];
-
-      if (!roles.includes(space.role)) return yield* new Refusal.NotAllowed({ space: row.space });
+      if (!Sync.mayWrite(definition, space.role, space.kind, row.table)) {
+        return yield* new Refusal.NotAllowed({ space: row.space });
+      }
     }
 
     // A sealed command keeps its rows as drafts for the push, which seals them. The server checks
@@ -380,8 +400,10 @@ export const make = Effect.fnUntraced(function* (
   });
 
   /**
-   * Runs `effect` in one transaction, then invalidates the tables it changed and reports how many
-   * commands wait, as counted in that transaction.
+   * Runs `effect` in one transaction, invalidates the tables it returns in one call, and reports
+   * how many commands wait. The tables come back as a value: the transaction's `Reactivity` defers
+   * each `invalidate` to after the commit, one call each and outside any `withBatch`, and the
+   * engine's own instance would fire mid-transaction. A returned value refreshes once, afterwards.
    */
   const commit = <A extends { readonly tables: Iterable<string> }, E>(
     effect: Effect.Effect<A, E, SqlClient.SqlClient>,

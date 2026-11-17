@@ -11,7 +11,7 @@ import * as Schema from "effect/Schema";
 import { Command } from "../protocol/Command.ts";
 import { Inspect } from "../protocol/Inspect.ts";
 import { Postgres18 } from "../testing/Postgres18.ts";
-import { Fixture } from "./Fixture.ts";
+import { Fixture } from "../testing/Fixture.ts";
 import { Inspection } from "./Inspection.ts";
 import { Push } from "./Push.ts";
 import { SyncServer } from "./SyncServer.ts";

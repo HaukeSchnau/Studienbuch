@@ -8,6 +8,7 @@ import type * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Redacted from "effect/Redacted";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
@@ -50,6 +51,15 @@ export type Status = Data.TaggedEnum<{
 }>;
 
 export const Status = Data.taggedEnum<Status>();
+
+/**
+ * Whether the device can read the notebook: `None` only while the status loads. A status that
+ * failed counts as locked, so the screens offer "Notizbuch entsperren", which reads it again.
+ */
+export const unlocked = (status: AsyncResult.AsyncResult<Status, unknown>) =>
+  AsyncResult.isInitial(status)
+    ? Option.none()
+    : Option.some(Option.exists(AsyncResult.value(status), (now) => now._tag === "Unlocked"));
 
 export const Reason = Schema.Literals([
   "typo",
@@ -615,4 +625,25 @@ export const summary = Effect.gen(function* () {
   }
 
   return { secured: methods.some((each) => !each.thisDevice), methods } satisfies Summary;
+});
+
+/**
+ * What signing out does to the notebook, which goes with this device's key: `lost` when no other
+ * way in survives the device, `unknown` while the server can't say, else `kept`. A device without
+ * the key loses nothing, unless its first key waits as `pending-key` (the server may hold it). The
+ * server derives a demo account's key again at every sign-in.
+ */
+export type AtSignOut = "kept" | "lost" | "unknown";
+
+export const atSignOut = Effect.gen(function* () {
+  if (yield* demoSignIn) return "kept" as const;
+
+  if (Option.isNone(yield* heldRootKey)) {
+    return Option.isSome(yield* heldPending) ? ("unknown" as const) : ("kept" as const);
+  }
+
+  return yield* summary.pipe(
+    Effect.map(({ secured }): AtSignOut => (secured ? "kept" : "lost")),
+    Effect.catchTags({ "NotebookKeys.Problem": () => Effect.succeed<AtSignOut>("unknown") }),
+  );
 });

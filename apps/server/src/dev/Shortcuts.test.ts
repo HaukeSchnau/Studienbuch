@@ -14,7 +14,7 @@ import * as SqlClient from "effect/sql/SqlClient";
 import * as Stream from "effect/Stream";
 import { Deployment } from "../infra/config/Deployment.ts";
 import { AccessCodes } from "../school/AccessCodes.ts";
-import { Fixture } from "../school/Fixture.ts";
+import { SchoolTesting } from "../school/SchoolTesting.ts";
 import { Schools } from "../school/Schools.ts";
 import { Shortcuts } from "./Shortcuts.ts";
 
@@ -61,7 +61,7 @@ const enrollments = (account: string) =>
   ).pipe(Effect.map((rows) => rows.map((row) => row.line)));
 
 describe.skipIf(Postgres18.socket === null)("Dev on PostgreSQL 18", () => {
-  layer(Fixture.database)((it) => {
+  layer(SchoolTesting.database)((it) => {
     it.effect.each([
       { environment: "beta", account: "lena", refusal: "Dev.Unavailable" },
       { environment: "production", account: "lena", refusal: "Dev.Unavailable" },
@@ -82,7 +82,7 @@ describe.skipIf(Postgres18.socket === null)("Dev on PostgreSQL 18", () => {
 
     it.effect("a dev school admits the caller once, with every course it offers today", () =>
       Effect.gen(function* () {
-        yield* Fixture.account("mia");
+        yield* SchoolTesting.account("mia");
         const dev = yield* client("preview");
         const school = yield* dev["Dev.createSchool"](undefined, signedIn("mia"));
         const first = yield* dev["Dev.admit"]({ school: school.id }, signedIn("mia"));
@@ -99,7 +99,7 @@ describe.skipIf(Postgres18.socket === null)("Dev on PostgreSQL 18", () => {
           redeemed: (yield* AccessCodes.reserve(school.code)).schoolName,
           again,
           enrollments: yield* enrollments("mia"),
-          memberships: yield* Fixture.memberships("mia"),
+          memberships: yield* SchoolTesting.memberships("mia"),
         }).toEqual({
           // The TestClock starts on January 1, 1970, in the first half of 1969/70.
           school: {

@@ -4,7 +4,7 @@
  * only development and preview servers answer, to a signed-in account.
  */
 import { Dev } from "@stu/api/Dev";
-import { CivilTime, Course, CourseOffering, School, Studienbuch } from "@stu/core";
+import { School, Studienbuch } from "@stu/core";
 import { Ports, SyncServer } from "@stu/sync/server";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
@@ -23,13 +23,11 @@ export * as Shortcuts from "./Shortcuts.ts";
 /** The grade level a dev school offers its courses to, and the one `Dev.admit` chooses. */
 const gradeLevel = 11;
 
-const timeZone = CivilTime.TimeZone.make("Europe/Berlin");
-
-const subjects = {
-  ma: { name: "Mathematik", shortName: "MA" },
-  de: { name: "Deutsch", shortName: "DE" },
-  en: { name: "Englisch", shortName: "EN" },
-};
+const subjects = [
+  { id: "ma", name: "Mathematik", shortName: "MA" },
+  { id: "de", name: "Deutsch", shortName: "DE" },
+  { id: "en", name: "Englisch", shortName: "EN" },
+];
 
 /**
  * A school of its own under a random id, with this school year's two terms and one course of each
@@ -41,30 +39,17 @@ export const createSchool = Effect.gen(function* () {
   const bytes = yield* Effect.orDie(crypto.randomBytes(6));
   const suffix = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
   const id = School.Id.make(`dev-${suffix}`);
-  const year = yield* Schools.yearAround(yield* Schools.today(timeZone));
+  const school = { name: `Schule ${suffix}`, timeZone: School.defaultTimeZone };
 
-  const courses = Object.entries(subjects).map(([subjectId, subject]) => ({
-    id: Course.Id.make(`${subjectId}-1`),
-    row: { name: `${subject.shortName}-1`, subjectId },
-  }));
-
-  yield* Schools.publish({
+  const { data, term } = yield* Schools.simple({
     id,
-    school: { name: `Schule ${suffix}`, timeZone },
-    schoolYears: { [year.id]: year.row },
-    terms: Object.fromEntries(year.terms.map((term) => [term.id, term.row])),
+    school,
+    today: yield* Schools.today(school),
+    gradeLevel,
     subjects,
-    classes: {},
-    courses: Object.fromEntries(courses.map((course) => [course.id, course.row])),
-    offerings: Object.fromEntries(
-      year.terms.flatMap((term) =>
-        courses.map((course) => [
-          CourseOffering.idFor(course.id, term.id),
-          { courseId: course.id, termId: term.id, gradeLevels: [gradeLevel], classIds: [] },
-        ]),
-      ),
-    ),
   });
+
+  yield* Schools.publish(data);
 
   const { code } = yield* Effect.orDie(
     AccessCodes.mint({
@@ -76,8 +61,8 @@ export const createSchool = Effect.gen(function* () {
 
   return new Dev.School({
     id,
-    termId: year.current.id,
-    courseIds: courses.map((course) => course.id),
+    termId: term,
+    courseIds: subjects.map((subject) => Schools.simpleCourse(subject.id)),
     code,
   });
 });

@@ -12,7 +12,7 @@ import * as SqlClient from "effect/sql/SqlClient";
 // oxlint-disable-next-line effecttsgo/node-builtin-import -- see above
 import * as NodeCrypto from "node:crypto";
 import { Deployment } from "../infra/config/Deployment.ts";
-import { Fixture } from "../school/Fixture.ts";
+import { SchoolTesting } from "../school/SchoolTesting.ts";
 import { DemoKeys } from "./DemoKeys.ts";
 
 const seed = "a demo key seed that is long enough for the tests";
@@ -45,12 +45,13 @@ const rootKey = (account: string, environment: System.Environment = "beta") =>
   );
 
 describe.skipIf(Postgres18.socket === null)("DemoKeys on PostgreSQL 18", () => {
-  layer(Layer.mergeAll(Fixture.database, CryptoSuite.layer, keySeed(seed)))((it) => {
+  layer(Layer.mergeAll(SchoolTesting.database, CryptoSuite.layer, keySeed(seed)))((it) => {
     it.effect("derives each demo account's own key per environment, and none for another", () =>
       Effect.gen(function* () {
         const sql = yield* SqlClient.SqlClient;
 
-        for (const account of ["demo-lena", "demo-tom", "mia"]) yield* Fixture.account(account);
+        for (const account of ["demo-lena", "demo-tom", "mia"])
+          yield* SchoolTesting.account(account);
 
         yield* sql`
           insert into demo_account (account_id, persona)

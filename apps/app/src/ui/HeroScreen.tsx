@@ -1,10 +1,14 @@
 import { Hero } from "@stu/ui/Hero";
+import { Icon } from "@stu/ui/Icon";
+import { Pill } from "@stu/ui/Pill";
 import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
+import { type Href, Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState, type ReactNode } from "react";
 import {
   Platform,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -16,7 +20,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export interface HeroScreenProps {
   readonly title: string;
+  /** Draws the hand-drawn line under the title, as under "Moin, Lena!". */
+  readonly underline?: boolean;
   readonly subtitle: string;
+  /** Under the subtitle, such as the sync status. */
+  readonly status?: ReactNode;
   /** Art at the right of the title, such as the app icon on the sign-in screens. */
   readonly aside?: ReactNode;
   /**
@@ -24,23 +32,69 @@ export interface HeroScreenProps {
    * engine pulls on its own.
    */
   readonly refresh?: { readonly refreshing: boolean; readonly onRefresh: () => void };
-  readonly children: ReactNode;
+  /**
+   * A part as wide as the screen under the cards, such as the homework panel. It runs to the
+   * screen's bottom, and the bottom's overscroll takes its colour.
+   */
+  readonly footer?: { readonly color: string; readonly children: ReactNode };
+  /**
+   * A screen above the tabs gets "Zurück" in the hero's toolbar row on the web and Android, and
+   * iOS its native header. Without a screen before it, as after a reload or a deep link, back
+   * leads here, on iOS through a header button of its own.
+   */
+  readonly back?: Href;
+  readonly children?: ReactNode;
 }
 
 /**
  * A tab's root screen: the hero and the cards on its band. The hero is content, so it scrolls under
  * the native header and tab bar (design-language.md, section 3, rule 6).
  */
-export function HeroScreen({ title, subtitle, aside, refresh, children }: HeroScreenProps) {
+export function HeroScreen({
+  title,
+  underline,
+  subtitle,
+  status,
+  aside,
+  refresh,
+  footer,
+  back,
+  children,
+}: HeroScreenProps) {
   const { color } = Theme.useTheme();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { overCanvas, onHeroEnd, onScroll } = useHeroCover(insets.top);
 
+  const goBack = (fallback: Href) => {
+    if (router.canGoBack()) router.back();
+    else router.replace(fallback);
+  };
+
   return (
     <View style={[styles.screen, { backgroundColor: color.canvas }]}>
+      {back !== undefined && Platform.OS === "ios" && !router.canGoBack() ? (
+        <Stack.Screen
+          options={{
+            headerLeft: () => (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Zurück"
+                hitSlop={12}
+                onPress={() => router.replace(back)}
+              >
+                <Icon name="back" color="#FFFFFF" size={28} />
+              </Pressable>
+            ),
+          }}
+        />
+      ) : null}
       <StatusBar style={overCanvas ? "auto" : "light"} />
       {/* Overscroll above the hero shows the hero's green, as it did in the legacy app. */}
       <View style={[styles.overscroll, { backgroundColor: color.hero }]} />
+      {footer === undefined ? null : (
+        <View style={[styles.underscroll, { backgroundColor: footer.color }]} />
+      )}
       <ScrollView
         style={styles.screen}
         contentContainerStyle={[styles.grow, { backgroundColor: color.canvas }]}
@@ -64,14 +118,25 @@ export function HeroScreen({ title, subtitle, aside, refresh, children }: HeroSc
       >
         <Hero
           title={title}
+          underline={underline}
           subtitle={subtitle}
+          status={status}
           aside={aside}
+          toolbar={
+            back === undefined || Platform.OS === "ios"
+              ? undefined
+              : { start: <Pill icon="back" label="Zurück" onPress={() => goBack(back)} /> }
+          }
           top={heroTop(insets.top)}
           onColourEnd={onHeroEnd}
         >
           {children}
         </Hero>
-        <View style={styles.end} />
+        {footer === undefined ? (
+          <View style={styles.end} />
+        ) : (
+          <View style={[styles.footer, { backgroundColor: color.canvas }]}>{footer.children}</View>
+        )}
       </ScrollView>
       {overCanvas && Platform.OS !== "web" ? (
         <View style={[styles.statusStrip, { height: insets.top, backgroundColor: color.canvas }]} />
@@ -113,6 +178,8 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   grow: { flexGrow: 1 },
   overscroll: { position: "absolute", top: 0, left: 0, right: 0, height: "50%" },
+  underscroll: { position: "absolute", bottom: 0, left: 0, right: 0, height: "50%" },
+  footer: { flexGrow: 1, marginTop: Tokens.space.lg },
   end: { height: Tokens.space.xxl },
   statusStrip: { position: "absolute", top: 0, left: 0, right: 0, opacity: 0.94 },
 });

@@ -1,6 +1,7 @@
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
+import * as Hex from "effect/encoding/Hex";
 import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
 import * as Path from "effect/Path";
@@ -81,7 +82,7 @@ export const read = Effect.fn("Migrations.read")(function* (folder: string) {
 
     migrations.push({
       name,
-      hash: Buffer.from(digest).toString("hex"),
+      hash: Hex.encode(digest),
       statements: sql
         .split("--> statement-breakpoint")
         .filter((statement) => statement.trim() !== ""),

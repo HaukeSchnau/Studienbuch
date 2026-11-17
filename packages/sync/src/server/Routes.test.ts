@@ -19,7 +19,7 @@ import { Command } from "../protocol/Command.ts";
 import { Connection } from "../protocol/Connection.ts";
 import { Protocol } from "../protocol/Protocol.ts";
 import { Postgres18 } from "../testing/Postgres18.ts";
-import { Fixture } from "./Fixture.ts";
+import { Fixture } from "../testing/Fixture.ts";
 import { SyncServer } from "./SyncServer.ts";
 
 const decodeTicket = Schema.decodeUnknownEffect(Connection.Ticket);

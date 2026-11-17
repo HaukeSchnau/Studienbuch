@@ -68,6 +68,94 @@ export const Refusal = Schema.Union([UnknownTerm, ClassRequired, CourseNotOffere
 export type Refusal = typeof Refusal.Type;
 
 /**
+ * Whether `classId` answers which class of a grade level: one of `ofGradeLevel`, its classes in the
+ * term's school year, or none where it has none. `set` refuses anything else with `ClassRequired`.
+ */
+export const classFits = (
+  ofGradeLevel: ReadonlyArray<{ readonly id: string }>,
+  classId: SchoolClass.Id | undefined,
+): boolean =>
+  classId === undefined ? ofGradeLevel.length === 0 : ofGradeLevel.some(({ id }) => id === classId);
+
+/** An elective group open to a chooser: its courses, of which they take at most one. */
+export interface Group {
+  readonly key: string;
+  /** The chooser must take one of its courses, as one of its offerings says. */
+  readonly required: boolean;
+  /** In the offerings' order. */
+  readonly courseIds: ReadonlyArray<Course.Id>;
+}
+
+/** Every group the offerings open to `chooser`, in the order they first appear. */
+const openGroups = (
+  offerings: ReadonlyArray<CourseOffering.Row>,
+  chooser: CourseOffering.Chooser,
+): ReadonlyArray<Group> => {
+  const byKey = new Map<string, { required: boolean; courseIds: Array<Course.Id> }>();
+
+  for (const offering of offerings) {
+    if (offering.groupKey === undefined || !CourseOffering.isFor(offering, chooser)) continue;
+
+    const group = byKey.get(offering.groupKey) ?? { required: false, courseIds: [] };
+
+    group.required ||= offering.choiceRequired === true;
+    group.courseIds.push(offering.courseId);
+    byKey.set(offering.groupKey, group);
+  }
+
+  return [...byKey].map(([key, group]) => ({ key, ...group }));
+};
+
+/** A required group with one course open to the chooser leaves nothing to choose. */
+const isChoice = (group: Group) => !group.required || group.courseIds.length > 1;
+
+/**
+ * The elective groups the term's `offerings` open to `chooser`, in the order they first appear. A
+ * required group with one course open to them isn't a choice: {@link courses} takes that course.
+ */
+export const groups = (
+  offerings: ReadonlyArray<CourseOffering.Row>,
+  chooser: CourseOffering.Chooser,
+): ReadonlyArray<Group> => openGroups(offerings, chooser).filter(isChoice);
+
+/**
+ * The course list `set` accepts for `chooser` out of `wanted`: every required course the term's
+ * `offerings` open to it, the one course of a required group that opens only that one, and of
+ * each other group the first wanted course, in the offerings' order. Sorted, as `set` keeps it.
+ */
+export const courses = (
+  offerings: ReadonlyArray<CourseOffering.Row>,
+  chooser: CourseOffering.Chooser,
+  wanted: ReadonlySet<Course.Id>,
+): ReadonlyArray<Course.Id> => {
+  const required = offerings.flatMap((offering) =>
+    offering.groupKey === undefined && CourseOffering.isFor(offering, chooser)
+      ? [offering.courseId]
+      : [],
+  );
+
+  const elective = openGroups(offerings, chooser).flatMap((group) =>
+    isChoice(group) ? group.courseIds.filter((id) => wanted.has(id)).slice(0, 1) : group.courseIds,
+  );
+
+  return Arr.dedupe([...required, ...elective]).sort();
+};
+
+/**
+ * The required groups open to `chooser` of which `chosen` holds no course, by key. The course step
+ * waits for them. `set` accepts a choice that leaves one out, because the app one release back
+ * doesn't ask for them and would show its refusal only as "Nicht übernommen" without a reason.
+ */
+export const unanswered = (
+  offerings: ReadonlyArray<CourseOffering.Row>,
+  chooser: CourseOffering.Chooser,
+  chosen: ReadonlySet<Course.Id>,
+): ReadonlyArray<string> =>
+  groups(offerings, chooser).flatMap((group) =>
+    group.required && !group.courseIds.some((id) => chosen.has(id)) ? [group.key] : [],
+  );
+
+/**
  * Chooses the courses of one term at the notebook's school, replacing the term's earlier choice.
  * An empty list leaves every course of the term. The checks run in this order: the term, the
  * class, each course's offering, the elective groups.
@@ -103,12 +191,7 @@ export const set = Sync.mutator("enrollment.set", {
 
     const ofGradeLevel = classes.filter(({ row }) => row.gradeLevel === args.gradeLevel);
 
-    const classFits =
-      args.classId === undefined
-        ? ofGradeLevel.length === 0
-        : ofGradeLevel.some(({ id }) => id === args.classId);
-
-    if (!classFits) return yield* new ClassRequired();
+    if (!classFits(ofGradeLevel, args.classId)) return yield* new ClassRequired();
 
     const offerings = yield* tx.list(CourseOffering.Row, school, {
       index: "termId",

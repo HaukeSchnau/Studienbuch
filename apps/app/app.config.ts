@@ -60,7 +60,9 @@ export default ({ config }: ConfigContext): ExpoConfig =>
       },
       web: { output: "single", favicon: "./assets/favicon.png" },
       plugins: [
-        "expo-router",
+        // `/_sitemap` would list every route, the Sync Lab's too. It stays off on the dev instance
+        // as well: the fingerprint hashes this config, so it must not depend on how Expo runs.
+        ["expo-router", { sitemap: false }],
         ["expo-sqlite", { useSQLCipher: true }],
         // The backup rules of modules/device-files also leave out the secure store's entries.
         ["expo-secure-store", { configureAndroidBackup: false }],

@@ -5,6 +5,7 @@ import { StyleSheet } from "react-native";
 
 import { Button } from "@stu/ui/Button";
 import { Card } from "@stu/ui/Card";
+// oxlint-disable-next-line studienbuch/import-boundaries -- this gate is a screen, not an adapter; moving it out of infra/ removes this line
 import { HeroScreen } from "../../ui/HeroScreen.tsx";
 import { Text } from "@stu/ui/Text";
 import { TabOwner } from "./TabOwner.ts";

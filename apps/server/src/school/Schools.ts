@@ -4,10 +4,10 @@
  * here, and the import joins in M2.
  */
 import {
-  CivilTime,
+  type CivilTime,
   Course,
   CourseOffering,
-  type Enrollment,
+  Enrollment,
   School,
   SchoolClass,
   SchoolYear,
@@ -101,37 +101,96 @@ export const publish = Effect.fn("Schools.publish")(function* (data: Data) {
   // The data is the caller's own constant or the import's checked records.
 }, Effect.orDie);
 
-const encodeDate = Schema.encodeEffect(CivilTime.PlainDate);
+// Data holds rows in their encoded form, as constants and the import's records write them. A
+// school row encodes to itself, because a time zone is a string.
+const encode = {
+  schoolYear: Schema.encodeEffect(Schema.Struct(SchoolYear.Row.fields)),
+  term: Schema.encodeEffect(Schema.Struct(Term.Row.fields)),
+};
+
+/** Today at the school, by the clock. */
+export const today = (school: Pick<School.Row, "timeZone">) =>
+  Effect.map(Clock.currentTimeMillis, (now) => School.today(school, now));
+
+/** A subject of a {@link simple} school, with its one course. */
+export interface SimpleSubject {
+  readonly id: string;
+  readonly name: string;
+  readonly shortName: string;
+  /** The elective group of its course, absent for a required course. */
+  readonly groupKey?: string;
+  /** Whether a student must choose one course of its group. */
+  readonly choiceRequired?: boolean;
+}
+
+/** The one course of a {@link simple} school's subject, such as `ma-1`. */
+export const simpleCourse = (subject: string) => Course.Id.make(`${subject}-1`);
 
 /**
- * The school year `today` falls in, August 1 to July 31, and its two halves, with ids such as
- * `2026` and `2026-1`. `current` is the half that holds `today`.
+ * A school for the demo and the dev shortcuts: the usual school year around `today` with its two
+ * halves as terms (`2026-1`, `2026-2`), no classes, and one course per subject offered in both
+ * terms to one grade level. The same arguments give the same rows. `term` is the one that holds
+ * `today`.
  */
-export const yearAround = Effect.fn("Schools.yearAround")(function* (today: CivilTime.PlainDate) {
-  const [year = 0, month = 0] = (yield* encodeDate(today)).split("-").map(Number);
-  const start = month >= 8 ? year : year - 1;
-  const name = `${start}/${String(start + 1).slice(-2)}`;
+export const simple = Effect.fn("Schools.simple")(function* (options: {
+  readonly id: School.Id;
+  readonly school: School.Row;
+  readonly today: CivilTime.PlainDate;
+  readonly gradeLevel: School.GradeLevel;
+  readonly subjects: ReadonlyArray<SimpleSubject>;
+}) {
+  const year = SchoolYear.around(options.today);
+  const termId = (half: SchoolYear.Half) => Term.Id.make(`${year.id}-${half.number}`);
 
-  const half = (number: 1 | 2, dates: { readonly start: string; readonly end: string }) => ({
-    id: Term.Id.make(`${start}-${number}`),
-    row: { schoolYearId: `${start}`, name: `${number}. Halbjahr ${name}`, dates },
-  });
+  const terms = yield* Effect.forEach(year.halves, (half) =>
+    Effect.map(
+      encode.term({ schoolYearId: year.id, name: half.name, dates: half.dates }),
+      (row) => [termId(half), row] as const,
+    ),
+  );
 
-  const first = half(1, { start: `${start}-08-01`, end: `${start + 1}-01-31` });
-  const second = half(2, { start: `${start + 1}-02-01`, end: `${start + 1}-07-31` });
+  const data: Data = {
+    id: options.id,
+    school: options.school,
+    schoolYears: { [year.id]: yield* encode.schoolYear(year.row) },
+    terms: Object.fromEntries(terms),
+    subjects: Object.fromEntries(
+      options.subjects.map(({ id, name, shortName }) => [id, { name, shortName }]),
+    ),
+    classes: {},
+    courses: Object.fromEntries(
+      options.subjects.map((subject) => [
+        simpleCourse(subject.id),
+        { name: `${subject.shortName}-1`, subjectId: subject.id },
+      ]),
+    ),
+    offerings: Object.fromEntries(
+      year.halves.flatMap((half) =>
+        options.subjects.map((subject) => {
+          const courseId = simpleCourse(subject.id);
 
-  return {
-    id: `${start}`,
-    row: { name, dates: { start: `${start}-08-01`, end: `${start + 1}-07-31` } },
-    terms: [first, second] as const,
-    current: month >= 8 || month === 1 ? first : second,
+          const offering = {
+            courseId,
+            termId: termId(half),
+            gradeLevels: [options.gradeLevel],
+            classIds: [],
+          };
+
+          const { groupKey, choiceRequired } = subject;
+          const elective = groupKey === undefined ? offering : { ...offering, groupKey };
+
+          return [
+            CourseOffering.idFor(courseId, termId(half)),
+            choiceRequired === true ? { ...elective, choiceRequired } : elective,
+          ];
+        }),
+      ),
+    ),
   };
-  // A decoded date always encodes.
-}, Effect.orDie);
 
-/** Today in the time zone, by the clock. */
-export const today = (timeZone: CivilTime.TimeZone) =>
-  Effect.map(Clock.currentTimeMillis, (now) => CivilTime.dateIn(now, timeZone));
+  return { data, term: termId(year.current) };
+  // Rows built from decoded values always encode.
+}, Effect.orDie);
 
 /** `enrollment.set`'s arguments without the notebook: a term, a grade level and its courses. */
 export type Choice = Omit<(typeof Enrollment.set.args)["Type"], "notebook">;
@@ -151,7 +210,7 @@ export const currentTerm = Effect.fn("Schools.currentTerm")(function* (school: S
 
       if (Option.isNone(row)) return Option.none<Term.Id>();
 
-      const day = yield* today(row.value.timeZone);
+      const day = yield* today(row.value);
       const term = Term.containing(yield* read.list(Term.Row, school), day);
 
       return Option.map(term, ({ id }) => Term.Id.make(id));
@@ -199,19 +258,9 @@ export const offered = Effect.fn("Schools.offered")(function* (
     }),
   );
 
-  const groups = new Set<string>();
-  const courseIds: Array<Course.Id> = [];
+  const rows = offerings.map(({ row }) => row);
+  const chooser = { termId, gradeLevel, classId };
+  const courseIds = Enrollment.courses(rows, chooser, new Set(rows.map((row) => row.courseId)));
 
-  for (const { row: offering } of offerings) {
-    if (!CourseOffering.isFor(offering, { termId, gradeLevel, classId })) continue;
-
-    if (offering.groupKey !== undefined) {
-      if (groups.has(offering.groupKey)) continue;
-      groups.add(offering.groupKey);
-    }
-
-    courseIds.push(offering.courseId);
-  }
-
-  return Option.some<Choice>({ termId, gradeLevel, classId, courseIds: courseIds.sort() });
+  return Option.some<Choice>({ ...chooser, courseIds });
 }, Effect.orDie);
