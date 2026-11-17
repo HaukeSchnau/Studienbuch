@@ -58,7 +58,8 @@ const tests = [
     inputs: Files.of("vite.config.ts"),
     vitest: ["vp", "test"],
   }),
-  // The app's Node project.
+  // The app's Node project. app.config.test.ts loads the app config through Expo and lists the route
+  // files from disk, which Calder's import graph doesn't see.
   Vitest.files({
     name: "test-app",
     shell,
@@ -70,7 +71,11 @@ const tests = [
       "app.config.test.ts",
       "!src/**/*.browser.test.ts",
     ],
-    inputs: Files.of("apps/app/vite.config.ts"),
+    inputs: Files.union(
+      Files.of("apps/app/vite.config.ts"),
+      Files.imports("apps/app/app.config.ts"),
+      Files.glob("apps/app/src/app/**"),
+    ),
     vitest: ["vp", "test"],
   }),
   // The app's browser project, in the CI shell's headless Chromium and Firefox. Its Vite config
