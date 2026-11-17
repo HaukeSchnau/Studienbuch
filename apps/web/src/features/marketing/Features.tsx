@@ -77,6 +77,7 @@ export function Features({ demo, dispatch }: { demo: Demo.State; dispatch: Demo.
                 average={Demo.confirmedAverage(exams)}
                 exams={exams}
                 oral={Demo.courses.de.oral}
+                slot={Demo.courses.de.slot}
                 onSign={(exam) => dispatch({ kind: "sign", place: "features", exam })}
               />
             }

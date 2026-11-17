@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./calendar/DateText": "./src/calendar/DateText.ts",
+    "./grade/GradeMarker": "./src/grade/GradeMarker.tsx",
     "./homework/Due": "./src/homework/Due.ts",
     "./homework/HomeworkDetail": "./src/homework/HomeworkDetail.tsx",
     "./homework/HomeworkForm": "./src/homework/HomeworkForm.tsx",
@@ -13,7 +14,10 @@
     "./homework/HomeworkPanel": "./src/homework/HomeworkPanel.tsx",
     "./refusal/RefusalCard": "./src/refusal/RefusalCard.tsx",
     "./refusal/RefusalText": "./src/refusal/RefusalText.ts",
-    "./subject/SubjectMark": "./src/subject/SubjectMark.ts"
+    "./status/StatusSticker": "./src/status/StatusSticker.tsx",
+    "./subject/SubjectArt": "./src/subject/SubjectArt.ts",
+    "./subject/SubjectMark": "./src/subject/SubjectMark.ts",
+    "./subject/SubjectSticker": "./src/subject/SubjectSticker.tsx"
   },
   "dependencies": {
     "@stu/core": "workspace:*",

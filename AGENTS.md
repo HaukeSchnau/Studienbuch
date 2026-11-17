@@ -1,6 +1,6 @@
 # Studienbuch
 
-Studienbuch is a school planner for students: the timetable and substitutions imported from WebUntis, homework, grades, absences and the signatures they need. Teachers and parents join later. It is local first: every device keeps its data in SQLite and syncs when it can. One Expo app runs on iOS, Android and the web, a TanStack Start site carries the landing page, legal pages and the operator console, and one Effect server process serves both and runs sync.
+Studienbuch is a school planner for students: the timetable and substitutions imported from WebUntis, homework, grades, absences and the signatures they need. Teachers and parents join later. Until a school enables the Lernplattform tier, nothing a student writes reaches a teacher or the school ([ADR 0029](docs/adr/0029-planner-first-teacher-flows-behind-a-school-capability.md)). It is local first: every device keeps its data in SQLite and syncs when it can. One Expo app runs on iOS, Android and the web, a TanStack Start site carries the landing page, legal pages and the operator console, and one Effect server process serves both and runs sync.
 
 The repository is in a from-scratch rewrite (milestone M0 started 2026-10-28). The old tree is at the `legacy-2026-10` bookmark. Nothing comes back from it without review ([ADR 0002](docs/adr/0002-restart-in-place.md)).
 
@@ -8,7 +8,7 @@ The repository is in a from-scratch rewrite (milestone M0 started 2026-10-28). T
 
 ### 1. It works offline
 
-Screens read local SQLite and never wait for the network. A write lands in the local database and the outbox in one transaction and shows at once. The server confirms or refuses it later, and a refusal stays on screen with its reason. A phone in flight mode for a week is a normal state, not an error path.
+Screens read local SQLite and never wait for the network. A write lands in the local database and the outbox in one transaction and shows at once. The server confirms or refuses it later, and a refusal stays on screen with its reason. A phone in flight mode for a week is a normal state, not an error path. Teachers are the exception. They will get an online view with no local database on their own devices (ADR 0029).
 
 ### 2. Students' privacy
 

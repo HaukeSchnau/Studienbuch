@@ -1,11 +1,10 @@
+import { StatusSticker } from "@stu/domain-ui/status/StatusSticker";
 import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
 import { Card } from "@stu/ui/Card";
 import { Icon } from "@stu/ui/Icon";
 import { Text } from "@stu/ui/Text";
-import { Image, StyleSheet, View } from "react-native";
-
-const warning = "/art/warning.svg";
+import { StyleSheet, View } from "react-native";
 
 export interface AbsenceEntry {
   readonly id: string;
@@ -17,7 +16,7 @@ export interface AbsenceEntry {
 }
 
 /**
- * Stand-in for the app's absence card with the yellow "!" (variant B) until M1 builds it in
+ * Stand-in for the app's absence card with the attention sticker (variant B) until M1 builds it in
  * packages/domain-ui: the summary, and below it the days in `entries`, when given.
  */
 export function AbsenceCard({
@@ -41,8 +40,7 @@ export function AbsenceCard({
           <Icon color={color.accent} name="plus" size={26} />
         </View>
         <View style={styles.body}>
-          {/* `defaultSource` makes react-native-web render the image while prerendering. */}
-          <Image defaultSource={{ uri: warning }} source={{ uri: warning }} style={styles.art} />
+          <StatusSticker status="attention" size={40} />
           <Text variant="callout" style={[styles.text, { color: color.ink }]}>
             Du hast noch{" "}
             <Text variant="callout" weight="bold">
@@ -72,15 +70,8 @@ export function AbsenceCard({
             </Text>
           </View>
           <View style={styles.status}>
-            {entry.excused ? (
-              <Icon color={color.accent} name="checkBadge" size={16} />
-            ) : (
-              <Icon color={color.warning} name="openBadge" size={16} />
-            )}
-            <Text
-              variant="footnote"
-              style={{ color: entry.excused ? color.accent : color.warning }}
-            >
+            <StatusSticker status={entry.excused ? "confirmed" : "missing"} size={20} />
+            <Text variant="footnote" style={{ color: entry.excused ? color.accent : color.danger }}>
               {entry.excused ? "entschuldigt" : "Entschuldigung fehlt"}
             </Text>
           </View>
@@ -99,12 +90,6 @@ const styles = StyleSheet.create({
   },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   body: { flexDirection: "row", alignItems: "center", gap: Tokens.space.lg },
-  art: {
-    width: 24,
-    height: 44,
-    marginHorizontal: Tokens.space.xs,
-    transform: [{ rotate: "-14deg" }],
-  },
   text: { flex: 1, gap: Tokens.space.xxs },
   row: {
     flexDirection: "row",

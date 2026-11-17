@@ -1,6 +1,7 @@
 import { Vector, type VectorPath } from "./Vector.tsx";
 
-// The few glyphs our own content draws, on a 24-point grid. Chrome uses the platform's symbols.
+// The few line glyphs our own content draws, on a 24-point grid: actions and controls. Chrome uses
+// the platform's symbols, and states, subjects and grade kinds are stickers (Sticker.ts).
 const stroked =
   (d: string) =>
   (color: string): ReadonlyArray<VectorPath> => [{ d, stroke: color, strokeWidth: 2.4 }];
@@ -24,10 +25,6 @@ const glyphs = {
     "M5.5 5.5h13a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1v-12a1 1 0 0 1 1-1zM4.5 10h15M8.5 3.5v4M15.5 3.5v4",
   ),
   clock: stroked("M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0M12 7.5V12l3 2"),
-  /** Waiting to go out. */
-  cloudUp: stroked(
-    "M7 19h10a4 4 0 0 0 .7-7.94A6 6 0 0 0 6.1 10.6 4.25 4.25 0 0 0 7 19zM12 16v-5.5M9.75 12.75 12 10.5l2.25 2.25",
-  ),
   cloudOff: stroked(
     "M7 19h10a4 4 0 0 0 .7-7.94A6 6 0 0 0 6.1 10.6 4.25 4.25 0 0 0 7 19zM4 4l16 16",
   ),
@@ -41,15 +38,6 @@ const glyphs = {
   retry: stroked("M19.5 12a7.5 7.5 0 1 1-2.2-5.3M19.5 4.5V9H15"),
   /** Someone's account. */
   person: stroked("M8 8a4 4 0 1 0 8 0a4 4 0 1 0-8 0M4.5 20c.8-3.6 3.7-6 7.5-6s6.7 2.4 7.5 6"),
-  /** Confirmed: a white tick in a filled circle. */
-  checkBadge: (color: string): ReadonlyArray<VectorPath> => [
-    { d: "M0 12a12 12 0 1 0 24 0a12 12 0 1 0-24 0", fill: color },
-    { d: "M7 12.5l3.2 3.2L17 9", stroke: "#FFFFFF", strokeWidth: 2.8 },
-  ],
-  /** Still missing: an open ring. */
-  openBadge: (color: string): ReadonlyArray<VectorPath> => [
-    { d: "M2.5 12a9.5 9.5 0 1 0 19 0a9.5 9.5 0 1 0-19 0", stroke: color, strokeWidth: 2.6 },
-  ],
 };
 
 export type IconName = keyof typeof glyphs;

@@ -5,6 +5,7 @@ import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
 import { Pressable, StyleSheet, View } from "react-native";
 
+import { StatusSticker } from "../status/StatusSticker.tsx";
 import { SubjectMarker } from "../subject/SubjectMarker.tsx";
 import type { HomeworkItem } from "./HomeworkItem.ts";
 
@@ -59,7 +60,7 @@ export function HomeworkDetail({ detail, onToggle, onEdit, onDelete }: HomeworkD
         </View>
         {detail.waiting ? (
           <View style={styles.line}>
-            <Icon name="cloudUp" color={color.warning} size={20} />
+            <StatusSticker status="waiting" size={22} />
             <Text variant="callout" weight="semibold" style={{ color: color.warning }}>
               Wartet auf Netz
             </Text>

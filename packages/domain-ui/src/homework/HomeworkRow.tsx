@@ -1,4 +1,3 @@
-import { Icon } from "@stu/ui/Icon";
 import { Text } from "@stu/ui/Text";
 import { Theme } from "@stu/ui/Theme";
 import { TickBox } from "@stu/ui/TickBox";
@@ -6,6 +5,7 @@ import { Tokens } from "@stu/ui/Tokens";
 import { useKeptFocus } from "@stu/ui/useKeptFocus";
 import { Pressable, StyleSheet, View } from "react-native";
 
+import { StatusSticker } from "../status/StatusSticker.tsx";
 import { SubjectMarker } from "../subject/SubjectMarker.tsx";
 import type { HomeworkItem } from "./HomeworkItem.ts";
 
@@ -61,7 +61,7 @@ export function HomeworkRow({ item, onToggle, onOpen, divided }: HomeworkRowProp
             </Text>
             {item.waiting ? (
               <View style={[styles.waiting, { backgroundColor: color.warningTint }]}>
-                <Icon name="cloudUp" color={color.warning} size={16} />
+                <StatusSticker status="waiting" size={18} />
                 <Text variant="footnote" weight="semibold" style={{ color: color.warning }}>
                   Wartet auf Netz
                 </Text>

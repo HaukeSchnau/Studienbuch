@@ -1,5 +1,5 @@
 /**
- * How a subject shows: one of the twelve colours (D49), its legacy art, letters where it has none,
+ * How a subject shows: one of the twelve colours (D49), its sticker, letters where it has none,
  * and its blob. One subject, one mark, on every device and however a school spells it; an unknown
  * name hashes to a shared colour. The domain stays free of all of it.
  */
@@ -21,7 +21,7 @@ export interface Mark {
 
 // Twelve slots for more than twenty subjects. The core subjects and the sciences each get their own;
 // subjects a student usually chooses one of share a slot: the arts, the second languages, and the
-// values subjects with politics. The art is the legacy Flutter app's for the same subjects.
+// values subjects with politics.
 const known: ReadonlyArray<{
   readonly slot: Tokens.SubjectSlot;
   readonly art?: SubjectArt.Name;
@@ -54,7 +54,7 @@ const known: ReadonlyArray<{
     art: "ethics",
     names: ["werteundnormen", "wn", "wun", "ethik", "philosophie", "phil"],
   },
-  { slot: "olive", names: ["erdkunde", "ek", "geographie", "geo"] },
+  { slot: "olive", art: "geography", names: ["erdkunde", "ek", "geographie", "geo"] },
   { slot: "olive", art: "seminar", names: ["seminarfach", "seminar", "sf"] },
   { slot: "magenta", art: "art", names: ["kunst", "ku"] },
   { slot: "magenta", art: "music", names: ["musik", "mu"] },
