@@ -1,5 +1,6 @@
 import { assert, it } from "@effect/vitest";
 import { Notebook, NotebookProfile } from "@stu/core";
+import { AccountKey, CryptoSuite } from "@stu/e2ee";
 import { SyncClient } from "@stu/sync/client";
 import * as Context from "effect/Context";
 import * as Deferred from "effect/Deferred";
@@ -9,6 +10,7 @@ import * as Fiber from "effect/Fiber";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Redacted from "effect/Redacted";
+import * as Ref from "effect/Ref";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 import * as Scope from "effect/Scope";
@@ -16,6 +18,8 @@ import * as SqlClient from "effect/sql/SqlClient";
 
 import { SessionStore } from "../auth/SessionStore.ts";
 import { Device } from "../device/Device.ts";
+import { Names } from "../device/Names.ts";
+import { Keychain } from "../keychain/Keychain.ts";
 import { AccountEngine } from "./AccountEngine.ts";
 import { Forgetting } from "./Forgetting.ts";
 import { Layers } from "./Layers.ts";
@@ -33,6 +37,46 @@ const signedIn = (accountId: string) => ({
 const engines = (device: string) =>
   AccountEngine.engines.pipe(
     Layer.provideMerge(SessionStore.layer),
+    Layer.provideMerge(Layers.device({ name: device })),
+  );
+
+/** Where the test holds the next root key the device stores, and lets it go. */
+class Hold extends Context.Service<
+  Hold,
+  { readonly reached: Deferred.Deferred<void>; readonly release: Deferred.Deferred<void> }
+>()("Test.Hold") {}
+
+/** `engines`, on a keychain that stops before it stores a root key until `Hold.release`. */
+const holdingEngines = (device: string) =>
+  AccountEngine.engines.pipe(
+    Layer.provideMerge(SessionStore.layer),
+    Layer.provideMerge(
+      Layer.effect(Keychain.Store)(
+        Effect.gen(function* () {
+          const store = yield* Keychain.Store;
+          const hold = yield* Hold;
+
+          return Keychain.Store.of({
+            ...store,
+            set: (name, value) =>
+              name.endsWith(".root-key")
+                ? Effect.andThen(
+                    Effect.andThen(
+                      Deferred.succeed(hold.reached, undefined),
+                      Deferred.await(hold.release),
+                    ),
+                    store.set(name, value),
+                  )
+                : store.set(name, value),
+          });
+        }),
+      ),
+    ),
+    Layer.provideMerge(
+      Layer.effect(Hold)(
+        Effect.all({ reached: Deferred.make<void>(), release: Deferred.make<void>() }),
+      ),
+    ),
     Layer.provideMerge(Layers.device({ name: device })),
   );
 
@@ -265,7 +309,97 @@ it.effect("keeps the engine off once a sign-out began, until it finishes", () =>
     assert.isTrue(Option.isSome(yield* sessions.current), "the session stayed");
     assert.strictEqual(refused._tag, "AccountEngine.SignedOut");
 
-    yield* Effect.flatMap(Forgetting.Service, (unfinished) => unfinished.finish);
-    yield* sessions.forget;
+    yield* engines.keep(sessions.forget);
   }).pipe(Effect.provide(engines("engines-halfway"))),
+);
+
+// "Mit der Notfallkarte" is storing the root key when "Trotzdem abmelden" lands. Sign-out waits for
+// the unlock, then deletes the key with everything else, so no key outlives the sign-out.
+it.effect("signs out after an unlock under way and leaves no root key", () =>
+  Effect.gen(function* () {
+    const sessions = yield* SessionStore.Service;
+    const engines = yield* AccountEngine.Engines;
+    const hold = yield* Hold;
+    const store = yield* Keychain.Store;
+
+    yield* sessions.signedIn(signedIn("lena"), false);
+    const engine = yield* engines.context("lena");
+
+    const keys = yield* AccountKey.derive(
+      Redacted.make(crypto.getRandomValues(new Uint8Array(32))),
+      "lena",
+      0,
+    ).pipe(Effect.provide(CryptoSuite.layer));
+
+    const unlocking = yield* Effect.forkChild(Context.get(engine, SyncClient.Service).unlock(keys));
+
+    yield* Deferred.await(hold.reached);
+    const leaving = yield* Effect.forkChild(engines.forget("lena", Option.none(), erase("lena")));
+
+    yield* Deferred.succeed(hold.release, undefined);
+    yield* Fiber.await(unlocking);
+    yield* Fiber.join(leaving);
+
+    const rootKey = yield* store.get(
+      `secret.${Names.secrets(new URL(window.location.origin), "engines-unlocking", "lena")}.root-key`,
+    );
+
+    assert.isTrue(Option.isNone(rootKey), "no root key after sign-out");
+  }).pipe(Effect.provide(holdingEngines("engines-unlocking"))),
+);
+
+// The last step of a sign-out failed once and waits to try again when Lena signs in again. Her new
+// session waits for the sign-out, so the retry deletes the old session's data and not the new one.
+// Live: the retry's real backoff gives a sign-in that didn't wait the time to finish first.
+it.live("keeps a new session only after a sign-out that retries has ended", () =>
+  Effect.gen(function* () {
+    const sessions = yield* SessionStore.Service;
+    const engines = yield* AccountEngine.Engines;
+    const failedOnce = yield* Deferred.make<void>();
+    const first = yield* Ref.make(true);
+
+    yield* sessions.signedIn(signedIn("lena"), false);
+    yield* engines.context("lena");
+
+    const signedOut = Effect.andThen(
+      Effect.flatMap(Ref.getAndSet(first, false), (isFirst) =>
+        isFirst
+          ? Effect.andThen(
+              Deferred.succeed(failedOnce, undefined),
+              Effect.fail(new Keychain.Unavailable({ operation: "remove", cause: "locked" })),
+            )
+          : Effect.void,
+      ),
+      sessions.forget,
+    );
+
+    const leaving = yield* Effect.forkChild(
+      engines.forget("lena", Option.none(), Layers.forget("lena", signedOut)),
+    );
+
+    yield* Deferred.await(failedOnce);
+
+    const again = { ...signedIn("lena"), token: Redacted.make("token-again") };
+    const signingIn = yield* Effect.forkChild(engines.keep(sessions.signedIn(again, false)));
+
+    yield* Fiber.join(leaving);
+    yield* Fiber.join(signingIn);
+
+    const engine = yield* engines.context("lena");
+    const sql = Context.get(engine, SqlClient.SqlClient);
+
+    yield* sql`insert into sync_space (id, kind, role, version) values ('nb-again', 'notebook', 'owner', 1)`;
+    const spaces = yield* sql<{ readonly id: string }>`select id from sync_space`;
+
+    assert.deepStrictEqual(
+      {
+        token: Option.map(
+          Option.flatMap(yield* sessions.current, (signed) => signed.token),
+          Redacted.value,
+        ),
+        spaces: spaces.map((row) => row.id),
+      },
+      { token: Option.some("token-again"), spaces: ["nb-again"] },
+    );
+  }).pipe(Effect.provide(engines("engines-again"))),
 );

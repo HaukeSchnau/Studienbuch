@@ -34,7 +34,6 @@ export const device = (options: Device.Options) =>
     AppLifecycle.layer,
     ApiProtocol.httpClient,
     Socket.layerWebSocketConstructorGlobal,
-    Forgetting.layer(AccountDatabase.remove),
     Layer.effectDiscard(start),
   ).pipe(
     Layer.provideMerge(DeviceSessions.layer),
@@ -80,3 +79,6 @@ export const account = (accountId: string, publicComputer: boolean) => {
  */
 export const forget = <E, R>(accountId: string, signedOut: Effect.Effect<void, E, R>) =>
   Forgetting.forget(accountId, AccountDatabase.remove, signedOut);
+
+/** Finishes the sign-outs this device began and didn't finish (`Forgetting.finish`). */
+export const finishSignOuts = Forgetting.finish(AccountDatabase.remove);

@@ -1,7 +1,6 @@
 import { Ports } from "@stu/sync/client";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
-import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Schedule from "effect/Schedule";
 import * as Schema from "effect/Schema";
@@ -115,24 +114,24 @@ export const resume = Effect.fn("Forgetting.resume")(function* <E, R>(
   }
 });
 
-/** Finishes the sign-outs this device began and didn't finish, as before a new session. */
+/** Finishes the sign-outs this device began and didn't finish, or fails as the first that fails. */
+export const finish = Effect.fn("Forgetting.finish")(function* <E, R>(
+  removeDatabase: (accountId: string) => Effect.Effect<void, E, R>,
+) {
+  for (const accountId of yield* pending) {
+    yield* finishing(accountId, erase(accountId, removeDatabase));
+  }
+});
+
+/**
+ * Keeps a new session: `keep` runs `session` once no sign-out runs and none is left unfinished, so
+ * no sign-out can delete what the new session stores.
+ */
 export class Service extends Context.Service<
   Service,
-  { readonly finish: Effect.Effect<void, Unfinished | Keychain.Unavailable> }
+  {
+    readonly keep: <A, E, R>(
+      session: Effect.Effect<A, E, R>,
+    ) => Effect.Effect<A, E | Unfinished | Keychain.Unavailable, R>;
+  }
 >()("Forgetting.Service") {}
-
-/** `Service` with `removeDatabase`, how this device deletes an account's database. */
-export const layer = <E, R>(removeDatabase: (accountId: string) => Effect.Effect<void, E, R>) =>
-  Layer.effect(Service)(
-    Effect.map(
-      Effect.context<R | Keychain.Store | Device.Service | Ports.Server | DeviceSessions.Service>(),
-      (context) =>
-        Service.of({
-          finish: Effect.gen(function* () {
-            for (const accountId of yield* pending) {
-              yield* finishing(accountId, erase(accountId, removeDatabase));
-            }
-          }).pipe(Effect.provide(context)),
-        }),
-    ),
-  );

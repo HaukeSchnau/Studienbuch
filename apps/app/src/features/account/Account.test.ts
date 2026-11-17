@@ -35,8 +35,8 @@ const signedIn = (accountId: string, token: string): AuthApi.SignedIn => ({
 const server = Layer.succeed(Ports.Server)({ origin: new URL("https://one.example") });
 const phone = Device.layer({ name: "phone" });
 
-/** A device that left no sign-out unfinished. */
-const nothingUnfinished = Layer.succeed(Forgetting.Service)({ finish: Effect.void });
+/** A device that left no sign-out unfinished and runs none. */
+const nothingUnfinished = Layer.succeed(Forgetting.Service)({ keep: (session) => session });
 
 const store = Layer.merge(
   SessionStore.layer.pipe(
@@ -234,7 +234,9 @@ describe("Account", () => {
           Layer.mergeAll(
             store,
             AuthApiTesting.layer({}),
-            Layer.succeed(Forgetting.Service)({ finish }),
+            Layer.succeed(Forgetting.Service)({
+              keep: (session) => Effect.andThen(finish, session),
+            }),
           ),
         ),
       );

@@ -1,6 +1,6 @@
 import { Studienbuch } from "@stu/core";
 import { CryptoSuite } from "@stu/e2ee";
-import { type Outbox, type Ports, SyncClient, WebSocketTransport } from "@stu/sync/client";
+import { type Outbox, Ports, SyncClient, WebSocketTransport } from "@stu/sync/client";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
@@ -17,6 +17,7 @@ import type * as SqlError from "effect/sql/SqlError";
 
 import { AuthApi } from "../auth/AuthApi.ts";
 import { SessionStore } from "../auth/SessionStore.ts";
+import type { Keychain } from "../keychain/Keychain.ts";
 import { Forgetting } from "./Forgetting.ts";
 import { Layers } from "./Layers.ts";
 
@@ -105,6 +106,13 @@ export class Engines extends Context.Service<
       unsent: Option.Option<number>,
       erase: Effect.Effect<void, E, R>,
     ) => Effect.Effect<void, E | MoreUnsent | SqlError.SqlError, R>;
+    /**
+     * Keeps a new session (`Forgetting.Service`): `session` runs in a turn of its own, after the
+     * sign-outs the device left unfinished, so no sign-out deletes what it stores.
+     */
+    readonly keep: <A, E, R>(
+      session: Effect.Effect<A, E, R>,
+    ) => Effect.Effect<A, E | Forgetting.Unfinished | Keychain.Unavailable, R>;
   }
 >()("AccountEngine.Engines") {}
 
@@ -121,6 +129,7 @@ const newestUnsent = Effect.map(SyncClient.pending.run(), newest);
 export const engines = Layer.effect(Engines)(
   Effect.gen(function* () {
     const device = yield* Effect.context<Layer.Services<ReturnType<typeof forApp>>>();
+    const leftovers = yield* Effect.context<Effect.Services<typeof Layers.finishSignOuts>>();
     const sessions = yield* SessionStore.Service;
 
     const running = new Map<
@@ -128,13 +137,13 @@ export const engines = Layer.effect(Engines)(
       {
         readonly scope: Scope.Closeable;
         readonly context: Context.Context<Running>;
-        /** Held by each write, and by sign-out while it reads what is unsent and stops. */
+        /** Held by each write of the account's rows or secrets, and by sign-out until it stops. */
         readonly writes: Semaphore.Semaphore;
         readonly stopped: Ref.Ref<boolean>;
       }
     >();
 
-    // One turn at a time: an engine starts, or an account signs out.
+    // One turn at a time: an engine starts, an account signs out, or a new session is kept.
     const turns = yield* Semaphore.make(1);
 
     const stop = (accountId: string) =>
@@ -180,8 +189,10 @@ export const engines = Layer.effect(Engines)(
             const writes = yield* Semaphore.make(1);
             const stopped = yield* Ref.make(false);
             const sync = Context.get(built, SyncClient.Service);
+            const secrets = Context.get(built, Ports.DeviceSecrets);
 
-            // A write after sign-out stopped the engine would land in a closed database.
+            // A write after sign-out stopped the engine would land in a closed database, or keep a
+            // secret the erase already deleted.
             const gated = <A, E>(write: Effect.Effect<A, E>) =>
               writes.withPermit(
                 Effect.flatMap(Ref.get(stopped), (done) =>
@@ -196,6 +207,15 @@ export const engines = Layer.effect(Engines)(
                   ...sync,
                   mutate: (mutator, args) => gated(sync.mutate(mutator, args)),
                   redo: (rejected) => gated(sync.redo(rejected)),
+                  unlock: (keys) => gated(sync.unlock(keys)),
+                }),
+              ),
+              Context.add(
+                Ports.DeviceSecrets,
+                Ports.DeviceSecrets.of({
+                  ...secrets,
+                  set: (name, value) => gated(secrets.set(name, value)),
+                  remove: (name) => gated(secrets.remove(name)),
                 }),
               ),
               Context.add(EngineScope, scope),
@@ -235,12 +255,19 @@ export const engines = Layer.effect(Engines)(
             yield* Effect.uninterruptible(Effect.andThen(stop(accountId), erase));
           }),
         ),
+      keep: (session) =>
+        turns.withPermit(Effect.andThen(Effect.provide(Layers.finishSignOuts, leftovers), session)),
     });
   }),
 ).pipe(Layer.provide(AuthApi.layer));
 
+/** `Forgetting.Service` on this device's engines (`Engines.keep`). */
+const keeping = Layer.effect(Forgetting.Service)(
+  Effect.map(Engines, (each) => Forgetting.Service.of({ keep: each.keep })),
+);
+
 /** The device's own layers with its engines, one value, so every atom runtime shares one build. */
-export const device = Layer.mergeAll(engines, AuthApi.layer).pipe(
+export const device = Layer.mergeAll(keeping.pipe(Layer.provideMerge(engines)), AuthApi.layer).pipe(
   Layer.provideMerge(SessionStore.layer),
   Layer.provideMerge(Layers.app),
 );

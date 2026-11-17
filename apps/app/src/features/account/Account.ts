@@ -156,8 +156,8 @@ const refuseOtherAccount = Effect.fn("Account.refuseOtherAccount")(function* (
 /**
  * Keeps a new session, so the device is signed in, unless another account holds the device. On a
  * public computer the device keeps it in memory only (`SessionStore.signedIn`). `demo` marks a
- * demo account's password sign-in (`Demo.isDemoSignIn`). A sign-out the device began and didn't
- * finish finishes first, so the account starts afresh.
+ * demo account's password sign-in (`Demo.isDemoSignIn`). It waits for a sign-out under way, and
+ * a sign-out the device left unfinished finishes first (`Forgetting.Service`).
  */
 export const keep = Effect.fn("Account.keep")(function* (
   signedIn: AuthApi.SignedIn,
@@ -165,13 +165,12 @@ export const keep = Effect.fn("Account.keep")(function* (
   demo = false,
 ) {
   const store = yield* SessionStore.Service;
-  const unfinished = yield* Forgetting.Service;
+  const forgetting = yield* Forgetting.Service;
 
   yield* refuseOtherAccount(signedIn);
-  yield* Effect.andThen(
-    unfinished.finish,
-    store.signedIn({ ...signedIn, demo }, publicComputer),
-  ).pipe(Effect.mapError(() => new Problem({ reason: "failed" })));
+  yield* forgetting
+    .keep(store.signedIn({ ...signedIn, demo }, publicComputer))
+    .pipe(Effect.mapError(() => new Problem({ reason: "failed" })));
 });
 
 export const signIn = Effect.fn("Account.signIn")(function* (

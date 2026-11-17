@@ -166,7 +166,7 @@ it.effect("a sign-out retries a step that fails once, in the same run", () =>
 );
 
 // The keychain stays locked. The sign-out says so as a failure the student can retry, and its
-// note stays, so the account's engine stays off until the sign-out finishes.
+// note stays, so the account's engine stays off until a later run finishes it.
 it.effect("a sign-out that keeps failing past its note stays begun until it finishes", () =>
   Effect.gen(function* () {
     yield* signIn("tom");
@@ -180,11 +180,7 @@ it.effect("a sign-out that keeps failing past its note stays begun until it fini
     );
     assert.deepStrictEqual(yield* Forgetting.pending, ["tom"]);
 
-    const finished = yield* withRetries(
-      Effect.flatMap(Forgetting.Service, (unfinished) => unfinished.finish).pipe(
-        Effect.provide(Forgetting.layer(() => Effect.void)),
-      ),
-    );
+    const finished = yield* withRetries(Forgetting.finish(() => Effect.void));
 
     assert.isTrue(Exit.isSuccess(finished));
     assert.deepStrictEqual(yield* Forgetting.pending, []);
