@@ -19,6 +19,7 @@ import * as Option from "effect/Option";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as KeyValueStore from "effect/persistence/KeyValueStore";
 import * as Atom from "effect/reactivity/Atom";
+import * as Reactivity from "effect/reactivity/Reactivity";
 import * as AtomRegistry from "effect/reactivity/AtomRegistry";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
@@ -229,7 +230,7 @@ export const setDone = Atom.family((accountId: string) =>
               reason: refused._tag,
             }),
         ),
-        holdRefusal(accountId, "HomeworkState.NotToggled", toggle.id),
+        holdRefusal("HomeworkState.NotToggled", toggle.id),
       ),
     { concurrent: true },
   ),
@@ -420,7 +421,7 @@ export const remove = Atom.family((accountId: string) =>
       ).pipe(
         Effect.asVoid,
         Effect.mapError((refused) => new NotDeleted({ id, reason: refused._tag })),
-        holdRefusal(accountId, "HomeworkState.NotDeleted", id),
+        holdRefusal("HomeworkState.NotDeleted", id),
       ),
   ),
 );
@@ -431,39 +432,70 @@ export type LocalRefusal = NotToggled | NotDeleted;
 /** How the account's database keeps the ticks and deletes this device refused itself. */
 export const HeldRefusals = Schema.Array(Schema.Union([NotToggled, NotDeleted]));
 
+const heldKey = "homework-local-refusals";
+
+const heldStore = Effect.map(KeyValueStore.KeyValueStore, (store) =>
+  KeyValueStore.toSchemaStore(store, HeldRefusals),
+);
+
+// Only `changeHeld` writes them, so stored refusals that don't decode are a defect.
+const readHeld = heldStore.pipe(
+  Effect.flatMap((store) => store.get(heldKey)),
+  Effect.map(Option.getOrElse((): LocalRefusals.Held<LocalRefusal> => [])),
+  Effect.catchTags({ SchemaError: Effect.die }),
+);
+
+/**
+ * Changes the held refusals in the account's database, then has `localRefusals` read them again.
+ * The change that caused it awaits it, so no screen's unmount can cut it short.
+ */
+const changeHeld = (
+  change: (held: LocalRefusals.Held<LocalRefusal>) => LocalRefusals.Held<LocalRefusal>,
+) =>
+  Effect.all([heldStore, readHeld]).pipe(
+    Effect.flatMap(([store, held]) => store.set(heldKey, change(held))),
+    Effect.catchTags({ SchemaError: Effect.die }),
+    Reactivity.mutation([heldKey]),
+  );
+
+// A live read like the engine's: `changeHeld`, the only writer, invalidates its one key.
+const held: SyncQuery.SyncQuery<
+  void,
+  LocalRefusals.Held<LocalRefusal>,
+  KeyValueStore.KeyValueStoreError
+> = {
+  keys: [heldKey],
+  run: () => Effect.provide(readHeld, KeyValueStore.layerSql()),
+};
+
 /**
  * The ticks and deletes this device refused itself, per homework, until the student retries or
- * dismisses them (`LocalRefusals`), kept across a restart like the drafts. A fn atom keeps only its
- * latest result, so a second tick would otherwise hide the first one's refusal. Kept alive, as its
- * write runs on an atom of its own that unmounting would interrupt.
+ * dismisses them (`LocalRefusals`), kept in the account's database across a restart. A fn atom keeps
+ * only its latest result, so a second tick would otherwise hide the first one's refusal.
  */
 export const localRefusals = Atom.family((accountId: string) =>
-  Atom.kvs({
-    runtime: runtime(accountId),
-    key: "homework-local-refusals",
-    schema: HeldRefusals,
-    defaultValue: (): LocalRefusals.Held<LocalRefusal> => [],
-    mode: "sync",
-  }).pipe(Atom.keepAlive),
+  SyncQuery.family(runtime(accountId), held)(),
+);
+
+/** "Verwerfen" on a tick or a delete this device refused itself. */
+export const dismissLocal = Atom.family((accountId: string) =>
+  runtime(accountId).fn<LocalRefusal>()((refused) =>
+    changeHeld((held) => LocalRefusals.dismiss(held, refused)),
+  ),
 );
 
 /** Holds the change's refusal, or lets an earlier one for the same homework go once it worked. */
 const holdRefusal =
-  (accountId: string, kind: LocalRefusal["_tag"], id: string) =>
-  <A, E extends LocalRefusal, R>(change: Effect.Effect<A, E, R>) =>
-    Effect.flatMap(AtomRegistry.AtomRegistry, (registry) => {
-      const settle = (refused: Option.Option<LocalRefusal>) =>
-        Effect.sync(() =>
-          registry.update(localRefusals(accountId), (held) =>
-            LocalRefusals.settle(held, kind, id, refused),
-          ),
-        );
+  (kind: LocalRefusal["_tag"], id: string) =>
+  <A, E extends LocalRefusal, R>(change: Effect.Effect<A, E, R>) => {
+    const settle = (refused: Option.Option<LocalRefusal>) =>
+      changeHeld((held) => LocalRefusals.settle(held, kind, id, refused));
 
-      return change.pipe(
-        Effect.tap(() => settle(Option.none())),
-        Effect.tapError((refused) => settle(Option.some<LocalRefusal>(refused))),
-      );
-    });
+    return change.pipe(
+      Effect.tapError((refused) => settle(Option.some<LocalRefusal>(refused))),
+      Effect.tap(() => settle(Option.none())),
+    );
+  };
 
 /** What every homework screen and the Übersicht show: the device's status, today and the notebook. */
 export interface Screen extends DeviceStatus.Status {

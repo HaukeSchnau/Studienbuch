@@ -1,9 +1,10 @@
-import { useAtom, useAtomSet } from "@effect/atom-react";
+import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import type { CivilTime } from "@stu/core";
 import { RefusalCard } from "@stu/domain-ui/refusal/RefusalCard";
+import * as Option from "effect/Option";
+import * as AsyncResult from "effect/reactivity/AsyncResult";
 
 import { HomeworkState } from "./HomeworkState.ts";
-import { LocalRefusals } from "./LocalRefusals.ts";
 import { Refused } from "./Refused.ts";
 
 /**
@@ -25,7 +26,9 @@ export function HomeworkRefusals({
 }) {
   const toggle = useAtomSet(HomeworkState.setDone(accountId));
   const remove = useAtomSet(HomeworkState.remove(accountId));
-  const [local, setLocal] = useAtom(HomeworkState.localRefusals(accountId));
+  const held = useAtomValue(HomeworkState.localRefusals(accountId));
+  const local = Option.getOrElse(AsyncResult.value(held), () => []);
+  const dismissLocal = useAtomSet(HomeworkState.dismissLocal(accountId));
   const redo = useAtomSet(HomeworkState.redo(accountId));
   const dismiss = useAtomSet(HomeworkState.dismiss(accountId));
   const titles = new Map(reading.homework.map((each) => [each.id, each.title]));
@@ -55,7 +58,7 @@ export function HomeworkRefusals({
                 })
               : remove({ notebook: reading.notebook, id: refused.id })
           }
-          onDismiss={() => setLocal(LocalRefusals.dismiss(local, refused))}
+          onDismiss={() => dismissLocal(refused)}
         />
       ))}
     </>

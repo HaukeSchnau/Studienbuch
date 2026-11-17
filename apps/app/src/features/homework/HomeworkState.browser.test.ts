@@ -1,12 +1,17 @@
 import { assert, it } from "@effect/vitest";
 import { CivilTime, Course, Homework, Notebook, School } from "@stu/core";
 import { Refusal } from "@stu/sync";
+import { SyncClient } from "@stu/sync/client";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as KeyValueStore from "effect/persistence/KeyValueStore";
+import type * as AsyncResult from "effect/reactivity/AsyncResult";
+import * as Atom from "effect/reactivity/Atom";
+import * as AtomRegistry from "effect/reactivity/AtomRegistry";
 import * as Schema from "effect/Schema";
 
+import { AccountEngine } from "../../infra/runtime/AccountEngine.ts";
 import { HomeworkInput } from "./HomeworkInput.ts";
 import { HomeworkState } from "./HomeworkState.ts";
 import { Refused } from "./Refused.ts";
@@ -144,3 +149,34 @@ it("a refusal about homework another device deleted keeps its card, and none sho
 
   assert.deepStrictEqual(Refused.local(held, titles, false), []);
 });
+
+// Sign-out closes the account's engine and deletes its database; an account without a kept session
+// lives in memory, so closing its engine is all of that. Signing in again opens a fresh one.
+it.effect("signing in again after a sign-out shows no refusal from before, and no error", () =>
+  Effect.gen(function* () {
+    const accountId = "refusals-sign-out";
+    const registry = AtomRegistry.make();
+    yield* Effect.addFinalizer(() => Effect.sync(() => registry.dispose()));
+
+    const result = <A, E>(atom: Atom.Atom<AsyncResult.AsyncResult<A, E>>) =>
+      AtomRegistry.getResult(registry, atom, { suspendOnWaiting: true });
+
+    const engine = Atom.runtime(AccountEngine.app(accountId));
+    yield* result(engine.atom(Effect.flatMap(SyncClient.Service, (sync) => sync.setOffline(true))));
+
+    // The device holds no such notebook, so it refuses the tick itself.
+    const setDone = HomeworkState.setDone(accountId);
+    registry.set(setDone, { notebook, id: "6f9619ff-8b86-4011-b42d-00c04fc964ff", doneOn: dueOn });
+    yield* Effect.flip(result(setDone));
+
+    // A stream that keeps reading, so its first value is enough.
+    const refusals = HomeworkState.localRefusals(accountId);
+    const leave = registry.mount(refusals);
+    assert.strictEqual((yield* AtomRegistry.getResult(registry, refusals)).length, 1);
+    leave();
+
+    yield* result(Atom.runtime(AccountEngine.device).atom(AccountEngine.close(accountId)));
+
+    assert.deepStrictEqual(yield* AtomRegistry.getResult(registry, refusals), []);
+  }),
+);
