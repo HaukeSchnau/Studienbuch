@@ -1,8 +1,8 @@
 import { useAtom, useAtomValue } from "@effect/atom-react";
+import { StatusSticker } from "@stu/domain-ui/status/StatusSticker";
 import { Button } from "@stu/ui/Button";
 import { Card } from "@stu/ui/Card";
 import { Field } from "@stu/ui/Field";
-import { Icon } from "@stu/ui/Icon";
 import { Link } from "@stu/ui/Link";
 import { Text } from "@stu/ui/Text";
 import { Theme } from "@stu/ui/Theme";
@@ -161,11 +161,7 @@ function Overview({
           <>
             <Card padded>
               <View style={styles.status}>
-                <Icon
-                  name={value.secured ? "checkBadge" : "alert"}
-                  color={value.secured ? color.accent : color.warning}
-                  size={28}
-                />
+                <StatusSticker status={value.secured ? "confirmed" : "attention"} size={32} />
                 <View style={styles.grow}>
                   <Text
                     variant="title2"

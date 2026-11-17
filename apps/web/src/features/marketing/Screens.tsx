@@ -1,8 +1,9 @@
+import { SubjectSticker } from "@stu/domain-ui/subject/SubjectSticker";
 import { Hero, type HeroProps } from "@stu/ui/Hero";
 import { Pill } from "@stu/ui/Pill";
 import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
-import { Image, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 import { AbsenceCard } from "#/domain-ui/app/AbsenceCard.tsx";
 import { AgendaCard } from "#/domain-ui/app/AgendaCard.tsx";
@@ -47,8 +48,7 @@ export function CourseScreen({
   onBack?: () => void;
 }) {
   const { color, elevation } = Theme.useTheme();
-  const { name, teacher, term, oral } = Demo.courses[course];
-  const art = Demo.art[course];
+  const { name, slot, teacher, term, oral } = Demo.courses[course];
 
   return (
     <PhoneScreen
@@ -63,8 +63,7 @@ export function CourseScreen({
             },
           ]}
         >
-          {/* `defaultSource` makes react-native-web render the image while prerendering. */}
-          <Image defaultSource={{ uri: art }} source={{ uri: art }} style={styles.art} />
+          <SubjectSticker art={Demo.art[course]} size={70} />
         </View>
       }
       chips={[term]}
@@ -82,6 +81,7 @@ export function CourseScreen({
         average={Demo.confirmedAverage(exams)}
         exams={exams}
         oral={oral}
+        slot={slot}
         onSign={onSign}
       />
     </PhoneScreen>
@@ -139,5 +139,4 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  art: { width: 62, height: 62 },
 });

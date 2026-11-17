@@ -1,4 +1,3 @@
-import { Icon } from "@stu/ui/Icon";
 import { Text } from "@stu/ui/Text";
 import { Theme } from "@stu/ui/Theme";
 import { TickBox } from "@stu/ui/TickBox";
@@ -6,6 +5,7 @@ import { Tokens } from "@stu/ui/Tokens";
 import { useKeptFocus } from "@stu/ui/useKeptFocus";
 import { StyleSheet, useWindowDimensions, View } from "react-native";
 
+import { StatusSticker } from "../status/StatusSticker.tsx";
 import { SubjectMarker } from "../subject/SubjectMarker.tsx";
 import type { HomeworkItem } from "./HomeworkItem.ts";
 
@@ -30,7 +30,7 @@ export function HomeworkCard({ item, onToggle, width }: HomeworkCardProps) {
   return (
     <View ref={card} style={[styles.card, { width, backgroundColor: color.panelCard }]}>
       <View style={[styles.top, item.dimmed ? styles.dimmed : null]}>
-        {/* Dark pastels hide some art on the navy, which the card keeps in dark mode too. */}
+        {/* The card stays navy in dark mode, where a dark pastel would barely show. */}
         <SubjectMarker mark={item.mark} size={34} light />
         <TickBox
           checked={item.done}
@@ -70,7 +70,7 @@ export function HomeworkCard({ item, onToggle, width }: HomeworkCardProps) {
         </Text>
         {item.waiting ? (
           <View style={styles.waiting}>
-            <Icon name="cloudUp" color={color.panelSoft} size={16} />
+            <StatusSticker status="waiting" size={20} />
             <Text variant="footnote" weight="bold" style={{ color: color.panelSoft }}>
               wartet
             </Text>

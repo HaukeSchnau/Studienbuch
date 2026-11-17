@@ -15,6 +15,10 @@
     "./Card": "./src/Card.tsx",
     "./Checkable": "./src/Checkable.tsx",
     "./Checkbox": "./src/Checkbox.tsx",
+    "./Drawing": {
+      "react-native": "./src/Drawing.tsx",
+      "default": "./src/Drawing.web.tsx"
+    },
     "./Field": "./src/Field.tsx",
     "./Hero": "./src/Hero.tsx",
     "./Icon": "./src/Icon.tsx",
@@ -22,6 +26,7 @@
     "./Pill": "./src/Pill.tsx",
     "./PillChoice": "./src/PillChoice.tsx",
     "./RevisionCard": "./src/RevisionCard.tsx",
+    "./Sticker": "./src/Sticker.ts",
     "./SubjectBlob": "./src/SubjectBlob.tsx",
     "./SuccessTick": "./src/SuccessTick.tsx",
     "./Text": "./src/Text.tsx",
