@@ -9,6 +9,7 @@
     ".": "./src/Api.ts",
     "./System": "./src/System.ts",
     "./Access": "./src/Access.ts",
+    "./AccountDeletion": "./src/AccountDeletion.ts",
     "./Accounts": "./src/Accounts.ts",
     "./Demo": "./src/Demo.ts",
     "./Dev": "./src/Dev.ts",

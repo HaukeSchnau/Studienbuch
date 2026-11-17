@@ -13,6 +13,7 @@ import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
+import { FreshSignIn } from "../auth/FreshSignIn.ts";
 
 export * as KeyStore from "./KeyStore.ts";
 
@@ -359,14 +360,11 @@ export const addWrapper = Effect.fn("KeyStore.addWrapper")(function* (
 
   return yield* sql.withTransaction(
     Effect.gen(function* () {
-      if (statement.kind !== Wrapper.kindByte.device) {
-        const [fresh] = yield* sql`
-          select 1 from auth_session
-          where id = ${session} and "userId" = ${account}
-            and "createdAt" > now() - make_interval(mins => ${Keys.freshSignInMinutes})
-        `;
-
-        if (fresh === undefined) return yield* new Keys.NotFresh();
+      if (
+        statement.kind !== Wrapper.kindByte.device &&
+        !(yield* FreshSignIn.check(account, session))
+      ) {
+        return yield* new Keys.NotFresh();
       }
 
       const newest = yield* lockNewest(account);

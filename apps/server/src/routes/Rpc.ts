@@ -7,6 +7,7 @@ import * as HttpRouter from "effect/http/HttpRouter";
 import * as HttpServerResponse from "effect/http/HttpServerResponse";
 import * as Layer from "effect/Layer";
 import * as RpcServer from "effect/rpc/RpcServer";
+import { Deletion } from "../account/Deletion.ts";
 import { PersonaSignIn } from "../demo/PersonaSignIn.ts";
 import { Shortcuts } from "../dev/Shortcuts.ts";
 import { Deployment } from "../infra/config/Deployment.ts";
@@ -40,6 +41,7 @@ export const layer = RpcServer.layerHttp({
     Shortcuts.handlers,
     PersonaSignIn.handlers,
     KeyCalls.handlers,
+    Deletion.handlers,
     Redemption.handlers,
     Api.serialization,
   ]),

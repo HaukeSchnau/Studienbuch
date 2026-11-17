@@ -22,6 +22,16 @@ export default function OverviewLayout() {
         }}
       />
       <Stack.Screen
+        name="konto-loeschen"
+        options={{
+          title: "Konto löschen",
+          headerShown: Platform.OS === "ios",
+          headerTransparent: true,
+          headerTitle: "",
+          headerTintColor: "#FFFFFF",
+        }}
+      />
+      <Stack.Screen
         name="selbsttest"
         options={{ title: "Verschlüsselung", headerLargeTitle: Platform.OS === "ios" }}
       />

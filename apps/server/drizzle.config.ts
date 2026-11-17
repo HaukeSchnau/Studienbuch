@@ -10,6 +10,7 @@ export default defineConfig({
     "./src/school/SchoolTables.ts",
     "./src/demo/DemoTables.ts",
     "./src/keys/KeyTables.ts",
+    "./src/account/DeletionTables.ts",
     "../../packages/sync/src/server/Tables.ts",
   ],
   out: "./migrations",

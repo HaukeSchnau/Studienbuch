@@ -253,8 +253,8 @@ export interface Confirmed {
 
 /**
  * The sign-up waiting for its code and the confirmed session waiting for its passkey offer.
- * `finish` and `leave` take turns through `guard`, so a back press during the offer never ends a
- * session the device is keeping.
+ * `finish`, `leave` and `signOut` take turns through `guard`, so a back press during the offer
+ * never ends a session the device is keeping, and two sign-outs never forget at once.
  */
 export class Confirmations extends Context.Service<
   Confirmations,
@@ -549,17 +549,22 @@ export const signOut = Effect.fn("Account.signOut")(function* <E, R>(
   const store = yield* SessionStore.Service;
   const api = yield* AuthApi.Service;
   const confirmations = yield* Confirmations;
-  const current = yield* store.current;
 
-  yield* SubscriptionRef.set(confirmations.current, Option.none());
+  // A deletion signs out from its screen and again when the server ends the session; the second
+  // finds nothing left to forget.
+  yield* Effect.gen(function* () {
+    const current = yield* store.current;
 
-  if (Option.isNone(current)) return;
+    yield* SubscriptionRef.set(confirmations.current, Option.none());
 
-  yield* forget(current.value).pipe(Effect.orDie);
-  yield* store.forget.pipe(Effect.orDie);
-  yield* Effect.ignore(
-    Option.match(current.value.token, { onNone: () => Effect.void, onSome: api.signOut }),
-  );
+    if (Option.isNone(current)) return;
+
+    yield* forget(current.value).pipe(Effect.orDie);
+    yield* store.forget.pipe(Effect.orDie);
+    yield* Effect.ignore(
+      Option.match(current.value.token, { onNone: () => Effect.void, onSome: api.signOut }),
+    );
+  }).pipe(Semaphore.withPermit(confirmations.guard));
 });
 
 /** What signing out would lose, a paragraph each, for the one dialog before "Abmelden". */
