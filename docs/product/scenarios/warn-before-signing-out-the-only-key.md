@@ -11,7 +11,8 @@ other device opens the notebook without this device, or the device can't tell, "
 first, in the same question that names unsent changes. Where only this device opens the notebook,
 the question offers "Notfallkarte erstellen" before "Trotzdem abmelden". It never blocks the
 sign-out, and it stays silent when nothing would be lost. A change saved after the question isn't
-lost unasked: the question comes again and counts it.
+lost unasked: the question comes again and counts it. A sign-out that fails says "Abmelden hat
+nicht geklappt" and keeps the student signed in until "Abmelden" succeeds.
 
 ## Example
 
@@ -23,14 +24,15 @@ And after a Notfallkarte, "Abmelden" signs out without asking
 
 ## Evidence contract
 
-| Outcome                         | Executable evidence                                                                             |
-| ------------------------------- | ----------------------------------------------------------------------------------------------- |
-| The only key asks first         | After "Später", "Abmelden" shows the question with "Notfallkarte erstellen" and no sign-out yet |
-| The safer way leads to the card | "Notfallkarte erstellen" opens Notizbuch-Schlüssel, still signed in                             |
-| The student decides             | "Trotzdem abmelden" signs out and the device shows "Willkommen!"                                |
-| One question for both losses    | Offline with unsent changes, the question names the notebook check and the changes, once        |
-| Nothing to lose asks nothing    | With a Notfallkarte, or on a second device that is still locked, "Abmelden" signs out at once   |
-| A later change asks again       | A change saved while the question is open brings the question back, counting it                 |
+| Outcome                         | Executable evidence                                                                                 |
+| ------------------------------- | --------------------------------------------------------------------------------------------------- |
+| The only key asks first         | After "Später", "Abmelden" shows the question with "Notfallkarte erstellen" and no sign-out yet     |
+| The safer way leads to the card | "Notfallkarte erstellen" opens Notizbuch-Schlüssel, still signed in                                 |
+| The student decides             | "Trotzdem abmelden" signs out and the device shows "Willkommen!"                                    |
+| One question for both losses    | Offline with unsent changes, the question names the notebook check and the changes, once            |
+| Nothing to lose asks nothing    | With a Notfallkarte, or on a second device that is still locked, "Abmelden" signs out at once       |
+| A later change asks again       | A change saved while the question is open brings the question back, counting it                     |
+| A failed sign-out says so       | When deleting the account's data fails, "Abmelden hat nicht geklappt" shows, and "Abmelden" retries |
 
 ## State
 

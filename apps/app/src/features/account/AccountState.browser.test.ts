@@ -8,8 +8,10 @@ import * as Atom from "effect/reactivity/Atom";
 import * as AtomRegistry from "effect/reactivity/AtomRegistry";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
+import * as Stream from "effect/Stream";
 
 import { SessionStore } from "../../infra/auth/SessionStore.ts";
+import type { Keychain } from "../../infra/keychain/Keychain.ts";
 import { AccountEngine } from "../../infra/runtime/AccountEngine.ts";
 import { Onboarding } from "../onboarding/Onboarding.ts";
 import { OnboardingState } from "../onboarding/OnboardingState.ts";
@@ -105,5 +107,80 @@ it.effect("signing out leaves the student's name nowhere, so signing in again st
     assert.deepStrictEqual(greeting(), Option.some(Option.none()), "after signing in again");
 
     unmountAgain();
+  }).pipe(Effect.scoped),
+);
+
+// The unsent Notfallkarte and the key warning outlive their screens, not the account: a new
+// token or the session's end keeps them, sign-out drops them even when no screen reads them.
+it.effect("an account's memory lasts through a new token and the session's end, not sign-out", () =>
+  Effect.gen(function* () {
+    const registry = AtomRegistry.make();
+    yield* Effect.addFinalizer(() => Effect.sync(() => registry.dispose()));
+    registry.mount(AccountState.current);
+
+    const device = Atom.runtime(AccountEngine.device);
+
+    /** Changes the session as `change` does, and waits until `AccountState.current` shows it. */
+    const session = (
+      change: (store: SessionStore.Service["Service"]) => Effect.Effect<void, Keychain.Unavailable>,
+      shows: (signed: Option.Option<SessionStore.Signed>) => boolean,
+    ) =>
+      Effect.andThen(
+        AtomRegistry.getResult(
+          registry,
+          device.atom(Effect.flatMap(SessionStore.Service, change)),
+          { suspendOnWaiting: true },
+        ),
+        AtomRegistry.toStreamResult(registry, AccountState.current).pipe(
+          Stream.filter(shows),
+          Stream.runHead,
+        ),
+      );
+
+    const token = (signed: Option.Option<SessionStore.Signed>) =>
+      Option.map(
+        Option.flatMap(signed, (each) => each.token),
+        Redacted.value,
+      );
+
+    const signIn = (value: string) =>
+      session(
+        (store) =>
+          store.signedIn(
+            { accountId: "remembers", token: Redacted.make(value), demo: false },
+            true,
+          ),
+        (signed) => Option.contains(token(signed), value),
+      );
+
+    yield* signIn("first");
+
+    const card = AccountState.memory(Option.none<string>());
+    registry.set(card, Option.some("card"));
+
+    /** What the registry holds for `card`, without reading it, which would build it again. */
+    const held = () => registry.getNodes().get(card)?.valueOption();
+
+    yield* session(
+      (store) => store.ended,
+      (signed) => Option.isSome(signed) && Option.isNone(token(signed)),
+    );
+
+    const afterEnd = held();
+
+    yield* signIn("second");
+
+    const afterSignIn = held();
+
+    yield* session((store) => store.forget, Option.isNone);
+
+    assert.deepStrictEqual(
+      { afterEnd, afterSignIn, afterSignOut: held() },
+      {
+        afterEnd: Option.some(Option.some("card")),
+        afterSignIn: Option.some(Option.some("card")),
+        afterSignOut: Option.some(Option.none()),
+      },
+    );
   }).pipe(Effect.scoped),
 );

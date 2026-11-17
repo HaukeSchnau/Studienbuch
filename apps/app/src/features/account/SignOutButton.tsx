@@ -1,4 +1,4 @@
-import { RegistryContext, useAtom, useAtomMount, useAtomSet } from "@effect/atom-react";
+import { RegistryContext, useAtom, useAtomMount } from "@effect/atom-react";
 import { Button } from "@stu/ui/Button";
 import * as Exit from "effect/Exit";
 import * as Option from "effect/Option";
@@ -9,6 +9,7 @@ import { use } from "react";
 import { type Answer, useConfirm } from "../../ui/useConfirm.tsx";
 import { KeysState } from "../keys/KeysState.ts";
 import { Account } from "./Account.ts";
+import { ProblemText, reasonOf } from "./AccountForm.tsx";
 import { AccountState } from "./AccountState.ts";
 
 /**
@@ -33,10 +34,10 @@ function SignOut({ accountId }: { readonly accountId: string }) {
   const router = useRouter();
   const registry = use(RegistryContext);
   const [checked, check] = useAtom(KeysState.checkSignOut(accountId), { mode: "promiseExit" });
-  const signOut = useAtomSet(AccountState.signOut, { mode: "promiseExit" });
+  const [result, signOut] = useAtom(AccountState.signOut, { mode: "promiseExit" });
   const confirm = useConfirm();
 
-  // Counting starts the account's engine, so the count is current when the button is pressed.
+  // Reading the unsent changes starts the account's engine, so they are current at the press.
   useAtomMount(AccountState.unsent);
 
   const press = async (): Promise<void> => {
@@ -44,7 +45,12 @@ function SignOut({ accountId }: { readonly accountId: string }) {
     // After the check, which can take seconds: a change saved meanwhile counts too.
     const unsent = registry.get(AccountState.unsent);
 
-    const answer = await Option.match(Account.signOutWarning(unsent, notebook), {
+    const warning = Account.signOutWarning(
+      AsyncResult.map(unsent, (each) => each.count),
+      notebook,
+    );
+
+    const answer = await Option.match(warning, {
       onNone: () => Promise.resolve<Answer>("proceed"),
       onSome: ({ paragraphs, offerCard }) =>
         confirm.ask({
@@ -60,15 +66,23 @@ function SignOut({ accountId }: { readonly accountId: string }) {
     if (answer !== "proceed") return;
 
     const exit = await signOut(
-      AsyncResult.isSuccess(unsent) ? Option.some(unsent.value) : Option.none(),
+      AsyncResult.isSuccess(unsent) ? Option.some(unsent.value.newest) : Option.none(),
     );
 
     // A change saved after the question isn't lost unasked: the question comes again with it.
-    if (Option.isSome(Exit.findErrorOption(exit))) await press();
+    if (
+      Option.exists(
+        Exit.findErrorOption(exit),
+        (error) => error._tag === "AccountEngine.MoreUnsent",
+      )
+    ) {
+      await press();
+    }
   };
 
   return (
     <>
+      <ProblemText reason={reasonOf(result)} />
       {/* Not `busy`: that disables the button, which then loses the focus the dialog returns. */}
       <Button
         kind="quiet"

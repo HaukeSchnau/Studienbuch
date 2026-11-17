@@ -68,7 +68,7 @@ export const accountDatabase = Atom.runtime(Layers.app).atom((get) =>
       ),
     );
 
-    if (!publicComputer) yield* Layers.forget(accountId);
+    if (!publicComputer) yield* Layers.forget(accountId, Effect.void);
 
     return count;
   }).pipe(Effect.timed),

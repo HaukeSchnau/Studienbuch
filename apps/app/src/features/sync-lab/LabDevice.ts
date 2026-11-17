@@ -313,8 +313,9 @@ export const make = Effect.fn("LabDevice.make")(function* (spec: Spec) {
 
     const signed = yield* store.current;
 
-    if (Option.isSome(signed)) yield* Layers.forget(signed.value.accountId);
-    yield* store.forget;
+    yield* Option.isSome(signed)
+      ? Layers.forget(signed.value.accountId, store.forget)
+      : store.forget;
   }).pipe(Effect.provide(device));
 
   yield* Effect.addFinalizer(() => stop);

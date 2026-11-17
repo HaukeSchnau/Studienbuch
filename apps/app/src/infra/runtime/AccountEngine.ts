@@ -1,6 +1,6 @@
 import { Studienbuch } from "@stu/core";
 import { CryptoSuite } from "@stu/e2ee";
-import { type Ports, SyncClient, WebSocketTransport } from "@stu/sync/client";
+import { type Outbox, type Ports, SyncClient, WebSocketTransport } from "@stu/sync/client";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
@@ -8,12 +8,16 @@ import * as Fiber from "effect/Fiber";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Reactivity from "effect/reactivity/Reactivity";
+import * as Ref from "effect/Ref";
 import * as Schema from "effect/Schema";
 import * as Scope from "effect/Scope";
 import * as Semaphore from "effect/Semaphore";
+import * as SqlClient from "effect/sql/SqlClient";
+import type * as SqlError from "effect/sql/SqlError";
 
 import { AuthApi } from "../auth/AuthApi.ts";
 import { SessionStore } from "../auth/SessionStore.ts";
+import { Forgetting } from "./Forgetting.ts";
 import { Layers } from "./Layers.ts";
 
 // The sync engine of the account signed in on a device, on that account's database, secrets and
@@ -72,10 +76,10 @@ export class SignedOut extends Schema.TaggedError<SignedOut, { readonly brand: u
   { accountId: Schema.String },
 ) {}
 
-/** More of the account's commands wait for the server than the sign-out's question counted. */
+/** A command the sign-out's question didn't show waits for the server, the newest one here. */
 export class MoreUnsent extends Schema.TaggedError<MoreUnsent, { readonly brand: unique symbol }>()(
   "AccountEngine.MoreUnsent",
-  { waiting: Schema.Int },
+  { newest: Schema.Int },
 ) {}
 
 /**
@@ -86,22 +90,32 @@ export class MoreUnsent extends Schema.TaggedError<MoreUnsent, { readonly brand:
 export class Engines extends Context.Service<
   Engines,
   {
-    /** The account's engine, while the device holds its session. */
+    /** The account's engine, while the device holds its session and hasn't begun to forget it. */
     readonly context: (
       accountId: string,
     ) => Effect.Effect<Context.Context<Running>, Failure | SignedOut>;
     /**
-     * Signs the account out in one turn: refuses when more commands wait than `unsent` counted
-     * (`None` takes any number), else stops its engine and runs `erase`, which deletes what the
-     * account kept and ends with its session. No engine of the account starts in between.
+     * Signs the account out in one turn. `unsent` is the newest unsent command's mutation id that
+     * the question before showed, 0 when none waited, `None` when it couldn't tell. A newer one
+     * waiting refuses; otherwise the engine stops and `erase` deletes what the account kept and
+     * ends with its session. No write and no engine of the account starts in between.
      */
     readonly forget: <E, R>(
       accountId: string,
       unsent: Option.Option<number>,
       erase: Effect.Effect<void, E, R>,
-    ) => Effect.Effect<void, E | MoreUnsent, R>;
+    ) => Effect.Effect<void, E | MoreUnsent | SqlError.SqlError, R>;
   }
 >()("AccountEngine.Engines") {}
+
+/**
+ * The mutation id of the newest of `commands`, oldest first as `SyncClient.pending` reads them, 0
+ * for none. Ids only grow on a device, so a command newer than what the question showed has a
+ * higher one, also when older ones were sent meanwhile.
+ */
+export const newest = (commands: ReadonlyArray<Outbox.Command>) => commands.at(-1)?.mutationId ?? 0;
+
+const newestUnsent = Effect.map(SyncClient.pending.run(), newest);
 
 /** `Engines` on the device's layers, one per device. */
 export const engines = Layer.effect(Engines)(
@@ -111,7 +125,13 @@ export const engines = Layer.effect(Engines)(
 
     const running = new Map<
       string,
-      { readonly scope: Scope.Closeable; readonly context: Context.Context<Running> }
+      {
+        readonly scope: Scope.Closeable;
+        readonly context: Context.Context<Running>;
+        /** Held by each write, and by sign-out while it reads what is unsent and stops. */
+        readonly writes: Semaphore.Semaphore;
+        readonly stopped: Ref.Ref<boolean>;
+      }
     >();
 
     // One turn at a time: an engine starts, or an account signs out.
@@ -142,6 +162,11 @@ export const engines = Layer.effect(Engines)(
             const known = running.get(accountId);
 
             if (known !== undefined) return known.context;
+
+            if ((yield* Effect.provide(Forgetting.pending, device)).includes(accountId)) {
+              return yield* new SignedOut({ accountId });
+            }
+
             const scope = yield* Scope.make();
 
             const built = yield* Layer.buildWithScope(
@@ -152,9 +177,31 @@ export const engines = Layer.effect(Engines)(
               Effect.onError(() => Scope.close(scope, Exit.void)),
             );
 
-            const context = Context.add(built, EngineScope, scope);
+            const writes = yield* Semaphore.make(1);
+            const stopped = yield* Ref.make(false);
+            const sync = Context.get(built, SyncClient.Service);
 
-            running.set(accountId, { scope, context });
+            // A write after sign-out stopped the engine would land in a closed database.
+            const gated = <A, E>(write: Effect.Effect<A, E>) =>
+              writes.withPermit(
+                Effect.flatMap(Ref.get(stopped), (done) =>
+                  done ? Effect.die(new SignedOut({ accountId })) : write,
+                ),
+              );
+
+            const context = built.pipe(
+              Context.add(
+                SyncClient.Service,
+                SyncClient.Service.of({
+                  ...sync,
+                  mutate: (mutator, args) => gated(sync.mutate(mutator, args)),
+                  redo: (rejected) => gated(sync.redo(rejected)),
+                }),
+              ),
+              Context.add(EngineScope, scope),
+            );
+
+            running.set(accountId, { scope, context, writes, stopped });
 
             return context;
           }),
@@ -164,14 +211,28 @@ export const engines = Layer.effect(Engines)(
           Effect.gen(function* () {
             const known = running.get(accountId);
 
-            if (known !== undefined && Option.isSome(unsent)) {
-              const { waiting } = yield* Context.get(known.context, SyncClient.Service).status.get;
+            // A write under way finishes first, and none starts after, so the outbox read here is
+            // what sign-out deletes.
+            if (known !== undefined) {
+              yield* known.writes.withPermit(
+                Effect.gen(function* () {
+                  if (Option.isSome(unsent)) {
+                    const newest = yield* newestUnsent.pipe(
+                      Effect.provideService(
+                        SqlClient.SqlClient,
+                        Context.get(known.context, SqlClient.SqlClient),
+                      ),
+                    );
 
-              if (waiting > unsent.value) return yield* new MoreUnsent({ waiting });
+                    if (newest > unsent.value) return yield* new MoreUnsent({ newest });
+                  }
+
+                  yield* Ref.set(known.stopped, true);
+                }),
+              );
             }
 
-            yield* stop(accountId);
-            yield* erase;
+            yield* Effect.uninterruptible(Effect.andThen(stop(accountId), erase));
           }),
         ),
     });

@@ -9,6 +9,7 @@ import * as Fiber from "effect/Fiber";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Redacted from "effect/Redacted";
+import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 import * as Scope from "effect/Scope";
 import * as SqlClient from "effect/sql/SqlClient";
@@ -16,6 +17,7 @@ import * as SqlClient from "effect/sql/SqlClient";
 import { SessionStore } from "../auth/SessionStore.ts";
 import { Device } from "../device/Device.ts";
 import { AccountEngine } from "./AccountEngine.ts";
+import { Forgetting } from "./Forgetting.ts";
 import { Layers } from "./Layers.ts";
 
 const isSignedOut = Schema.is(AccountEngine.SignedOut);
@@ -36,9 +38,40 @@ const engines = (device: string) =>
 
 /** What sign-out deletes of an account the device keeps, ending with its session. */
 const erase = (accountId: string) =>
-  Effect.andThen(
-    Layers.forget(accountId),
+  Layers.forget(
+    accountId,
     Effect.flatMap(SessionStore.Service, (store) => store.forget),
+  );
+
+const notebook = Notebook.Id.make("nb-lena");
+
+/** Lena's engine, offline, with her notebook as a pull leaves it, so she can write to it. */
+const lenasEngine = Effect.gen(function* () {
+  const sessions = yield* SessionStore.Service;
+  const engines = yield* AccountEngine.Engines;
+
+  yield* sessions.signedIn(signedIn("lena"), false);
+  const engine = yield* engines.context("lena");
+  const sync = Context.get(engine, SyncClient.Service);
+  const sql = Context.get(engine, SqlClient.SqlClient);
+
+  yield* sync.setOffline(true);
+  yield* sql`insert into sync_space (id, kind, role, version) values (${notebook}, 'notebook', 'owner', 1)`;
+  yield* sql`insert into base_row (space, tbl, id, version, data) values (${notebook}, 'Notebook', ${notebook}, 1, '{"schoolId":"demo"}')`;
+
+  return sync;
+});
+
+const nameLena = (sync: SyncClient.Interface) =>
+  sync.mutate(NotebookProfile.set, { notebook, displayName: lena, adult: false });
+
+/** The commands the account's engine still has to send, from a new start of it. */
+const unsentOf = (accountId: string) =>
+  Effect.flatMap(AccountEngine.Engines, (engines) =>
+    Effect.flatMap(
+      engines.context(accountId),
+      (context) => Context.get(context, SyncClient.Service).status.get,
+    ),
   );
 
 // The engine picks the account's storage when it opens: on disk only for a session the device
@@ -109,36 +142,19 @@ it.effect("signs out while a screen asks for the engine, which stays off", () =>
   }).pipe(Effect.scoped, Effect.provide(engines("engines-leaving"))),
 );
 
-// "Abmelden" counted the changes it would lose before its question. One saved after it is lost only
-// when the question asks again with it.
+// "Abmelden" showed the changes it would lose before its question, by their newest mutation id. One
+// saved after it is lost only when the question asks again with it.
 it.effect("refuses to sign out when a change was saved after the question, and keeps it", () =>
   Effect.gen(function* () {
     const sessions = yield* SessionStore.Service;
     const engines = yield* AccountEngine.Engines;
+    const sync = yield* lenasEngine;
 
-    yield* sessions.signedIn(signedIn("lena"), false);
-    const engine = yield* engines.context("lena");
-    const sync = Context.get(engine, SyncClient.Service);
-    const sql = Context.get(engine, SqlClient.SqlClient);
-    const notebook = Notebook.Id.make("nb-lena");
-
-    yield* sync.setOffline(true);
-    yield* sql`insert into sync_space (id, kind, role, version) values (${notebook}, 'notebook', 'owner', 1)`;
-    yield* sql`insert into base_row (space, tbl, id, version, data) values (${notebook}, 'Notebook', ${notebook}, 1, '{"schoolId":"demo"}')`;
-
-    // The question counted none, then the name was saved.
-    yield* sync.mutate(NotebookProfile.set, {
-      notebook,
-      displayName: lena,
-      adult: false,
-    });
+    // The question showed none, then the name was saved.
+    yield* nameLena(sync);
 
     const refused = yield* Effect.flip(engines.forget("lena", Option.some(0), erase("lena")));
-
-    const still = yield* Effect.flatMap(
-      engines.context("lena"),
-      (context) => Context.get(context, SyncClient.Service).status.get,
-    );
+    const still = yield* unsentOf("lena");
 
     yield* engines.forget("lena", Option.some(1), erase("lena"));
 
@@ -188,4 +204,68 @@ it.effect("work in the engine's scope outlives the screen that waits for it, not
 
     assert.isTrue(Exit.hasInterrupts(yield* Fiber.await(late)));
   }),
+);
+
+// A write already under way when "Trotzdem abmelden" lands commits while sign-out stops the
+// engine. It finishes first and counts, rather than being deleted unasked.
+it.effect("refuses to sign out when a change commits while it stops the engine", () =>
+  Effect.gen(function* () {
+    const engines = yield* AccountEngine.Engines;
+    const sync = yield* lenasEngine;
+
+    // Starts at once, so it holds the engine's writes before sign-out asks for them.
+    const saving = yield* Effect.forkChild(nameLena(sync), { startImmediately: true });
+
+    const refused = yield* Effect.flip(engines.forget("lena", Option.some(0), erase("lena")));
+    const saved = yield* Fiber.await(saving);
+    const still = yield* unsentOf("lena");
+
+    assert.deepStrictEqual(
+      { refused: refused._tag, saved: Exit.isSuccess(saved), waiting: still.waiting },
+      { refused: "AccountEngine.MoreUnsent", saved: true, waiting: 1 },
+    );
+  }).pipe(Effect.provide(engines("engines-committing"))),
+);
+
+// A screen on its way out still holds the engine and writes after sign-out took it. The write fails
+// at once, rather than waiting on a closed database or landing in one.
+it.effect("fails a write that reaches the engine after sign-out stopped it", () =>
+  Effect.gen(function* () {
+    const engines = yield* AccountEngine.Engines;
+    const sync = yield* lenasEngine;
+
+    yield* engines.forget("lena", Option.some(0), erase("lena"));
+
+    const late = yield* Effect.exit(nameLena(sync));
+
+    assert.isTrue(Result.getOrElse(Result.map(Exit.findDefect(late), isSignedOut), () => false));
+  }).pipe(Effect.provide(engines("engines-late-write"))),
+);
+
+// Past the note, a sign-out that stopped halfway keeps the account's engine off, even with its
+// session still there: a new engine would write to a database the next start deletes.
+it.effect("keeps the engine off once a sign-out began, until it finishes", () =>
+  Effect.gen(function* () {
+    const sessions = yield* SessionStore.Service;
+    const engines = yield* AccountEngine.Engines;
+
+    yield* sessions.signedIn(signedIn("lena"), false);
+    yield* engines.context("lena");
+
+    yield* Effect.exit(
+      engines.forget(
+        "lena",
+        Option.none(),
+        Forgetting.forget("lena", () => Effect.die("the app ended"), sessions.forget),
+      ),
+    );
+
+    const refused = yield* Effect.flip(engines.context("lena"));
+
+    assert.isTrue(Option.isSome(yield* sessions.current), "the session stayed");
+    assert.strictEqual(refused._tag, "AccountEngine.SignedOut");
+
+    yield* Effect.flatMap(Forgetting.Service, (unfinished) => unfinished.finish);
+    yield* sessions.forget;
+  }).pipe(Effect.provide(engines("engines-halfway"))),
 );
