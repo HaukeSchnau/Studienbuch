@@ -1354,7 +1354,7 @@ DIAGRAMS.ship = {
   nodes: [
     { id: "c-push", x: 30, y: 48, w: 150, h: 70, t: "jj-push", s: "a bookmark to Gitea\nPR opened with tea" },
     { id: "c-plan", x: 210, y: 48, w: 160, h: 70, t: "Calder plans", s: ".calder/ci.ts\nreuses results" , k: "infra" },
-    { id: "c-checks", x: 400, y: 36, w: 230, h: 94, t: "Checks", s: "fmt, lint, knip, typecheck\ntest, test-app, test-server\ntest-sync, deploy checks" },
+    { id: "c-checks", x: 400, y: 36, w: 230, h: 94, t: "Checks", s: "fmt, lint, knip, typecheck\ntest, test-app, app browser\ntest-server, test-sync, deploy" },
     { id: "c-build", x: 400, y: 146, w: 230, h: 86, t: "Artifacts", s: "bundle (x86_64, tower or\ndev-hauke), node (aarch64)\npnpmDeps" , k: "infra" },
     { id: "c-smoke", x: 660, y: 146, w: 170, h: 86, t: "serverSmoke", s: "prepare, verify, serve,\nready on PG 18; the one\ncheck previews wait for" },
     { id: "c-preview", x: 860, y: 146, w: 150, h: 86, t: "preview", s: "alchemy deploy\n--stage pr-N\nbefore checks end", k: "wire" },
@@ -1768,7 +1768,7 @@ const INFO = {
 
   "c-plan": { t: "Calder's plan", k: "infra", d: ["<code>.calder/ci.ts</code> declares every job and their order. The format, lint, typecheck and test jobs time out after 15 minutes; the Nix builds have no limit of their own."], f: [".calder/ci.ts"] },
 
-  "c-checks": { t: "Checks", d: ["fmt, lint (oxlint with type information and the local plugin), knip, typecheck, and the test jobs: test, test-app, test-server and test-sync (both on a real PostgreSQL 18), typecheck-deploy and test-deploy, plus the flake checks serverSmoke and closureGuard. Browser tests don't run in CI yet."], f: [".calder/ci.ts", "vite.config.ts"], a: [10] },
+  "c-checks": { t: "Checks", d: ["fmt, lint (oxlint with type information and the local plugin), knip, typecheck, and the test jobs: test, test-app, test-app-browser (headless Chromium and Firefox), test-server and test-sync (both on a real PostgreSQL 18), typecheck-deploy and test-deploy, plus the flake checks serverSmoke and closureGuard."], f: [".calder/ci.ts", "vite.config.ts"], a: [10] },
 
   "c-build": { t: "Artifacts", k: "infra", d: ["The architecture-independent bundle (server, landing, console, Expo web export), built on x86_64 on the tower or dev-hauke, Node for aarch64, and the pnpm dependencies' hash."], f: ["nix/bundle.nix", "flake.nix"], a: [5] },
 
