@@ -1,8 +1,12 @@
 import { assert, it } from "@effect/vitest";
 import * as Context from "effect/Context";
+import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
+import * as Exit from "effect/Exit";
+import * as Fiber from "effect/Fiber";
 import * as Layer from "effect/Layer";
 import * as Redacted from "effect/Redacted";
+import * as Scope from "effect/Scope";
 
 import { SessionStore } from "../auth/SessionStore.ts";
 import { Device } from "../device/Device.ts";
@@ -49,4 +53,45 @@ it.effect("opens an account's engine where its session chose, and in memory with
       ),
     ),
   ),
+);
+
+// A refusal's write goes on after the screen that caused it unmounts, and stops at sign-out.
+it.effect("work in the engine's scope outlives the screen that waits for it, not the engine", () =>
+  Effect.gen(function* () {
+    const engine = yield* Scope.make();
+
+    const inEngine = <A, E>(effect: Effect.Effect<A, E>) =>
+      AccountEngine.inEngineScope(effect).pipe(
+        Effect.provideService(AccountEngine.EngineScope, engine),
+      );
+
+    const started = yield* Deferred.make<void>();
+    const gate = yield* Deferred.make<void>();
+    const written = yield* Deferred.make<void>();
+
+    const screen = yield* Effect.forkChild(
+      inEngine(
+        Deferred.succeed(started, undefined).pipe(
+          Effect.andThen(Deferred.await(gate)),
+          Effect.andThen(Deferred.succeed(written, undefined)),
+        ),
+      ),
+    );
+
+    yield* Deferred.await(started);
+    yield* Fiber.interrupt(screen);
+    yield* Deferred.succeed(gate, undefined);
+    yield* Deferred.await(written);
+
+    const pending = yield* Deferred.make<void>();
+
+    const late = yield* Effect.forkChild(
+      inEngine(Effect.andThen(Deferred.succeed(pending, undefined), Effect.never)),
+    );
+
+    yield* Deferred.await(pending);
+    yield* Scope.close(engine, Exit.void);
+
+    assert.isTrue(Exit.hasInterrupts(yield* Fiber.await(late)));
+  }),
 );

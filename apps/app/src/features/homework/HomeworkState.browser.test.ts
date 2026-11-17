@@ -10,6 +10,7 @@ import type * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Atom from "effect/reactivity/Atom";
 import * as AtomRegistry from "effect/reactivity/AtomRegistry";
 import * as Schema from "effect/Schema";
+import * as Stream from "effect/Stream";
 
 import { AccountEngine } from "../../infra/runtime/AccountEngine.ts";
 import { HomeworkInput } from "./HomeworkInput.ts";
@@ -108,28 +109,6 @@ it.layer(fullForCreated)((it) => {
   );
 });
 
-it.layer(KeyValueStore.layerMemory)((it) => {
-  it.effect("a tick and a delete this device refused come back from the store as refusals", () =>
-    Effect.gen(function* () {
-      const stored = KeyValueStore.toSchemaStore(
-        yield* KeyValueStore.KeyValueStore,
-        HomeworkState.HeldRefusals,
-      );
-
-      const held = [
-        new HomeworkState.NotToggled({ id: "a", done: true, reason: "Homework.NotFound" }),
-        new HomeworkState.NotDeleted({ id: "b", reason: "Homework.NotFound" }),
-      ];
-
-      yield* stored.set("homework-local-refusals", held);
-      const back = Option.getOrElse(yield* stored.get("homework-local-refusals"), () => []);
-
-      assert.deepStrictEqual(back, held);
-      assert.instanceOf(back[0], HomeworkState.NotToggled);
-    }),
-  );
-});
-
 it("a refusal about homework another device deleted keeps its card, and none shows while locked", () => {
   const titles = new Map([["vokabeln", "Vokabeln lernen"]]);
 
@@ -150,11 +129,12 @@ it("a refusal about homework another device deleted keeps its card, and none sho
   assert.deepStrictEqual(Refused.local(held, titles, false), []);
 });
 
-// Sign-out closes the account's engine and deletes its database; an account without a kept session
-// lives in memory, so closing its engine is all of that. Signing in again opens a fresh one.
-it.effect("signing in again after a sign-out shows no refusal from before, and no error", () =>
+/**
+ * A fresh account on this device whose engine stays offline and holds no notebook, so the device
+ * refuses every tick and delete itself.
+ */
+const refusingAccount = (accountId: string) =>
   Effect.gen(function* () {
-    const accountId = "refusals-sign-out";
     const registry = AtomRegistry.make();
     yield* Effect.addFinalizer(() => Effect.sync(() => registry.dispose()));
 
@@ -164,12 +144,64 @@ it.effect("signing in again after a sign-out shows no refusal from before, and n
     const engine = Atom.runtime(AccountEngine.app(accountId));
     yield* result(engine.atom(Effect.flatMap(SyncClient.Service, (sync) => sync.setOffline(true))));
 
-    // The device holds no such notebook, so it refuses the tick itself.
+    return { registry, result };
+  });
+
+const isNotToggled = Schema.is(HomeworkState.NotToggled);
+
+const homeworkA = "6f9619ff-8b86-4011-b42d-00c04fc964ff";
+const homeworkB = "1b4e28ba-2fa1-41d2-883f-0016d3cca427";
+
+// A week offline ends with several changes refused at once; each keeps its card.
+it.effect("refusals that arrive together all stay, and cards dismissed together all go", () =>
+  Effect.gen(function* () {
+    const accountId = "refusals-together";
+    const { registry, result } = yield* refusingAccount(accountId);
     const setDone = HomeworkState.setDone(accountId);
-    registry.set(setDone, { notebook, id: "6f9619ff-8b86-4011-b42d-00c04fc964ff", doneOn: dueOn });
-    yield* Effect.flip(result(setDone));
+    const remove = HomeworkState.remove(accountId);
+
+    registry.set(setDone, { notebook, id: homeworkA, doneOn: dueOn });
+    registry.set(remove, { notebook, id: homeworkB });
+    yield* Effect.all([Effect.flip(result(setDone)), Effect.flip(result(remove))], {
+      concurrency: "unbounded",
+    });
 
     // A stream that keeps reading, so its first value is enough.
+    const refusals = HomeworkState.localRefusals(accountId);
+    const leave = registry.mount(refusals);
+    const held = yield* AtomRegistry.getResult(registry, refusals);
+
+    assert.deepStrictEqual(held.map((each) => `${each._tag} ${each.id}`).sort(), [
+      `HomeworkState.NotDeleted ${homeworkB}`,
+      `HomeworkState.NotToggled ${homeworkA}`,
+    ]);
+    assert.isTrue(held.some(isNotToggled));
+
+    const dismiss = HomeworkState.dismissLocal(accountId);
+
+    for (const each of held) registry.set(dismiss, each);
+
+    const left = yield* AtomRegistry.toStreamResult(registry, refusals).pipe(
+      Stream.filter((each) => each.length === 0),
+      Stream.runHead,
+    );
+
+    assert.isTrue(Option.isSome(left));
+    leave();
+  }),
+);
+
+// Sign-out closes the account's engine and deletes its database; an account without a kept session
+// lives in memory, so closing its engine is all of that. Signing in again opens a fresh one.
+it.effect("signing in again after a sign-out shows no refusal from before, and no error", () =>
+  Effect.gen(function* () {
+    const accountId = "refusals-sign-out";
+    const { registry, result } = yield* refusingAccount(accountId);
+
+    const setDone = HomeworkState.setDone(accountId);
+    registry.set(setDone, { notebook, id: homeworkA, doneOn: dueOn });
+    yield* Effect.flip(result(setDone));
+
     const refusals = HomeworkState.localRefusals(accountId);
     const leave = registry.mount(refusals);
     assert.strictEqual((yield* AtomRegistry.getResult(registry, refusals)).length, 1);

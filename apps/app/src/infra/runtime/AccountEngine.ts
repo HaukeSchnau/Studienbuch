@@ -4,6 +4,7 @@ import { type Ports, SyncClient, WebSocketTransport } from "@stu/sync/client";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
+import * as Fiber from "effect/Fiber";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Reactivity from "effect/reactivity/Reactivity";
@@ -52,6 +53,13 @@ const forApp = (accountId: string, publicComputer: boolean) =>
 export class EngineScope extends Context.Service<EngineScope, Scope.Scope>()(
   "AccountEngine.EngineScope",
 ) {}
+
+/**
+ * Runs `effect` in the engine's scope and waits for it. A screen that unmounts meanwhile stops
+ * waiting but not the effect, and sign-out, which closes the engine, still ends it.
+ */
+export const inEngineScope = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+  Effect.flatMap(EngineScope, (scope) => Effect.flatMap(Effect.forkIn(effect, scope), Fiber.join));
 
 type Running = Layer.Success<ReturnType<typeof forApp>> | EngineScope;
 
