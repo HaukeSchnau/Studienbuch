@@ -14,10 +14,13 @@ import { Refused } from "./Refused.ts";
 export function HomeworkRefusals({
   accountId,
   reading,
+  readable,
   today,
 }: {
   readonly accountId: string;
   readonly reading: HomeworkState.Reading;
+  /** Whether the device holds the notebook's key. Without it, this device's own refusals wait. */
+  readonly readable: boolean;
   readonly today: CivilTime.PlainDate;
 }) {
   const toggle = useAtomSet(HomeworkState.setDone(accountId));
@@ -38,34 +41,23 @@ export function HomeworkRefusals({
           onDismiss={() => dismiss(rejected)}
         />
       ))}
-      {local.flatMap((refused) => {
-        const title = titles.get(refused.id);
-
-        // One for homework the screens don't show, as while the notebook is locked, waits.
-        if (title === undefined) return [];
-
-        return [
-          <RefusalCard
-            key={`${refused._tag} ${refused.id}`}
-            change={
-              refused._tag === "HomeworkState.NotToggled"
-                ? Refused.tick(refused.done, title)
-                : Refused.removal(title)
-            }
-            reason={{ _tag: refused.reason }}
-            onRetry={() =>
-              refused._tag === "HomeworkState.NotToggled"
-                ? toggle({
-                    notebook: reading.notebook,
-                    id: refused.id,
-                    doneOn: refused.done ? today : undefined,
-                  })
-                : remove({ notebook: reading.notebook, id: refused.id })
-            }
-            onDismiss={() => setLocal(LocalRefusals.dismiss(local, refused))}
-          />,
-        ];
-      })}
+      {Refused.local(local, titles, readable).map(({ refused, change }) => (
+        <RefusalCard
+          key={`${refused._tag} ${refused.id}`}
+          change={change}
+          reason={{ _tag: refused.reason }}
+          onRetry={() =>
+            refused._tag === "HomeworkState.NotToggled"
+              ? toggle({
+                  notebook: reading.notebook,
+                  id: refused.id,
+                  doneOn: refused.done ? today : undefined,
+                })
+              : remove({ notebook: reading.notebook, id: refused.id })
+          }
+          onDismiss={() => setLocal(LocalRefusals.dismiss(local, refused))}
+        />
+      ))}
     </>
   );
 }

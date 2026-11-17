@@ -73,7 +73,12 @@ function AccountDetail({ accountId, id }: { readonly accountId: string; readonly
 
           return (
             <View style={styles.content}>
-              <HomeworkRefusals accountId={accountId} reading={value} today={today} />
+              <HomeworkRefusals
+                accountId={accountId}
+                reading={value}
+                readable={readable}
+                today={today}
+              />
               {locked ? (
                 <Notice title={HomeworkItem.locked.title} text={HomeworkItem.locked.text} />
               ) : !readable ? null : homework === undefined ? (

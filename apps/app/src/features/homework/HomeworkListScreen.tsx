@@ -57,7 +57,12 @@ function AccountList({ accountId }: { readonly accountId: string }) {
           ) : null,
         onSome: (value) => (
           <View style={styles.content}>
-            <HomeworkRefusals accountId={accountId} reading={value} today={today} />
+            <HomeworkRefusals
+              accountId={accountId}
+              reading={value}
+              readable={readable}
+              today={today}
+            />
             <HomeworkList
               listing={readable ? HomeworkItem.list(value.homework, today) : undefined}
               locked={locked}

@@ -3,6 +3,8 @@ import type { Outbox } from "@stu/sync/client";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 
+import type { HomeworkState } from "./HomeworkState.ts";
+
 // What a refused change was, in one line for its card, built from the command's stored arguments
 // and the titles the device still holds (sync.md, "Refusals stay visible").
 
@@ -59,3 +61,23 @@ export const change = (
       return "Eine Änderung";
   }
 };
+
+/**
+ * The lines for the ticks and deletes this device refused itself, each with its refusal. None
+ * without the notebook's key, where the screens show nothing of the notebook. One about homework
+ * another device deleted since keeps its card, about "eine Hausaufgabe".
+ */
+export const local = (
+  held: ReadonlyArray<HomeworkState.LocalRefusal>,
+  titles: ReadonlyMap<string, string>,
+  readable: boolean,
+) =>
+  readable
+    ? held.map((refused) => ({
+        refused,
+        change:
+          refused._tag === "HomeworkState.NotToggled"
+            ? tick(refused.done, titles.get(refused.id))
+            : removal(titles.get(refused.id)),
+      }))
+    : [];

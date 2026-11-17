@@ -81,7 +81,12 @@ function AccountOverview({ accountId }: { readonly accountId: string }) {
         {Option.match(reading, {
           onNone: () => null,
           onSome: (reading) => (
-            <HomeworkRefusals accountId={accountId} reading={reading} today={today} />
+            <HomeworkRefusals
+              accountId={accountId}
+              reading={reading}
+              readable={readable}
+              today={today}
+            />
           ),
         })}
       </Arrive>

@@ -9,6 +9,7 @@ import * as Schema from "effect/Schema";
 
 import { HomeworkInput } from "./HomeworkInput.ts";
 import { HomeworkState } from "./HomeworkState.ts";
+import { Refused } from "./Refused.ts";
 
 // Browser tests only because HomeworkState's engine imports need a browser: what they test isn't
 // tied to one.
@@ -122,4 +123,24 @@ it.layer(KeyValueStore.layerMemory)((it) => {
       assert.instanceOf(back[0], HomeworkState.NotToggled);
     }),
   );
+});
+
+it("a refusal about homework another device deleted keeps its card, and none shows while locked", () => {
+  const titles = new Map([["vokabeln", "Vokabeln lernen"]]);
+
+  const held = [
+    new HomeworkState.NotToggled({
+      id: "deleted-elsewhere",
+      done: true,
+      reason: "Homework.NotFound",
+    }),
+    new HomeworkState.NotDeleted({ id: "vokabeln", reason: "Homework.NotFound" }),
+  ];
+
+  assert.deepStrictEqual(
+    Refused.local(held, titles, true).map(({ change }) => change),
+    ["Abgehakt: eine Hausaufgabe", "Gelöscht: Vokabeln lernen"],
+  );
+
+  assert.deepStrictEqual(Refused.local(held, titles, false), []);
 });
