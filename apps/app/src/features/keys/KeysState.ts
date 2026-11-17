@@ -12,6 +12,7 @@ import * as RpcClient from "effect/rpc/RpcClient";
 import * as Stream from "effect/Stream";
 
 import { ApiProtocol } from "../../infra/api/ApiProtocol.ts";
+import { AuthApi } from "../../infra/auth/AuthApi.ts";
 import { SessionStore } from "../../infra/auth/SessionStore.ts";
 import { Device } from "../../infra/device/Device.ts";
 import { Passkeys } from "../../infra/passkeys/Passkeys.ts";
@@ -225,6 +226,21 @@ export const withPassword = Atom.family((accountId: string) =>
       Effect.flatMap(Device.PublicComputer, (publicComputer) =>
         Account.signIn(email, password, publicComputer),
       ),
+  ),
+);
+
+/** How "Kurz bestätigen" can confirm the account (`AuthApi.waysIn`), asked when it shows. */
+export const waysIn = Atom.family((accountId: string) =>
+  runtime(accountId).atom(
+    Effect.gen(function* () {
+      const store = yield* SessionStore.Service;
+      const api = yield* AuthApi.Service;
+      const token = Option.flatMap(yield* store.current, (signed) => signed.token);
+
+      if (Option.isNone(token)) return yield* new NotebookKeys.Problem({ reason: "signed-out" });
+
+      return yield* api.waysIn(token.value);
+    }),
   ),
 );
 

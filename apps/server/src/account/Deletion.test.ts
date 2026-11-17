@@ -2,7 +2,9 @@ import * as NodeHttpServer from "@effect/platform-node/NodeHttpServer";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { describe, expect, layer } from "@effect/vitest";
 import { Api } from "@stu/api";
+import { Access } from "@stu/api/Access";
 import { Accounts } from "@stu/api/Accounts";
+import { Dev } from "@stu/api/Dev";
 import { Keys } from "@stu/api/Keys";
 import { AccountKey, Wrapper } from "@stu/e2ee";
 import { TestCrypto } from "@stu/e2ee/testing";
@@ -12,6 +14,7 @@ import * as Arr from "effect/Array";
 import * as ConfigProvider from "effect/ConfigProvider";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
+import * as Base64Url from "effect/encoding/Base64Url";
 import * as Fiber from "effect/Fiber";
 import * as FetchHttpClient from "effect/http/FetchHttpClient";
 import * as Headers from "effect/http/Headers";
@@ -277,6 +280,69 @@ describe.skipIf(Postgres18.socket === null)("Account deletion on PostgreSQL 18",
             revoked: Option.some(Arr.getSomes(sessions).sort()),
             resolved: [Option.none(), Option.none()],
             deleted: { phone: true, laptop: true, tom: false, nobody: false },
+          });
+        }),
+    );
+
+    it.effect(
+      "deletes an account without an address, with its card login and passkey, and mails nothing",
+      () =>
+        Effect.gen(function* () {
+          const sql = yield* SqlClient.SqlClient;
+          const client = yield* rpc;
+          const outbox = yield* Outbox;
+
+          const { token: reservation } = yield* client["Access.redeem"]({
+            code: Dev.demoSchoolCode,
+          });
+
+          const signedUp = yield* (yield* HttpClient.HttpClient).execute(
+            HttpClientRequest.post(`${Accounts.path}${Accounts.cardSignUpPath}`, {
+              headers: { origin: publicUrl, [Access.reservationHeader]: reservation },
+            }).pipe(
+              HttpClientRequest.bodyJsonUnsafe({
+                login: Base64Url.encode(new Uint8Array(32).fill(7)),
+              }),
+            ),
+          );
+
+          const token = Option.getOrElse(
+            Headers.get(signedUp.headers, "set-auth-token"),
+            () => "no token",
+          );
+
+          const [account] = yield* sql<{
+            readonly id: string;
+            readonly email: string;
+            readonly notebook: string;
+          }>`
+            select u.id, u.email, a.notebook_id as notebook
+            from auth_session s join auth_user u on u.id = s."userId"
+            join school_access a on a.account_id = u.id
+            where s.token = ${token.split(".")[0] ?? ""}
+          `;
+
+          const needles = [account?.id ?? "missing", account?.email ?? "missing"];
+
+          yield* sql`
+            insert into auth_passkey
+              (id, "publicKey", "userId", "credentialID", counter, "deviceType", "backedUp", "createdAt")
+            values ('card-passkey', 'key', ${needles[0]}, 'card-credential', 0, 'singleDevice', true, now())
+          `;
+
+          const before = yield* mentions([...needles, account?.notebook ?? "missing"]);
+          yield* client["AccountDeletion.delete"](undefined, bearer(token));
+
+          expect({
+            placeholder: Accounts.isPlaceholder(account?.email ?? ""),
+            before: before.filter((line) => /^auth_(account|passkey|user) /u.test(line)),
+            after: yield* mentions([...needles, account?.notebook ?? "missing"]),
+            mailed: yield* Queue.size(outbox),
+          }).toEqual({
+            placeholder: true,
+            before: ["auth_account 1", "auth_passkey 1", "auth_user 1"],
+            after: [],
+            mailed: 0,
           });
         }),
     );
