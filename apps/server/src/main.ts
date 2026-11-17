@@ -44,11 +44,14 @@ import { Sync } from "./sync/Sync.ts";
 const besideServer = (name: string) =>
   NodeURL.fileURLToPath(new URL(`../${name}/`, import.meta.url));
 
-const runtime = Layer.mergeAll(
-  Database.layer,
-  Migrations.layerRelease(besideServer("migrations")),
-  Telemetry.layer,
-).pipe(Layer.provideMerge(Deployment.layer));
+const withDatabase = (database: typeof Database.layer) =>
+  Layer.mergeAll(
+    database,
+    Migrations.layerRelease(besideServer("migrations")),
+    Telemetry.layer,
+  ).pipe(Layer.provideMerge(Deployment.layer));
+
+const runtime = withDatabase(Database.commandLayer);
 
 // devenv runs Vite and Metro beside the server and names them, and a release serves their builds.
 const webBuilds = Layer.unwrap(
@@ -87,7 +90,7 @@ const serve = Effect.gen(function* () {
   return yield* Layer.launch(
     Layer.mergeAll(SyncServer.closeFirst.pipe(Layer.provide(http)), Jobs.layer),
   );
-}).pipe(Effect.provide(runtime));
+}).pipe(Effect.provide(withDatabase(Database.layer)));
 
 const prepare = Effect.gen(function* () {
   const applied = yield* Migrations.apply(yield* Migrations.Release);
