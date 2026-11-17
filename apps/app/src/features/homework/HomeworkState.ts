@@ -389,9 +389,21 @@ const moveDraft = (
   value: HomeworkInput.Draft,
   get: Atom.FnContext,
 ) =>
+  moveStored(from, to, value).pipe(
+    Effect.andThen(Effect.sync(() => get.set(draft(accountId)(from), {}))),
+    Effect.ignore,
+  );
+
+/**
+ * Moves a draft to another key, as from the add sheet to the new homework's edit. `from` goes only
+ * once `to` holds the draft, so a failed write keeps it where it was.
+ */
+export const moveStored = (from: string, to: string, value: HomeworkInput.Draft) =>
   Effect.flatMap(KeyValueStore.KeyValueStore, (store) =>
-    KeyValueStore.toSchemaStore(store, HomeworkInput.Draft).set(draftKey(to), value),
-  ).pipe(Effect.ignore, Effect.andThen(dropDraft(accountId, from, get)));
+    KeyValueStore.toSchemaStore(store, HomeworkInput.Draft)
+      .set(draftKey(to), value)
+      .pipe(Effect.andThen(store.remove(draftKey(from)))),
+  );
 
 /** The device itself refused a delete. `reason` is the refusal's tag. */
 export class NotDeleted extends Schema.TaggedError<NotDeleted, { readonly brand: unique symbol }>()(

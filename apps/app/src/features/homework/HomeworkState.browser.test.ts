@@ -1,12 +1,17 @@
 import { assert, it } from "@effect/vitest";
 import { CivilTime, Course, Homework, Notebook, School } from "@stu/core";
 import { Refusal } from "@stu/sync";
+import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import * as KeyValueStore from "effect/persistence/KeyValueStore";
 import * as Schema from "effect/Schema";
 
+import { HomeworkInput } from "./HomeworkInput.ts";
 import { HomeworkState } from "./HomeworkState.ts";
 
-// A browser test only because HomeworkState's engine imports need one: `shown` itself is pure.
+// Browser tests only because HomeworkState's engine imports need a browser: what they test isn't
+// tied to one.
 
 const notebook = Notebook.Id.make("nb-lena");
 const dueOn = Schema.decodeSync(CivilTime.PlainDate)("2026-11-20");
@@ -61,4 +66,38 @@ it("a locked notebook shows no homework title, and its refusals return with the 
   for (const title of titles) assert.notInclude(locked, title);
   assert.deepStrictEqual(unlocked.refusals, held.refusals);
   assert.deepStrictEqual(unlocked.homework, held.homework);
+});
+
+/** A store in memory whose writes to the new homework's draft fail, as a full disk would. */
+const fullForCreated = Layer.effect(
+  KeyValueStore.KeyValueStore,
+  Effect.map(KeyValueStore.KeyValueStore, (store) =>
+    KeyValueStore.make({
+      ...store,
+      set: (key, value) =>
+        key === "homework-touched-created"
+          ? Effect.fail(
+              new KeyValueStore.KeyValueStoreError({ message: "full", method: "set", key }),
+            )
+          : store.set(key, value),
+    }),
+  ),
+).pipe(Layer.provide(KeyValueStore.layerMemory));
+
+it.layer(fullForCreated)((it) => {
+  it.effect("a draft the new homework's edit can't take stays in the add sheet", () =>
+    Effect.gen(function* () {
+      const drafts = KeyValueStore.toSchemaStore(
+        yield* KeyValueStore.KeyValueStore,
+        HomeworkInput.Draft,
+      );
+
+      const typed = { title: "Referat vorbereiten", description: "Folien bis Freitag" };
+
+      yield* drafts.set("homework-touched-new", typed);
+      yield* Effect.ignore(HomeworkState.moveStored("new", "created", typed));
+
+      assert.deepStrictEqual(yield* drafts.get("homework-touched-new"), Option.some(typed));
+    }),
+  );
 });
