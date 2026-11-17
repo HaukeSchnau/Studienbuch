@@ -76,9 +76,15 @@ export const spec = (
   console: server("console"),
   endpoint: { hostName: environment.hostName, visibility: environment.visibility },
   health: { path: "/api/health/ready" },
-  database: { env: "DATABASE_URL", majorVersion: 18, dropOnDelete: environment.dropDatabase },
+  database: {
+    env: "DATABASE_URL",
+    majorVersion: 18,
+    dropOnDelete: environment.dropDatabase,
+    connections: environment.databaseConnections,
+  },
   env: {
     STUDIENBUCH_ENVIRONMENT: environment.kind,
+    DATABASE_CONNECTIONS: String(environment.databaseConnections),
     STUDIENBUCH_REVISION: release.revision,
     STUDIENBUCH_DEMO_SCHOOL: "seed",
     PUBLIC_URL: `https://${environment.hostName}`,
