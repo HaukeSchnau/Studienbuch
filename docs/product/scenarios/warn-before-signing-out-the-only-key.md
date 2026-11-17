@@ -10,7 +10,8 @@ Signing out deletes this device's copy of the notebook's key. When no passkey, N
 other device opens the notebook without this device, or the device can't tell, "Abmelden" asks
 first, in the same question that names unsent changes. Where only this device opens the notebook,
 the question offers "Notfallkarte erstellen" before "Trotzdem abmelden". It never blocks the
-sign-out, and it stays silent when nothing would be lost.
+sign-out, and it stays silent when nothing would be lost. A change saved after the question isn't
+lost unasked: the question comes again and counts it.
 
 ## Example
 
@@ -29,6 +30,7 @@ And after a Notfallkarte, "Abmelden" signs out without asking
 | The student decides             | "Trotzdem abmelden" signs out and the device shows "Willkommen!"                                |
 | One question for both losses    | Offline with unsent changes, the question names the notebook check and the changes, once        |
 | Nothing to lose asks nothing    | With a Notfallkarte, or on a second device that is still locked, "Abmelden" signs out at once   |
+| A later change asks again       | A change saved while the question is open brings the question back, counting it                 |
 
 ## State
 

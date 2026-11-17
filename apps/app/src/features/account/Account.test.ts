@@ -349,8 +349,11 @@ describe("Account", () => {
         const sessions = yield* SessionStore.Service;
 
         yield* sessions.signedIn({ ...signedIn("lena", "token-lena"), demo: false }, false);
-        yield* Account.signOut(({ accountId }) =>
-          Ref.update(forgotten, (accounts) => [...accounts, accountId]),
+        yield* Account.signOut(({ accountId }, forgetSession) =>
+          Effect.andThen(
+            Ref.update(forgotten, (accounts) => [...accounts, accountId]),
+            forgetSession,
+          ),
         );
 
         assert.isTrue(Option.isNone(yield* sessions.current));

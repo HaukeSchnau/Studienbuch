@@ -2,7 +2,8 @@
 // what a rule sees in the syntax, and needs no declaration for the modules it imports.
 declare module "*";
 
-// The host's platform, which feature-code fixtures read. noResolve leaves out @types/node too.
+// The host's platform, which feature-code fixtures read. The base config's `"types": []` leaves
+// out @types/node.
 declare const process: {
   readonly env: Readonly<Record<string, string | undefined>>;
   readonly platform: string;

@@ -55,7 +55,7 @@ function Notice({
   const unlocked = NotebookKeys.unlocked(useAtomValue(KeysState.status(accountId)));
 
   const held = Option.getOrUndefined(KeysState.useHeld(accountId));
-  const mismatch = useAtomValue(KeysState.mismatch(accountId));
+  const mismatch = useAtomValue(KeysState.mismatch);
   const republish = useAtomRefresh(KeysState.republish(accountId));
 
   useAtomMount(KeysState.republish(accountId));

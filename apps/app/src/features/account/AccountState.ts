@@ -36,6 +36,20 @@ export const current = runtime
   .atom(Stream.unwrap(Effect.map(SessionStore.Service, (store) => store.changes)))
   .pipe(Atom.keepAlive);
 
+/**
+ * Memory of the device's account that outlives its screens and not its session: `initial` again
+ * once the session changes (sign-in, its end on the server, sign-out), so sign-out leaves nothing.
+ */
+export const memory = <A>(initial: A) =>
+  Atom.writable(
+    (get) => {
+      get(current);
+
+      return initial;
+    },
+    (context, value: A) => context.setSelf(value),
+  ).pipe(Atom.keepAlive);
+
 /** `Account.keepsNothing` for this device. Storage outside an account follows it too. */
 export const keepsNothing = Atom.make((get) =>
   Account.keepsNothing(get(current), get(publicComputer)),
@@ -140,7 +154,8 @@ export const cancelSignUp = runtime
 /** Signs the device in with the session that confirmed `email`, with a new passkey first. */
 export const finish = runtime
   .fn<{ readonly email: string; readonly withPasskey: boolean }>()(({ email, withPasskey }, get) =>
-    Effect.tap(Account.finish(email, withPasskey, chosen(get)), (used) =>
+    // The PRF output goes to `OfferedPrf` only: this atom stays alive and keeps what it returns.
+    Effect.flatMap(Account.finish(email, withPasskey, chosen(get)), (used) =>
       Effect.sync(() => get.set(OfferedPrf.waiting, used)),
     ),
   )
@@ -173,18 +188,29 @@ export const signInWithPasskey = runtime.fn<void>()((_, get) =>
  */
 export const signedOut = Atom.make(false).pipe(Atom.keepAlive);
 
+/**
+ * Signs the device out (`Account.signOut`). `unsent` is what the question before counted of the
+ * account's unsent changes, `None` when it couldn't count. When more arrived since, it refuses with
+ * `AccountEngine.MoreUnsent`, and the question asks again.
+ */
 export const signOut = runtime
-  .fn<void>()((_, get) =>
-    Effect.andThen(
-      // Before the session goes, which is when the gates move on.
-      Effect.sync(() => get.set(signedOut, true)),
-      // The account's engine closes first: only a closed database can be deleted. A public
-      // computer's account kept everything in its engine, so closing it forgets the account.
-      Account.signOut(({ accountId, publicComputer }) =>
-        Effect.andThen(
-          AccountEngine.close(accountId),
-          publicComputer ? Effect.void : Layers.forget(accountId),
-        ),
+  .fn<Option.Option<number>>()((unsent, get) =>
+    Account.signOut(({ accountId, publicComputer }, forgetSession) =>
+      AccountEngine.forget(
+        accountId,
+        unsent,
+        Effect.gen(function* () {
+          // A public computer's account kept everything in its engine, which `forget` stopped.
+          if (!publicComputer) yield* Layers.forget(accountId).pipe(Effect.orDie);
+
+          // Before the session goes, which is when the gates move on.
+          yield* Effect.sync(() => {
+            get.set(signedOut, true);
+            get.set(OfferedPrf.waiting, Option.none());
+          });
+
+          yield* forgetSession;
+        }),
       ),
     ),
   )

@@ -970,7 +970,7 @@ DIAGRAMS.app = {
     { id: "f-hw", x: 1040, y: 184, w: 85, h: 72, t: "homework", s: "list, page\nand sheet" },
 
     { id: "a-devlayers", x: 40, y: 330, w: 280, h: 74, t: "Layers.device", s: "one per device: lifecycle, HTTP, WebSocket,\nsessions, server origin, keychain", k: "wire" },
-    { id: "a-engines", x: 340, y: 330, w: 280, h: 74, t: "AccountEngine.Engines", s: "an engine per account, started on first\nuse, closed before sign-out deletes", k: "wire" },
+    { id: "a-engines", x: 340, y: 330, w: 280, h: 74, t: "AccountEngine.Engines", s: "an engine per signed-in account; sign-out\nstops and deletes it in one turn", k: "wire" },
     { id: "a-acct", x: 52, y: 456, w: 170, h: 80, t: "Layers.account", s: "the account's secrets\nand its database" },
     { id: "a-sync", x: 238, y: 456, w: 180, h: 80, t: "SyncClient", s: "mutate, live queries\noutbox, refusals", k: "wire" },
     { id: "a-transport", x: 434, y: 456, w: 180, h: 80, t: "WebSocketTransport", s: "ticket, then socket\nto /api/sync", k: "wire" },
@@ -1511,7 +1511,7 @@ const INFO = {
 
   "a-devlayers": { t: "Layers.device", k: "wire", d: ["Everything a device has before anyone signs in: the server origin, the sessions signed in here, the app lifecycle, HTTP and WebSocket, and the keychain (memory only on a public computer). One build of it per device, so its secrets have a single writer.", "At start it finishes any sign-out that an earlier run left half done."], f: ["apps/app/src/infra/runtime/Layers.ts"] },
 
-  "a-engines": { t: "AccountEngine.Engines", k: "wire", d: ["The device's running sync engines, keyed by account. An engine starts at first use and runs until sign-out closes it, because its database may be open only once and only a closed one can be deleted. It opens an account's storage on disk only for a session the device keeps, and in memory for a public computer's account or one without a session. The Sync Lab runs one per virtual device."], f: ["apps/app/src/infra/runtime/AccountEngine.ts"] },
+  "a-engines": { t: "AccountEngine.Engines", k: "wire", d: ["The device's running sync engines, keyed by account. An engine starts at first use and runs until sign-out stops it, because its database may be open only once and only a closed one can be deleted. It opens an account's storage on disk only for a session the device keeps, and in memory for a public computer's account. An account the device holds no session of gets no engine.", "Sign-out (<code>forget</code>) stops the engine and deletes the account in one turn, so a screen on its way out can't open the database again in between. It refuses when more changes wait than the question before it counted. The Sync Lab runs one per virtual device."], f: ["apps/app/src/infra/runtime/AccountEngine.ts"] },
 
   "a-acct": { t: "Layers.account", d: ["What a signed-in account adds: its secrets in its own keychain namespace and its own database, per server origin, device and account. Signing in as someone else never opens another account's rows."], f: ["apps/app/src/infra/runtime/Layers.ts", "apps/app/src/infra/sqlite/AccountDatabase.ts"] },
 
@@ -1763,7 +1763,7 @@ const INFO = {
 
   "l-update": { t: "Update required", k: "stop", d: ["Close code 4426: the client's contract is below the server's minimum. The device waits for a newer app. The server deploys first and sends each message tag only to clients that know it, so this should be rare."], f: ["packages/sync/src/server/Contract.ts"] },
 
-  "l-signout": { t: "Abmelden", k: "stop", d: ["Asks first when the engine counted changes the server hasn't received (PR 99), or when no passkey, Notfallkarte or other device opens the notebook without this one. Then it closes the engine, deletes the account's database, secrets and session, and revokes the session on the server."], f: ["apps/app/src/features/account/SignOutButton.tsx", "apps/app/src/infra/runtime/Forgetting.ts"] },
+  "l-signout": { t: "Abmelden", k: "stop", d: ["Asks first when the engine counted changes the server hasn't received (PR 99), or when no passkey, Notfallkarte or other device opens the notebook without this one. Then, in one turn of the engines, it stops the engine and deletes the account's database, secrets and session, and revokes the session on the server. A change saved after the question makes it ask again.", "Nothing of the account stays in the app's memory: its atoms go with its screens, and what outlives a screen sits in <code>AccountState.memory</code>, which forgets it when the device's session changes (<code>studienbuch/no-kept-account-atom</code>)."], f: ["apps/app/src/features/account/SignOutButton.tsx", "apps/app/src/features/account/AccountState.ts", "apps/app/src/infra/runtime/AccountEngine.ts", "apps/app/src/infra/runtime/Forgetting.ts"] },
 
   "l-revoked": { t: "Removed by another device", k: "stop", ms: "M3", d: ["The client already handles <code>Sync.DeviceRevoked</code> and close code 4403 by wiping itself after one more pull, but the server never sends either: device removal is M3."], f: ["packages/sync/src/client/SyncClient.ts", "packages/sync/src/protocol/Connection.ts"] },
 

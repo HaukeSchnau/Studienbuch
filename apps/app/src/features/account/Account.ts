@@ -538,27 +538,30 @@ export const passkeyOutput = Effect.fn("Account.passkeyOutput")(function* (crede
 });
 
 /**
- * Signs this device out: `forget` deletes the account's database, secrets and session
- * (`Layers.forget`), then the server ends the session. Offline the device still forgets
- * everything, and the session runs out on the server. The caller asks first unless nothing would be
- * lost (`signOutWarning`).
+ * Signs this device out: `leave` deletes the account's database and secrets (`Layers.forget`) and
+ * ends with `forgetSession`, which signs the device out; then the server ends the session. Offline
+ * the device still forgets everything, and the session runs out on the server. The caller asks
+ * first unless nothing would be lost (`signOutWarning`), and `leave` may still refuse.
  */
 export const signOut = Effect.fn("Account.signOut")(function* <E, R>(
-  forget: (signed: SessionStore.Signed) => Effect.Effect<void, E, R>,
+  leave: (
+    signed: SessionStore.Signed,
+    forgetSession: Effect.Effect<void>,
+  ) => Effect.Effect<void, E, R>,
 ) {
   const store = yield* SessionStore.Service;
   const api = yield* AuthApi.Service;
   const confirmations = yield* Confirmations;
   const current = yield* store.current;
 
+  if (Option.isSome(current)) yield* leave(current.value, store.forget.pipe(Effect.orDie));
+
   yield* SubscriptionRef.set(confirmations.current, Option.none());
-
-  if (Option.isNone(current)) return;
-
-  yield* forget(current.value).pipe(Effect.orDie);
-  yield* store.forget.pipe(Effect.orDie);
   yield* Effect.ignore(
-    Option.match(current.value.token, { onNone: () => Effect.void, onSome: api.signOut }),
+    Option.match(
+      Option.flatMap(current, (signed) => signed.token),
+      { onNone: () => Effect.void, onSome: api.signOut },
+    ),
   );
 });
 
