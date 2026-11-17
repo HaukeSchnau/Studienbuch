@@ -12,7 +12,8 @@ export const entity = {
   email: "info@urbs.one",
   registerCourt: "Amtsgericht Hamburg",
   registerNumber: "HRB 185737",
-  // Held despite the §19 UStG small-business election, so §27a UStG requires it here.
+  // Held despite the §19 UStG small-business election. §5 Abs. 1 Nr. 6 DDG requires an ID issued
+  // under §27a UStG in the Impressum.
   vatId: "DE367669644",
 } as const;
 
@@ -25,11 +26,16 @@ export const processors = [
     location: "Deutschland",
   },
   {
+    name: "Backblaze, Inc.",
+    address: "2261 Market Street, STE 81006, San Francisco, CA 94114, USA",
+    purpose: "Speicherung der verschlüsselten Datensicherungen",
+    location: "Amsterdam, Niederlande (Europäische Union)",
+  },
+  {
     name: "Cloudflare, Inc.",
     address: "101 Townsend St., San Francisco, CA 94107, USA",
-    purpose:
-      "Speicherung der Ende-zu-Ende-verschlüsselten Fotos und Unterschriften sowie der verschlüsselten Datensicherungen",
-    location: "Rechenzentren in der Europäischen Union (EU-Jurisdiktion)",
+    purpose: "Beantwortung der DNS-Anfragen für die Domain studienbuch.app",
+    location: "weltweit verteilte Rechenzentren",
   },
   {
     name: "Scaleway SAS",
@@ -47,4 +53,4 @@ export const supervisoryAuthority = {
 } as const;
 
 /** Shown as "Stand". Update it whenever the wording of either page changes. */
-export const lastUpdated = "28. Oktober 2026";
+export const lastUpdated = "17. November 2026";

@@ -46,15 +46,17 @@ export function Datenschutz() {
 
       <h3>Server-Logfiles</h3>
       <p>
-        Beim Aufruf der Website übermittelt Ihr Browser technisch notwendige Daten, die unser Server
-        protokolliert: IP-Adresse, Datum und Uhrzeit des Zugriffs, die abgerufene Adresse, den
-        HTTP-Statuscode, die übertragene Datenmenge sowie Browser- und Betriebssystemkennung.
+        Bei jedem Aufruf der Website protokolliert unser Server Datum und Uhrzeit, die abgerufene
+        Adresse und den HTTP-Statuscode. Schlägt eine Verbindung fehl, hält unser Webserver
+        zusätzlich die IP-Adresse und die übrigen Angaben der Anfrage fest, etwa die Kennung Ihres
+        Browsers. Um wiederholte Anmeldeversuche zu begrenzen, zählt der Server außerdem Anfragen je
+        IP-Adresse für 15&nbsp;Minuten im Arbeitsspeicher.
       </p>
       <p>
         Rechtsgrundlage ist Artikel&nbsp;6 Absatz&nbsp;1 Buchstabe&nbsp;f DSGVO. Unser berechtigtes
         Interesse liegt im sicheren und stabilen Betrieb der Website sowie in der Abwehr von
-        Angriffen. Die Daten werden nur so lange gespeichert, wie es dafür erforderlich ist, und
-        anschließend gelöscht. Eine Zusammenführung mit anderen Daten findet nicht statt.
+        Angriffen. Die Protokolle löschen wir nach höchstens 10&nbsp;Tagen. Eine Zusammenführung mit
+        anderen Daten findet nicht statt.
       </p>
 
       <h3>Keine Cookies auf den informativen Seiten</h3>
@@ -198,7 +200,8 @@ export function Datenschutz() {
       <p>
         Damit wir Fehler und Leistungsprobleme erkennen, protokolliert unser Server technische
         Abläufe. Diese Protokolle enthalten Kennungen und Zeitpunkte, aber keine Inhalte Ihrer
-        Einträge: Diese erreichen den Server nur verschlüsselt.
+        Einträge: Diese erreichen den Server nur verschlüsselt. Wir löschen die Protokolle nach
+        höchstens 10&nbsp;Tagen.
       </p>
 
       <h3>Minderjährige</h3>
@@ -226,13 +229,13 @@ export function Datenschutz() {
         ))}
       </ul>
       <p>
-        Unsere Server stehen bei einem deutschen Anbieter in Deutschland. Fotos, Unterschriften und
-        Datensicherungen speichern wir bei Cloudflare in Rechenzentren in der Europäischen Union,
-        und zwar nur verschlüsselt: Fotos und Unterschriften Ende-zu-Ende, Datensicherungen mit
-        einem Schlüssel, den nur unser Server kennt. Cloudflare, Inc. hat seinen Sitz in den USA;
-        ein Zugriff von dort ist rechtlich nicht auszuschließen. Grundlage dafür ist der
-        Angemessenheitsbeschluss der EU-Kommission zum EU-US Data Privacy Framework, unter dem
-        Cloudflare zertifiziert ist.
+        Unsere Server stehen bei einem deutschen Anbieter in Deutschland. Datensicherungen speichern
+        wir bei Backblaze in einem Rechenzentrum in Amsterdam, und zwar nur verschlüsselt, mit einem
+        Schlüssel, der nur bei uns liegt. Cloudflare beantwortet nur die DNS-Anfragen für unsere
+        Domain; Ihre Anfragen an die App und Ihre Einträge laufen nicht über Cloudflare. Backblaze,
+        Inc. und Cloudflare, Inc. haben ihren Sitz in den USA; ein Zugriff von dort ist rechtlich
+        nicht auszuschließen. Grundlage dafür ist der Angemessenheitsbeschluss der EU-Kommission zum
+        EU-US Data Privacy Framework, unter dem beide Unternehmen zertifiziert sind.
       </p>
 
       <h2>5. Speicherdauer</h2>
@@ -247,9 +250,10 @@ export function Datenschutz() {
         Abgelaufene Sitzungen sowie Bestätigungs- und Wiederherstellungstoken werden gelöscht,
         sobald sie für ihren Sicherheitszweck nicht mehr benötigt werden. Die Löschung eines Kontos
         kann über die oben genannte E-Mail-Adresse verlangt werden. Datensicherungen bewahren wir
-        bis zu 35&nbsp;Tage auf. Mit einem Konto löschen wir auch die Sicherungen seiner Schlüssel,
-        sodass ältere Kopien verschlüsselter Inhalte danach von niemandem mehr geöffnet werden
-        können.
+        bis zu 35&nbsp;Tage auf, Server-Protokolle bis zu 10&nbsp;Tage. Mit einem Konto löschen wir
+        auch die Sicherungen seiner Schlüssel. Spätestens 35&nbsp;Tage später sind sie auch aus den
+        Datensicherungen gelöscht, und ältere Kopien verschlüsselter Inhalte kann danach niemand
+        mehr öffnen.
       </p>
 
       <h2>6. Ihre Rechte</h2>
