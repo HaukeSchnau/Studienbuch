@@ -6,7 +6,7 @@ import { Text } from "./Text.tsx";
 import { Vector } from "./Vector.tsx";
 
 export interface SubjectBlobProps {
-  /** The art as a whole `<svg>` document. Without one, `label` stands in the blob. */
+  /** A sticker (Sticker.ts) as a whole `<svg>` document. Without one, `label` stands in the blob. */
   readonly drawing: string | undefined;
   /** Two or three letters, such as "PW", for a subject without art. */
   readonly label: string;
@@ -19,7 +19,10 @@ export interface SubjectBlobProps {
   readonly size?: number;
 }
 
-/** A subject's marker: its art on a soft pastel blob (brand direction A), the same on every screen. */
+/**
+ * A subject's or a grade kind's marker: its sticker on a soft pastel blob (brand direction A), the
+ * same on every screen.
+ */
 export function SubjectBlob({ drawing, label, tint, ink, seed, size = 36 }: SubjectBlobProps) {
   const outline = Blobs.markers.outlines[seed % Blobs.markers.outlines.length] ?? "";
   const turn = (Math.floor(seed / Blobs.markers.outlines.length) % 12) * 30;
@@ -55,7 +58,8 @@ export function SubjectBlob({ drawing, label, tint, ink, seed, size = 36 }: Subj
           {label}
         </Text>
       ) : (
-        <Drawing xml={drawing} size={Math.round(size * 0.56)} />
+        // The sticker brings its own white edge, so it may reach past the blob.
+        <Drawing xml={drawing} size={Math.round(size * 0.78)} />
       )}
     </View>
   );

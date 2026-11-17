@@ -900,7 +900,7 @@ DIAGRAMS.repo = {
     { id: "p-web", x: 430, y: 36, w: 300, h: 74, t: "apps/web", s: "TanStack Start: landing, legal\nand the console SPA" },
     { id: "p-server", x: 820, y: 36, w: 300, h: 74, t: "apps/server", s: "the Effect server: serve, prepare,\nconsole, verify" },
     { id: "p-domainui", x: 40, y: 190, w: 200, h: 68, t: "domain-ui", s: "dumb domain components\nrows and callbacks in" },
-    { id: "p-ui", x: 300, y: 190, w: 200, h: 68, t: "ui", s: "tokens, Nunito, icons\nknows no domain type" },
+    { id: "p-ui", x: 300, y: 190, w: 200, h: 68, t: "ui", s: "tokens, icons, stickers\nknows no domain type" },
     { id: "p-api", x: 620, y: 190, w: 220, h: 68, t: "api", s: "RPC groups and schemas\nno handlers" },
     { id: "p-core", x: 380, y: 340, w: 260, h: 68, t: "core", s: "the domain: tables, mutators,\nmembership, civil time", k: "read" },
     { id: "p-plat", x: 40, y: 340, w: 280, h: 68, t: "React, Expo, node:*, SQL\nClock, Random", k: "stop" },
@@ -920,6 +920,7 @@ DIAGRAMS.repo = {
     { a: "p-app", b: "p-client", as: "l", bs: "l", via: [[28, 73], [28, 470], [150, 470], [150, 537]] },
     { a: "p-app", b: "p-e2ee", as: "l", bs: "b", via: [[24, 90], [24, 612], [1030, 612]] },
     { a: "p-web", b: "p-ui" },
+    { a: "p-web", b: "p-domainui", as: "b", bs: "t", ao: -120, bo: 60, via: [[460, 136], [200, 136]] },
     { a: "p-web", b: "p-api" },
     { a: "p-server", b: "p-api" },
     { a: "p-server", b: "p-core", as: "b", bs: "t", ao: -90, bo: 60, via: [[880, 300], [570, 300]] },
@@ -975,7 +976,7 @@ DIAGRAMS.app = {
 
     { id: "a-atoms", x: 670, y: 312, w: 220, h: 96, t: "Atoms", s: "AccountState, KeysState,\nOnboarding-, HomeworkState,\nOverviewState for screens", k: "wire" },
     { id: "a-ui", x: 910, y: 312, w: 220, h: 96, t: "packages/ui, src/ui", s: "tokens, AppTabs, useConfirm,\nWebStyles, RouteLink;\n.web.tsx twins" },
-    { id: "a-dui", x: 670, y: 440, w: 220, h: 70, t: "packages/domain-ui", s: "HomeworkPanel, SubjectMark,\nRefusalCard, Due" },
+    { id: "a-dui", x: 670, y: 440, w: 220, h: 70, t: "packages/domain-ui", s: "HomeworkPanel, SubjectMark,\nstickers, RefusalCard, Due" },
     { id: "a-core", x: 910, y: 440, w: 220, h: 70, t: "packages/core", s: "Studienbuch.schema, mutators", k: "read" },
 
     { id: "i-sqlite", x: 40, y: 624, w: 205, h: 70, t: "SQLite", s: "native: SQLCipher, key in keychain\nweb: wa-sqlite worker in OPFS", k: "infra" },
@@ -1448,13 +1449,13 @@ const INFO = {
   /* repo */
   "p-app": { t: "apps/app", d: ["The Expo app for iOS, Android and the web. Routes in <code>src/app</code>, one directory per domain area in <code>src/features</code>, and everything that exists because of a technology in <code>src/infra</code>.", "It may import every package except the sync server and the server app."], f: ["apps/app/package.json", "apps/app/src/app/_layout.tsx"], a: [13, 15, 16] },
 
-  "p-web": { t: "apps/web", d: ["The landing page, legal pages and the operator console, on TanStack Start. It must not import <code>@stu/sync</code>: sync belongs to the Expo app."], f: ["apps/web/package.json", "apps/web/src/router.tsx"], a: [3] },
+  "p-web": { t: "apps/web", d: ["The landing page, legal pages and the operator console, on TanStack Start. It must not import <code>@stu/sync</code>: sync belongs to the Expo app.", "The landing page draws the app's stickers from <code>packages/domain-ui</code>, so a subject looks the same on the page and in the app."], f: ["apps/web/package.json", "apps/web/src/router.tsx"], a: [3] },
 
   "p-server": { t: "apps/server", d: ["The one server process: HTTP routes, RPC handlers, Better Auth, Drizzle schema and migrations, jobs and the CLI commands. No Expo or React Native package may load here."], f: ["apps/server/src/main.ts", "apps/server/package.json"], a: [3, 4, 11, 12] },
 
-  "p-domainui": { t: "packages/domain-ui", d: ["Dumb components and helpers shared by the app and the landing page: rows and callbacks in. Today that is the home's homework panel and its cards, the refusal card, subject colors and art, refusal sentences and date text. It may not read SQLite or the sync engine."], f: ["packages/domain-ui/src/homework/HomeworkPanel.tsx", "packages/domain-ui/src/homework/HomeworkItem.ts", "packages/domain-ui/src/subject/SubjectMark.ts", "packages/domain-ui/src/refusal/RefusalText.ts", "packages/domain-ui/src/homework/Due.ts"] },
+  "p-domainui": { t: "packages/domain-ui", d: ["Dumb components and helpers shared by the app and the landing page: rows and callbacks in. Today that is the home's homework panel and its cards, the refusal card, subject colors, the stickers for subjects, grade kinds and states, refusal sentences and date text. The landing page takes its stickers from here. It may not read SQLite or the sync engine."], f: ["packages/domain-ui/src/homework/HomeworkPanel.tsx", "packages/domain-ui/src/homework/HomeworkItem.ts", "packages/domain-ui/src/subject/SubjectMark.ts", "packages/domain-ui/src/subject/SubjectArt.ts", "packages/domain-ui/src/refusal/RefusalText.ts", "packages/domain-ui/src/homework/Due.ts"] },
 
-  "p-ui": { t: "packages/ui", d: ["The design system: tokens in light and dark, Nunito, icons and domain-free components, several with a <code>.web.tsx</code> twin. It knows no domain type, so it may import none of core, sync, e2ee, api or domain-ui.", "Its hooks keep lists usable while rows change: <code>useLingeringOrder</code> leaves a ticked item in place for a moment, and <code>useKeptFocus</code> gives the keyboard's focus back to a box that moved (web only; the native file does nothing).", "Every checkbox and choice is built on <code>Checkable</code>, which answers Space on the web as react-native-web doesn't for these roles; <code>studienbuch/no-raw-checkable</code> keeps the roles there."], f: ["packages/ui/src/Tokens.ts", "packages/ui/src/Theme.ts", "packages/ui/src/useLingeringOrder.ts", "packages/ui/src/useKeptFocus.web.ts", "packages/ui/src/Checkable.tsx"], a: [15] },
+  "p-ui": { t: "packages/ui", d: ["The design system: tokens in light and dark, Nunito, line icons for actions, the sticker style (<code>Sticker.ts</code>: palette, white die-cut edge, shadow) and domain-free components, several with a <code>.web.tsx</code> twin. It knows no domain type, so it may import none of core, sync, e2ee, api or domain-ui.", "Its hooks keep lists usable while rows change: <code>useLingeringOrder</code> leaves a ticked item in place for a moment, and <code>useKeptFocus</code> gives the keyboard's focus back to a box that moved (web only; the native file does nothing).", "Every checkbox and choice is built on <code>Checkable</code>, which answers Space on the web as react-native-web doesn't for these roles; <code>studienbuch/no-raw-checkable</code> keeps the roles there."], f: ["packages/ui/src/Tokens.ts", "packages/ui/src/Theme.ts", "packages/ui/src/Sticker.ts", "packages/ui/src/useLingeringOrder.ts", "packages/ui/src/useKeptFocus.web.ts", "packages/ui/src/Checkable.tsx"], a: [15] },
 
   "p-api": { t: "packages/api", d: ["Effect RPC groups and their schemas outside sync: System, Access, Keys, Demo, Dev and Mail. Handlers live in apps/server, so this package may not import <code>RpcServer</code> or a platform package."], f: ["packages/api/src/Api.ts", "packages/api/src/Keys.ts", "packages/api/src/Access.ts"] },
 
@@ -1574,7 +1575,7 @@ const INFO = {
 
   "s-ba": { t: "Better Auth", d: ["Email and password with required confirmation, a 6-digit email code (keyed hash, 5 tries, 15 minutes), passkeys with user verification, and signed bearer tokens. Sessions last 90 days and renew at most daily. Unused flows are switched off by path."], f: ["apps/server/src/auth/Auth.ts", "apps/server/src/auth/AuthTables.ts"], a: [28] },
 
-  "s-hooks": { t: "Auth hooks", k: "stop", d: ["A sign-up needs a reservation header, and its password is swapped for a random one until the email code proves the address; confirming sets the real password and deletes passkeys and sessions made before. A new password ends other sessions. Registering a passkey signs nobody in. A new user gets an empty name, a new session no IP address.", "A deleted session reaches the sync server's revocations, which close its sockets."], f: ["apps/server/src/auth/Auth.ts"] },
+  "s-hooks": { t: "Auth hooks", k: "stop", d: ["A sign-up needs a reservation header, and its password is swapped for a random one until the email code proves the address. The sign-up's own password waits as a hash with the reservation it carried; a confirmation that carries that reservation must match it, and confirming sets the typed password and deletes passkeys and sessions made before. A sign-up of an address still waiting for its code mails a fresh one. A new password ends other sessions. Registering a passkey signs nobody in. A new user gets an empty name, a new session no IP address.", "A deleted session reaches the sync server's revocations, which close its sockets."], f: ["apps/server/src/auth/Auth.ts"] },
 
   "s-limits": { t: "Limits", k: "stop", d: ["A school's whole network reaches the server from one address, so a client address gets only a ceiling (100 per route in 15 minutes). The limits that stop guessing count per email address (5 code mails an hour, 10 wrong passwords) and per access code.", "They live in this process's memory, so a restart clears them."], f: ["apps/server/src/limits/Limits.ts", "apps/server/src/auth/Auth.ts"] },
 
@@ -1620,7 +1621,7 @@ const INFO = {
 
   "t-auth": { t: "Better Auth's tables", k: "infra", d: ["auth_user (email, empty name), auth_session (no IP address), auth_account (password hash), auth_passkey and auth_verification (keyed hashes of email codes). Better Auth writes them through its own pool."], f: ["apps/server/src/auth/AuthTables.ts"] },
 
-  "t-access": { t: "Access tables", k: "read", d: ["access_code (SHA-256 digests, uses, expiry), access_reservation, access_sign_up (which reservation each sign-up carried), and school_access (account, school, notebook)."], f: ["apps/server/src/school/SchoolTables.ts"] },
+  "t-access": { t: "Access tables", k: "read", d: ["access_code (SHA-256 digests, uses, expiry), access_reservation, access_sign_up (which reservation each sign-up carried, and the hash of the password it chose until the reservation is spent or lapses), and school_access (account, school, notebook)."], f: ["apps/server/src/school/SchoolTables.ts"] },
 
   "t-keys": { t: "Key tables", k: "key", d: ["account_key holds one signed record per generation; key_wrapper holds each recovery method's statement and public key; key_wrapper_seal holds the root key sealed to each wrapper; recovery_event records every seal fetch. Only public keys, signatures and sealed keys."], f: ["apps/server/src/keys/KeyTables.ts"], a: [24, 26] },
 
@@ -1714,9 +1715,9 @@ const INFO = {
   /* way in, by column */
   w1: { t: "Willkommen!", d: ["The student types the Zugangscode from the school's letter. <code>Access.redeem</code> answers a reservation with the school's name, valid for 2 hours. Redeeming holds no use, so nobody can block a code."], f: ["apps/app/src/features/account/WelcomeScreen.tsx", "apps/server/src/school/Redemption.ts", "apps/server/src/school/AccessCodes.ts"] },
 
-  w2: { t: "Konto erstellen", d: ["Email and password. The reservation travels in the <code>access-reservation</code> header so no request log holds it. The server claims one of three sign-ups for the reservation, then Better Auth creates the user with a random throwaway password and mails a 6-digit code."], f: ["apps/app/src/features/account/SignUpScreen.tsx", "apps/server/src/auth/Auth.ts"] },
+  w2: { t: "Konto erstellen", d: ["Email and password. The reservation travels in the <code>access-reservation</code> header so no request log holds it. The server claims one of three sign-ups for the reservation, then Better Auth creates the user with a random throwaway password and mails a 6-digit code. The chosen password waits as a hash with the reservation until the code confirms it. Signing up again before confirming mails a fresh code."], f: ["apps/app/src/features/account/SignUpScreen.tsx", "apps/server/src/auth/Auth.ts"] },
 
-  w3: { t: "E-Mail bestätigen", d: ["The code and the password together. Before the address counts as confirmed, the server sets the password, deletes passkeys and sessions of the account, then admits it to the reservation's school and spends one use of the code in the same transaction. The device is signed in."], f: ["apps/app/src/features/account/ConfirmEmailScreen.tsx", "apps/server/src/school/AccessCodes.ts", "apps/server/src/school/Access.ts"] },
+  w3: { t: "E-Mail bestätigen", d: ["The code and the password together. With the device's reservation it must be the password that sign-up chose; a wrong one gives the code back with one try less. Before the address counts as confirmed, the server sets the password, deletes passkeys and sessions of the account, then admits it to the reservation's school and spends one use of the code in the same transaction. The device is signed in."], f: ["apps/app/src/features/account/ConfirmEmailScreen.tsx", "apps/server/src/school/AccessCodes.ts", "apps/server/src/school/Access.ts"] },
 
   w4: { t: "Geschafft", d: ["The device keeps the signed bearer token in its keychain and offers a passkey. Registering one creates no session. If another account with an ended session still holds the device, the new session is refused and ends on the server."], f: ["apps/app/src/features/account/Account.ts", "apps/app/src/infra/auth/SessionStore.ts"], a: [28] },
 
@@ -1730,7 +1731,7 @@ const INFO = {
 
   g1: { t: "One answer for every bad code", k: "stop", d: ["Unknown, revoked, expired and used-up codes all fail as <code>Access.CodeUnavailable</code>, so a guess learns nothing. A code has 80 random bits. Failures count per code (20) and per client address (100 per 15 minutes); right codes never count."], f: ["apps/server/src/school/Redemption.ts", "packages/api/src/Access.ts"] },
 
-  g2: { t: "Proof before password", k: "stop", d: ["Anyone may sign up any address, so the password a sign-up names counts only once that address's code confirms it. Until then the account holds a random one nobody knows. Code mails are capped at 5 per address per hour, and answers about unknown addresses are byte for byte the same."], f: ["apps/server/src/auth/Auth.ts"] },
+  g2: { t: "Proof before password", k: "stop", d: ["Anyone may sign up any address, so the password a sign-up names counts only once that address's code confirms it. Until then the account holds a random one nobody knows, and the confirmation checks the typed password against the one the confirming device's own sign-up chose, so nobody else's sign-up of the address counts. Code mails go out at most once a minute and 5 times an hour per address, and answers about unknown addresses are byte for byte the same."], f: ["apps/server/src/auth/Auth.ts"] },
 
   g3: { t: "A clean slate at confirmation", k: "stop", d: ["Confirming deletes every passkey and session the account had, so nothing made before the proof survives. The confirming device names its own reservation, so a later sign-up of the address by someone else can't choose the school. One use is spent under the code row's lock."], f: ["apps/server/src/auth/Auth.ts", "apps/server/src/school/AccessCodes.ts"] },
 

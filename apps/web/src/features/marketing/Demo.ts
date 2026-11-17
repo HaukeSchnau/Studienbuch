@@ -1,3 +1,4 @@
+import type { SubjectArt } from "@stu/domain-ui/subject/SubjectArt";
 import type { Tokens } from "@stu/ui/Tokens";
 import { useReducer } from "react";
 
@@ -18,6 +19,7 @@ export type CourseId = "ma" | "de" | "en" | "bi";
 
 export interface Course {
   readonly name: string;
+  readonly slot: Tokens.SubjectSlot;
   readonly teacher: string;
   readonly term: string;
   readonly oral: { readonly points: number; readonly date: string; readonly confirmed: boolean };
@@ -27,6 +29,7 @@ export interface Course {
 export const courses: Readonly<Record<CourseId, Course>> = {
   de: {
     name: "Deutsch",
+    slot: "rust",
     teacher: "Fr. Albers",
     term: "Winter 2026/27",
     oral: { points: 12, date: "19.10.", confirmed: true },
@@ -44,6 +47,7 @@ export const courses: Readonly<Record<CourseId, Course>> = {
   },
   ma: {
     name: "Mathematik",
+    slot: "blue",
     teacher: "Hr. Brandt",
     term: "Winter 2026/27",
     oral: { points: 10, date: "21.10.", confirmed: true },
@@ -54,6 +58,7 @@ export const courses: Readonly<Record<CourseId, Course>> = {
   },
   en: {
     name: "Englisch",
+    slot: "violet",
     teacher: "Fr. Oka",
     term: "Winter 2026/27",
     oral: { points: 13, date: "23.10.", confirmed: true },
@@ -71,6 +76,7 @@ export const courses: Readonly<Record<CourseId, Course>> = {
   },
   bi: {
     name: "Biologie",
+    slot: "green",
     teacher: "Hr. Yilmaz",
     term: "Winter 2026/27",
     oral: { points: 11, date: "14.10.", confirmed: false },
@@ -88,12 +94,12 @@ export const courses: Readonly<Record<CourseId, Course>> = {
   },
 };
 
-/** The subject art in public/subjects, by course. */
-export const art: Readonly<Record<CourseId, string>> = {
-  de: "/subjects/de.svg",
-  ma: "/subjects/ma.svg",
-  en: "/subjects/en.svg",
-  bi: "/subjects/bi.svg",
+/** The app's subject sticker, by course. */
+export const art: Readonly<Record<CourseId, SubjectArt.Name>> = {
+  de: "german",
+  ma: "math",
+  en: "english",
+  bi: "biology",
 };
 
 /** Mean points of the exams both teacher and parents have signed. */
@@ -308,26 +314,26 @@ export const weeks: ReadonlyArray<Week> = [
 /** 10:31 is 46 minutes into the 09:45 period of 90 minutes. */
 export const now = { period: 1, fraction: 46 / 90 };
 
-/** The drifting strip: subject art from the app on its course colour. */
+/** The drifting strip: subject stickers from the app on their course colour. */
 export const strip: ReadonlyArray<{
-  readonly icon: string;
+  readonly art: SubjectArt.Name;
   readonly label: string;
   readonly slot: Tokens.SubjectSlot;
 }> = [
-  { icon: "ma", label: "Mathe", slot: "blue" },
-  { icon: "de", label: "Deutsch", slot: "rust" },
-  { icon: "en", label: "Englisch", slot: "violet" },
-  { icon: "bi", label: "Biologie", slot: "green" },
-  { icon: "ge", label: "Geschichte", slot: "amber" },
-  { icon: "if", label: "Informatik", slot: "indigo" },
-  { icon: "ch", label: "Chemie", slot: "teal" },
-  { icon: "sp", label: "Sport", slot: "red" },
-  { icon: "ku", label: "Kunst", slot: "magenta" },
-  { icon: "ph", label: "Physik", slot: "cyan" },
-  { icon: "mu", label: "Musik", slot: "olive" },
-  { icon: "la", label: "Latein", slot: "slate" },
-  { icon: "fr", label: "Französisch", slot: "rust" },
-  { icon: "re", label: "Religion", slot: "blue" },
+  { art: "math", label: "Mathe", slot: "blue" },
+  { art: "german", label: "Deutsch", slot: "rust" },
+  { art: "english", label: "Englisch", slot: "violet" },
+  { art: "biology", label: "Biologie", slot: "green" },
+  { art: "history", label: "Geschichte", slot: "amber" },
+  { art: "computing", label: "Informatik", slot: "indigo" },
+  { art: "chemistry", label: "Chemie", slot: "teal" },
+  { art: "sport", label: "Sport", slot: "red" },
+  { art: "art", label: "Kunst", slot: "magenta" },
+  { art: "physics", label: "Physik", slot: "cyan" },
+  { art: "music", label: "Musik", slot: "olive" },
+  { art: "latin", label: "Latein", slot: "slate" },
+  { art: "french", label: "Französisch", slot: "rust" },
+  { art: "religion", label: "Religion", slot: "blue" },
 ];
 
 /** The index in `weeks` of the current week, KW 44. */

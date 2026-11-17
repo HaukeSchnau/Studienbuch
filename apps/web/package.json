@@ -13,6 +13,7 @@
   "dependencies": {
     "@effect/atom-react": "catalog:",
     "@stu/api": "workspace:*",
+    "@stu/domain-ui": "workspace:*",
     "@stu/ui": "workspace:*",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
