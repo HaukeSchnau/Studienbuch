@@ -37,6 +37,11 @@ const options = Auth.options(
     proven: () => Promise.resolve(true),
     sessionDeleted: () => {},
     log: () => {},
+    withoutAddress: {
+      // Never settles: only requests call it, and this test makes none.
+      run: () => Promise.race([]),
+      session: () => Promise.resolve(null),
+    },
   },
 );
 
@@ -127,7 +132,9 @@ const declared = (): Record<string, Table> =>
                 },
               ]),
             ),
+            // Better Auth declares no unique index, so a unique one is ours.
             indexed: config.indexes
+              .filter((index) => !index.config.unique)
               .flatMap((index) => index.config.columns)
               .map((column) =>
                 column !== undefined && "name" in column ? (column.name ?? "?") : "?",

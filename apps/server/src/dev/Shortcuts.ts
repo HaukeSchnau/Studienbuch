@@ -52,11 +52,8 @@ export const createSchool = Effect.gen(function* () {
   yield* Schools.publish(data);
 
   const { code } = yield* Effect.orDie(
-    AccessCodes.mint({
-      school: id,
-      kind: "student",
-      maxUses: Option.none(),
-    }),
+    // One run of the end-to-end tests signs up a handful of students to its own school.
+    AccessCodes.mint({ school: id, kind: "student", maxUses: 100 }),
   );
 
   return new Dev.School({

@@ -107,6 +107,38 @@ describe.skipIf(Postgres18.socket === null)("Migrations", () => {
           assert.deepStrictEqual(behind, ["20260102000000_b"]);
         }),
       );
+
+      // Beta has codes minted without a limit before every code needed one (D97).
+      it.effect("gives an access code without a limit 200 more uses", () =>
+        Effect.gen(function* () {
+          const sql = yield* SqlClient.SqlClient;
+          const path = yield* Path.Path;
+
+          const shipped = yield* Migrations.read(
+            path.join(import.meta.dirname, "../../../migrations"),
+          );
+
+          const limited = shipped.findIndex(({ name }) =>
+            name.endsWith("_accounts_without_address"),
+          );
+
+          yield* Migrations.apply(shipped.slice(0, limited));
+          yield* sql`insert into space (id, kind) values ('am-see', 'school')`;
+          yield* sql`
+            insert into access_code (school_id, kind, secret_hash, max_uses, uses)
+            values ('am-see', 'student', 'unlimited', null, 3), ('am-see', 'student', 'class', 30, 3)
+          `;
+          yield* Migrations.apply(shipped);
+
+          assert.deepStrictEqual(
+            yield* sql`select secret_hash as code, max_uses as "maxUses" from access_code order by code`,
+            [
+              { code: "class", maxUses: 30 },
+              { code: "unlimited", maxUses: 203 },
+            ],
+          );
+        }),
+      );
     });
   });
 });

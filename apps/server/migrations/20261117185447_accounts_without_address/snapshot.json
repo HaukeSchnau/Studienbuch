@@ -1,0 +1,72 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "7cb2cc3f-395c-4208-a8fe-6db5f0069aa7",
+  "prevIds": ["3beee407-7193-4c83-a46f-54c359f66249"],
+  "footprints": [
+    {
+      "statementType": "alter_column",
+      "statementTarget": ["column", "public", "access_code", "max_uses"],
+      "writes": ["s|colprop|public.access_code.max_uses.notNull"],
+      "reads": ["n|tbl|public.access_code", "n|sch|public", "n|col|public.access_code.max_uses"],
+      "sqlHash": "b21ff531bf67e696"
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": ["index", "public", "auth_account", "auth_account_provider_account"],
+      "writes": [
+        "s|idx|public.auth_account_provider_account",
+        "n|idx|public.auth_account_provider_account",
+        "e|idx|public.auth_account_provider_account",
+        "n|rel|public.auth_account_provider_account"
+      ],
+      "reads": [
+        "n|tbl|public.auth_account",
+        "n|sch|public",
+        "n|col|public.auth_account.providerId",
+        "n|col|public.auth_account.accountId"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "auth_account",
+        "name": "auth_account_provider_account",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "providerId",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "accountId",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "alter",
+      "key": "columns\u0000[\"public\",\"access_code\",\"max_uses\"]",
+      "set": {
+        "notNull": true
+      }
+    }
+  ]
+}

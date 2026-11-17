@@ -87,6 +87,25 @@ describe("Mail", () => {
     ),
   );
 
+  // Better Auth's address for an account without one, and any other address nobody can receive.
+  it.live("never connects for an address under .invalid", () =>
+    Effect.scoped(
+      Effect.gen(function* () {
+        const server = yield* smtpServer(() => "accept");
+
+        const refused = yield* Effect.forEach(
+          ["x7k2q9@konto.placeholder.invalid", "Lena@Example.INVALID"],
+          (to) => Effect.flip(send(server, to)),
+        );
+
+        assert.deepStrictEqual(
+          { codes: refused.map((error) => error.code), seen: server.seen },
+          { codes: ["placeholder", "placeholder"], seen: { connections: 0, delivered: 0 } },
+        );
+      }),
+    ),
+  );
+
   it.live(
     "closes the connection to a server that greets and then stalls within the send timeout",
     () =>
@@ -186,12 +205,12 @@ const speak = (socket: NodeNet.Socket, greeting: Greeting, delivered: () => void
   });
 };
 
-const send = (server: { readonly url: string }) =>
+const send = (server: { readonly url: string }, to = "student@example.test") =>
   Effect.provide(
     Effect.gen(function* () {
       const mail = yield* Mail.Service;
 
-      yield* mail.send({ to: "student@example.test", subject: "Test", text: "Test" });
+      yield* mail.send({ to, subject: "Test", text: "Test" });
     }),
     Mail.layerSmtp(Redacted.make(server.url), "studienbuch@example.test"),
   );

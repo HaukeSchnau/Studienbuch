@@ -39,6 +39,7 @@ import { Mail } from "../infra/mail/Mail.ts";
 import { Limits } from "../limits/Limits.ts";
 import { AccessCodes } from "../school/AccessCodes.ts";
 import { NativeApps } from "./NativeApps.ts";
+import { WithoutAddress } from "./WithoutAddress.ts";
 
 export * as Auth from "./Auth.ts";
 
@@ -97,6 +98,7 @@ export interface Callbacks {
   readonly confirmed: (account: string, reservation: Option.Option<string>) => Promise<void>;
   readonly sessionDeleted: (sessionId: string) => void;
   readonly log: (level: "debug" | "info" | "success" | "warn" | "error", message: string) => void;
+  readonly withoutAddress: WithoutAddress.Callbacks;
 }
 
 // Routes `limited` limits instead of Better Auth, each with a ceiling per client address. A code
@@ -109,11 +111,16 @@ const limitedRoutes = new Set([
   "/email-otp/verify-email",
   "/email-otp/request-password-reset",
   "/email-otp/reset-password",
+  ...WithoutAddress.limitedRoutes,
 ]);
 
-// A sign-up or confirmation that did its work for a reservation of a code with a use limit gives
-// its client's count back, so a year group behind one address spends the ceiling on its failures.
-const reservedRoutes = new Set(["/sign-up/email", "/email-otp/verify-email"]);
+// A sign-up or confirmation that did its work for a reservation of a code gives its client's count
+// back, so a year group behind one address spends the ceiling on its failures.
+const reservedRoutes = new Set([
+  "/sign-up/email",
+  "/email-otp/verify-email",
+  ...WithoutAddress.reservedRoutes,
+]);
 
 const passwordRoutes = new Set(["/sign-in/email", "/change-password"]);
 
@@ -192,8 +199,7 @@ export const options = (settings: Settings, callbacks: Callbacks) =>
     },
     hooks: {
       // A new password ends the session on every other device, whatever the request asks for. A
-      // new passkey signs nobody in, so a fresh sign-in can't be stretched by registering again.
-      // A reset request answers at once and runs in `requestReset`, after the rate limit, so known
+      // reset request answers at once and runs in `requestReset`, after the rate limit, so known
       // and unknown addresses take the same time.
       before: createAuthMiddleware((context) => {
         if (context.path === "/sign-up/email") {
@@ -239,19 +245,17 @@ export const options = (settings: Settings, callbacks: Callbacks) =>
         return Promise.resolve(
           context.path === "/change-password"
             ? { context: { body: { ...context.body, revokeOtherSessions: true } } }
-            : context.path === "/passkey/verify-registration"
-              ? { context: { body: { ...context.body, createSession: false } } }
-              : context.path === "/email-otp/request-password-reset"
-                ? Option.match(decodeAddress(context.body), {
-                    // Not an address: the same answer, and nothing starts.
-                    onNone: () => context.json({ success: true }),
-                    onSome: ({ email }) => {
-                      callbacks.requestReset(email);
+            : context.path === "/email-otp/request-password-reset"
+              ? Option.match(decodeAddress(context.body), {
+                  // Not an address: the same answer, and nothing starts.
+                  onNone: () => context.json({ success: true }),
+                  onSome: ({ email }) => {
+                    callbacks.requestReset(email);
 
-                      return context.json({ success: true });
-                    },
-                  })
-                : undefined,
+                    return context.json({ success: true });
+                  },
+                })
+              : undefined,
         );
       }),
       // After-hooks run for refused calls too, with the error as `returned`. Better Auth answers a
@@ -326,7 +330,9 @@ export const options = (settings: Settings, callbacks: Callbacks) =>
         authenticatorSelection: { residentKey: "required", userVerification: "required" },
         advanced: { webAuthnChallengeCookie: challengeCookie },
         schema: { passkey: { modelName: "auth_passkey" } },
+        registration: WithoutAddress.registration,
       }),
+      WithoutAddress.plugin(callbacks.withoutAddress),
     ],
   }) satisfies BetterAuthOptions;
 
@@ -602,6 +608,8 @@ export class Service extends Context.Service<
      * for any account the seed didn't make, whatever the caller checked.
      */
     readonly signInDemo: (accountId: string) => Effect.Effect<string, NotDemo>;
+    /** Tells the resolver of sessions deleted outside Better Auth, as a new card deletes them. */
+    readonly ended: (sessionIds: ReadonlyArray<string>) => Effect.Effect<void>;
   }
 >()("Auth.Service") {}
 
@@ -668,7 +676,7 @@ const make = Effect.gen(function* () {
 
   // Redeeming is free and a sign-up of a known address mails nothing, so a code gives each client
   // three counts back per use in a window: no client mails past the ceiling with it, and none can
-  // spend another's. A code without a limit gives none back.
+  // spend another's.
   const giveBackFor = Effect.fn("Auth.giveBack")(function* (
     client: string,
     request: Request,
@@ -680,7 +688,7 @@ const make = Effect.gen(function* () {
 
     const code = yield* provided(AccessCodes.codeOf(reservation));
 
-    if (Option.isNone(code) || code.value.maxUses === null) return;
+    if (Option.isNone(code)) return;
 
     const limit = AccessCodes.signUpBudget * code.value.maxUses;
 
@@ -935,6 +943,10 @@ const make = Effect.gen(function* () {
       (rows) => rows.map((row) => DateTime.fromDateUnsafe(row.createdAt)),
     ).pipe(Effect.orDie);
 
+  // Typed by hand: it reads `auth`, which the callbacks that use it build, a circular inference.
+  const sessionOf: WithoutAddress.Callbacks["session"] = (headers) =>
+    auth.api.getSession({ headers });
+
   // Better Auth's own pool, beside Effect's client: auth queries are rare (stack.md).
   const pool = yield* Effect.acquireRelease(
     Effect.sync(
@@ -1006,6 +1018,7 @@ const make = Effect.gen(function* () {
       sessionDeleted: (sessionId) => {
         PubSub.publishUnsafe(deleted, sessionId);
       },
+      withoutAddress: { run, session: sessionOf },
       log: (level, message) => {
         Effect.runForkWith(services)(
           level === "error"
@@ -1063,6 +1076,8 @@ const make = Effect.gen(function* () {
     origin: new URL(settings.publicUrl).origin,
     sessions: { resolve, revoked: Stream.fromPubSub(deleted) },
     signInDemo,
+    ended: (sessionIds: ReadonlyArray<string>) =>
+      Effect.asVoid(PubSub.publishAll(deleted, sessionIds)),
   };
 });
 
