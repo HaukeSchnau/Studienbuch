@@ -17,8 +17,9 @@ export class Drizzle extends Context.Service<Drizzle, PgDrizzle.EffectPgDatabase
 const command = 2;
 const auth = 2;
 
-// `LISTEN` holds one of `serve`'s own connections for good, so queries need a second.
-const minimum = 2 * command + auth + 2;
+// `serve`'s pool holds two connections for good, `LISTEN`'s and the cluster runner's shard lock
+// session (Jobs.ts), so queries need a third.
+const minimum = 2 * command + auth + 3;
 
 /**
  * How many connections each process opens at most, out of `DATABASE_CONNECTIONS`: what the host
