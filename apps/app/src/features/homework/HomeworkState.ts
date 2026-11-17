@@ -454,9 +454,28 @@ export interface Screen extends DeviceStatus.Status {
 }
 
 /**
- * The device's status, today at the school and what the device holds of the notebook. `None` until
- * today is known. A homework's waiting marker shows only offline: online, a change settles within a
- * second, so the marker would only flicker.
+ * What the screens show of `held`. Without the notebook's key, none of its homework and refused
+ * changes: the device may still hold them decrypted from before it locked, and they come back once
+ * it holds the key again. A homework's waiting marker shows only offline: online, a change settles
+ * within a second, so the marker would only flicker.
+ */
+export const shown = (
+  held: Reading,
+  device: Pick<DeviceStatus.Status, "readable" | "disconnected">,
+): Reading =>
+  device.readable
+    ? {
+        ...held,
+        homework: held.homework.map((each) => ({
+          ...each,
+          waiting: each.waiting && device.disconnected,
+        })),
+      }
+    : { ...held, homework: [], refusals: [] };
+
+/**
+ * The device's status, today at the school and what the screens show of the notebook (`shown`).
+ * `None` until today is known.
  */
 export const screen = Atom.family((accountId: string) =>
   Atom.make((get): Option.Option<Screen> => {
@@ -480,13 +499,7 @@ export const screen = Atom.family((accountId: string) =>
     return Option.some({
       ...device,
       today: now.value,
-      reading: Option.map(held, (value) => ({
-        ...value,
-        homework: value.homework.map((each) => ({
-          ...each,
-          waiting: each.waiting && device.disconnected,
-        })),
-      })),
+      reading: Option.map(held, (value) => shown(value, device)),
     });
   }),
 );
