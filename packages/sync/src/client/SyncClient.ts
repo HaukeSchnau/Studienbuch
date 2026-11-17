@@ -187,6 +187,24 @@ export const pending: SyncQuery.SyncQuery<
   run: () => Outbox.pending,
 };
 
+/**
+ * The commands waiting for the server, oldest first, and the client id they go out under. A
+ * renumber after `Sync.ClientUnknown` gives them a new client id and numbers them from 1 again,
+ * so mutation ids compare only under one client id.
+ */
+export const outbox: SyncQuery.SyncQuery<
+  void,
+  { readonly clientId: string; readonly commands: ReadonlyArray<Outbox.Command> },
+  SqlError.SqlError
+> = {
+  keys: [keys.outbox],
+  run: () =>
+    Effect.all({
+      clientId: Effect.map(Outbox.meta, (meta) => meta.clientId),
+      commands: Outbox.pending,
+    }),
+};
+
 /** A space the account reads, and when the device last pulled ("zuletzt synchronisiert"). */
 export const SyncedSpace = Schema.Struct({
   id: Schema.String,

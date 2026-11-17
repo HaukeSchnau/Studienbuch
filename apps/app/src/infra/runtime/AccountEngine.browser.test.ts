@@ -118,6 +118,18 @@ const unsentOf = (accountId: string) =>
     ),
   );
 
+/** What a question before sign-out would show of Lena's unsent commands now. */
+const shown = Effect.flatMap(AccountEngine.Engines, (engines) =>
+  Effect.flatMap(engines.context("lena"), (context) =>
+    SyncClient.outbox
+      .run()
+      .pipe(
+        Effect.map(AccountEngine.unsentOf),
+        Effect.provideService(SqlClient.SqlClient, Context.get(context, SqlClient.SqlClient)),
+      ),
+  ),
+);
+
 // The engine picks the account's storage when it opens: on disk only for a session the device
 // keeps, so a public computer's account writes nothing that outlives it. Without a session there is
 // no engine, as after sign-out.
@@ -186,8 +198,8 @@ it.effect("signs out while a screen asks for the engine, which stays off", () =>
   }).pipe(Effect.scoped, Effect.provide(engines("engines-leaving"))),
 );
 
-// "Abmelden" showed the changes it would lose before its question, by their newest mutation id. One
-// saved after it is lost only when the question asks again with it.
+// "Abmelden" showed the changes it would lose before its question, by their client id and newest
+// mutation id. One saved after it is lost only when the question asks again with it.
 it.effect("refuses to sign out when a change was saved after the question, and keeps it", () =>
   Effect.gen(function* () {
     const sessions = yield* SessionStore.Service;
@@ -195,12 +207,15 @@ it.effect("refuses to sign out when a change was saved after the question, and k
     const sync = yield* lenasEngine;
 
     // The question showed none, then the name was saved.
+    const before = yield* shown;
+
     yield* nameLena(sync);
 
-    const refused = yield* Effect.flip(engines.forget("lena", Option.some(0), erase("lena")));
+    const refused = yield* Effect.flip(engines.forget("lena", Option.some(before), erase("lena")));
+
     const still = yield* unsentOf("lena");
 
-    yield* engines.forget("lena", Option.some(1), erase("lena"));
+    yield* engines.forget("lena", Option.some(yield* shown), erase("lena"));
 
     assert.deepStrictEqual(
       { refused: refused._tag, waiting: still.waiting, signedIn: yield* sessions.current },
@@ -250,17 +265,55 @@ it.effect("work in the engine's scope outlives the screen that waits for it, not
   }),
 );
 
+// The server forgot the device's client id after the question, so the engine renumbered its outbox
+// under a new one from 1. A change saved after that has a lower id than the question showed and is
+// still one it didn't show.
+it.effect("refuses to sign out when a change was saved after the outbox was renumbered", () =>
+  Effect.gen(function* () {
+    const engines = yield* AccountEngine.Engines;
+    const sync = yield* lenasEngine;
+    const sql = Context.get(yield* engines.context("lena"), SqlClient.SqlClient);
+
+    yield* nameLena(sync);
+    yield* nameLena(sync);
+    yield* nameLena(sync);
+
+    const before = yield* shown;
+
+    // What `Outbox.renumber` leaves after the first two were sent: the third, now 1, under a new id.
+    yield* sql`delete from sync_outbox where mutation_id < 3`;
+    yield* sql`update sync_outbox set mutation_id = 1`;
+    yield* sql`update sync_meta set client_id = 'renumbered', last_mutation_id = 1, settled_mutation_id = 0 where id = 1`;
+
+    yield* nameLena(sync);
+
+    const refused = yield* Effect.flip(engines.forget("lena", Option.some(before), erase("lena")));
+
+    const now = yield* shown;
+
+    assert.deepStrictEqual(
+      { before, refused: refused._tag, now },
+      {
+        before: { clientId: before.clientId, count: 3, newest: 3 },
+        refused: "AccountEngine.MoreUnsent",
+        now: { clientId: "renumbered", count: 2, newest: 2 },
+      },
+    );
+  }).pipe(Effect.provide(engines("engines-renumbered"))),
+);
+
 // A write already under way when "Trotzdem abmelden" lands commits while sign-out stops the
 // engine. It finishes first and counts, rather than being deleted unasked.
 it.effect("refuses to sign out when a change commits while it stops the engine", () =>
   Effect.gen(function* () {
     const engines = yield* AccountEngine.Engines;
     const sync = yield* lenasEngine;
+    const before = yield* shown;
 
     // Starts at once, so it holds the engine's writes before sign-out asks for them.
     const saving = yield* Effect.forkChild(nameLena(sync), { startImmediately: true });
 
-    const refused = yield* Effect.flip(engines.forget("lena", Option.some(0), erase("lena")));
+    const refused = yield* Effect.flip(engines.forget("lena", Option.some(before), erase("lena")));
     const saved = yield* Fiber.await(saving);
     const still = yield* unsentOf("lena");
 
@@ -278,7 +331,7 @@ it.effect("fails a write that reaches the engine after sign-out stopped it", () 
     const engines = yield* AccountEngine.Engines;
     const sync = yield* lenasEngine;
 
-    yield* engines.forget("lena", Option.some(0), erase("lena"));
+    yield* engines.forget("lena", Option.some(yield* shown), erase("lena"));
 
     const late = yield* Effect.exit(nameLena(sync));
 

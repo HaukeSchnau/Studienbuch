@@ -96,14 +96,14 @@ export class Engines extends Context.Service<
       accountId: string,
     ) => Effect.Effect<Context.Context<Running>, Failure | SignedOut>;
     /**
-     * Signs the account out in one turn. `unsent` is the newest unsent command's mutation id that
-     * the question before showed, 0 when none waited, `None` when it couldn't tell. A newer one
-     * waiting refuses; otherwise the engine stops and `erase` deletes what the account kept and
-     * ends with its session. No write and no engine of the account starts in between.
+     * Signs the account out in one turn. `unsent` is what the question before showed, `None` when
+     * it couldn't tell. A command it didn't show refuses (`moreThan`); otherwise the engine stops
+     * and `erase` deletes what the account kept and ends with its session. No write and no engine
+     * of the account starts in between.
      */
     readonly forget: <E, R>(
       accountId: string,
-      unsent: Option.Option<number>,
+      unsent: Option.Option<Unsent>,
       erase: Effect.Effect<void, E, R>,
     ) => Effect.Effect<void, E | MoreUnsent | SqlError.SqlError, R>;
     /**
@@ -117,13 +117,33 @@ export class Engines extends Context.Service<
 >()("AccountEngine.Engines") {}
 
 /**
- * The mutation id of the newest of `commands`, oldest first as `SyncClient.pending` reads them, 0
- * for none. Ids only grow on a device, so a command newer than what the question showed has a
- * higher one, also when older ones were sent meanwhile.
+ * The commands waiting for the server as the question before sign-out shows them: the client id
+ * they go out under, how many, and the newest one's mutation id, 0 for none.
  */
-export const newest = (commands: ReadonlyArray<Outbox.Command>) => commands.at(-1)?.mutationId ?? 0;
+export interface Unsent {
+  readonly clientId: string;
+  readonly count: number;
+  readonly newest: number;
+}
 
-const newestUnsent = Effect.map(SyncClient.pending.run(), newest);
+/** `Unsent` of `SyncClient.outbox`, which lists the commands oldest first. */
+export const unsentOf = ({
+  clientId,
+  commands,
+}: {
+  readonly clientId: string;
+  readonly commands: ReadonlyArray<Outbox.Command>;
+}): Unsent => ({ clientId, count: commands.length, newest: commands.at(-1)?.mutationId ?? 0 });
+
+/**
+ * Whether a command waits that the question showing `shown` didn't. Ids only grow under one client
+ * id, so a newer id is a newer command also when older ones were sent meanwhile. A renumber starts
+ * a new client id from 1, so under another client id every waiting command is one it didn't show.
+ */
+export const moreThan = (now: Unsent, shown: Unsent) =>
+  now.count > 0 && (now.clientId !== shown.clientId || now.newest > shown.newest);
+
+const unsentNow = Effect.map(SyncClient.outbox.run(), unsentOf);
 
 /** `Engines` on the device's layers, one per device. */
 export const engines = Layer.effect(Engines)(
@@ -237,14 +257,16 @@ export const engines = Layer.effect(Engines)(
               yield* known.writes.withPermit(
                 Effect.gen(function* () {
                   if (Option.isSome(unsent)) {
-                    const newest = yield* newestUnsent.pipe(
+                    const now = yield* unsentNow.pipe(
                       Effect.provideService(
                         SqlClient.SqlClient,
                         Context.get(known.context, SqlClient.SqlClient),
                       ),
                     );
 
-                    if (newest > unsent.value) return yield* new MoreUnsent({ newest });
+                    if (moreThan(now, unsent.value)) {
+                      return yield* new MoreUnsent({ newest: now.newest });
+                    }
                   }
 
                   yield* Ref.set(known.stopped, true);
@@ -281,6 +303,6 @@ export const app = (accountId: string) =>
 /** `Engines.forget` on this device. */
 export const forget = <E, R>(
   accountId: string,
-  unsent: Option.Option<number>,
+  unsent: Option.Option<Unsent>,
   erase: Effect.Effect<void, E, R>,
 ) => Effect.flatMap(Engines, (each) => each.forget(accountId, unsent, erase));

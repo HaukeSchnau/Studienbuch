@@ -73,32 +73,14 @@ export const keepsNothing = Atom.make((get) =>
 export const useAccess = () => Account.access(useAtomValue(current));
 
 /**
- * The commands of `accountId` that the server hasn't settled. Reading it starts the engine. When
- * the engine can't start, nothing else can open the account's database either, so they stay
- * unknown.
+ * The commands of `accountId` that the server hasn't settled, for "Abmelden". Reading it starts the
+ * engine. When the engine can't start, nothing else can open the account's database either, so
+ * they stay unknown.
  */
-const pendingOf = Atom.family((accountId: string) =>
-  SyncQuery.family(Atom.runtime(AccountEngine.app(accountId)), SyncClient.pending)(),
-);
-
-/** What "Abmelden" says would be lost: how many commands wait, and the newest one's mutation id. */
-export interface Unsent {
-  readonly count: number;
-  /** `AccountEngine.newest`, which sign-out compares with the outbox it deletes. */
-  readonly newest: number;
-}
-
-/** The unsent commands of the account on this device for "Abmelden", none when it holds none. */
-export const unsent = Atom.make((get): AsyncResult.AsyncResult<Unsent, unknown> =>
-  AsyncResult.flatMap(get(current), (signed) =>
-    Option.match(signed, {
-      onNone: () => AsyncResult.success({ count: 0, newest: 0 }),
-      onSome: ({ accountId }) =>
-        AsyncResult.map(get(pendingOf(accountId)), (commands) => ({
-          count: commands.length,
-          newest: AccountEngine.newest(commands),
-        })),
-    }),
+export const unsent = Atom.family((accountId: string) =>
+  Atom.map(
+    SyncQuery.family(Atom.runtime(AccountEngine.app(accountId)), SyncClient.outbox)(),
+    AsyncResult.map(AccountEngine.unsentOf),
   ),
 );
 
@@ -211,12 +193,12 @@ export const signedOut = Atom.make(false).pipe(Atom.keepAlive);
 const failed = Effect.fail(new Account.Problem({ reason: "sign-out-failed" }));
 
 /**
- * Signs the device out (`Account.signOut`). `unsent` is `Unsent.newest` as the question before
- * showed it, `None` when it couldn't tell. A newer change refuses with `AccountEngine.MoreUnsent`,
+ * Signs the device out (`Account.signOut`). `unsent` is what the question before showed
+ * (`unsent`), `None` when it couldn't tell. A newer change refuses with `AccountEngine.MoreUnsent`,
  * and the question asks again; any other failure is "sign-out-failed", which the student retries.
  */
 export const signOut = runtime
-  .fn<Option.Option<number>>()((unsent, get) =>
+  .fn<Option.Option<AccountEngine.Unsent>>()((unsent, get) =>
     Account.signOut(({ accountId, publicComputer }, forgetSession) => {
       // Before the session goes, which is when the gates move on.
       const signedOutHere = Effect.andThen(

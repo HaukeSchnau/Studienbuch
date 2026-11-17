@@ -38,12 +38,12 @@ function SignOut({ accountId }: { readonly accountId: string }) {
   const confirm = useConfirm();
 
   // Reading the unsent changes starts the account's engine, so they are current at the press.
-  useAtomMount(AccountState.unsent);
+  useAtomMount(AccountState.unsent(accountId));
 
   const press = async (): Promise<void> => {
     const notebook = AsyncResult.fromExit(await check());
     // After the check, which can take seconds: a change saved meanwhile counts too.
-    const unsent = registry.get(AccountState.unsent);
+    const unsent = registry.get(AccountState.unsent(accountId));
 
     const warning = Account.signOutWarning(
       AsyncResult.map(unsent, (each) => each.count),
@@ -66,7 +66,7 @@ function SignOut({ accountId }: { readonly accountId: string }) {
     if (answer !== "proceed") return;
 
     const exit = await signOut(
-      AsyncResult.isSuccess(unsent) ? Option.some(unsent.value.newest) : Option.none(),
+      AsyncResult.isSuccess(unsent) ? Option.some(unsent.value) : Option.none(),
     );
 
     // A change saved after the question isn't lost unasked: the question comes again with it.
