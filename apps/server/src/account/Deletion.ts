@@ -136,7 +136,7 @@ export const handlers = AccountDeletion.Rpcs.toLayer(
 
           const ended = yield* sql.withTransaction(
             Effect.gen(function* () {
-              if (!(yield* FreshSignIn.check(accountId, sessionId))) {
+              if (!(yield* FreshSignIn.isFresh(accountId, sessionId))) {
                 return yield* new AccountDeletion.NotFresh();
               }
 

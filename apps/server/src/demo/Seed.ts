@@ -38,14 +38,11 @@ export const run = Effect.gen(function* () {
     const { data, term } = yield* DemoSchool.data(today);
     yield* Schools.publish(data);
 
-    // Anyone may sign up to the demo school where anyone may sign in as its students.
+    // Anyone may sign up to the demo school where anyone may sign in as its students. A
+    // development or preview database lives for one branch, so a thousand outlast its testers.
     if (Deployment.isDevelopmentOrPreview((yield* Deployment.Current).environment)) {
       yield* AccessCodes.ensure(
-        {
-          school: DemoSchool.id,
-          kind: "student",
-          maxUses: Option.none(),
-        },
+        { school: DemoSchool.id, kind: "student", maxUses: 1000 },
         Dev.demoSchoolCode,
       );
     }

@@ -116,6 +116,9 @@ catalog:
   # `bundledNativeModules.json`. babel-preset-expo adds the worklets plugin once it resolves.
   react-native-reanimated: 4.7.1
   react-native-worklets: 0.13.0
+  # Better Auth's placeholder address and its transactions for our own sign-in routes, at the
+  # version Better Auth itself depends on, so both share one instance.
+  "@better-auth/core": 1.7.14
 
 overrides:
   vite@*: "catalog:"
@@ -150,7 +153,10 @@ patchedDependencies:
   # Passkey sign-in asks for "preferred" user verification and both verify calls accept none, but
   # the PRF unlock needs verification on every assertion (recovery.md, section 4). The patch reads
   # `authenticatorSelection.userVerification` for all three, so "required" applies everywhere.
-  # `Auth.test.ts` fails when a bump drops it. Delete it once upstream PR #11155 or #11981 ships.
+  # It also takes the registration's `name` for the display name, which would otherwise be an
+  # account's placeholder address (`WithoutAddress`). `Auth.test.ts` fails when a bump drops either.
+  # Delete the first part once upstream PR #11155 or #11981 ships, the second once upstream uses
+  # `name` for both.
   "@better-auth/passkey@1.7.14": patches/@better-auth__passkey@1.7.14.patch
   # Expo Router ignores `experiments.baseUrl` while NODE_ENV is development (expo/expo#47701), so
   # behind the dev server's front door `/app/...` matched no route and links left `/app`. The patch

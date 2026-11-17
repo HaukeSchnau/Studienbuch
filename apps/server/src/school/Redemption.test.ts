@@ -3,7 +3,6 @@ import { Access } from "@stu/api/Access";
 import { School } from "@stu/core";
 import { Postgres18 } from "@stu/sync/testing";
 import * as Effect from "effect/Effect";
-import * as Option from "effect/Option";
 import * as RpcTest from "effect/rpc/RpcTest";
 import * as TestClock from "effect/testing/TestClock";
 import { Limits } from "../limits/Limits.ts";
@@ -33,11 +32,7 @@ describe.skipIf(Postgres18.socket === null)("Redemption on PostgreSQL 18", () =>
             offerings: {},
           });
 
-          const { code } = yield* AccessCodes.mint({
-            school,
-            kind: "student",
-            maxUses: Option.none(),
-          });
+          const { code } = yield* AccessCodes.mint({ school, kind: "student", maxUses: 30 });
 
           const wrong = Array.from(
             { length: Limits.perClient },

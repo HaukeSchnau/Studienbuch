@@ -8,6 +8,7 @@ import * as Fiber from "effect/Fiber";
 import * as Option from "effect/Option";
 import * as SqlClient from "effect/sql/SqlClient";
 import * as TestClock from "effect/testing/TestClock";
+import { DatabaseTesting } from "../infra/database/DatabaseTesting.ts";
 import { AccessCodes } from "./AccessCodes.ts";
 import { SchoolTesting } from "./SchoolTesting.ts";
 import { Schools } from "./Schools.ts";
@@ -24,18 +25,6 @@ const data: Schools.Data = {
   courses: {},
   offerings: {},
 };
-
-/**
- * Waits until a transaction in this database waits for another's lock. It asks again at once,
- * because nothing else could tell.
- */
-const someoneWaits = Effect.flatMap(
-  SqlClient.SqlClient,
-  (sql) => sql`
-    select 1 from pg_stat_activity
-    where datname = current_database() and wait_event_type = 'Lock'
-  `,
-).pipe(Effect.repeat({ until: (rows) => rows.length > 0 }));
 
 /**
  * Runs `first` in a transaction that stays open until `second` waits for its locks, then lets both
@@ -60,7 +49,7 @@ const atOnce = <A, E, R, B, E2, R2>(
 
     yield* Deferred.await(done);
     const other = yield* Effect.forkChild(Effect.exit(second));
-    yield* someoneWaits;
+    yield* DatabaseTesting.someoneWaits;
     yield* Deferred.succeed(release, undefined);
 
     return [yield* Fiber.join(one), yield* Fiber.join(other)] as const;
@@ -100,7 +89,7 @@ describe.skipIf(Postgres18.socket === null)("AccessCodes on PostgreSQL 18", () =
         const minted = yield* AccessCodes.mint({
           school,
           kind: "student",
-          maxUses: Option.some(1),
+          maxUses: 1,
         });
 
         const ben = yield* AccessCodes.reserve(minted.code);
@@ -134,11 +123,66 @@ describe.skipIf(Postgres18.socket === null)("AccessCodes on PostgreSQL 18", () =
     );
 
     it.effect(
+      "a sign-up without an address takes the use before its account exists, and of two racing for the last one, one gets it",
+      () =>
+        Effect.gen(function* () {
+          yield* Schools.publish(data);
+          const minted = yield* AccessCodes.mint({ school, kind: "student", maxUses: 1 });
+          const ada = yield* AccessCodes.reserve(minted.code);
+          const cem = yield* AccessCodes.reserve(minted.code);
+
+          const usable = [
+            yield* AccessCodes.usable(ada.token),
+            yield* AccessCodes.usable(cem.token),
+          ];
+
+          const [one, other] = yield* atOnce(
+            AccessCodes.takeUse(ada.token),
+            AccessCodes.takeUse(cem.token),
+          );
+
+          // A sign-up that made no account gives its use back, and can take it again.
+          yield* AccessCodes.returnUse(ada.token);
+          const returned = yield* uses(minted.id);
+          const again = yield* AccessCodes.takeUse(ada.token);
+
+          yield* SchoolTesting.account("ada");
+          const admitted = yield* AccessCodes.admitSignedUp("ada", ada.token);
+          // Once it admitted its account, the use stays spent.
+          yield* AccessCodes.returnUse(ada.token);
+
+          expect({
+            usable,
+            one: one._tag === "Success" && one.value,
+            other: other._tag === "Success" && !other.value,
+            returned,
+            again,
+            admitted: Option.isSome(admitted),
+            ada: (yield* SchoolTesting.memberships("ada")).filter((line) =>
+              line.startsWith("school"),
+            ),
+            stored: yield* uses(minted.id),
+            after: [yield* AccessCodes.usable(ada.token), yield* AccessCodes.usable(cem.token)],
+          }).toEqual({
+            usable: [true, true],
+            one: true,
+            other: true,
+            returned: { uses: 0, reserved: 2 },
+            again: true,
+            admitted: true,
+            ada: ["school am-see reader"],
+            stored: { uses: 1, reserved: 2 },
+            after: [false, false],
+          });
+        }),
+    );
+
+    it.effect(
       "admits through the confirming device's reservation, if this address carried it",
       () =>
         Effect.gen(function* () {
           yield* Schools.publish(data);
-          const code = yield* AccessCodes.mint({ school, kind: "student", maxUses: Option.none() });
+          const code = yield* AccessCodes.mint({ school, kind: "student", maxUses: 30 });
           const mine = yield* AccessCodes.reserve(code.code);
           const someone = yield* AccessCodes.reserve(code.code);
           yield* signUp("mia", mine.token);
@@ -164,7 +208,7 @@ describe.skipIf(Postgres18.socket === null)("AccessCodes on PostgreSQL 18", () =
         const minted = yield* AccessCodes.mint({
           school,
           kind: "student",
-          maxUses: Option.some(1),
+          maxUses: 1,
         });
 
         const { token } = yield* AccessCodes.reserve(minted.code);
@@ -205,7 +249,7 @@ describe.skipIf(Postgres18.socket === null)("AccessCodes on PostgreSQL 18", () =
 
           yield* Schools.publish(data);
 
-          const code = yield* AccessCodes.mint({ school, kind: "student", maxUses: Option.none() });
+          const code = yield* AccessCodes.mint({ school, kind: "student", maxUses: 30 });
           const spent = yield* AccessCodes.reserve(code.code);
 
           // A mistyped address, then the right one, which confirms and spends the reservation.
@@ -241,7 +285,7 @@ describe.skipIf(Postgres18.socket === null)("AccessCodes on PostgreSQL 18", () =
       Effect.gen(function* () {
         yield* Schools.publish(data);
 
-        const minted = yield* AccessCodes.mint({ school, kind: "student", maxUses: Option.none() });
+        const minted = yield* AccessCodes.mint({ school, kind: "student", maxUses: 30 });
         const { token } = yield* AccessCodes.reserve(minted.code);
         const claims = [];
 
@@ -266,7 +310,7 @@ describe.skipIf(Postgres18.socket === null)("AccessCodes on PostgreSQL 18", () =
     it.effect("refuses a code that is revoked, expired, used up or mistyped", () =>
       Effect.gen(function* () {
         yield* Schools.publish(data);
-        const once = yield* AccessCodes.mint({ school, kind: "student", maxUses: Option.some(1) });
+        const once = yield* AccessCodes.mint({ school, kind: "student", maxUses: 1 });
         const { token } = yield* AccessCodes.reserve(once.code);
         yield* signUp("tom", token);
         yield* AccessCodes.admitConfirmed("tom", Option.some(token));
@@ -274,7 +318,7 @@ describe.skipIf(Postgres18.socket === null)("AccessCodes on PostgreSQL 18", () =
         const revoked = yield* AccessCodes.mint({
           school,
           kind: "student",
-          maxUses: Option.none(),
+          maxUses: 30,
         });
 
         yield* AccessCodes.revoke(revoked.id);
@@ -282,7 +326,7 @@ describe.skipIf(Postgres18.socket === null)("AccessCodes on PostgreSQL 18", () =
         const expired = yield* AccessCodes.mint({
           school,
           kind: "student",
-          maxUses: Option.none(),
+          maxUses: 30,
           // The TestClock starts at 0, so this is past.
           expiresAt: Option.some(DateTime.toDateUtc(DateTime.makeUnsafe(-1))),
         });
@@ -299,7 +343,7 @@ describe.skipIf(Postgres18.socket === null)("AccessCodes on PostgreSQL 18", () =
           mistyped: yield* outcome(`${revoked.code.slice(0, -1)}0`),
           // Lower case and no hyphens still name the code.
           retyped: yield* Effect.flatMap(
-            AccessCodes.mint({ school, kind: "student", maxUses: Option.none() }),
+            AccessCodes.mint({ school, kind: "student", maxUses: 30 }),
             (fresh) => outcome(fresh.code.replaceAll("-", "").toLowerCase()),
           ),
         }).toEqual({

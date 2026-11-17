@@ -530,6 +530,7 @@ const recoveryCode: Case = {
       bytes: hex(codeBytes),
       text: Redacted.value(text),
       qr: Redacted.value(RecoveryCode.qr(text)),
+      login: hex(Redacted.value(yield* RecoveryCode.login(Redacted.make(codeBytes)))),
     };
   }),
 };
