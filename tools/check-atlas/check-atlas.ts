@@ -1,8 +1,9 @@
 // Fails when docs/architecture/atlas.html names a repository path that doesn't exist in this tree,
-// or cites an ADR number its ADR map lacks.
+// cites an ADR number its ADR map lacks, or puts two INFO entries on neighbouring lines.
 import * as NodeFS from "node:fs";
 import * as NodePath from "node:path";
 
+import { AtlasEntries } from "./AtlasEntries.ts";
 import { AtlasPaths } from "./AtlasPaths.ts";
 
 const root = NodePath.resolve(import.meta.dirname, "../..");
@@ -10,6 +11,7 @@ const atlas = "docs/architecture/atlas.html";
 
 const html = NodeFS.readFileSync(NodePath.join(root, atlas), "utf8");
 const missing = AtlasPaths.missing(html, (path) => NodeFS.existsSync(NodePath.join(root, path)));
+const crowded = AtlasEntries.crowded(html);
 
 if (missing.length > 0) {
   console.error(
@@ -20,6 +22,20 @@ if (missing.length > 0) {
     ].join("\n"),
   );
   process.exitCode = 1;
-} else {
+}
+
+if (crowded.length > 0) {
+  console.error(
+    [
+      `${atlas} fails the INFO layout check:`,
+      ...crowded.map((entry) => `  ${entry}`),
+      "Each INFO entry is one line with a blank line above it, so two changes to neighbouring boxes",
+      "merge cleanly. The check finds the map by its lines `const INFO = {` and `};`.",
+    ].join("\n"),
+  );
+  process.exitCode = 1;
+}
+
+if (missing.length === 0 && crowded.length === 0) {
   console.log(`${atlas}: all ${AtlasPaths.referenced(html).length} paths exist.`);
 }

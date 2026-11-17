@@ -1,0 +1,12 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ESNext", "DOM"],
+    "jsx": "react-jsx",
+    // Fixtures import packages the root doesn't install, and a few it does. Without resolving them,
+    // `declare module "*"` in modules.d.ts types every import as `any`, so no fixture needs a
+    // declaration for what it imports.
+    "noResolve": true
+  },
+  "include": ["**/*.ts", "**/*.tsx"]
+}
