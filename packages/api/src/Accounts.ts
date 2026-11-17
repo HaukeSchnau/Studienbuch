@@ -36,3 +36,35 @@ export const Address = Schema.String.check(
 );
 
 export const isAddress = Schema.is(Address);
+
+/**
+ * Whether an account's address is no address: one under the `.invalid` top-level domain, which no
+ * mail reaches (RFC 6761). An account without an address carries one, because Better Auth needs
+ * one per account.
+ */
+export const isPlaceholder = (email: string) => /\.invalid\.?$/iu.test(email);
+
+/**
+ * What a Notfallkarte signs in with: 32 bytes derived from the card (`RecoveryCode.login`), as
+ * base64url without padding. The server keeps only its SHA-256.
+ */
+export const Login = Schema.String.check(Schema.isPattern(/^[\w-]{43}$/u));
+
+/**
+ * Creates an account without an address with a card's login, in `Login`'s `login` field, and the
+ * access code's reservation in `Access.reservationHeader`. The same login again signs in to the
+ * account it made, so a retry after a lost answer makes no second account.
+ */
+export const cardSignUpPath = "/sign-up/recovery-code";
+
+/** Signs in to the account without an address that a card's `login` belongs to. */
+export const cardSignInPath = "/sign-in/recovery-code";
+
+/** The one answer to a login that belongs to no account. */
+export const unknownCard = "UNKNOWN_RECOVERY_CODE";
+
+/**
+ * The answer to removing the last passkey of an account without an address that has no card
+ * login, which would leave it without a way in.
+ */
+export const lastWayIn = "LAST_WAY_IN";

@@ -10,6 +10,7 @@
     "start": "node src/main.ts"
   },
   "dependencies": {
+    "@better-auth/core": "catalog:",
     "@better-auth/passkey": "catalog:",
     "@effect/platform-node": "catalog:",
     "@effect/sql-pg": "catalog:",
