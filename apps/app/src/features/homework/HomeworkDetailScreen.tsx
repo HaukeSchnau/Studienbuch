@@ -11,7 +11,7 @@ import type { ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 
 import { PanelScreen } from "../../ui/PanelScreen.tsx";
-import { useConfirm } from "../../ui/useConfirm.tsx";
+import { type Question, useConfirm } from "../../ui/useConfirm.tsx";
 import { KeysState } from "../keys/KeysState.ts";
 import { HomeworkRefusals } from "./HomeworkRefusals.tsx";
 import { HomeworkRoutes } from "./HomeworkRoutes.ts";
@@ -38,7 +38,7 @@ function AccountDetail({ accountId, id }: { readonly accountId: string; readonly
   const status = useAtomValue(HomeworkState.screen(accountId));
   const toggle = useAtomSet(HomeworkState.setDone(accountId));
   const remove = useAtomSet(HomeworkState.remove(accountId));
-  // The question names the homework, so it closes once the notebook locks.
+  // No new question while the notebook is locked, and on the web an open one closes.
   const confirm = useConfirm(Option.exists(status, (current) => current.readable));
 
   if (Option.isNone(status)) {
@@ -59,12 +59,8 @@ function AccountDetail({ accountId, id }: { readonly accountId: string; readonly
         onSome: (value) => {
           const homework = value.homework.find((each) => each.id === id);
 
-          const askToDelete = async (title: string) => {
-            const answer = await confirm.ask({
-              title: "Hausaufgabe löschen?",
-              paragraphs: [title],
-              proceed: "Löschen",
-            });
+          const askToDelete = async () => {
+            const answer = await confirm.ask(deleteQuestion);
 
             if (answer !== "proceed") return;
 
@@ -102,7 +98,7 @@ function AccountDetail({ accountId, id }: { readonly accountId: string; readonly
                     toggle({ notebook: value.notebook, id, doneOn: done ? today : undefined })
                   }
                   onEdit={() => router.push(HomeworkRoutes.edit(id))}
-                  onDelete={() => void askToDelete(homework.title)}
+                  onDelete={() => void askToDelete()}
                 />
               )}
             </View>
@@ -113,6 +109,14 @@ function AccountDetail({ accountId, id }: { readonly accountId: string; readonly
     </PanelScreen>
   );
 }
+
+// It names no homework: the student is on its page, and the phones' system alert, which the app
+// can't close, would otherwise keep its title on screen after the notebook locks.
+const deleteQuestion: Question = {
+  title: "Hausaufgabe löschen?",
+  paragraphs: ["Sie verschwindet auf allen deinen Geräten."],
+  proceed: "Löschen",
+};
 
 function Notice({
   title,
