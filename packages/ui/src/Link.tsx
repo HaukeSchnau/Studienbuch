@@ -47,7 +47,11 @@ export function Link({
       aria-busy={busy}
       {...pressable}
       disabled={busy || disabled === true}
-      style={({ pressed }) => [styles.link, pressed || busy ? styles.pressed : null]}
+      style={({ pressed }) => [
+        styles.link,
+        pressed || busy || disabled === true ? styles.pressed : null,
+        disabled === true ? styles.disabled : null,
+      ]}
     >
       {icon === undefined ? null : (
         <Icon name={icon} color={foreground} size={Tokens.type[variant].size + 3} />
@@ -68,4 +72,5 @@ const styles = StyleSheet.create({
     cursor: "pointer",
   },
   pressed: { opacity: 0.6 },
+  disabled: { cursor: "auto" },
 });

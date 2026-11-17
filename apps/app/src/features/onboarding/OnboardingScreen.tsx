@@ -221,8 +221,8 @@ function CoursesStep({ accountId, snapshot, draft }: Omit<StepsProps, "start">) 
           <AuthHeading>{classes.length === 0 ? "Kurse" : "Klassen und Kurse"}</AuthHeading>
           <Lead>
             {classes.length === 0
-              ? "Bitte wähle deine Kurse aus. Tippe auf die Fächer, um deine Kurse auszuwählen."
-              : "Bitte wähle deine Klasse und deine Wahlpflichtkurse aus. Tippe auf die Fächer, um deine Kurse auszuwählen."}
+              ? "Bitte wähle die Fächer aus, die du belegst."
+              : "Bitte wähle deine Klasse und die Wahlpflichtkurse aus, die du belegst."}
           </Lead>
           <Form>
             {classes.length === 0 ? null : (
