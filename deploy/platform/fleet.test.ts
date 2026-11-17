@@ -25,9 +25,10 @@ describe("Platform.spec", () => {
       console: ["{node}/bin/node", "{bundle}/server/main.mjs", "console"],
       endpoint: { hostName: "pr-7.studienbuch.schnau.dev", visibility: "tailnet" },
       health: { path: "/api/health/ready" },
-      database: { env: "DATABASE_URL", majorVersion: 18, dropOnDelete: true },
+      database: { env: "DATABASE_URL", majorVersion: 18, dropOnDelete: true, connections: 10 },
       env: {
         STUDIENBUCH_ENVIRONMENT: "preview",
+        DATABASE_CONNECTIONS: "10",
         STUDIENBUCH_REVISION: "8f3c2a1e",
         STUDIENBUCH_DEMO_SCHOOL: "seed",
         PUBLIC_URL: "https://pr-7.studienbuch.schnau.dev",
@@ -57,6 +58,7 @@ describe("Platform.spec", () => {
       env: "DATABASE_URL",
       majorVersion: 18,
       dropOnDelete: false,
+      connections: 40,
     });
     assert.deepStrictEqual(spec.secrets, {
       AUTH_SECRET: { sops: "projects/studienbuch/beta/auth-secret" },
@@ -68,8 +70,13 @@ describe("Platform.spec", () => {
     });
     assert.isFalse("MAIL_URL" in spec.env);
     assert.deepStrictEqual(
-      [spec.env.STUDIENBUCH_ENVIRONMENT, spec.env.PASSKEY_RP_ID, spec.env.S3_PREFIX],
-      ["beta", "beta.studienbuch.app", ""],
+      [
+        spec.env.STUDIENBUCH_ENVIRONMENT,
+        spec.env.PASSKEY_RP_ID,
+        spec.env.S3_PREFIX,
+        spec.env.DATABASE_CONNECTIONS,
+      ],
+      ["beta", "beta.studienbuch.app", "", "40"],
     );
     assert.deepStrictEqual(JSON.parse(spec.env.STUDIENBUCH_NATIVE_APPS ?? "null"), {
       ios: ["2243J9RD68.dev.schnau.studienbuch"],

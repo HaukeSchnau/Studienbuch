@@ -24,6 +24,12 @@ export interface Environment {
   /** Only a preview's database goes with it; the host dumps it first. */
   readonly dropDatabase: boolean;
   /**
+   * `DATABASE_CONNECTIONS`: what the database's role may hold, and the server's pools stay within.
+   * srv-2 shares 200 among every service's database (infra `hosts/srv-2/services.nix`): beta,
+   * prod and six previews hold 140 of them.
+   */
+  readonly databaseConnections: number;
+  /**
    * `STUDIENBUCH_NATIVE_APPS`: the native builds that talk to this environment, as the server's
    * `NativeApps.Apps` reads them. Previews are web only.
    */
@@ -54,6 +60,7 @@ const preview = (pr: number): Environment => ({
   blobPrefix: `pr-${pr}/`,
   memory: "512M",
   dropDatabase: true,
+  databaseConnections: 10,
   nativeApps: Option.none(),
 });
 
@@ -67,6 +74,7 @@ const beta: Environment = {
   blobPrefix: "",
   memory: "1G",
   dropDatabase: false,
+  databaseConnections: 40,
   nativeApps: Option.some(studienbuchApps),
 };
 
@@ -80,6 +88,7 @@ const prod: Environment = {
   blobPrefix: "",
   memory: "1G",
   dropDatabase: false,
+  databaseConnections: 40,
   nativeApps: Option.some(studienbuchApps),
 };
 
