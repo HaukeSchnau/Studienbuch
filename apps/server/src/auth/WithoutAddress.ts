@@ -202,7 +202,10 @@ type Context = Parameters<typeof setSessionCookie>[0];
 export const plugin = (callbacks: Callbacks) => {
   const { run } = callbacks;
 
-  /** A new session of the account, handed to the device as every sign-in hands it. */
+  /**
+   * A new session of the account, handed to the device as every sign-in hands it. Better Auth
+   * makes it on its own pool, so it commits while `CardLogins.signingIn` still holds the login.
+   */
   const signIn = Effect.fn("WithoutAddress.signIn")(function* (ctx: Context, account: string) {
     const adapter = ctx.context.internalAdapter;
     const user = yield* Effect.promise(() => adapter.findUserById(account));
@@ -240,10 +243,10 @@ export const plugin = (callbacks: Callbacks) => {
       run(
         Effect.gen(function* () {
           const { login } = ctx.body;
-          const known = yield* CardLogins.owner(login);
+          const known = yield* CardLogins.signingIn(login, (account) => signIn(ctx, account));
 
           // A retry after a lost answer: the card already made its account.
-          if (Option.isSome(known)) return yield* signIn(ctx, known.value);
+          if (Option.isSome(known)) return known.value;
 
           const reservation = Option.getOrNull(reservationOf(ctx));
 
@@ -270,8 +273,12 @@ export const plugin = (callbacks: Callbacks) => {
     { method: "POST", body: LoginBody },
     (ctx) =>
       run(
-        Effect.flatMap(CardLogins.owner(ctx.body.login), (owner) =>
-          Option.isSome(owner) ? signIn(ctx, owner.value) : refused("UNAUTHORIZED", unknownCard),
+        Effect.flatMap(
+          CardLogins.signingIn(ctx.body.login, (account) => signIn(ctx, account)),
+          Option.match({
+            onNone: () => refused("UNAUTHORIZED", unknownCard),
+            onSome: Effect.succeed,
+          }),
         ),
       ),
   );

@@ -8,6 +8,7 @@ import * as Fiber from "effect/Fiber";
 import * as Option from "effect/Option";
 import * as SqlClient from "effect/sql/SqlClient";
 import * as TestClock from "effect/testing/TestClock";
+import { DatabaseTesting } from "../infra/database/DatabaseTesting.ts";
 import { AccessCodes } from "./AccessCodes.ts";
 import { SchoolTesting } from "./SchoolTesting.ts";
 import { Schools } from "./Schools.ts";
@@ -24,18 +25,6 @@ const data: Schools.Data = {
   courses: {},
   offerings: {},
 };
-
-/**
- * Waits until a transaction in this database waits for another's lock. It asks again at once,
- * because nothing else could tell.
- */
-const someoneWaits = Effect.flatMap(
-  SqlClient.SqlClient,
-  (sql) => sql`
-    select 1 from pg_stat_activity
-    where datname = current_database() and wait_event_type = 'Lock'
-  `,
-).pipe(Effect.repeat({ until: (rows) => rows.length > 0 }));
 
 /**
  * Runs `first` in a transaction that stays open until `second` waits for its locks, then lets both
@@ -60,7 +49,7 @@ const atOnce = <A, E, R, B, E2, R2>(
 
     yield* Deferred.await(done);
     const other = yield* Effect.forkChild(Effect.exit(second));
-    yield* someoneWaits;
+    yield* DatabaseTesting.someoneWaits;
     yield* Deferred.succeed(release, undefined);
 
     return [yield* Fiber.join(one), yield* Fiber.join(other)] as const;

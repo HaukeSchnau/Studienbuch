@@ -26,17 +26,38 @@ export const digest = Effect.fn("CardLogins.digest")(function* (login: string) {
   return Hex.encode(yield* Effect.orDie(crypto.digest("SHA-256", bytes)));
 });
 
-/** The account whose card the login is from. */
+/**
+ * The account whose card the login is from. Holds the login for share until the caller's
+ * transaction ends, so `replace` can't retire it meanwhile.
+ */
 export const owner = Effect.fn("CardLogins.owner")(function* (login: string) {
   const sql = yield* SqlClient.SqlClient;
 
   const [row] = yield* sql<{ readonly userId: string }>`
     select "userId" from auth_account
     where "providerId" = ${provider} and "accountId" = ${yield* digest(login)}
+    for share
   `;
 
   return Option.map(Option.fromNullishOr(row), ({ userId }) => userId);
 });
+
+/**
+ * Runs `signIn` for the account whose card the login is from, or answers none. The login stays
+ * held until `signIn` made its session, so a new card retires it either before, and the login is
+ * unknown, or after, and ends that session (`replace`).
+ */
+export const signingIn = <A, E, R>(
+  login: string,
+  signIn: (account: string) => Effect.Effect<A, E, R>,
+) =>
+  Effect.flatMap(SqlClient.SqlClient, (sql) =>
+    sql.withTransaction(
+      Effect.flatMap(owner(login), (account) =>
+        Option.isNone(account) ? Effect.succeedNone : Effect.asSome(signIn(account.value)),
+      ),
+    ),
+  );
 
 /** Whether the account has an email address, rather than a placeholder for none. */
 export const hasAddress = Effect.fn("CardLogins.hasAddress")(function* (account: string) {
