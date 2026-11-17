@@ -1,10 +1,10 @@
 import { Sync } from "@stu/sync";
 import * as Effect from "effect/Effect";
-import type * as ExecutionPlan from "effect/ExecutionPlan";
+import * as ExecutionPlan from "effect/ExecutionPlan";
 import * as Schedule from "effect/Schedule";
 
 const write = Effect.void;
-declare const plan: ExecutionPlan.ExecutionPlan<never>;
+const plan = ExecutionPlan.make({ provide: Effect.void });
 
 export const rename = Sync.mutator("note.rename", {
   version: 1,
