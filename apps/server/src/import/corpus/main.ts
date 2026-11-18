@@ -7,11 +7,9 @@ import { WebUntisClient, WebUntisConnection, webUntisLayer } from "@schnau/webun
 import * as Command from "effect/cli/Command";
 import * as Flag from "effect/cli/Flag";
 import * as Config from "effect/Config";
-import * as Crypto from "effect/Crypto";
 import * as Console from "effect/Console";
 import * as Effect from "effect/Effect";
 import * as Base64 from "effect/encoding/Base64";
-import * as Hex from "effect/encoding/Hex";
 import * as FileSystem from "effect/FileSystem";
 import * as FetchHttpClient from "effect/http/FetchHttpClient";
 import * as Layer from "effect/Layer";
@@ -329,84 +327,88 @@ const fetch = Command.make(
 
     if (Option.isNone(source.archive)) return yield* new Refused({ reason: "name --archive" });
 
+    const name = source.archive.value;
+
     if (Option.isSome(source.commit) && Option.isNone(source.repository)) {
       return yield* new Refused({ reason: "--commit needs --repository" });
     }
 
     yield* fs.makeDirectory(root, { recursive: true });
 
-    let archive = source.archive.value;
-
-    if (Option.isSome(source.repository)) {
-      // One clone per repository, so a different URL never pulls the wrong one.
-      const crypto = yield* Crypto.Crypto;
-
-      const repository = (yield* fs.exists(source.repository.value))
-        ? yield* fs.realPath(source.repository.value)
-        : source.repository.value;
-
-      const url = new TextEncoder().encode(repository);
-
-      const clone = path.join(
-        root,
-        `repository-${Hex.encode(yield* crypto.digest("SHA-256", url)).slice(0, 16)}`,
-      );
-
-      const git = (args: ReadonlyArray<string>) =>
-        spawner.exitCode(ChildProcess.make("git", args, { stdout: "inherit", stderr: "inherit" }));
-
-      const steps: ReadonlyArray<ReadonlyArray<string>> = [
-        ...((yield* fs.exists(path.join(clone, ".git")))
-          ? [["-C", clone, "fetch", "--quiet", "origin"]]
-          : [["clone", "--quiet", repository, clone]]),
-        // The cache's clone is ours, so whatever it holds gives way to the commit asked for.
-        [
-          "-C",
-          clone,
-          "checkout",
-          "--quiet",
-          "--force",
-          "--detach",
-          Option.getOrElse(source.commit, () => "origin/HEAD"),
-        ],
-      ];
-
-      for (const args of steps) {
-        const code = yield* git(args);
-
-        if (code !== 0) return yield* new Refused({ reason: `git ended with code ${code}` });
-      }
-
-      archive = path.join(clone, source.archive.value);
+    if (Option.isSome(pin) && (yield* fs.exists(Pin.directory(root, pin.value.sha256)))) {
+      return yield* Console.log(Pin.directory(root, pin.value.sha256));
     }
 
-    const actual = yield* Archive.sha256(archive);
+    // Each fetch works in directories of its own, so fetches at the same time can't meet.
+    const directory = yield* Effect.scoped(
+      Effect.gen(function* () {
+        let archive = name;
 
-    if (Option.isSome(source.sha256) && actual !== source.sha256.value.toLowerCase()) {
-      return yield* new Refused({ reason: "the archive's SHA-256 differs from the pin" });
-    }
+        if (Option.isSome(source.repository)) {
+          const clone = yield* fs.makeTempDirectoryScoped({ directory: root, prefix: "clone-" });
 
-    const unpacked = yield* fs.makeTempDirectory({ directory: root, prefix: "unpack-" });
+          const git = (args: ReadonlyArray<string>) =>
+            spawner.exitCode(
+              ChildProcess.make("git", args, { stdout: "inherit", stderr: "inherit" }),
+            );
 
-    // The checked corpus moves into place, so only a failure leaves a directory to remove.
-    const directory = yield* Effect.gen(function* () {
-      yield* Archive.unpack(archive, unpacked, yield* identities(flags.identity));
+          for (const args of [
+            [
+              "clone",
+              "--quiet",
+              "--no-checkout",
+              "--filter=blob:none",
+              source.repository.value,
+              clone,
+            ],
+            [
+              "-C",
+              clone,
+              "checkout",
+              "--quiet",
+              Option.getOrElse(source.commit, () => "HEAD"),
+              "--",
+              name,
+            ],
+          ]) {
+            const code = yield* git(args);
 
-      // The grammar has checked the manifest's id before it names the target.
-      const manifest = yield* checked(unpacked);
+            if (code !== 0) return yield* new Refused({ reason: `git ended with code ${code}` });
+          }
 
-      yield* canonical(unpacked);
+          archive = path.join(clone, name);
+        }
 
-      const target = path.join(root, manifest.id);
+        const actual = yield* Archive.sha256(archive);
 
-      yield* fs.remove(Pin.marker(root, manifest.id), { force: true });
-      yield* fs.remove(target, { recursive: true, force: true });
-      yield* fs.rename(unpacked, target);
-      yield* fs.writeFileString(Pin.marker(root, manifest.id), `${actual}\n`);
+        if (Option.isSome(source.sha256) && actual !== source.sha256.value.toLowerCase()) {
+          return yield* new Refused({ reason: "the archive's SHA-256 differs from the pin" });
+        }
 
-      return target;
-    }).pipe(
-      Effect.onError(() => Effect.ignore(fs.remove(unpacked, { recursive: true, force: true }))),
+        const target = Pin.directory(root, actual);
+
+        if (yield* fs.exists(target)) return target;
+
+        const unpacked = yield* fs.makeTempDirectoryScoped({ directory: root, prefix: "unpack-" });
+
+        yield* Archive.unpack(archive, unpacked, yield* identities(flags.identity));
+        yield* checked(unpacked);
+        yield* canonical(unpacked);
+
+        // The checked corpus moves into place whole. Another fetch of the same archive that got
+        // there first leaves the same corpus.
+        yield* fs
+          .rename(unpacked, target)
+          .pipe(
+            Effect.catch((error) =>
+              Effect.flatMap(fs.exists(target), (exists) =>
+                exists ? Effect.void : Effect.fail(error),
+              ),
+            ),
+          );
+
+        return target;
+      }),
     );
 
     yield* Console.log(directory);

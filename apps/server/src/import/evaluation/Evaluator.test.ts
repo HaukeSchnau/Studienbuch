@@ -1,5 +1,9 @@
 import type { WebUntisClient } from "@schnau/webuntis-api";
-import { TimetableEntriesSchema, TimetableFilterSchema } from "@schnau/webuntis-api/schemas";
+import {
+  ExamsSchema,
+  TimetableEntriesSchema,
+  TimetableFilterSchema,
+} from "@schnau/webuntis-api/schemas";
 import { assert, describe, it } from "@effect/vitest";
 import { Course, School } from "@stu/core";
 import * as DateTime from "effect/DateTime";
@@ -23,6 +27,36 @@ const decodeJson = Schema.decodeEffect(Schema.fromJsonString(Schema.Json));
 const decodeFilter = Schema.decodeUnknownEffect(TimetableFilterSchema);
 const encodeFilter = Schema.encodeEffect(Schema.toCodecJson(TimetableFilterSchema));
 const decodeEntries = Schema.decodeUnknownEffect(Schema.toCodecJson(TimetableEntriesSchema));
+const decodeExams = Schema.decodeUnknownEffect(Schema.toCodecJson(ExamsSchema));
+const encodeExams = Schema.encodeEffect(Schema.toCodecJson(ExamsSchema));
+
+/** TinySchool with `days` of one student's timetable hidden from the capture's account. */
+const hiding = (student: number, days: ReadonlyArray<string>) =>
+  Effect.gen(function* () {
+    const path = RecordedWebUntis.paths.entries(10, "STUDENT", student);
+    const hidden = new Set(days);
+
+    const versions = yield* Effect.forEach(
+      TinySchool.corpus.reads.get(path)?.versions ?? [],
+      (version) =>
+        Effect.map(decodeEntries(version.body), (body) => ({
+          ...version,
+          body: {
+            ...body,
+            days: body.days.map((day) =>
+              hidden.has(day.date.slice(0, 10))
+                ? { ...day, status: "NOT_ALLOWED_FOR_RESOURCE", gridEntries: [] }
+                : day,
+            ),
+          },
+        })),
+    );
+
+    return {
+      ...TinySchool.corpus,
+      reads: new Map([...TinySchool.corpus.reads, [path, { versions }]]),
+    };
+  });
 
 const evaluate = (
   importLayer: Layer.Layer<SchoolImport.Service, never, WebUntisClient>,
@@ -468,7 +502,7 @@ describe("Evaluator", () => {
       const [version] = TinySchool.corpus.reads.get(path)?.versions ?? [];
       const body = yield* decodeFilter(version?.body);
 
-      // A grade 10 student, whose timetable the capture never reads.
+      // A grade 10 student, whose timetable the capture never reads, who also sits the exam.
       const lowerSchool = {
         ...TinySchool.corpus,
         reads: new Map([
@@ -508,6 +542,31 @@ describe("Evaluator", () => {
           ],
         ]),
       };
+
+      const examsPath = RecordedWebUntis.paths.exams(10);
+      const [examsVersion] = TinySchool.corpus.reads.get(examsPath)?.versions ?? [];
+      const exams = yield* decodeExams(examsVersion?.body);
+
+      const sitting = exams.exams.map((exam) => ({
+        ...exam,
+        students: exam.students.flatMap((student) =>
+          student.id === 504
+            ? [
+                student,
+                { ...student, id: 599, shortName: "S99", longName: "S99", displayName: "S99" },
+              ]
+            : [student],
+        ),
+      }));
+
+      lowerSchool.reads.set(examsPath, {
+        versions: [
+          {
+            observedAt: examsVersion?.observedAt ?? DateTime.makeUnsafe(0),
+            body: yield* encodeExams({ ...exams, exams: sitting }),
+          },
+        ],
+      });
 
       const { worst: _, ...whole } = yield* evaluate(NaiveImport.layer);
 
@@ -550,31 +609,11 @@ describe("Evaluator", () => {
     "measures nothing on $name a student's timetable hides, and doesn't fail",
     ({ days, student }) =>
       Effect.gen(function* () {
-        const path = RecordedWebUntis.paths.entries(10, "STUDENT", 501);
-        const hidden = new Set(days);
-
-        const versions = yield* Effect.forEach(
-          TinySchool.corpus.reads.get(path)?.versions ?? [],
-          (version) =>
-            Effect.map(decodeEntries(version.body), (body) => ({
-              ...version,
-              body: {
-                ...body,
-                days: body.days.map((day) =>
-                  hidden.has(day.date.slice(0, 10))
-                    ? { ...day, status: "NOT_ALLOWED_FOR_RESOURCE", gridEntries: [] }
-                    : day,
-                ),
-              },
-            })),
-        );
+        const corpus = yield* hiding(501, days);
 
         const { worst: _, ...whole } = yield* evaluate(NaiveImport.layer);
 
-        const { worst: __, ...report } = yield* evaluate(NaiveImport.layer, false, {
-          ...TinySchool.corpus,
-          reads: new Map([...TinySchool.corpus.reads, [path, { versions }]]),
-        });
+        const { worst: __, ...report } = yield* evaluate(NaiveImport.layer, false, corpus);
 
         assert.deepStrictEqual(report, {
           ...whole,
@@ -582,6 +621,59 @@ describe("Evaluator", () => {
           hiddenDays: days.length,
         });
       }),
+  );
+
+  // A Kurswahl or an exam WebUntis hid counts on neither side.
+  it.effect.each([
+    {
+      name: "a student's opening weeks",
+      student: 501,
+      days: [
+        "2026-10-26",
+        "2026-10-27",
+        "2026-10-28",
+        "2026-10-29",
+        "2026-10-30",
+        "2026-11-02",
+        "2026-11-03",
+        "2026-11-04",
+        "2026-11-05",
+        "2026-11-06",
+      ],
+      // S1 is no longer counted, where an empty choice from nothing used to be exactly right.
+      expected: {
+        kurswahl: of(3, 7),
+        exams: of(0, 1),
+        examStudents: { recall: of(2, 2), precision: of(2, 4) },
+        hiddenDays: 10,
+      },
+    },
+    {
+      name: "the day of a student's exam",
+      student: 504,
+      days: ["2026-11-05"],
+      // S4 leaves the exam's roster and the students it is shown to.
+      expected: {
+        kurswahl: of(3, 8),
+        exams: of(0, 1),
+        examStudents: { recall: of(1, 1), precision: of(1, 3) },
+        hiddenDays: 1,
+      },
+    },
+  ])("doesn't count what WebUntis hid on $name", ({ student, days, expected }) =>
+    Effect.gen(function* () {
+      const report = yield* evaluate(NaiveImport.layer, false, yield* hiding(student, days));
+
+      assert.deepStrictEqual(
+        {
+          kurswahl: report.kurswahl,
+          exams: report.exams,
+          examStudents: report.examStudents,
+          hiddenDays: report.hiddenDays,
+        },
+        expected,
+      );
+    }),
   );
 
   it.effect("refuses weeks that hold none the corpus captured", () =>

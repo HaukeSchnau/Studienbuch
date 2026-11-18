@@ -33,21 +33,31 @@ const isScalar = Schema.is(
   Schema.Union([Schema.String, Schema.Finite, Schema.Boolean, Schema.Null]),
 );
 
-const isFraction = Schema.is(Report.Fraction);
+const isText = Schema.is(Schema.String);
+const hasFractionFields = Schema.is(Report.Fraction);
 const isList = Schema.is(Schema.Array(Schema.Json));
 const isObject = Schema.is(Schema.Record(Schema.String, Schema.Json));
 
-/** Every number by its path, a fraction as `right of total` and a list of values in one line. */
+/** A string quoted, so `"5"` and `5` differ. */
+const show = (value: string | number | boolean | null) =>
+  isText(value) ? `"${value}"` : String(value);
+
+/**
+ * Every number by its path, a fraction as `right of total` and a list of values in one line. An
+ * object with more than a fraction's two fields isn't one, so its other fields show.
+ */
 const flatten = (value: Schema.Json, path: string): ReadonlyArray<readonly [string, string]> => {
   const under = (key: string | number) => (path === "" ? `${key}` : `${path}.${key}`);
 
-  if (isScalar(value)) return [[path, String(value)]];
+  if (isScalar(value)) return [[path, show(value)]];
 
-  if (isFraction(value)) return [[path, `${value.right} of ${value.of}`]];
+  if (hasFractionFields(value) && Object.keys(value).length === 2) {
+    return [[path, `${value.right} of ${value.of}`]];
+  }
 
   if (isList(value)) {
     return value.every(isScalar)
-      ? [[path, value.map((each) => String(each)).join(", ")]]
+      ? [[path, value.map(show).join(", ")]]
       : value.flatMap((each, index) => flatten(each, under(index)));
   }
 
@@ -85,6 +95,6 @@ export const summary = (all: ReadonlyArray<Difference>) => {
         ...all.map(
           (each) => `  ${each.number}: ${each.measured}, the baseline has ${each.baseline}`,
         ),
-        `${all.length} numbers differ from the baseline, such as ${first.number} (${first.measured}, the baseline has ${first.baseline}). Fix the import, or update baseline.json in this commit with the reason.`,
+        `${all.length === 1 ? "1 number differs" : `${all.length} numbers differ`} from the baseline, such as ${first.number} (${first.measured}, the baseline has ${first.baseline}). Fix the import, or update baseline.json in this commit with the reason.`,
       ];
 };
