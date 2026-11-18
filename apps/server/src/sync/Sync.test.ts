@@ -332,6 +332,7 @@ describe.skipIf(Postgres18.socket === null)("Sync with Studienbuch's definition"
         );
 
         const ops = pulled.patches.flatMap((patch) => patch.ops);
+        const lesson = ops.find((op) => op.tbl === "Lesson" && op.id === "ma-e-1")?.row;
 
         const courses = yield* Effect.forEach(
           ops.filter((op) => op.tbl === "Course"),
@@ -342,6 +343,8 @@ describe.skipIf(Postgres18.socket === null)("Sync with Studienbuch's definition"
           answers: answers.outcomes.map((outcome) => outcome._tag),
           tables: [...new Set(ops.map((op) => op.tbl))].sort(),
           courses,
+          // A deleted lesson would answer its tag instead.
+          lesson: lesson?._tag === "Readable" ? lesson.data : lesson?._tag,
         }).toEqual({
           answers: ["Applied"],
           // It stores the tables it doesn't know as JSON and builds no view for them.
@@ -361,6 +364,16 @@ describe.skipIf(Postgres18.socket === null)("Sync with Studienbuch's definition"
             "WeekLabel",
           ],
           courses: [{ name: "MA-E" }],
+          lesson: {
+            courseId: "ma-e",
+            date: "2026-11-18",
+            start: 28_800_000,
+            end: 34_200_000,
+            teacherIds: ["bra"],
+            roomIds: ["a101"],
+            status: "Changed",
+            change: { kind: "RoomChange", previousTeacherIds: [], previousRoomIds: [] },
+          },
         });
       }),
     );
