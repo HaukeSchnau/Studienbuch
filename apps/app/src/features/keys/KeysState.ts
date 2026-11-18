@@ -257,9 +257,9 @@ export const withPasskey = Atom.family((accountId: string) =>
           Account.signInWithPasskey(yield* Device.PublicComputer),
         );
 
+        // Also after a failure: an output the device kept opens the notebook once it's back.
         yield* NotebookKeys.usePasskey(used.credentialId, used.prf);
-        yield* refresh(accountId, get);
-      }),
+      }).pipe(Effect.ensuring(refresh(accountId, get))),
     oneAttempt,
   ),
 );
