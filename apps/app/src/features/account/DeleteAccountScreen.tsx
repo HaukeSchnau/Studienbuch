@@ -109,8 +109,8 @@ function DeleteAccount({ accountId }: { readonly accountId: string }) {
         />
       ) : (
         <View style={styles.actions}>
-          {/* The account is gone; only this device's copy waits for the next start. */}
-          {Option.contains(reason, "forget-failed") ? null : (
+          {/* The account is gone; only this device's copy waits. */}
+          {Option.exists(reason, Deletion.isGone) ? null : (
             <Button
               label="Konto löschen"
               kind="danger"

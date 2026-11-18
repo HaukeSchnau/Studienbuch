@@ -19,6 +19,7 @@ import * as TestClock from "effect/testing/TestClock";
 import { SessionStore } from "../../infra/auth/SessionStore.ts";
 import { Keychain } from "../../infra/keychain/Keychain.ts";
 import { AccountEngine } from "../../infra/runtime/AccountEngine.ts";
+import { Forgetting } from "../../infra/runtime/Forgetting.ts";
 import { Layers } from "../../infra/runtime/Layers.ts";
 import { Onboarding } from "../onboarding/Onboarding.ts";
 import { OnboardingState } from "../onboarding/OnboardingState.ts";
@@ -275,6 +276,7 @@ it.effect("a deleted account is erased on the next try when the keychain refused
     yield* TestClock.adjust("2 seconds");
     const second = yield* Queue.take(tries);
     const left = yield* store.current;
+    const pending = yield* Forgetting.pending;
 
     yield* engines.keep(store.signedIn(signed, false));
     const again = yield* engines.context(signed.accountId);
@@ -285,10 +287,18 @@ it.effect("a deleted account is erased on the next try when the keychain refused
         first: Exit.isFailure(first),
         second: Exit.isSuccess(second),
         left,
+        pending: pending.includes(signed.accountId),
         spaces: spaces.length,
         signedOut: registry.get(AccountState.signedOut),
       },
-      { first: true, second: true, left: Option.none(), spaces: 0, signedOut: false },
+      {
+        first: true,
+        second: true,
+        left: Option.none(),
+        pending: false,
+        spaces: 0,
+        signedOut: false,
+      },
     );
   }).pipe(Effect.provide(Layer.merge(refusesFirstNote, AtomRegistry.layer))),
 );

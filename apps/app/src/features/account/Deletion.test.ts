@@ -285,7 +285,7 @@ describe("Deletion", () => {
           left: yield* Ref.get(left),
           reported: yield* Ref.get(reported),
           now: yield* holder,
-        }).toEqual({ deletes: 1, left: ["lena"], reported: ["forget-failed"], now: Option.none() });
+        }).toEqual({ deletes: 1, left: ["lena"], reported: ["not-forgotten"], now: Option.none() });
       }).pipe(Effect.provide(counting));
     }).pipe(Effect.provide(device)),
   );
@@ -423,6 +423,51 @@ describe("Deletion", () => {
             now: Option.none(),
           });
         }).pipe(Effect.provide(deleted));
+      }).pipe(Effect.provide(device)),
+  );
+
+  // Lena's answer got lost, and pressed again, the question whether her session went with her
+  // account meets a busy server. She waits on the screen, so it's asked a few times, then she's told.
+  it.effect(
+    "a deletion asked again after a lost answer asks a few times whether it went through",
+    () =>
+      Effect.gen(function* () {
+        const asked = yield* Queue.unbounded<string>();
+        const { left, leave, report, reported } = yield* leaving;
+        const deletes = yield* Ref.make(0);
+        const tries = yield* Ref.make(0);
+
+        const busy = server(new Set(), asked, {
+          delete: () =>
+            Effect.andThen(
+              Ref.update(deletes, (n) => n + 1),
+              Effect.fail(new AccountDeletion.SignedOut()),
+            ),
+          deleted: () =>
+            Effect.andThen(
+              Ref.update(tries, (n) => n + 1),
+              Effect.fail(new DeletionServer.Unreachable()),
+            ),
+        });
+
+        yield* Effect.gen(function* () {
+          yield* signIn("lena", "token-gone");
+
+          const deleting = yield* Effect.forkChild(Deletion.deleteAccount(leave, report), {
+            startImmediately: true,
+          });
+
+          yield* TestClock.adjust("1 minute");
+          const refused = yield* Effect.flip(Fiber.join(deleting));
+
+          expect({
+            refused: refused._tag === "Deletion.Problem" ? refused.reason : refused._tag,
+            deletes: yield* Ref.get(deletes),
+            tries: yield* Ref.get(tries),
+            left: yield* Ref.get(left),
+            reported: yield* Ref.get(reported),
+          }).toEqual({ refused: "offline", deletes: 1, tries: 4, left: [], reported: ["offline"] });
+        }).pipe(Effect.provide(busy));
       }).pipe(Effect.provide(device)),
   );
 

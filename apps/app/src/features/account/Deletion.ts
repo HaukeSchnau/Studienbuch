@@ -15,7 +15,13 @@ import { DeletionServer } from "./DeletionServer.ts";
 
 export * as Deletion from "./Deletion.ts";
 
-export const Reason = Schema.Literals(["offline", "not-fresh", "signed-out", "forget-failed"]);
+export const Reason = Schema.Literals([
+  "offline",
+  "not-fresh",
+  "signed-out",
+  "not-forgotten",
+  "forget-failed",
+]);
 
 export type Reason = typeof Reason.Type;
 
@@ -33,6 +39,9 @@ export class Unchanged extends Schema.TaggedError<Unchanged, { readonly brand: u
   {},
 ) {}
 
+/** Whether the server deleted the account already, and only this device's copy waits. */
+export const isGone = (reason: Reason) => reason === "not-forgotten" || reason === "forget-failed";
+
 /** A server that can't be reached, or a keychain that refuses, is asked again, at most every five minutes. */
 const askAgain = Schedule.min([Schedule.exponential("2 seconds"), Schedule.spaced("5 minutes")]);
 
@@ -45,7 +54,7 @@ const leaving = <R>(leave: Effect.Effect<void, Problem | Unchanged, R>) =>
   Effect.uninterruptible(leave).pipe(
     Effect.retry({ schedule: askAgain, while: Schema.is(Unchanged) }),
     Effect.catchTags({
-      "Deletion.Unchanged": () => Effect.fail(new Problem({ reason: "forget-failed" })),
+      "Deletion.Unchanged": () => Effect.fail(new Problem({ reason: "not-forgotten" })),
     }),
   );
 
@@ -55,6 +64,8 @@ export const sentence: Record<Reason, string> = {
   "not-fresh": "Bestätige kurz, dass du es bist, dann geht es weiter.",
   "signed-out":
     "Deine Anmeldung ist abgelaufen. Melde dich neu an, dann kannst du dein Konto löschen.",
+  "not-forgotten":
+    "Dein Konto ist gelöscht. Dieses Gerät hat seine Kopie noch nicht entfernt. Lass die App offen, dann entfernt es sie, sobald es kann.",
   "forget-failed":
     "Dein Konto ist gelöscht. Dieses Gerät konnte seine Kopie noch nicht ganz entfernen und versucht es beim nächsten Start noch einmal.",
 };
@@ -91,9 +102,11 @@ export const deleteAccount = Effect.fn("Deletion.deleteAccount")(function* <R>(
         "DeletionServer.Unreachable": () => Effect.fail(new Problem({ reason: "offline" })),
         "AccountDeletion.NotFresh": () => Effect.fail(new Problem({ reason: "not-fresh" })),
         // The server deleted the account before, and its answer was lost or the device couldn't
-        // finish leaving: the session is gone because the account is, so the device leaves now.
+        // finish leaving: the session is gone because the account is, so the device leaves now. The
+        // student waits on the screen, so the server is asked a few times, not until it answers.
         "AccountDeletion.SignedOut": () =>
           server.deleted(token.value).pipe(
+            Effect.retry({ schedule: askAgain, times: 3 }),
             Effect.catchTags({
               "DeletionServer.Unreachable": () => Effect.fail(new Problem({ reason: "offline" })),
             }),
@@ -108,7 +121,7 @@ export const deleteAccount = Effect.fn("Deletion.deleteAccount")(function* <R>(
     // meanwhile that this device didn't finish yet.
     yield* leaving(
       leave(accountId).pipe(
-        Effect.tapErrorTag("Deletion.Unchanged", () => reported("forget-failed")),
+        Effect.tapErrorTag("Deletion.Unchanged", () => reported("not-forgotten")),
       ),
     );
   }).pipe(Effect.tapError((problem) => reported(problem.reason)));
