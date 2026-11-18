@@ -290,7 +290,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
         }),
     );
     it.effect(
-      "signs in with the card of an account without an address, and a new card retires the old one's login and wrappers",
+      "signs in with the card of an account without an address, and a new card retires the old one's login, and for every account its wrappers",
       () =>
         Effect.gen(function* () {
           const sql = yield* SqlClient.SqlClient;
@@ -374,6 +374,14 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
             Option.some(loginOf(3)),
           );
 
+          // An email account's card opens the notebook only, and a new one retires it too.
+          yield* KeyStore.addWrapper(
+            "max",
+            maxSession,
+            yield* cardFrom("max-card-2", 121, max.keys),
+            Option.some(loginOf(4)),
+          );
+
           expect({
             withoutLogin:
               withoutLogin._tag === "Keys.Invalid" ? withoutLogin.reason : withoutLogin._tag,
@@ -386,6 +394,9 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
             seals: (yield* sql`select 1 from key_wrapper_seal where account_id = 'noa'`).length,
             taken: taken._tag === "Keys.Invalid" ? taken.reason : taken._tag,
             email: yield* owner(3),
+            emailWrappers: (yield* KeyStore.state("max")).wrappers.map(
+              (wrapper) => wrapper.statement.id,
+            ),
             ended,
             sessions: yield* sessions,
           }).toEqual({
@@ -401,6 +412,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
             seals: 2,
             taken: "statement",
             email: Option.none(),
+            emailWrappers: ["max-device", "max-card-2"],
             ended: [finder],
             sessions: [session],
           });

@@ -403,7 +403,7 @@ export const state = Effect.fn("KeyStore.state")(function* (account: string) {
 /**
  * Adds a wrapper at the newest generation, and answers the other sessions a new card ended. A
  * passkey or Notfallkarte needs the session to be at most `Keys.freshSignInMinutes` old, so a thief
- * with an unlocked phone can't quietly add one.
+ * with an unlocked phone can't quietly add one. A new card makes the old one useless.
  */
 export const addWrapper = Effect.fn("KeyStore.addWrapper")(function* (
   account: string,
@@ -447,11 +447,14 @@ export const addWrapper = Effect.fn("KeyStore.addWrapper")(function* (
         if (count >= Keys.wrappersPerPasskey) return yield* new Keys.Invalid({ reason: "limit" });
       }
 
-      // An email account's card never signs in, so its login is ignored.
-      const ended =
-        statement.kind === Wrapper.kindByte.code && !(yield* CardLogins.hasAddress(account))
-          ? yield* replaceCard(account, session, statement, login)
-          : [];
+      // A new card retires the old one for every account. An email account's card never signs
+      // in, so its login is ignored.
+      const ended: ReadonlyArray<string> =
+        statement.kind !== Wrapper.kindByte.code
+          ? []
+          : (yield* CardLogins.hasAddress(account))
+            ? yield* Effect.as(retireOtherCards(account, statement), [])
+            : yield* replaceCard(account, session, statement, login);
 
       yield* insertWrapper(account, wrapper, session);
 
