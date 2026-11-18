@@ -134,6 +134,8 @@ it.effect("signs up without an address, signs out, and signs in by card to the s
     // "Konto anlegen" on a computer without passkeys, then "Deine Notfallkarte". The device holds
     // the card in the account's secrets before it keeps the session.
     yield* onDevice(Account.signUpWithCard(reservation, false, offer));
+    // The browser's storage is shared by every test here: a step that fails leaves nothing either.
+    yield* Effect.addFinalizer(() => Effect.ignore(onDevice(signOut)));
 
     const first = engine();
 
@@ -186,8 +188,6 @@ it.effect("signs up without an address, signs out, and signs in by card to the s
 
     const reopened = yield* second.run(rootKey);
     second.unmount();
-    // The browser's storage is shared by every test here, so this one leaves nothing behind.
-    yield* onDevice(signOut);
 
     assert.deepStrictEqual(
       {
