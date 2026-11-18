@@ -10,6 +10,7 @@ import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 import * as Stream from "effect/Stream";
 import type { RecordedWebUntis } from "../../infra/webuntis/RecordedWebUntis.ts";
+import { IgsLilienthal } from "../profiles/IgsLilienthal.ts";
 import type { Corpus } from "./Corpus.ts";
 import { Policy } from "./Policy.ts";
 import { Tokens } from "./Tokens.ts";
@@ -38,25 +39,6 @@ export class NotRaw extends Schema.TaggedError<NotRaw, { readonly brand: unique 
   "Pseudonymizer.NotRaw",
   { policy: Schema.Int },
 ) {}
-
-/** The profile's stock phrases, which substitution text uses to say what changed. */
-export const stockPhrases: ReadonlyArray<string> = [
-  "Entfall",
-  "Ausfall",
-  "Vertretung",
-  "Freisetzung",
-  "Betreuung",
-  "EVA",
-  "Aufgaben",
-  "Raumänderung",
-  "Raumwechsel",
-  "verlegt",
-  "Verlegung",
-  "Klausur",
-  "Lernkontrolle",
-  "Aufsicht",
-  "Exkursion",
-];
 
 /** A free text is frequent when it appears on this many dates, with this many teachers. */
 export const frequent = { dates: 5, teachers: 3, words: 5 } as const;
@@ -344,7 +326,9 @@ export const run = Effect.fn("Pseudonymizer.run")(function* <E, R, E2, R2>(input
     );
   };
 
-  const stock = new Set(stockPhrases.map((phrase) => phrase.toLocaleLowerCase("de")));
+  const stock = new Set(
+    IgsLilienthal.profile.stockPhrases.map((phrase) => phrase.toLocaleLowerCase("de")),
+  );
 
   const phrases = new Set(
     [...texts].flatMap(([value, seen]) =>

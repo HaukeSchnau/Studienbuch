@@ -21,11 +21,18 @@ const View = Schema.Struct({
 export const Evaluation = Schema.Struct({
   corpus: Schema.String,
   import: Schema.String,
-  /** `weekly` runs the import every Monday at 06:00, `timeline` every school day. */
+  /** `weekly` runs the import every Monday at 06:00; `timeline` at 06:00 and at noon every school day. */
   mode: Schema.Literals(["weekly", "timeline"]),
   weeks: Schema.Array(Schema.String),
   /** Students count only in the weeks after their term's two opening weeks, the Kurswahl's source. */
   views: Schema.Struct({ student: View, teacher: View, room: View }),
+  /**
+   * Students whose Kurswahl, taken from the store after their term's opening weeks, gives them
+   * exactly their entries of those weeks, added ones aside.
+   */
+  kurswahl: Fraction,
+  /** Courses with lessons in the scored weeks that no student's Kurswahl names. */
+  ghostCourses: Schema.Int,
   changes: Fraction,
   /** Labelled entries that belong to one course, or to different ones. */
   courses: Fraction,
@@ -45,6 +52,8 @@ export const Evaluation = Schema.Struct({
     failedRuns: Schema.Int,
     /** Lessons and exams in the final store that name a course it lacks. */
     danglingCourses: Schema.Int,
+    /** Lessons of the measured weeks that the projection keeps out of the publish. */
+    unpublishedLessons: Schema.Int,
     secondRunChanges: Schema.Int,
     reversedReadChanges: Schema.Int,
     failedReadChanges: Schema.Int,
@@ -89,6 +98,7 @@ export const format = (report: Evaluation) =>
     line("Student-weeks exactly right", report.views.student.weeks),
     line("Student lesson recall", report.views.student.recall),
     line("Student lesson precision", report.views.student.precision),
+    line("Kurswahl exactly right", report.kurswahl),
     line("Teacher lesson recall", report.views.teacher.recall),
     line("Teacher lesson precision", report.views.teacher.precision),
     line("Room lesson recall", report.views.room.recall),
@@ -110,7 +120,8 @@ export const format = (report: Evaluation) =>
     line("Next seven days in the store", report.lookahead),
     "",
     `  ${report.runs.failed} of ${report.runs.total} runs failed; they made ${report.reads.requests} requests, ${report.reads.outOfRange} for days outside the capture, and ${report.reads.decodeFailures} bodies didn't decode.`,
-    `  ${report.invariants.danglingCourses} lessons and exams name a course the store lacks.`,
+    `  ${report.invariants.danglingCourses} lessons and exams name a course the store lacks; the projection keeps ${report.invariants.unpublishedLessons} out of the publish.`,
+    `  ${report.ghostCourses} courses have lessons no student chose.`,
     `  Repeating the first run: ${report.invariants.failedRuns} failed, a second run changed ${report.invariants.secondRunChanges} rows, reversed reads ${report.invariants.reversedReadChanges}, ${report.invariants.injectedFailures} failed reads ${report.invariants.failedReadChanges}.`,
     `  Labelled cases passing: ${report.passingCases.length === 0 ? "none" : report.passingCases.join(", ")}`,
     ...(report.worst.length === 0

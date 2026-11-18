@@ -37,6 +37,12 @@ const students = [
 
 const account = ["Ottokar", "Pfauenstein"] as const;
 
+/** Every invented student's name parts and the account holder's, which no published row may hold. */
+export const studentNames: ReadonlyArray<string> = [
+  ...students.flatMap(([first, last]) => [`${first.slice(0, 3)}${last.slice(0, 3)}`, first, last]),
+  ...account,
+];
+
 /** Every invented name and name part, as the leak tests look for them. */
 export const names: ReadonlyArray<string> = [
   ...teachers.flatMap(([, , short, first, last]) => [short, first, last]),

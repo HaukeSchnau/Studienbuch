@@ -8,6 +8,8 @@ import * as DateTime from "effect/DateTime";
 import * as Equal from "effect/Equal";
 import { RecordedWebUntis } from "../../infra/webuntis/RecordedWebUntis.ts";
 import type { Corpus } from "../corpus/Corpus.ts";
+import { IgsLilienthal } from "../profiles/IgsLilienthal.ts";
+import type { SchoolProfile } from "../profiles/SchoolProfile.ts";
 
 export * as TinySchool from "./TinySchool.ts";
 
@@ -455,7 +457,19 @@ const reads: RecordedWebUntis.Recording = new Map([
   [
     RecordedWebUntis.paths.appData,
     once({
-      currentSchoolYear: null,
+      currentSchoolYear: {
+        id: year.id,
+        name: year.name,
+        dateRange: { start: year.start, end: year.end },
+        timeGrid: {
+          schoolyearId: year.id,
+          units: blocks.map(([start, end], index) => ({
+            unitOfDay: index + 1,
+            startTime: Number(start.replace(":", "")),
+            endTime: Number(end.replace(":", "")),
+          })),
+        },
+      },
       tenant: { displayName: "Erfundene Schule", id: "1", name: "erfundene-schule" },
       user: {
         id: 1,
@@ -626,4 +640,11 @@ export const corpus: Corpus.Corpus = {
     closures: [{ id: "free-day", start: freeDay, end: freeDay }],
     terms: [{ id: "winter", start: "2026-08-01", end: "2027-01-31" }],
   },
+};
+
+/** The invented school names its classes and changes as IGS does, so it shares IGS's rules. */
+export const profile: SchoolProfile.SchoolProfile = {
+  ...IgsLilienthal.profile,
+  id: School.Id.make(corpus.manifest.id),
+  school: { name: "Erfundene Schule", timeZone: School.defaultTimeZone },
 };

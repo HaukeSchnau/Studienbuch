@@ -226,6 +226,7 @@ describe("Pseudonymizer", () => {
         Evaluator.evaluate({
           corpus,
           corpusName: corpus.manifest.id,
+          profile: TinySchool.profile,
           importName: "naive",
           importLayer: NaiveImport.layer,
           weeks: Option.none(),

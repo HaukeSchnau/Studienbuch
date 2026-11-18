@@ -43,6 +43,9 @@ export const PlainDate = isoDate.pipe(
 
 export type PlainDate = typeof PlainDate.Type;
 
+/** The date as rows write it, such as `2026-10-29`, which is how {@link PlainDate} encodes it. */
+export const format = (date: PlainDate): string => PlainDateFns.toString(date);
+
 /** Earlier dates first. */
 export const order = CivilDate.order;
 

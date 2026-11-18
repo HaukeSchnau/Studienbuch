@@ -4,7 +4,7 @@
  * (m2-import-corpus.md, section 6). The first measured run repeats to check what must not change.
  */
 import { WebUntisClient } from "@schnau/webuntis-api";
-import { School } from "@stu/core";
+import { CivilTime } from "@stu/core";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
@@ -13,9 +13,12 @@ import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import { RecordedWebUntis } from "../../infra/webuntis/RecordedWebUntis.ts";
 import type { Corpus } from "../corpus/Corpus.ts";
+import type { SchoolProfile } from "../profiles/SchoolProfile.ts";
+import { Projection } from "../Projection.ts";
 import { SchoolImport } from "../SchoolImport.ts";
 import { Metrics } from "./Metrics.ts";
 import type { Report } from "./Report.ts";
+import { Students } from "./Students.ts";
 import { Truth } from "./Truth.ts";
 
 export * as Evaluator from "./Evaluator.ts";
@@ -23,6 +26,8 @@ export * as Evaluator from "./Evaluator.ts";
 export interface Options {
   readonly corpus: Corpus.Corpus;
   readonly corpusName: string;
+  /** The school the corpus is of, whose rules the import reads. */
+  readonly profile: SchoolProfile.SchoolProfile;
   readonly importName: string;
   readonly importLayer: Layer.Layer<SchoolImport.Service, never, WebUntisClient>;
   /** ISO weeks to measure, such as `2026-W45`, inclusive. All captured weeks by default. */
@@ -45,48 +50,28 @@ export class NothingMeasured extends Schema.TaggedError<
   { readonly brand: unique symbol }
 >()("Evaluator.NothingMeasured", { captured: Schema.Array(Schema.String) }) {}
 
-/** 06:00 at the school on `day`, as the instant a run starts. */
-const morning = (day: string, timeZone: string) =>
+/** `hour` o'clock at the school on `day`, as the instant a run starts. */
+const at = (day: string, hour: number, timeZone: string) =>
   DateTime.toUtc(
     DateTime.makeZonedUnsafe(
       {
         year: Number(day.slice(0, 4)),
         month: Number(day.slice(5, 7)),
         day: Number(day.slice(8, 10)),
-        hour: 6,
+        hour,
       },
       { timeZone, adjustForTimeZone: true },
     ),
   );
 
-/** Our lessons in the truth's terms: teachers, rooms and entries through their links. */
-const lessonsOf = (state: SchoolImport.ImportResult): ReadonlyArray<Metrics.Lesson> => {
-  const refs = new Map(state.links.map((link) => [link.id, link.refs]));
+/** When a run starts, and whether it is the nightly one that owns course structure. */
+interface Start {
+  readonly day: string;
+  readonly hour: number;
+  readonly nightly: boolean;
+}
 
-  const providerIds = (ids: ReadonlyArray<string>, type: "TEACHER" | "ROOM") =>
-    ids.flatMap((id) =>
-      (refs.get(id) ?? []).flatMap((ref) =>
-        ref._tag === "Resource" && ref.type === type ? [ref.id] : [],
-      ),
-    );
-
-  return state.lessons.map((lesson) => ({
-    id: lesson.id,
-    courseId: lesson.courseId,
-    date: lesson.date,
-    start: lesson.start,
-    end: lesson.end,
-    status: lesson.status,
-    teachers: providerIds(lesson.teacherIds, "TEACHER"),
-    rooms: providerIds(lesson.roomIds, "ROOM"),
-    previousTeachers: providerIds(lesson.change?.previousTeacherIds ?? [], "TEACHER"),
-    previousRooms: providerIds(lesson.change?.previousRoomIds ?? [], "ROOM"),
-    kind: lesson.change?.kind,
-    entries: (refs.get(lesson.id) ?? []).flatMap((ref) =>
-      ref._tag === "Entry" ? [{ date: ref.date, ids: ref.ids }] : [],
-    ),
-  }));
-};
+const nightlyRun = (day: string): Start => ({ day, hour: 6, nightly: true });
 
 export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Options) {
   const { corpus } = options;
@@ -106,15 +91,18 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
   const days = truth.days.filter((day) => measured.has(weekOf(day)));
   const measuredDays = new Set(days);
   const timeZone = corpus.manifest.timeZone;
-  const school = School.Id.make(corpus.manifest.id);
+  const decodeDay = Schema.decodeEffect(CivilTime.PlainDate);
 
-  /** One run at 06:00 on `day`. A run that fails leaves the store as it was, and says so. */
+  /**
+   * One run over today to four weeks ahead. A run that fails leaves the store as it was, and says
+   * so.
+   */
   const run = Effect.fn("Evaluator.run")(function* (
-    day: string,
+    { day, hour, nightly }: Start,
     previous: Option.Option<SchoolImport.ImportResult>,
     recorded: Omit<RecordedWebUntis.Options, "asOf" | "captured"> = {},
   ) {
-    const now = morning(day, timeZone);
+    const now = at(day, hour, timeZone);
 
     const { client, log } = yield* RecordedWebUntis.make(corpus.reads, {
       asOf: now,
@@ -122,12 +110,11 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
       ...recorded,
     });
 
-    // The import gets the stored rows and links. What earlier runs covered is the store's
-    // business: a result that repeated it would delete by an old read.
-    const stored = Option.map(previous, (state) => ({ ...state, covers: [], diagnostics: [] }));
+    const today = yield* Effect.orDie(decodeDay(day));
+    const window = { start: today, end: CivilTime.addDays(today, 27) };
 
     const exit = yield* SchoolImport.Service.use((service) =>
-      service.run({ school, now, previous: stored }),
+      service.run({ profile: options.profile, now, window, previous, nightly }),
     ).pipe(
       Effect.provide(
         options.importLayer.pipe(Layer.provide(Layer.succeed(WebUntisClient)(client))),
@@ -139,6 +126,7 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
 
     return {
       day,
+      now,
       state: Exit.isSuccess(exit) ? SchoolImport.apply(before, exit.value) : before,
       covers: Exit.isSuccess(exit) ? exit.value.covers : [],
       failed: Exit.isFailure(exit),
@@ -147,19 +135,25 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
   });
 
   // The runs span the whole capture, so the store holds every term's opening weeks whichever
-  // weeks are measured.
+  // weeks are measured. A timeline adds a daytime run at noon, which sees the morning's changes to
+  // the rest of the day and creates no course.
   const starts = options.timeline
-    ? truth.days
-    : captured.flatMap((week) => truth.days.find((day) => weekOf(day) === week) ?? []);
+    ? truth.days.flatMap((day) => [nightlyRun(day), { day, hour: 12, nightly: false }])
+    : captured.flatMap((week) => {
+        const monday = truth.days.find((day) => weekOf(day) === week);
+
+        return monday === undefined ? [] : [nightlyRun(monday)];
+      });
 
   const runs: Array<Effect.Success<ReturnType<typeof run>>> = [];
 
-  for (const day of starts) {
-    runs.push(yield* run(day, Option.fromNullishOr(runs.at(-1)?.state)));
+  for (const start of starts) {
+    runs.push(yield* run(start, Option.fromNullishOr(runs.at(-1)?.state)));
   }
 
   // The first measured run, repeated: as a second run, with reversed reads and with failing reads.
-  const first = starts.find((day) => measuredDays.has(day)) ?? days[0] ?? "";
+  const first = nightlyRun(starts.find(({ day }) => measuredDays.has(day))?.day ?? days[0] ?? "");
+
   const base = yield* run(first, Option.none());
   const again = yield* run(first, Option.some(base.state));
   const reversed = yield* run(first, Option.none(), { reversed: true });
@@ -175,7 +169,7 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
   if (gaps.length > 0) return yield* new NotCaptured({ reads: gaps });
 
   const final = runs.at(-1)?.state ?? SchoolImport.empty;
-  const ours = lessonsOf(final);
+  const ours = Metrics.lessonsOf(final);
   const index = Metrics.byEntry(ours);
   const inWeek = (week: string) => (date: string) => weekOf(date) === week;
 
@@ -197,19 +191,38 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
 
   const termOfWeek = (week: string) => termOf(truth.days.find(inWeek(week)) ?? "");
   const students = truth.views.filter((view) => view.type === "STUDENT");
+
+  // What a student chose from: the store after the last run of the term's opening weeks. Later
+  // runs never choose for them, so a course split or renamed after it shows as missing lessons.
+  const openings = new Map<string | undefined, ReadonlyArray<Metrics.Lesson>>();
+
+  const openingLessons = (term: string | undefined) => {
+    const last = [...opening(term)].sort().at(-1);
+
+    const lessons =
+      openings.get(term) ??
+      Metrics.lessonsOf(
+        (last === undefined ? undefined : runs.findLast((each) => weekOf(each.day) <= last))
+          ?.state ?? SchoolImport.empty,
+      );
+
+    openings.set(term, lessons);
+
+    return lessons;
+  };
+
+  const inOpening = (term: string | undefined) => (date: string) => opening(term).has(weekOf(date));
+
   const enrollments = new Map<string, ReadonlySet<string>>();
 
   const enrollmentOf = (student: Truth.View, term: string | undefined) => {
     const key = `${student.id} ${term}`;
-    const weeksOfTerm = opening(term);
 
     const courses =
       enrollments.get(key) ??
-      Metrics.enrollment(
-        student.entries.filter(
-          (entry) => entry.status !== "Added" && weeksOfTerm.has(weekOf(entry.date)),
-        ),
-        index,
+      Students.kurswahl(
+        student.entries.filter((entry) => inOpening(term)(entry.date)),
+        Metrics.byEntry(openingLessons(term)),
       );
 
     enrollments.set(key, courses);
@@ -258,6 +271,45 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
       );
 
   const studentWeeks = viewWeeks("STUDENT");
+  const heldTerms = [...new Set(weeks.filter(held).map(termOfWeek))];
+
+  // Each held term's Kurswahl, against the opening weeks it was taken from.
+  const kurswahl = heldTerms.flatMap((term) =>
+    students
+      .filter((student) => [...opening(term)].every((week) => student.weeks.has(week)))
+      .map((student) =>
+        Students.isExact(
+          student.entries.filter((entry) => inOpening(term)(entry.date)),
+          openingLessons(term).filter((lesson) => inOpening(term)(lesson.date)),
+          enrollmentOf(student, term),
+        ),
+      ),
+  );
+
+  const ghostCourses = Students.ghosts(
+    heldTerms.map((term) => ({
+      lessons: ours.filter(
+        ({ date }) => measured.has(weekOf(date)) && held(weekOf(date)) && termOf(date) === term,
+      ),
+      kurswahls: students.map((student) => enrollmentOf(student, term)),
+    })),
+  );
+
+  // Lessons the projection keeps out of the publish, such as those of a course without an
+  // offering: the store holds them, and no student could ever see them.
+  const { data } = Projection.project({
+    profile: options.profile,
+    previous: SchoolImport.empty,
+    result: final,
+    pending: [],
+    today: yield* Effect.orDie(decodeDay(days[0] ?? "")),
+  });
+
+  const published = new Set(Object.values(data.lessons).flatMap((rows) => Object.keys(rows)));
+
+  const unpublishedLessons = final.lessons.filter(
+    ({ id, date }) => measuredDays.has(date) && !published.has(id),
+  ).length;
 
   const changes = Metrics.scoreChanges(
     truth.changes.filter((entry) => measuredDays.has(entry.date)),
@@ -306,7 +358,14 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
     );
   }
 
-  const courseSubjects = new Map(final.courses.map((course) => [course.id, course.subject]));
+  const subjectCodes = new Map(final.subjects.map((subject) => [subject.id, subject.shortName]));
+
+  const courseSubjects = new Map(
+    final.courses.map((course) => [
+      course.id,
+      course.subjectId === undefined ? undefined : subjectCodes.get(course.subjectId),
+    ]),
+  );
 
   const examsByTerm = [...new Set(days.map(termOf))].map((term) =>
     Metrics.scoreExams(
@@ -320,7 +379,7 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
     ),
   );
 
-  const stores = runs.map((each) => Metrics.byEntry(lessonsOf(each.state)));
+  const stores = runs.map((each) => Metrics.byEntry(Metrics.lessonsOf(each.state)));
   const measuredEntries = truth.entries.filter((entry) => measuredDays.has(entry.date));
 
   const kept = Metrics.sum(
@@ -337,7 +396,7 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
     yield* Effect.forEach(
       runs.flatMap((each, position) => (measuredDays.has(each.day) ? [{ each, position }] : [])),
       Effect.fnUntraced(function* ({ each, position }) {
-        const now = morning(each.day, timeZone);
+        const { now } = each;
 
         const dayIn = (days: number) =>
           DateTime.formatIsoDate(
@@ -361,6 +420,8 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
       teacher: Metrics.summarize(viewWeeks("TEACHER").map(({ score }) => score)),
       room: Metrics.summarize(viewWeeks("ROOM").map(({ score }) => score)),
     },
+    kurswahl: Metrics.fraction(kurswahl.filter(Boolean).length, kurswahl.length),
+    ghostCourses,
     changes: changes.score,
     courses: courses.score,
     closures: Metrics.scoreClosures(days, closedIn(truth.closures), closedIn(final.closures)),
@@ -383,6 +444,7 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
         failing.failed || failing.log.injected.length === 0,
       ].filter(Boolean).length,
       danglingCourses: Metrics.dangling(final),
+      unpublishedLessons,
       secondRunChanges: Metrics.differences(base.state, again.state),
       reversedReadChanges: Metrics.differences(base.state, reversed.state),
       failedReadChanges: Metrics.differences(base.state, failing.state),

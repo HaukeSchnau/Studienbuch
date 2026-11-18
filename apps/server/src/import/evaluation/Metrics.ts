@@ -32,6 +32,37 @@ export interface Lesson extends Omit<TruthEntry, "ids"> {
   readonly entries: ReadonlyArray<{ readonly date: string; readonly ids: ReadonlyArray<number> }>;
 }
 
+/** Our lessons in the truth's terms: teachers, rooms and entries through their links. */
+export const lessonsOf = (
+  state: Pick<SchoolImport.ImportResult, "lessons" | "links">,
+): ReadonlyArray<Lesson> => {
+  const refs = new Map(state.links.map((link) => [link.id, link.refs]));
+
+  const providerIds = (ids: ReadonlyArray<string>, type: "TEACHER" | "ROOM") =>
+    ids.flatMap((id) =>
+      (refs.get(id) ?? []).flatMap((ref) =>
+        ref._tag === "Resource" && ref.type === type ? [ref.id] : [],
+      ),
+    );
+
+  return state.lessons.map((lesson) => ({
+    id: lesson.id,
+    courseId: lesson.courseId,
+    date: lesson.date,
+    start: lesson.start,
+    end: lesson.end,
+    status: lesson.status,
+    teachers: providerIds(lesson.teacherIds, "TEACHER"),
+    rooms: providerIds(lesson.roomIds, "ROOM"),
+    previousTeachers: providerIds(lesson.change?.previousTeacherIds ?? [], "TEACHER"),
+    previousRooms: providerIds(lesson.change?.previousRoomIds ?? [], "ROOM"),
+    kind: lesson.change?.kind,
+    entries: (refs.get(lesson.id) ?? []).flatMap((ref) =>
+      ref._tag === "Entry" ? [{ date: ref.date, ids: ref.ids }] : [],
+    ),
+  }));
+};
+
 /** `right` of `of`, kept as two counts so a baseline compares exactly. */
 export interface Fraction {
   readonly right: number;
@@ -398,17 +429,19 @@ export const dangling = (
   return [...state.lessons, ...state.exams].filter(({ courseId }) => !courses.has(courseId)).length;
 };
 
-type State = Pick<
-  SchoolImport.ImportResult,
-  "courses" | "lessons" | "closures" | "exams" | "teachers" | "rooms" | "weeks" | "links"
->;
+type State = Omit<SchoolImport.ImportResult, "covers" | "unattributed" | "diagnostics">;
 
 // Ids are unique within a kind only, so each entry is keyed by its kind as well.
 const contentsOf = (state: State) =>
   new Map<string, unknown>(
     (
       [
+        ["school year", state.schoolYears],
+        ["term", state.terms],
+        ["subject", state.subjects],
+        ["class", state.classes],
         ["course", state.courses],
+        ["offering", state.offerings],
         ["lesson", state.lessons],
         ["closure", state.closures],
         ["exam", state.exams],
