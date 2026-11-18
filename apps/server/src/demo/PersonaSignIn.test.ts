@@ -106,7 +106,16 @@ const server = (environment: string, options: { readonly keySeed?: boolean } = {
 /** The `Api.Rpcs` client over HTTP, as a device calls it. */
 const rpc = Effect.gen(function* () {
   const server = yield* HttpServer.HttpServer;
-  const url = new URL(Api.path, HttpServer.formatAddress(server.address));
+  const { address } = server;
+
+  // CI's sandbox sends Node's fetch through its egress proxy to every host but localhost
+  // (`NO_PROXY`), and the test server listens on all addresses.
+  const url = new URL(
+    Api.path,
+    address._tag === "UnixPathAddress"
+      ? HttpServer.formatAddress(address)
+      : `http://localhost:${address.port}`,
+  );
 
   return yield* RpcClient.make(Api.Rpcs).pipe(
     Effect.provide(
