@@ -101,7 +101,7 @@ The most common defect is a change that works where you tested it and is missing
 
 devenv on localhost is the dev environment, one instance per worktree ([ADR 0006](docs/adr/0006-fleet-service-instead-of-the-project-sdk.md)).
 
-- `devenv shell` (or direnv) provides Node, pnpm and PostgreSQL 18 from `nix/toolchain.nix`. `pnpm install` installs.
+- `devenv shell` (or direnv) provides Node, pnpm and PostgreSQL 18 from `nix/toolchain.nix`, and on Linux the Playwright browsers CI's shell has, from `nix/shell-env.nix`. `pnpm install` installs.
 - `devenv up` starts the dev instance: PostgreSQL 18 on a socket, Garage with its bucket and key, and the server as the one origin. The server proxies `/` and `/console` to Vite and `/app` to Metro, hot reload included, and serves `/api` itself. Before the server starts, a task generates the auth secret and runs `prepare`. The server gets the release variables, with `MAIL_URL=capture:`.
 - devenv allocates every port, counting up from 3000 for the server, so a second worktree gets 3001. Read them with `devenv processes list`. The server restarts when a file it imports changes.
 - `studienbuch-console <command>` runs the operator CLI against this worktree's database, for example `studienbuch-console status`.
@@ -121,7 +121,7 @@ An empty database is a bad test.
 ## Verifying
 
 - Before every push, run `calder check`. It runs `.calder/ci.ts` on your working copy like a PR, and the push reuses its results.
-- While you iterate, run `vp run check:changed`. It checks format and lint on the files you changed, runs knip, typechecks the projects they affect and runs the tests beside them. `vp check` and `vp test run <files>` cover the whole repository or the files you name.
+- While you iterate, run `vp run check:changed`. It checks format and lint on the files you changed, runs knip, typechecks the projects they affect and runs the tests beside them. A browser it can't start is left out of the app's browser tests, and its summary says so. `vp check` and `vp test run <files>` cover the whole repository or the files you name.
 - Test behavior that can break: the sync engine (outbox, rebase, refusals, convergence), encryption formats and key handling, migrations, import parsing and projection, school rules, auth and membership guards, and the logic a bug fix changed. Leave out what types guarantee, trivial code, copy text, smoke runs and mock-call mirrors.
 - Extend before you add: when an existing test covers the behavior, add a row or an assertion there. Test at one layer, the lowest one that fails without your change.
 - Tests sit next to their module (`Homework.test.ts`), use `@effect/vitest`, and replace dependencies through Layers, never module mocks. A helper that several tests share is a `<Name>Testing.ts` module, which only tests may import.
