@@ -105,6 +105,7 @@ export const ProviderRef = Schema.TaggedUnion({
 
 export type ProviderRef = typeof ProviderRef.Type;
 
+/** Names one row of the result, so every id in a result is unique across its kinds of rows. */
 export const ProviderLink = Schema.Struct({ id: Ids.Id, refs: Schema.Array(ProviderRef) });
 
 /**

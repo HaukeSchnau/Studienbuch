@@ -257,7 +257,11 @@ export const layer = Layer.effect(SchoolImport.Service)(
             return [
               {
                 id,
-                courseId: courseId(exam.subject.shortName, exam.classes[0]?.shortName ?? "?"),
+                // The class with the lowest id, so the order WebUntis lists them in can't matter.
+                courseId: courseId(
+                  exam.subject.shortName,
+                  [...exam.classes].sort((a, b) => a.id - b.id)[0]?.shortName ?? "?",
+                ),
                 date: exam.examStart.slice(0, 10),
                 start: start.value,
                 end: end.value,

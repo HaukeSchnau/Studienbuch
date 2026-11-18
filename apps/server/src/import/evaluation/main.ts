@@ -30,12 +30,19 @@ class BadWeeks extends Schema.TaggedError<BadWeeks, { readonly brand: unique sym
 const encodeReport = Schema.encodeEffect(Report.Json);
 
 /** `2026-W44..2026-W45`, inclusive. */
-const parseWeeks = (text: string) => {
-  const match = /^(?<from>\d{4}-W\d{2})\.\.(?<to>\d{4}-W\d{2})$/u.exec(text)?.groups;
+const week = /^\d{4}-W(?:0[1-9]|[1-4]\d|5[0-3])$/u;
 
-  return match?.from === undefined || match.to === undefined
+const parseWeeks = (text: string) => {
+  const [from, to, ...more] = text.split("..");
+
+  return from === undefined ||
+    to === undefined ||
+    more.length > 0 ||
+    !week.test(from) ||
+    !week.test(to) ||
+    from > to
     ? Effect.fail(new BadWeeks({ weeks: text }))
-    : Effect.succeed({ from: match.from, to: match.to });
+    : Effect.succeed({ from, to });
 };
 
 const evaluate = Effect.fn("ImportEval.evaluate")(function* (flags: {
