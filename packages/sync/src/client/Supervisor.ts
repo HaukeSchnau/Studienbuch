@@ -9,6 +9,7 @@ import * as Data from "effect/Data";
 import * as Deferred from "effect/Deferred";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
+import * as Equivalence from "effect/Equivalence";
 import * as Exit from "effect/Exit";
 import * as FiberHandle from "effect/FiberHandle";
 import * as Option from "effect/Option";
@@ -443,6 +444,7 @@ export const run = Effect.fnUntraced(function* (options: Options) {
 
     // A wakeup from before this attempt doesn't end it.
     yield* Queue.clear(wakeups);
+    const connectedWith = (yield* SubscriptionRef.get(conditions)).token;
 
     const end: End = yield* Effect.scoped(
       Effect.gen(function* () {
@@ -473,6 +475,18 @@ export const run = Effect.fnUntraced(function* (options: Options) {
         failures = 0;
         continue;
       case "SessionEnded": {
+        // The server ended the session this attempt connected with. After a new sign-in here,
+        // as before a new Notfallkarte, the device holds a newer one, which connects again.
+        if (
+          !Option.makeEquivalence(Equivalence.Number)(
+            (yield* SubscriptionRef.get(conditions)).token,
+            connectedWith,
+          )
+        ) {
+          failures = 0;
+          continue;
+        }
+
         yield* options.report("offline");
         yield* options.session.ended;
         const ended = tokens;

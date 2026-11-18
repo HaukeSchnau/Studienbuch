@@ -286,6 +286,24 @@ describe("Supervisor", () => {
     }).pipe(Effect.scoped),
   );
 
+  // "Kurz bestätigen" signs the device in again while its socket runs on the old token, and the
+  // server then ends that old session, as a new Notfallkarte does with every other session.
+  it.effect("a close with 4401 after a new sign-in here reconnects with the new token", () =>
+    Effect.gen(function* () {
+      const device = yield* harness(["link", "link"]);
+      yield* TestClock.adjust(Supervisor.debounce);
+      yield* SubscriptionRef.set(device.token, Option.some(Redacted.make("token-2")));
+      yield* TestClock.adjust(0);
+      yield* device.links[0]?.close(Connection.CloseCode.sessionEnded) ?? Effect.void;
+      yield* TestClock.adjust(Supervisor.debounce);
+
+      expect({ ended: device.ended(), attempts: device.attempts.length }).toEqual({
+        ended: 0,
+        attempts: 2,
+      });
+    }).pipe(Effect.scoped),
+  );
+
   it.effect("the offline latch closes the connection until it is lifted", () =>
     Effect.gen(function* () {
       const device = yield* harness(["link", "link"]);

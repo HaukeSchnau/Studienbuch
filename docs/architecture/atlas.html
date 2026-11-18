@@ -1759,7 +1759,7 @@ const INFO = {
 
   "l-held": { t: "Held", k: "key", d: ["The push answered that the server has no key record for the account (<code>NoKeyRecord</code>, as after a restore), so the device publishes its own record again and resends. Or the account's key is newer than this device's (<code>KeysBehind</code>), which needs key renewal from M3. A key the server's chain doesn't derive shows a support notice."], f: ["apps/app/src/features/keys/KeysState.ts", "packages/sync/src/protocol/Protocol.ts"], a: [25] },
 
-  "l-ended": { t: "Session ended", k: "stop", d: ["Close code 4401: the session was revoked or expired. The device keeps its data and outbox, stops reconnecting and asks for sign-in. The same account picks up where it was; another account is refused until this one signs out."], f: ["packages/sync/src/protocol/Connection.ts", "apps/app/src/features/account/Account.ts"], a: [28] },
+  "l-ended": { t: "Session ended", k: "stop", d: ["Close code 4401: the session was revoked or expired. The device keeps its data and outbox, stops reconnecting and asks for sign-in. If the device signed in again since the socket opened, only the old session ended, and it connects with the new one. The same account picks up where it was; another account is refused until this one signs out."], f: ["packages/sync/src/protocol/Connection.ts", "apps/app/src/features/account/Account.ts"], a: [28] },
 
   "l-update": { t: "Update required", k: "stop", d: ["Close code 4426: the client's contract is below the server's minimum. The device waits for a newer app. The server deploys first and sends each message tag only to clients that know it, so this should be rare."], f: ["packages/sync/src/server/Contract.ts"] },
 
