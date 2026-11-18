@@ -152,12 +152,19 @@ export const summarize = (weeks: ReadonlyArray<ViewWeek>) => ({
   attributes: fraction(total(weeks, "right"), total(weeks, "covered")),
 });
 
-/** Truth entries that some lesson of ours covers. */
+/** Truth entries that some lesson of ours covers, at the entry's time. */
 export const held = (
   entries: ReadonlyArray<TruthEntry>,
   index: ReadonlyMap<string, ReadonlyArray<Lesson>>,
 ): Fraction =>
-  fraction(entries.filter((entry) => covering(index, entry).length > 0).length, entries.length);
+  fraction(
+    entries.filter((entry) =>
+      covering(index, entry).some(
+        (lesson) => lesson.start === entry.start && lesson.end === entry.end,
+      ),
+    ).length,
+    entries.length,
+  );
 
 /** A student's courses: those whose lessons cover the student's entries. */
 export const enrollment = (
@@ -223,6 +230,10 @@ export const scoreCourses = (
   index: ReadonlyMap<string, ReadonlyArray<Lesson>>,
 ) => {
   const passing = cases.filter((labelled) => {
+    const distinctEntries = new Set(
+      labelled.entries.map(({ date, ids }) => `${date} ${[...ids].sort(ascending).join("+")}`),
+    ).size;
+
     const courses = labelled.entries.map(
       (entry) => covering(index, entry)[0]?.courseId ?? "not imported",
     );
@@ -230,7 +241,7 @@ export const scoreCourses = (
     const distinct = new Set(courses).size;
 
     return (
-      courses.length >= 2 &&
+      distinctEntries >= 2 &&
       !courses.includes("not imported") &&
       (labelled.same ? distinct === 1 : distinct === courses.length)
     );
@@ -289,7 +300,7 @@ export const scoreExams = (
     [...enrollments].flatMap(([student, courses]) => (courses.has(exam.courseId) ? [student] : []));
 
   const matched = Arr.sort(ours, SchoolImport.idOrder).map((exam) => {
-    const [examId, ...more] = exam.examIds;
+    const [examId, ...more] = [...new Set(exam.examIds)];
 
     return { exam, examId: more.length === 0 ? examId : undefined };
   });

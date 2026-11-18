@@ -221,10 +221,13 @@ export const make = Effect.fn("RecordedWebUntis.make")(function* (
       ),
     );
 
-  /** Counts one request, and fails it when the run injects a failure for `key`. */
-  const request = Effect.fn("RecordedWebUntis.request")(function* (key: string, fallible = true) {
-    yield* Ref.update(log, (current) => ({ ...current, requests: current.requests + 1 }));
+  const request = Ref.update(log, (current) => ({ ...current, requests: current.requests + 1 }));
 
+  /**
+   * Fails a read the recording could answer when the run injects a failure for `key`. A read that
+   * fails anyway isn't counted as injected.
+   */
+  const inject = Effect.fn("RecordedWebUntis.inject")(function* (key: string, fallible = true) {
     const failures = options.failures;
 
     if (
@@ -251,9 +254,10 @@ export const make = Effect.fn("RecordedWebUntis.make")(function* (
     decode: (body: Schema.Json) => Effect.Effect<A, E>,
     fallible = true,
   ): Effect.Effect<A, TransportError | DecodeError> =>
-    request(path, fallible).pipe(
+    request.pipe(
       Effect.andThen(latest(path)),
       Effect.flatMap((body) => decode(body).pipe(Effect.catch(() => decodeFailed(path)))),
+      Effect.tap(() => inject(path, fallible)),
     );
 
   const years = answer(paths.schoolYears, decodeYears, false);
@@ -294,7 +298,7 @@ export const make = Effect.fn("RecordedWebUntis.make")(function* (
     const key = `entries ${input.resourceType} ${input.resource} ${input.start}..${input.end}`;
 
     yield* backwards(input);
-    yield* request(key);
+    yield* request;
 
     // The capture asks with webuntis-api's defaults, so it can't answer another query.
     if (
@@ -316,6 +320,7 @@ export const make = Effect.fn("RecordedWebUntis.make")(function* (
     // Every day is looked up before a miss fails the read, so a day outside the capture can't
     // hide a gap on another.
     const missing: Array<readonly [string, string]> = [];
+    const undecodable: Array<string> = [];
 
     for (const day of yield* datesBetween(input.start, input.end)) {
       const year = yearIn(years, day);
@@ -340,7 +345,11 @@ export const make = Effect.fn("RecordedWebUntis.make")(function* (
 
       decodedVersions.set(version.value, decoded);
 
-      if (Exit.isFailure(decoded)) return yield* decodeFailed(`${path} ${day}`);
+      if (Exit.isFailure(decoded)) {
+        undecodable.push(`${path} ${day}`);
+
+        continue;
+      }
 
       format = decoded.value.format;
       used.add(decoded.value);
@@ -362,6 +371,12 @@ export const make = Effect.fn("RecordedWebUntis.make")(function* (
       return yield* notCaptured(firstMissing[0], firstMissing[1], gaps.length > 0 ? moreGaps : []);
     }
 
+    const [firstUndecodable] = undecodable;
+
+    if (firstUndecodable !== undefined) return yield* decodeFailed(firstUndecodable);
+
+    yield* inject(key);
+
     if (options.reversed === true) {
       days.reverse();
       raw.reverse();
@@ -374,7 +389,7 @@ export const make = Effect.fn("RecordedWebUntis.make")(function* (
     return { decoded, raw: { format, days: raw, errors } };
   });
 
-  const missing = (method: string) => request(method).pipe(Effect.andThen(notCaptured(method)));
+  const missing = (method: string) => request.pipe(Effect.andThen(notCaptured(method)));
 
   const today = DateTime.formatIsoDate(
     DateTime.setZoneNamedUnsafe(options.asOf, School.defaultTimeZone),

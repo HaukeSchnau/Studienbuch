@@ -263,6 +263,31 @@ describe("Evaluator", () => {
       expected: { lookahead: of(0, 29), recall: of(0, 26) },
     },
     {
+      name: "keeps one lesson a day that claims all of the day's entries",
+      importLayer: variant((result) => {
+        const firsts = new Map(result.lessons.map((lesson) => [lesson.date, lesson.id]));
+        const dayOf = new Map(result.lessons.map((lesson) => [lesson.id, lesson.date]));
+        const lessonLinks = result.links.filter((link) => dayOf.has(link.id));
+
+        return Effect.succeed({
+          ...result,
+          lessons: result.lessons.filter(({ id }) => firsts.get(dayOf.get(id) ?? "") === id),
+          links: [
+            ...result.links.filter((link) => !dayOf.has(link.id)),
+            ...[...firsts.entries()].map(([date, id]) => ({
+              id,
+              refs: lessonLinks
+                .filter((link) => dayOf.get(link.id) === date)
+                .flatMap((link) => link.refs),
+            })),
+          ],
+        });
+      }),
+      measure: (report: Effect.Success<ReturnType<typeof evaluate>>) => report.lookahead,
+      // Only the entries at the time of the one lesson kept count.
+      expected: of(16, 29),
+    },
+    {
       name: "drops its course rows",
       importLayer: variant((result) => Effect.succeed({ ...result, courses: [] })),
       measure: (report: Effect.Success<ReturnType<typeof evaluate>>) =>

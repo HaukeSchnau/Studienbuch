@@ -215,11 +215,11 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
     lessonsIn.set(weekOf(lesson.date), [...(lessonsIn.get(weekOf(lesson.date)) ?? []), lesson]);
   }
 
-  // Students are scored only on weeks after their term's opening weeks, never on earlier ones.
+  // Students are scored only on weeks after both of their term's opening weeks.
   const held = (week: string) => {
     const openingWeeks = [...opening(termOfWeek(week))];
 
-    return openingWeeks.length > 0 && openingWeeks.every((each) => each < week);
+    return openingWeeks.length === 2 && openingWeeks.every((each) => each < week);
   };
 
   const viewWeeks = (type: Truth.ViewType) =>
@@ -356,9 +356,12 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
     runs: { total: runs.length, failed: runs.filter((each) => each.failed).length },
     invariants: {
       // A failing-reads rerun in which no read failed tested nothing, so it counts as failed.
-      failedRuns:
-        [base, again, reversed, failing].filter((each) => each.failed).length +
-        (failing.log.injected.length === 0 ? 1 : 0),
+      failedRuns: [
+        base.failed,
+        again.failed,
+        reversed.failed,
+        failing.failed || failing.log.injected.length === 0,
+      ].filter(Boolean).length,
       danglingCourses: Metrics.dangling(final),
       secondRunChanges: Metrics.differences(base.state, again.state),
       reversedReadChanges: Metrics.differences(base.state, reversed.state),
