@@ -117,13 +117,12 @@ export const release = Effect.fn("Lease.release")(function* (school: School.Id, 
     `;
 }, Effect.orDie);
 
+const passed = (until: Date | null, now: DateTime.Utc) =>
+  until === null || !DateTime.isLessThan(now, DateTime.fromDateUnsafe(until));
+
 /** Whether no lease is current, so no run of the school reads now. */
 export const drained = Effect.fn("Lease.drained")(function* (school: School.Id) {
-  const until = (yield* state(school))?.leaseUntil ?? null;
-
-  return (
-    until === null || !DateTime.isLessThan(yield* DateTime.now, DateTime.fromDateUnsafe(until))
-  );
+  return passed((yield* state(school))?.leaseUntil ?? null, yield* DateTime.now);
 }, Effect.orDie);
 
 /**
@@ -148,13 +147,19 @@ export const pause = Effect.fn("Lease.pause")(
       return yield* new PausedByOther({ by: (yield* state(school))?.pausedBy ?? "" });
     }
 
-    // A lease ends by its deadline at the latest, so this ends within five minutes.
-    yield* drained(school).pipe(
+    // Each look reads the pause and the lease from one row: once its owner resumed, the pause it
+    // waits for is gone. A lease ends by its deadline at the latest, so this ends in five minutes.
+    const look = Effect.gen(function* () {
+      const current = yield* state(school);
+
+      if (current?.pausedBy !== by) return yield* new NotPausedBy({ by });
+
+      return passed(current.leaseUntil, yield* DateTime.now);
+    });
+
+    yield* look.pipe(
       Effect.repeat({ schedule: Schedule.spaced("1 second"), until: (done) => done }),
     );
-
-    // Its owner may have resumed meanwhile, and then the pause it waited for is gone.
-    if ((yield* state(school))?.pausedBy !== by) return yield* new NotPausedBy({ by });
   },
   Effect.catchTags({ SqlError: Effect.die }),
 );
