@@ -99,7 +99,7 @@ export function WelcomeScreen() {
         />
       </Form>
       <OtherWay question="Schon ein Konto?" label="Anmelden" href="/anmelden" />
-      <PersonaShortcuts />
+      <PersonaShortcuts withChoice />
     </>
   );
 }

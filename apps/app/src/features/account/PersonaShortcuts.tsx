@@ -9,6 +9,7 @@ import * as AsyncResult from "effect/reactivity/AsyncResult";
 import { StyleSheet, View } from "react-native";
 
 import { ServerInfo } from "../diagnostics/ServerInfo.ts";
+import { PublicComputerChoice } from "../keys/PublicComputerChoice.tsx";
 import { ProblemText, reasonOf } from "./AccountForm.tsx";
 import { AccountState } from "./AccountState.ts";
 
@@ -18,8 +19,9 @@ const names: Record<Demo.Persona, string> = { lena: "Lena", tom: "Tom" };
  * "Anmelden als Lena" and "Anmelden als Tom": a test shortcut into the demo school's students,
  * without a password. One web build serves every server, so it shows only once this server says it
  * is a development or preview server (`System.info`), and the server checks again on sign-in.
+ * `withChoice` brings "Öffentlicher Computer" to a screen that has no choice of its own.
  */
-export function PersonaShortcuts() {
+export function PersonaShortcuts({ withChoice = false }: { readonly withChoice?: boolean }) {
   const info = useAtomValue(ServerInfo.info);
   const { color } = Theme.useTheme();
 
@@ -35,6 +37,7 @@ export function PersonaShortcuts() {
       >
         Nur zum Testen
       </Text>
+      {withChoice ? <PublicComputerChoice /> : null}
       {Demo.Persona.literals.map((persona) => (
         <PersonaButton key={persona} persona={persona} />
       ))}
