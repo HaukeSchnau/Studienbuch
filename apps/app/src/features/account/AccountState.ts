@@ -1,6 +1,7 @@
 import { useAtomMount, useAtomSet, useAtomValue } from "@effect/atom-react";
 import type { Access } from "@stu/api/Access";
 import { AccountDeletion } from "@stu/api/AccountDeletion";
+import type { Demo } from "@stu/api/Demo";
 import { CryptoSuite } from "@stu/e2ee";
 import { SyncClient, SyncQuery } from "@stu/sync/client";
 import * as Effect from "effect/Effect";
@@ -191,6 +192,14 @@ const handOver = <W>(get: Atom.FnContext, atom: Atom.Writable<unknown, W>, value
 export const signIn = runtime.fn<{ readonly email: string; readonly password: string }>()(
   ({ email, password }, get) => Account.attempt(Account.signIn(email, password, chosen(get))),
   oneAttempt,
+);
+
+/** "Anmelden als Lena" (`Account.signInAsPersona`), one run per persona. */
+export const signInAs = Atom.family((persona: Demo.Persona) =>
+  runtime.fn<void>()(
+    (_, get) => Account.attempt(Account.signInAsPersona(persona, chosen(get))),
+    oneAttempt,
+  ),
 );
 
 /** `reservation` as `Access.redeem` answered on the code screen. */

@@ -6,6 +6,7 @@
  */
 import { Demo } from "@stu/api/Demo";
 import { CryptoSuite } from "@stu/e2ee";
+import { System } from "@stu/api/System";
 import * as Effect from "effect/Effect";
 import type * as Headers from "effect/http/Headers";
 import * as Layer from "effect/Layer";
@@ -25,7 +26,7 @@ export const handlers = Demo.Rpcs.toLayer(
 
     return Demo.Rpcs.of({
       "Demo.signIn": Effect.fn("PersonaSignIn.signIn")(function* ({ persona }) {
-        if (!Deployment.isDevelopmentOrPreview(environment)) return yield* new Demo.Unavailable();
+        if (!System.isDevelopmentOrPreview(environment)) return yield* new Demo.Unavailable();
 
         const account = yield* Effect.orDie(DemoAccounts.accountOf(persona));
 

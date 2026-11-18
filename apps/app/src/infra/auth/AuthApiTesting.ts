@@ -28,5 +28,6 @@ export const layer = (calls: Partial<AuthApi.Service["Service"]>) =>
     passkeySignUp: unexpected("passkeySignUp"),
     cardSignUp: unexpected("cardSignUp"),
     cardSignIn: unexpected("cardSignIn"),
+    personaSignIn: unexpected("personaSignIn"),
     ...calls,
   });

@@ -16,6 +16,7 @@ import { Keyboard, StyleSheet, type TextInputSelectionChangeEvent } from "react-
 import { AccessCode } from "./AccessCode.ts";
 import { Form, Lead, OtherWay, ProblemBox, useRunning } from "./AccountForm.tsx";
 import { AccountState } from "./AccountState.ts";
+import { PersonaShortcuts } from "./PersonaShortcuts.tsx";
 import { useForgetAnswer } from "./CodeField.tsx";
 import { Steps } from "./Steps.ts";
 import { TypedCode } from "./TypedCode.ts";
@@ -98,6 +99,7 @@ export function WelcomeScreen() {
         />
       </Form>
       <OtherWay question="Schon ein Konto?" label="Anmelden" href="/anmelden" />
+      <PersonaShortcuts />
     </>
   );
 }

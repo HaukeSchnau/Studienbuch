@@ -56,6 +56,7 @@ export const Reason = Schema.Literals([
   "busy",
   "signed-out",
   "sign-out-failed",
+  "no-personas",
   "failed",
 ]);
 
@@ -102,6 +103,7 @@ export const sentence: Record<Reason, string> = {
   busy: "Auf diesem Gerät läuft schon eine Anmeldung. Warte, bis sie fertig ist.",
   "signed-out": "Du hast dich abgemeldet, bevor die Anmeldung fertig war. Melde dich neu an.",
   "sign-out-failed": "Abmelden hat nicht geklappt. Versuch es noch einmal.",
+  "no-personas": "Dieser Server bietet keine Testkonten an.",
   failed: "Das hat nicht geklappt. Versuch es noch einmal.",
 };
 
@@ -234,6 +236,35 @@ export const signIn = Effect.fn("Account.signIn")(function* (
   yield* keep(signedIn, publicComputer, Demo.isDemoSignIn(email, signedIn.accountId)).pipe(
     Effect.tapError(() => endUnkept(signedIn)),
   );
+});
+
+/**
+ * "Anmelden als Lena": a session of the persona's account without a password, which development and
+ * preview servers hand out. The device keeps it as a demo account's only when the server answered
+ * with that persona's fixed account, so a server can't plant a key it knows on another (ADR 0027).
+ */
+export const signInAsPersona = Effect.fn("Account.signInAsPersona")(function* (
+  persona: Demo.Persona,
+  publicComputer: boolean,
+) {
+  const api = yield* AuthApi.Service;
+  const noPersonas = () => Effect.fail(new Problem({ reason: "no-personas" }));
+
+  const signedIn = yield* api.personaSignIn(persona).pipe(
+    Effect.catchTags({
+      "AuthApi.Unreachable": () => Effect.fail(new Problem({ reason: "offline" })),
+      "Demo.Unavailable": noPersonas,
+      "Demo.NotSeeded": noPersonas,
+    }),
+  );
+
+  if (signedIn.accountId !== Demo.accounts[persona]) {
+    yield* endUnkept(signedIn);
+
+    return yield* new Problem({ reason: "failed" });
+  }
+
+  yield* keep(signedIn, publicComputer, true).pipe(Effect.tapError(() => endUnkept(signedIn)));
 });
 
 /**

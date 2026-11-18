@@ -22,7 +22,7 @@ export * as DeviceSessions from "./DeviceSessions.ts";
 export interface Session {
   readonly accountId: string;
   readonly token: Redacted.Redacted;
-  /** Signed in with a password at a demo account's address, as a persona (`Demo.isDemoSignIn`). */
+  /** Signed in as a demo persona, whose notebook key the server derives (ADR 0027). */
   readonly demo: boolean;
 }
 

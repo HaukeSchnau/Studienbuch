@@ -10,6 +10,7 @@ import { Keyboard, StyleSheet, View } from "react-native";
 import { PublicComputerChoice } from "../keys/PublicComputerChoice.tsx";
 import { Form, Or, OtherWay, ProblemText, reasonOf, useCredentials } from "./AccountForm.tsx";
 import { AccountState } from "./AccountState.ts";
+import { PersonaShortcuts } from "./PersonaShortcuts.tsx";
 import { Steps } from "./Steps.ts";
 
 /**
@@ -131,6 +132,7 @@ export function SignInScreen() {
           href="/aktivieren"
         />
       )}
+      <PersonaShortcuts />
     </>
   );
 }

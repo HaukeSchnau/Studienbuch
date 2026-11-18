@@ -33,7 +33,10 @@ export interface Attempt {
 export interface Signed {
   readonly accountId: string;
   readonly token: Option.Option<Redacted.Redacted>;
-  /** Signed in with a password at a demo account's address, as a persona (`Demo.isDemoSignIn`). */
+  /**
+   * Signed in as a persona: with a password at a demo account's address (`Demo.isDemoSignIn`), or
+   * with "Anmelden als" (`Account.signInAsPersona`).
+   */
   readonly demo: boolean;
   /** `Device.PublicComputer` for the account, fixed while the device holds it. */
   readonly publicComputer: boolean;

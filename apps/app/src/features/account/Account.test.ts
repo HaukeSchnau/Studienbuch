@@ -1280,6 +1280,7 @@ describe("Account", () => {
         resetPassword: () => Effect.void,
         passkeySignInOptions: Effect.succeed({ challenge: "c", options: { challenge: "c" } }),
         passkeySignIn: () => lena,
+        personaSignIn: () => Effect.succeed(signedIn("demo-lena", "token-lena")),
       });
 
       const authenticator = Layer.succeed(Passkeys.Authenticator)({
@@ -1293,6 +1294,7 @@ describe("Account", () => {
         reset: (choice: boolean) =>
           Account.resetPassword("lena@example.org", "145838", "ganz-neu-4567", choice),
         passkey: (choice: boolean) => Account.signInWithPasskey(choice),
+        persona: (choice: boolean) => Account.signInAsPersona("lena", choice),
         signUp: (choice: boolean) =>
           Effect.andThen(
             confirmed("lena@example.org", "lena", "token-lena"),
@@ -1316,9 +1318,10 @@ describe("Account", () => {
           password: yield* kept(ways.password),
           reset: yield* kept(ways.reset),
           passkey: yield* kept(ways.passkey),
+          persona: yield* kept(ways.persona),
           signUp: yield* kept(ways.signUp),
         },
-        { password: both, reset: both, passkey: both, signUp: both },
+        { password: both, reset: both, passkey: both, persona: both, signUp: both },
       );
     }),
   );
@@ -1409,11 +1412,14 @@ describe("Account", () => {
   );
 
   // A server could call any account a demo account to hand over a key it knows (ADR 0027), so
-  // only the address typed here, answered with a persona's account, makes one.
+  // only the address typed here, or the persona chosen here, answered with that persona's account,
+  // makes one.
   it.effect(
-    "keeps a session as a demo account's only after a persona's password sign-in at a demo address",
-    () =>
-      Effect.gen(function* () {
+    "keeps a session as a demo account's only after a persona's sign-in answered with its account",
+    () => {
+      const ended: Array<string> = [];
+
+      return Effect.gen(function* () {
         const sessions = yield* SessionStore.Service;
 
         const demo = Effect.map(
@@ -1431,14 +1437,25 @@ describe("Account", () => {
         yield* sessions.forget;
         yield* Account.signIn("lena@demo.studienbuch.app", "echtes-konto", false);
         const realAccount = yield* demo;
+        yield* sessions.forget;
+        yield* Account.signInAsPersona("tom", false);
+        const persona = yield* demo;
+        yield* sessions.forget;
+        const otherAccount = yield* reason(Account.signInAsPersona("lena", false));
+        const afterOther = yield* demo;
 
         assert.deepStrictEqual(
-          { typed, lookalike, passkey, realAccount },
+          { typed, lookalike, passkey, realAccount, persona, otherAccount, afterOther, ended },
           {
             typed: Option.some(true),
             lookalike: Option.some(false),
             passkey: Option.some(false),
             realAccount: Option.some(false),
+            persona: Option.some(true),
+            otherAccount: "failed",
+            afterOther: Option.none(),
+            // The session the device didn't keep ends at once.
+            ended: ["token-planted"],
           },
         );
       }).pipe(
@@ -1456,6 +1473,14 @@ describe("Account", () => {
                 challenge: "challenge",
               }),
               passkeySignIn: () => Effect.succeed(signedIn("demo-lena", "token-passkey")),
+              // It answers Lena's persona with an ordinary account.
+              personaSignIn: (persona) =>
+                Effect.succeed(
+                  persona === "tom"
+                    ? signedIn("demo-tom", "token-tom")
+                    : signedIn("lena", "token-planted"),
+                ),
+              signOut: (token) => Effect.sync(() => ended.push(Redacted.value(token))),
             }),
             Layer.succeed(Passkeys.Authenticator)({
               available: Effect.succeed(true),
@@ -1464,7 +1489,8 @@ describe("Account", () => {
             }),
           ),
         ),
-      ),
+      );
+    },
   );
 
   it.effect("says the server failed rather than that the device is offline", () =>

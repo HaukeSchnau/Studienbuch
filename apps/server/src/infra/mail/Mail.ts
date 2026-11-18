@@ -1,5 +1,6 @@
 import { Accounts } from "@stu/api/Accounts";
 import { Mail as ApiMail } from "@stu/api/Mail";
+import { System } from "@stu/api/System";
 import { desc } from "drizzle-orm";
 import * as Config from "effect/Config";
 import * as Context from "effect/Context";
@@ -87,7 +88,7 @@ export const layerCapture = Layer.effect(Service)(
 export const captured = Effect.gen(function* () {
   const { environment } = yield* Deployment.Current;
 
-  if (!Deployment.isDevelopmentOrPreview(environment)) {
+  if (!System.isDevelopmentOrPreview(environment)) {
     return yield* new ApiMail.NotCaptured();
   }
 
@@ -180,7 +181,7 @@ export const layer = Layer.unwrap(
 
     if (Redacted.value(url) !== "capture:") return layerSmtp(url, from);
 
-    if (!Deployment.isDevelopmentOrPreview(environment)) {
+    if (!System.isDevelopmentOrPreview(environment)) {
       return yield* new CaptureNotAllowed({ environment });
     }
 

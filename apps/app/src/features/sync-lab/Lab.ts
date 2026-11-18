@@ -43,7 +43,7 @@ const allowed = Layer.effect(Faults.Allowed)(
     const client = yield* LabServer.api(Option.none());
     const { environment } = yield* client["System.info"]();
 
-    return environment === "development" || environment === "preview"
+    return System.isDevelopmentOrPreview(environment)
       ? { environment }
       : yield* new Unavailable({ environment });
   }).pipe(Effect.scoped),

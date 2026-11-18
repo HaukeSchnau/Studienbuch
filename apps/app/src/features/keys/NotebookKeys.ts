@@ -23,7 +23,7 @@ import { KeyServer } from "./KeyServer.ts";
 // The notebook's root key on this device (recovery.md, sections 1 and 2). A recovered key counts
 // only after `Wrapper.recover` checked the anchor, every chain link and the newest endorsement. A
 // key straight from the server (`Demo.rootKey`) counts only for an account the user signed in to
-// with a password at a demo address (ADR 0027), so the server can't plant a key on any other.
+// as a persona (ADR 0027), so the server can't plant a key on any other.
 
 export * as NotebookKeys from "./NotebookKeys.ts";
 
@@ -353,7 +353,7 @@ const start = Effect.gen(function* () {
   return published ? Status.Unlocked() : Status.Locked();
 });
 
-/** The user signed in to this account with a password at a demo account's address. */
+/** The user signed in to this account as a persona (`SessionStore.Signed.demo`). */
 const demoSignIn = Effect.gen(function* () {
   const account = yield* accountId;
   const signed = yield* (yield* SessionStore.Service).current;

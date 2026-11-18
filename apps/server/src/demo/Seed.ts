@@ -6,6 +6,7 @@
 import { Demo } from "@stu/api/Demo";
 import { Dev } from "@stu/api/Dev";
 import { CryptoSuite } from "@stu/e2ee";
+import { System } from "@stu/api/System";
 import * as Command from "effect/cli/Command";
 import * as Config from "effect/Config";
 import * as Console from "effect/Console";
@@ -40,7 +41,7 @@ export const run = Effect.gen(function* () {
 
     // Anyone may sign up to the demo school where anyone may sign in as its students. A
     // development or preview database lives for one branch, so a thousand outlast its testers.
-    if (Deployment.isDevelopmentOrPreview((yield* Deployment.Current).environment)) {
+    if (System.isDevelopmentOrPreview((yield* Deployment.Current).environment)) {
       yield* AccessCodes.ensure(
         { school: DemoSchool.id, kind: "student", maxUses: 1000 },
         Dev.demoSchoolCode,
