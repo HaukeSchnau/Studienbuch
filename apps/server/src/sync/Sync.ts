@@ -8,6 +8,7 @@ import * as PgClient from "@effect/sql-pg/PgClient";
 import { Studienbuch } from "@stu/core";
 import { CryptoSuite } from "@stu/e2ee";
 import { Listener, Ports, SyncServer } from "@stu/sync/server";
+import { System } from "@stu/api/System";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as SqlClient from "effect/sql/SqlClient";
@@ -20,7 +21,7 @@ export * as Sync from "./Sync.ts";
 /** Only development and preview servers show the Sync Lab what they hold. */
 const inspection = Layer.unwrap(
   Effect.map(Deployment.Current, ({ environment }) =>
-    SyncServer.inspection(Deployment.isDevelopmentOrPreview(environment)),
+    SyncServer.inspection(System.isDevelopmentOrPreview(environment)),
   ),
 );
 

@@ -1,5 +1,7 @@
+import { Api } from "@stu/api";
 import { Access } from "@stu/api/Access";
 import { Accounts } from "@stu/api/Accounts";
+import { Demo } from "@stu/api/Demo";
 import { Ports } from "@stu/sync/client";
 import type * as Cause from "effect/Cause";
 import * as Context from "effect/Context";
@@ -13,12 +15,14 @@ import * as HttpIncomingMessage from "effect/http/HttpIncomingMessage";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Redacted from "effect/Redacted";
+import * as RpcClient from "effect/rpc/RpcClient";
 import * as Schema from "effect/Schema";
 
 import { Deadline } from "../api/Deadline.ts";
 
-// Better Auth's routes at `Accounts.path`, the ones Studienbuch uses, with every response parsed.
-// A device sends its bearer token and keeps no cookies (ADR 0028).
+// Better Auth's routes at `Accounts.path`, the ones Studienbuch uses, with every response parsed,
+// and `Demo.signIn`, the one way to a session outside them. A device sends its bearer token and
+// keeps no cookies (ADR 0028).
 
 export * as AuthApi from "./AuthApi.ts";
 
@@ -227,6 +231,13 @@ export class Service extends Context.Service<
     ) => Effect.Effect<SignedIn, Failure>;
     /** Signs in to the account without an address whose Notfallkarte has `login`. */
     readonly cardSignIn: (login: Redacted.Redacted) => Effect.Effect<SignedIn, Failure>;
+    /**
+     * A new session of a demo persona's account, without a password. Only development and preview
+     * servers sign anyone in; the others refuse with `Demo.Unavailable`.
+     */
+    readonly personaSignIn: (
+      persona: Demo.Persona,
+    ) => Effect.Effect<SignedIn, Unreachable | Demo.Unavailable | Demo.NotSeeded>;
   }
 >()("AuthApi.Service") {}
 
@@ -303,6 +314,14 @@ export const layer = Layer.effect(Service)(
 
     const registration = (challenge: string, credential: Credential) =>
       withChallenge(post("/passkey/verify-registration", { response: credential }), challenge);
+
+    const demo = yield* RpcClient.make(Demo.Rpcs).pipe(
+      Effect.provide(
+        RpcClient.layerProtocolHttp({ url: `${server.origin.origin}${Api.path}` }).pipe(
+          Layer.provide(Api.serialization),
+        ),
+      ),
+    );
 
     return {
       signUp: (email, password, reservation) =>
@@ -404,6 +423,14 @@ export const layer = Layer.effect(Service)(
         ),
       cardSignIn: (login) =>
         read(post(Accounts.cardSignInPath, { login: Redacted.value(login) }), signedIn),
+      // The session's root key comes with it, but the device asks for it again (`Demo.rootKey`),
+      // as after a password sign-in at a demo address.
+      personaSignIn: (persona) =>
+        demo["Demo.signIn"]({ persona }).pipe(
+          Effect.map(({ account, token }) => ({ accountId: account, token: Redacted.make(token) })),
+          Effect.catchTags({ RpcClientError: (cause) => Effect.fail(new Unreachable({ cause })) }),
+          Deadline.within(() => new Unreachable({ cause: "no answer in time" })),
+        ),
     };
   }),
 );

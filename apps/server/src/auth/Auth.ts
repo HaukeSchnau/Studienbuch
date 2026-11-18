@@ -4,6 +4,7 @@ import { Keys } from "@stu/api/Keys";
 import { Access } from "@stu/api/Access";
 import { Studienbuch } from "@stu/core";
 import { Ports, type Spaces, SyncServer, type SyncWriter } from "@stu/sync/server";
+import { System } from "@stu/api/System";
 import { type AuthContext, type BetterAuthOptions, betterAuth } from "better-auth";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { bearer, emailOTP } from "better-auth/plugins";
@@ -1052,7 +1053,7 @@ const make = Effect.gen(function* () {
 
   const signInDemo = Effect.fn("Auth.signInDemo")(function* (accountId: string) {
     const demo =
-      Deployment.isDevelopmentOrPreview(environment) &&
+      System.isDevelopmentOrPreview(environment) &&
       (yield* DemoAccounts.isDemo(accountId).pipe(
         Effect.provideService(SqlClient.SqlClient, sql),
         Effect.orDie,

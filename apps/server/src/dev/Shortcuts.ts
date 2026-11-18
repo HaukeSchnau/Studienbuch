@@ -6,6 +6,7 @@
 import { Dev } from "@stu/api/Dev";
 import { School, Studienbuch } from "@stu/core";
 import { Ports, SyncServer } from "@stu/sync/server";
+import { System } from "@stu/api/System";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
 import type * as Headers from "effect/http/Headers";
@@ -91,7 +92,7 @@ export const handlers = Dev.Rpcs.toLayer(
 
     /** The calling account, on a development or preview server only. */
     const caller = Effect.fn("Shortcuts.caller")(function* (headers: Headers.Headers) {
-      if (!Deployment.isDevelopmentOrPreview(environment)) return yield* new Dev.Unavailable();
+      if (!System.isDevelopmentOrPreview(environment)) return yield* new Dev.Unavailable();
 
       const session = yield* sessions.resolve(headers);
 
