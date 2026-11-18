@@ -154,7 +154,7 @@ function ShowCard({
         {keepsNothing ? (
           <Text variant="subhead" style={[styles.center, { color: color.danger }]}>
             {card.endsAtSaved
-              ? "Auf diesem öffentlichen Computer gibt es diesen Code nur in diesem Tab. Lädst du die Seite neu oder schließt du den Tab, bevor du ihn aufgeschrieben hast, ist er weg. Deine alte Notfallkarte gilt dann trotzdem nicht mehr."
+              ? "Auf diesem öffentlichen Computer gibt es diesen Code nur in diesem Tab. Lädst du die Seite neu oder schließt du den Tab, bevor du ihn aufgeschrieben hast, ist er weg. Eine Notfallkarte, die du vorher hattest, gilt trotzdem nicht mehr."
               : "Auf diesem öffentlichen Computer gibt es die Karte nur in diesem Tab. Lädst du die Seite neu oder schließt du den Tab, bevor du sie aufgeschrieben hast, ist dein neues Konto verloren. Für ein neues brauchst du dann einen Zugangscode, der noch gilt."}
           </Text>
         ) : null}
