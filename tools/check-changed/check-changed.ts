@@ -2,12 +2,13 @@
 // Tools Inc.; see tools/T3CODE-LICENSE).
 
 // Format and lint of the changed files, knip, the atlas's paths, a typecheck of the affected
-// projects and their dependents, and the tests beside changed files. The change is the jj diff from
+// projects and their dependents, and the tests a changed file brings. The change is the jj diff from
 // `fork_point(trunk() | @)` to `@`, or in git the diff from the merge base with origin/main plus
 // untracked files. `vp run check:changed <rev>` compares with another jj revset or git ref.
 import * as NodeChildProcess from "node:child_process";
 import * as NodeFS from "node:fs";
 import * as NodePath from "node:path";
+import drizzle from "../../apps/server/drizzle.config.ts";
 
 const root = NodePath.resolve(import.meta.dirname, "../..");
 const CODE = /\.[cm]?[jt]sx?$/u;
@@ -156,6 +157,19 @@ for (const file of code) {
   for (const entry of NodeFS.readdirSync(NodePath.join(root, dir))) {
     if (entry.startsWith(prefix) && TEST.test(entry)) tests.add(NodePath.join(dir, entry));
   }
+}
+
+// The schema test compares the migrations with the table files drizzle.config.ts lists, and no
+// import leads to it from them. Two branches that each add a migration pass apart and fail merged.
+const schemaInputs = new Set([
+  "apps/server/drizzle.config.ts",
+  ...[drizzle.schema ?? []].flat().map((table) => NodePath.join("apps/server", table)),
+]);
+
+const migrations = NodePath.join("apps/server", drizzle.out ?? "migrations", "/");
+
+if (files.some((file) => schemaInputs.has(file) || file.startsWith(migrations))) {
+  tests.add("apps/server/src/infra/database/Schema.test.ts");
 }
 
 /** The nearest directory with a vite.config.ts, whose test settings the file runs under. */
