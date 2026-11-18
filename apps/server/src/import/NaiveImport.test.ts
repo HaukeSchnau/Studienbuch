@@ -22,6 +22,11 @@ const withoutClass111 = planted(TinySchool.corpus, classes, (body) => {
 const thisWeek = { start: "2026-11-02", end: "2026-11-06" };
 const nextWeek = { start: "2026-11-09", end: "2026-11-13" };
 
+const laterWeeks = [
+  { start: "2026-11-16", end: "2026-11-20" },
+  { start: "2026-11-23", end: "2026-11-27" },
+];
+
 const lessonCovers = (result: SchoolImport.ImportResult) =>
   result.covers.filter(({ rows }) => rows === "lessons").map(({ start, end }) => ({ start, end }));
 
@@ -34,9 +39,8 @@ describe("NaiveImport", () => {
     Effect.gen(function* () {
       const { result, log } = yield* ImportTesting.naive(TinySchool.corpus);
 
-      // The capture ends on 15 November, so the third and fourth weeks fail as days past it, and
-      // its answers leave out weekends, which therefore delete nothing.
-      assert.deepStrictEqual(lessonCovers(result), [thisWeek, nextWeek]);
+      // Its answers leave out weekends, which therefore delete nothing.
+      assert.deepStrictEqual(lessonCovers(result), [thisWeek, nextWeek, ...laterWeeks]);
       assert.isFalse(SchoolImport.deletes(result, "lessons", "2026-11-07"));
       assert.deepStrictEqual(log.notCaptured, []);
     }),
@@ -55,7 +59,7 @@ describe("NaiveImport", () => {
 
       const { result } = yield* ImportTesting.naive(corpus);
 
-      assert.deepStrictEqual(lessonCovers(result), [nextWeek]);
+      assert.deepStrictEqual(lessonCovers(result), [nextWeek, ...laterWeeks]);
 
       // The day's entries are another class's, so none of them became a lesson of `11.1`'s.
       assert.isFalse(
@@ -76,7 +80,7 @@ describe("NaiveImport", () => {
 
       const { result } = yield* ImportTesting.naive(corpus);
 
-      assert.deepStrictEqual(lessonCovers(result), [nextWeek]);
+      assert.deepStrictEqual(lessonCovers(result), [nextWeek, ...laterWeeks]);
 
       assert.isFalse(
         result.lessons.some(

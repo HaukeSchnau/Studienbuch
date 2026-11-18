@@ -54,4 +54,6 @@ export const profile: SchoolProfile.SchoolProfile = {
     "Aufsicht",
     "Exkursion",
   ],
+  // Go 2 (m2-import-path.md, "What needs Hauke") turns it on, in a reviewed pull request.
+  publish: false,
 };
