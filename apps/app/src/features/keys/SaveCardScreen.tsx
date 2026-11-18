@@ -248,6 +248,8 @@ function ReadBack({
 
   // Once the code checks out the device forgets the card, and the gate moves on.
   const submit = () => {
+    if (checked.waiting) return;
+
     Keyboard.dismiss();
     void check(code);
   };

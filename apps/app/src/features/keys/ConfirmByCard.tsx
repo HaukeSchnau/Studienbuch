@@ -27,7 +27,7 @@ export function ConfirmByCard({
   const keyReason = keyReasonOf(result);
 
   const submit = async () => {
-    if (code.trim() === "") return;
+    if (code.trim() === "" || result.waiting) return;
 
     Keyboard.dismiss();
 

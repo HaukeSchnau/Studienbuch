@@ -269,6 +269,15 @@ function Confirm({
     if (Exit.isSuccess(exit)) onConfirmed();
   };
 
+  // The keyboard's submit isn't disabled with the button, and a second call of the running atom
+  // would answer both with "busy".
+  const submitPassword = () => {
+    if (withPasswordResult.waiting) return;
+
+    Keyboard.dismiss();
+    void withPassword({ email, password }).then(confirmed);
+  };
+
   return (
     <Card padded title="Kurz bestätigen">
       <Text variant="subhead">
@@ -307,10 +316,7 @@ function Confirm({
         autoCapitalize="none"
         autoCorrect={false}
         returnKeyType="go"
-        onSubmitEditing={() => {
-          Keyboard.dismiss();
-          void withPassword({ email, password }).then(confirmed);
-        }}
+        onSubmitEditing={submitPassword}
       />
       <ProblemText reason={reasonOf(withPasswordResult)} />
       <Button
@@ -318,10 +324,7 @@ function Confirm({
         kind="quiet"
         block
         busy={withPasswordResult.waiting}
-        onPress={() => {
-          Keyboard.dismiss();
-          void withPassword({ email, password }).then(confirmed);
-        }}
+        onPress={submitPassword}
       />
       <Text variant="subhead">Ohne E-Mail-Adresse bestätigst du mit deiner Notfallkarte.</Text>
       <ConfirmByCard accountId={accountId} kind="quiet" onConfirmed={onConfirmed} />
