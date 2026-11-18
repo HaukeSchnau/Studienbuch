@@ -5,6 +5,8 @@ import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import * as Schema from "effect/Schema";
+import * as Tuple from "effect/Tuple";
 import { RecordedWebUntis } from "../../infra/webuntis/RecordedWebUntis.ts";
 import type { Corpus } from "../corpus/Corpus.ts";
 import { NaiveImport } from "../NaiveImport.ts";
@@ -13,6 +15,9 @@ import { Evaluator } from "./Evaluator.ts";
 import { TinySchool } from "./TinySchool.ts";
 
 const of = (right: number, total: number) => ({ right, of: total });
+
+const encodeJson = Schema.encodeEffect(Schema.fromJsonString(Schema.Json));
+const decodeJson = Schema.decodeEffect(Schema.fromJsonString(Schema.Json));
 
 const evaluate = (
   importLayer: Layer.Layer<SchoolImport.Service, never, WebUntisClient>,
@@ -73,7 +78,7 @@ const both = {
   // MA23's two rows become two courses, and the two MA-E groups one.
   courses: of(1, 3),
   closures: { recall: of(1, 1), precision: of(1, 1) },
-  links: of(35, 35),
+  links: of(38, 38),
   // The exam's course is both MA-E groups, so the other group's two students see it too.
   exams: of(0, 1),
   examStudents: { recall: of(2, 2), precision: of(2, 4) },
@@ -101,27 +106,27 @@ describe("Evaluator", () => {
         views: {
           student: {
             weeks: of(3, 8),
-            recall: of(26, 26),
-            precision: of(26, 32),
-            attributes: of(26, 26),
+            recall: of(28, 28),
+            precision: of(28, 34),
+            attributes: of(28, 28),
           },
           teacher: {
             weeks: of(13, 18),
-            recall: of(28, 29),
-            precision: of(28, 32),
-            attributes: of(27, 28),
+            recall: of(31, 32),
+            precision: of(31, 35),
+            attributes: of(30, 31),
           },
           room: {
             weeks: of(11, 15),
-            recall: of(32, 32),
-            precision: of(32, 35),
-            attributes: of(30, 32),
+            recall: of(35, 35),
+            precision: of(35, 38),
+            attributes: of(33, 35),
           },
         },
         // "Betreuung" reads as a substitution, and Monday's run never sees Wednesday's version.
         changes: of(3, 5),
-        courseIdsKept: of(53, 53),
-        lookahead: of(29, 29),
+        courseIdsKept: of(58, 58),
+        lookahead: of(32, 32),
         runs: { total: 3, failed: 0 },
         reads: { requests: 36, outOfRange: 3, decodeFailures: 0 },
         passingCases: [
@@ -141,26 +146,26 @@ describe("Evaluator", () => {
         views: {
           student: {
             weeks: of(3, 8),
-            recall: of(26, 26),
-            precision: of(26, 32),
-            attributes: of(26, 26),
+            recall: of(28, 28),
+            precision: of(28, 34),
+            attributes: of(28, 28),
           },
           teacher: {
             weeks: of(15, 18),
-            recall: of(29, 29),
-            precision: of(29, 32),
-            attributes: of(29, 29),
-          },
-          room: {
-            weeks: of(12, 15),
             recall: of(32, 32),
             precision: of(32, 35),
             attributes: of(32, 32),
           },
+          room: {
+            weeks: of(12, 15),
+            recall: of(35, 35),
+            precision: of(35, 38),
+            attributes: of(35, 35),
+          },
         },
         changes: of(4, 5),
-        courseIdsKept: of(393, 393),
-        lookahead: of(125, 125),
+        courseIdsKept: of(430, 430),
+        lookahead: of(136, 136),
         runs: { total: 15, failed: 0 },
         reads: { requests: 180, outOfRange: 15, decodeFailures: 0 },
         passingCases: [
@@ -205,7 +210,7 @@ describe("Evaluator", () => {
         recall: report.views.student.recall,
         courses: report.courses,
       }),
-      expected: { studentWeeks: of(0, 8), recall: of(0, 26), courses: of(1, 3) },
+      expected: { studentWeeks: of(0, 8), recall: of(0, 28), courses: of(1, 3) },
     },
     {
       name: "makes new courses every run",
@@ -215,7 +220,7 @@ describe("Evaluator", () => {
         kept: report.courseIdsKept,
       }),
       // Lessons the later runs didn't touch keep their ids; the rest change.
-      expected: { studentWeeks: of(0, 8), kept: of(31, 53) },
+      expected: { studentWeeks: of(0, 8), kept: of(34, 58) },
     },
     {
       name: "links lessons to entries WebUntis doesn't have",
@@ -231,7 +236,7 @@ describe("Evaluator", () => {
         }),
       ),
       measure: (report: Effect.Success<ReturnType<typeof evaluate>>) => report.links,
-      expected: of(0, 35),
+      expected: of(0, 38),
     },
     {
       name: "reads only the current week",
@@ -251,7 +256,7 @@ describe("Evaluator", () => {
         });
       }),
       measure: (report: Effect.Success<ReturnType<typeof evaluate>>) => report.lookahead,
-      expected: of(23, 29),
+      expected: of(26, 32),
     },
     {
       name: "claims every week read without importing a lesson",
@@ -260,7 +265,7 @@ describe("Evaluator", () => {
         lookahead: report.lookahead,
         recall: report.views.student.recall,
       }),
-      expected: { lookahead: of(0, 29), recall: of(0, 26) },
+      expected: { lookahead: of(0, 32), recall: of(0, 28) },
     },
     {
       name: "keeps one lesson a day that claims all of the day's entries",
@@ -285,14 +290,29 @@ describe("Evaluator", () => {
       }),
       measure: (report: Effect.Success<ReturnType<typeof evaluate>>) => report.lookahead,
       // Only the entries at the time of the one lesson kept count.
-      expected: of(16, 29),
+      expected: of(16, 32),
+    },
+    {
+      name: "puts the exam in a course of another subject with its teacher and students",
+      importLayer: variant((result) =>
+        Effect.succeed({
+          ...result,
+          exams: result.exams.map((exam) => ({ ...exam, courseId: Course.Id.make("PH/12") })),
+        }),
+      ),
+      measure: (report: Effect.Success<ReturnType<typeof evaluate>>) => ({
+        exams: report.exams,
+        examStudents: report.examStudents,
+      }),
+      // Shown to exactly its students, unlike naive's exam, and still in the wrong course.
+      expected: { exams: of(0, 1), examStudents: { recall: of(2, 2), precision: of(2, 2) } },
     },
     {
       name: "drops its course rows",
       importLayer: variant((result) => Effect.succeed({ ...result, courses: [] })),
       measure: (report: Effect.Success<ReturnType<typeof evaluate>>) =>
         report.invariants.danglingCourses,
-      expected: 36,
+      expected: 39,
     },
   ])("scores an import that $name worse", ({ importLayer, measure, expected }) =>
     Effect.gen(function* () {
@@ -317,6 +337,88 @@ describe("Evaluator", () => {
       const { worst: __, ...overlapping } = yield* evaluate(NaiveImport.layer, false, split);
 
       assert.deepStrictEqual(overlapping, whole);
+    }),
+  );
+
+  // Each row adds versions of one day to every timetable, as JSON edits of the latest version that
+  // covers the day.
+  it.effect.each([
+    {
+      // At noon on 4 November, after Monday's run read the week, WebUntis moves that day's third
+      // block to the fifth.
+      name: "a later version moves a lesson in its window",
+      day: "2026-11-04",
+      versions: [
+        {
+          observedAt: "2026-11-04T11:00:00Z",
+          edit: (text: string) =>
+            text
+              .replaceAll('"2026-11-04T11:30"', '"2026-11-04T15:15"')
+              .replaceAll('"2026-11-04T12:50"', '"2026-11-04T16:35"'),
+        },
+      ],
+    },
+    {
+      // WebUntis answers 2 November with an error until noon that day, after Monday's run. The
+      // run never scores its own day, so it mustn't need it.
+      name: "its own day was incomplete when it ran",
+      day: "2026-11-02",
+      versions: [
+        {
+          observedAt: "2026-11-01T12:00:00Z",
+          edit: (text: string) => text.replace('"errors":[]', '"errors":[{"code":"PARTIAL"}]'),
+        },
+        { observedAt: "2026-11-02T12:00:00Z", edit: (text: string) => text },
+      ],
+    },
+  ])("keeps a correct import's full lookahead when $name", ({ day, versions }) =>
+    Effect.gen(function* () {
+      const reads = yield* Effect.forEach(TinySchool.corpus.reads, ([path, read]) =>
+        path.includes("/entries/")
+          ? Effect.forEach(versions, ({ observedAt, edit }) =>
+              encodeJson(
+                read.versions.findLast(
+                  (version) => (version.start ?? day) <= day && day <= (version.end ?? day),
+                )?.body ?? null,
+              ).pipe(
+                Effect.flatMap((text) => decodeJson(edit(text))),
+                Effect.map((body) => ({
+                  observedAt: DateTime.makeUnsafe(observedAt),
+                  start: day,
+                  end: day,
+                  body,
+                })),
+              ),
+            ).pipe(
+              Effect.map((added) => Tuple.make(path, { versions: [...read.versions, ...added] })),
+            )
+          : Effect.succeed(Tuple.make(path, read)),
+      );
+
+      const { lookahead } = yield* evaluate(NaiveImport.layer, false, {
+        ...TinySchool.corpus,
+        reads: new Map(reads),
+      });
+
+      assert.deepStrictEqual(lookahead, of(32, 32));
+    }),
+  );
+
+  it.effect("refuses weeks that hold none the corpus captured", () =>
+    Effect.gen(function* () {
+      const error = yield* Evaluator.evaluate({
+        corpus: TinySchool.corpus,
+        corpusName: TinySchool.corpus.manifest.id,
+        importName: "naive",
+        importLayer: NaiveImport.layer,
+        weeks: Option.some({ from: "2026-W50", to: "2026-W51" }),
+        timeline: false,
+      }).pipe(Effect.flip);
+
+      assert.deepStrictEqual(
+        error,
+        new Evaluator.NothingMeasured({ captured: ["2026-W44", "2026-W45", "2026-W46"] }),
+      );
     }),
   );
 

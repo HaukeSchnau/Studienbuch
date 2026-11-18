@@ -318,7 +318,7 @@ export const make = Effect.fn("RecordedWebUntis.make")(function* (
     const years = yield* recordedYears;
 
     // Every day is looked up before a miss fails the read, so a day outside the capture can't
-    // hide a gap on another.
+    // hide a gap or an undecodable body on another.
     const missing: Array<readonly [string, string]> = [];
     const undecodable: Array<string> = [];
 
@@ -363,17 +363,19 @@ export const make = Effect.fn("RecordedWebUntis.make")(function* (
       }
     }
 
-    // Gaps are listed day by day; a read that only reaches past the capture counts once.
-    const gaps = missing.filter(([, day]) => inRange(day));
-    const [firstMissing, ...moreGaps] = gaps.length > 0 ? gaps : missing;
+    // A gap in the capture fails the read first, day by day, then a body that doesn't decode. Days
+    // past the capture come last and count once, because lookahead makes them normal.
+    const [firstGap, ...moreGaps] = missing.filter(([, day]) => inRange(day));
 
-    if (firstMissing !== undefined) {
-      return yield* notCaptured(firstMissing[0], firstMissing[1], gaps.length > 0 ? moreGaps : []);
-    }
+    if (firstGap !== undefined) return yield* notCaptured(firstGap[0], firstGap[1], moreGaps);
 
     const [firstUndecodable] = undecodable;
 
     if (firstUndecodable !== undefined) return yield* decodeFailed(firstUndecodable);
+
+    const [firstMissing] = missing;
+
+    if (firstMissing !== undefined) return yield* notCaptured(firstMissing[0], firstMissing[1]);
 
     yield* inject(key);
 

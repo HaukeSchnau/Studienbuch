@@ -45,6 +45,22 @@ describe("CivilTime.isoWeek", () => {
   );
 });
 
+describe("CivilTime.IsoWeek", () => {
+  const isIsoWeek = Schema.is(CivilTime.IsoWeek);
+
+  it.each([
+    { week: "2026-W53", valid: true },
+    { week: "2027-W01", valid: true },
+    { week: "2025-W52", valid: true },
+    { week: "2025-W53", valid: false },
+    { week: "2026-W00", valid: false },
+    { week: "2026-W54", valid: false },
+    { week: "2026-W5", valid: false },
+  ])("takes $week only if its year has it: $valid", ({ week, valid }) => {
+    expect(isIsoWeek(week)).toBe(valid);
+  });
+});
+
 describe("CivilTime.dateIn", () => {
   const berlin = CivilTime.TimeZone.make("Europe/Berlin");
   const utc = CivilTime.TimeZone.make("UTC");

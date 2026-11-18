@@ -78,6 +78,19 @@ const recording: RecordedWebUntis.Recording = new Map([
       ],
     },
   ],
+  [
+    RecordedWebUntis.paths.entries(10, "STUDENT", 502),
+    {
+      versions: [
+        {
+          observedAt: DateTime.makeUnsafe("2026-10-23T16:00:00Z"),
+          start: "2026-10-26",
+          end: "2026-11-08",
+          body: { format: 2, days: "not a list", errors: [] },
+        },
+      ],
+    },
+  ],
 ]);
 
 const statusesAt = (asOf: string) =>
@@ -143,32 +156,46 @@ describe("RecordedWebUntis", () => {
     }),
   );
 
-  it.effect("fails a read of days it didn't capture, and lists it", () =>
+  it.effect.each([
+    {
+      name: "a day it didn't capture as a gap",
+      resource: student.id,
+      captured: undefined,
+      failure: {
+        tag: "TransportError",
+        cause: new RecordedWebUntis.NotCaptured({ read: "10/entries/STUDENT/501 2026-11-09" }),
+      },
+      log: { notCaptured: ["10/entries/STUDENT/501 2026-11-09"], decodeFailures: [] },
+    },
+    {
+      name: "a body that doesn't decode, though the read also reaches past the capture",
+      resource: 502,
+      captured: [{ start: "2026-10-26", end: "2026-11-08" }],
+      failure: { tag: "DecodeError", cause: undefined },
+      log: { notCaptured: [], decodeFailures: ["10/entries/STUDENT/502 2026-11-06"] },
+    },
+  ])("fails a read of $name, and lists it", ({ resource, captured, failure, log }) =>
     Effect.gen(function* () {
-      const { client, log } = yield* RecordedWebUntis.make(recording, {
+      const recorded = yield* RecordedWebUntis.make(recording, {
         asOf: DateTime.makeUnsafe("2026-11-06T17:00:00Z"),
+        captured,
       });
 
-      const error = yield* client.timetable
-        .getEntries({
-          resourceType: "STUDENT",
-          resource: 501,
-          start: "2026-11-06",
-          end: "2026-11-09",
-        })
+      const error = yield* recorded.client.timetable
+        .getEntries({ resourceType: "STUDENT", resource, start: "2026-11-06", end: "2026-11-09" })
         .pipe(Effect.flip);
+
+      const { notCaptured, decodeFailures } = yield* recorded.log;
 
       assert.deepStrictEqual(
         {
-          tag: error._tag,
-          cause: error._tag === "TransportError" ? error.cause : undefined,
-          log: (yield* log).notCaptured,
+          failure: {
+            tag: error._tag,
+            cause: error._tag === "TransportError" ? error.cause : undefined,
+          },
+          log: { notCaptured, decodeFailures },
         },
-        {
-          tag: "TransportError",
-          cause: new RecordedWebUntis.NotCaptured({ read: "10/entries/STUDENT/501 2026-11-09" }),
-          log: ["10/entries/STUDENT/501 2026-11-09"],
-        },
+        { failure, log },
       );
     }),
   );

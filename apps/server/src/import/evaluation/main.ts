@@ -2,6 +2,7 @@
 // (m2-import-corpus.md, section 6, "The command and the report").
 import * as NodeRuntime from "@effect/platform-node/NodeRuntime";
 import * as NodeServices from "@effect/platform-node/NodeServices";
+import { CivilTime } from "@stu/core";
 import * as Command from "effect/cli/Command";
 import * as Flag from "effect/cli/Flag";
 import * as Console from "effect/Console";
@@ -29,17 +30,17 @@ class BadWeeks extends Schema.TaggedError<BadWeeks, { readonly brand: unique sym
 
 const encodeReport = Schema.encodeEffect(Report.Json);
 
-/** `2026-W44..2026-W45`, inclusive. */
-const week = /^\d{4}-W(?:0[1-9]|[1-4]\d|5[0-3])$/u;
+const isIsoWeek = Schema.is(CivilTime.IsoWeek);
 
+/** `2026-W44..2026-W45`, inclusive. */
 const parseWeeks = (text: string) => {
   const [from, to, ...more] = text.split("..");
 
   return from === undefined ||
     to === undefined ||
     more.length > 0 ||
-    !week.test(from) ||
-    !week.test(to) ||
+    !isIsoWeek(from) ||
+    !isIsoWeek(to) ||
     from > to
     ? Effect.fail(new BadWeeks({ weeks: text }))
     : Effect.succeed({ from, to });

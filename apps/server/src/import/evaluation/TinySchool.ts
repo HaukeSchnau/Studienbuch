@@ -179,6 +179,17 @@ const plan: ReadonlyArray<Slot> = [
     classes: [c12],
     students: [s4, s5, s6, s7],
   },
+  // Case: the first `MA-E` group's teacher also teaches it `PH`, a course of another subject with
+  // the teacher and students of the group's exam. Last, so the indices above stay.
+  {
+    weekday: 2,
+    block: 4,
+    subject: ph,
+    teacher: lc,
+    room: r103,
+    classes: [c12],
+    students: [s4, s5],
+  },
 ];
 
 // Case: the weeks after the autumn break, 2026-W44 to W46, are A, B and A, against ISO parity,

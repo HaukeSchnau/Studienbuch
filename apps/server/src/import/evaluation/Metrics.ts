@@ -275,6 +275,8 @@ export interface TruthExam {
   readonly end: number;
   readonly students: ReadonlyArray<number>;
   readonly teachers: ReadonlyArray<number>;
+  /** The subject's code as WebUntis writes it, such as `MA-E`. */
+  readonly subject: string;
 }
 
 export interface Exam {
@@ -289,15 +291,16 @@ export interface Exam {
 
 /**
  * Per exam: our exam has its date and time, is shown to exactly its students, and sits in a course
- * one of its teachers teaches, so a course with the same roster isn't enough. Per student
- * and exam: the exams a student sees through the courses they take, against the exam's students.
- * A truth pair credits one shown exam only, so a doubled exam isn't precise.
+ * of its subject that one of its teachers teaches, so neither the same roster nor the same teacher
+ * is enough. Per student and exam: the exams a student sees through the courses they take, against
+ * the exam's students. A truth pair credits one shown exam only, so a doubled exam isn't precise.
  */
 export const scoreExams = (
   truth: ReadonlyArray<TruthExam>,
   ours: ReadonlyArray<Exam>,
   enrollments: ReadonlyMap<number, ReadonlySet<string>>,
   courseTeachers: ReadonlyMap<string, ReadonlySet<number>>,
+  courseSubjects: ReadonlyMap<string, string | undefined>,
 ) => {
   const shownTo = (exam: Exam) =>
     [...enrollments].flatMap(([student, courses]) => (courses.has(exam.courseId) ? [student] : []));
@@ -326,6 +329,7 @@ export const scoreExams = (
         exam.start === truthExam.start &&
         exam.end === truthExam.end &&
         sameSet(shownTo(exam), truthExam.students) &&
+        courseSubjects.get(exam.courseId) === truthExam.subject &&
         truthExam.teachers.some((teacher) => courseTeachers.get(exam.courseId)?.has(teacher)),
     ),
   );
