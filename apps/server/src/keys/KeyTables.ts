@@ -71,6 +71,26 @@ export const keyWrapper = pgTable(
   ],
 );
 
+/**
+ * The public keys of Notfallkarten a newer card retired, so a device that sends one again after a
+ * lost answer can't make it the account's card once more.
+ */
+export const retiredCard = pgTable(
+  "retired_card",
+  {
+    accountId: text("account_id").notNull(),
+    /** Hex of the card's wrapper public key, which the card and the account id derive. */
+    publicKey: text("public_key").notNull(),
+    retiredAt: timestamp("retired_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.accountId, table.publicKey] }),
+    foreignKey({ columns: [table.accountId], foreignColumns: [AuthTables.user.id] }).onDelete(
+      "cascade",
+    ),
+  ],
+);
+
 /** The root key of one generation, sealed to one wrapper's public key. */
 export const keyWrapperSeal = pgTable(
   "key_wrapper_seal",

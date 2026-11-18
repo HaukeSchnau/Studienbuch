@@ -187,6 +187,86 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
         }),
     );
 
+    // Device 1 sends card A and loses the answer. Device 2 replaces A with B. Device 1 then sends A
+    // again, still fresh: that must not make the retired card the account's card again.
+    it.effect("a card a newer card retired stays retired when a device resends it", () =>
+      Effect.gen(function* () {
+        const sql = yield* SqlClient.SqlClient;
+
+        const ids = (account: string) =>
+          Effect.map(KeyStore.state(account), (state) =>
+            state.wrappers.map((wrapper) => wrapper.statement.id),
+          );
+
+        const replay = (account: string, address: boolean, fill: number) =>
+          Effect.gen(function* () {
+            if (address) yield* SchoolTesting.account(account);
+            else yield* withoutAddress(account);
+
+            const first = yield* firstDevice(account, fill);
+            const one = yield* signedIn(account, 1);
+            const two = yield* signedIn(account, 2);
+            yield* sql.withTransaction(
+              KeyStore.publishFirst(
+                account,
+                first.record,
+                Option.some({ wrapper: first.device, session: one }),
+              ),
+            );
+
+            const a = yield* cardFrom(`${account}-card-a`, fill + 1, first.keys);
+            const b = yield* cardFrom(`${account}-card-b`, fill + 2, first.keys);
+            const c = yield* cardFrom(`${account}-card-c`, fill + 3, first.keys);
+            const loginA = Option.some(loginOf(fill + 1));
+            const loginB = Option.some(loginOf(fill + 2));
+
+            yield* KeyStore.addWrapper(account, one, a, loginA);
+            yield* KeyStore.addWrapper(account, two, b, loginB);
+
+            // B signed out device 1 of an account without an address; it signs in again, as with
+            // its passkey, and still holds A.
+            const again = yield* signedIn(account, 3);
+            const replayed = yield* Effect.flip(KeyStore.addWrapper(account, again, a, loginA));
+            // Device 2 resends its own card after a lost answer: nothing changes.
+            yield* KeyStore.addWrapper(account, two, b, loginB);
+            const afterReplay = yield* ids(account);
+
+            const logins = [
+              yield* CardLogins.owner(loginOf(fill + 1)),
+              yield* CardLogins.owner(loginOf(fill + 2)),
+            ];
+
+            // A genuinely new card still replaces B.
+            yield* KeyStore.addWrapper(account, two, c, Option.some(loginOf(fill + 3)));
+
+            return {
+              replayed: replayed._tag === "Keys.Invalid" ? replayed.reason : replayed._tag,
+              afterReplay,
+              logins: address ? [] : logins,
+              afterNew: yield* ids(account),
+            };
+          });
+
+        expect({
+          email: yield* replay("rufus", true, 140),
+          withoutAddress: yield* replay("wanda", false, 150),
+        }).toEqual({
+          email: {
+            replayed: "statement",
+            afterReplay: ["rufus-device", "rufus-card-b"],
+            logins: [],
+            afterNew: ["rufus-device", "rufus-card-c"],
+          },
+          withoutAddress: {
+            replayed: "statement",
+            afterReplay: ["wanda-device", "wanda-card-b"],
+            logins: [Option.none(), Option.some("wanda")],
+            afterNew: ["wanda-device", "wanda-card-c"],
+          },
+        });
+      }),
+    );
+
     it.effect(
       "takes a Notfallkarte only from a sign-in in the last ten minutes, a device wrapper from any",
       () =>

@@ -10,6 +10,7 @@ import { AccountKey, CryptoSuite, SpaceKey, Wrapper } from "@stu/e2ee";
 import { Protocol } from "@stu/sync";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
+import * as Hex from "effect/encoding/Hex";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
@@ -174,8 +175,9 @@ const insertWrapper = Effect.fn("KeyStore.insertWrapper")(function* (
 });
 
 /**
- * Deletes the account's code wrappers of any other card than the statement's, with their seals.
- * The same card saved twice derives the same public key, so its other wrappers stay.
+ * Deletes the account's code wrappers of any other card than the statement's, with their seals,
+ * and remembers their public keys as retired. The same card saved twice derives the same public
+ * key, so its other wrappers stay.
  */
 const retireOtherCards = Effect.fn("KeyStore.retireOtherCards")(function* (
   account: string,
@@ -199,9 +201,36 @@ const retireOtherCards = Effect.fn("KeyStore.retireOtherCards")(function* (
     }
   }
 
-  if (retired.length > 0) {
-    yield* sql`delete from key_wrapper where account_id = ${account} and id in ${sql.in(retired)}`;
+  if (retired.length === 0) return;
+
+  const keys = yield* sql<{ readonly statement: typeof statementJson.Encoded }>`
+    delete from key_wrapper where account_id = ${account} and id in ${sql.in(retired)}
+    returning statement
+  `;
+
+  for (const { statement: retiredStatement } of keys) {
+    const publicKey = Hex.encode((yield* decodeStatement(retiredStatement)).publicKey);
+
+    yield* sql`
+      insert into retired_card (account_id, public_key) values (${account}, ${publicKey})
+      on conflict (account_id, public_key) do nothing
+    `;
   }
+});
+
+/** Whether a newer card retired the statement's card, which then never comes back. */
+const isRetired = Effect.fn("KeyStore.isRetired")(function* (
+  account: string,
+  statement: Wrapper.Statement,
+) {
+  const sql = yield* SqlClient.SqlClient;
+
+  const [row] = yield* sql`
+    select 1 from retired_card
+    where account_id = ${account} and public_key = ${Hex.encode(statement.publicKey)}
+  `;
+
+  return row !== undefined;
 });
 
 /**
@@ -445,6 +474,12 @@ export const addWrapper = Effect.fn("KeyStore.addWrapper")(function* (
         `;
 
         if (count >= Keys.wrappersPerPasskey) return yield* new Keys.Invalid({ reason: "limit" });
+      }
+
+      // A device that resends a card after a lost answer, when another device replaced it since,
+      // finds it retired. "statement" is what the app one release back knows.
+      if (statement.kind === Wrapper.kindByte.code && (yield* isRetired(account, statement))) {
+        return yield* new Keys.Invalid({ reason: "statement" });
       }
 
       // A new card retires the old one for every account. An email account's card never signs
