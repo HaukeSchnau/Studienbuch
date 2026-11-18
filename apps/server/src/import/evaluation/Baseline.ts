@@ -3,6 +3,7 @@
  * a timeline evaluation of the pinned corpus. `baseline.json` is public, so it holds aggregates
  * only, never names, tokens or course codes.
  */
+import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import { Report } from "./Report.ts";
 
@@ -29,35 +30,29 @@ export interface Difference {
 /** The numbers as plain JSON, as `differences` compares them. */
 export const toJson = Schema.encodeEffect(Schema.toCodecJson(Numbers));
 
-const isScalar = Schema.is(
-  Schema.Union([Schema.String, Schema.Finite, Schema.Boolean, Schema.Null]),
-);
-
-const isText = Schema.is(Schema.String);
 const hasFractionFields = Schema.is(Report.Fraction);
 const isList = Schema.is(Schema.Array(Schema.Json));
 const isObject = Schema.is(Schema.Record(Schema.String, Schema.Json));
+const encodeJson = Schema.encodeOption(Schema.fromJsonString(Schema.Json));
 
 /** A fraction is one only with exactly its two fields. */
 const isFraction = (value: Schema.Json) =>
   hasFractionFields(value) && Object.keys(value).length === 2;
 
-/** One value in a line: text quoted, so `"5"` and `5` differ, and anything else by its shape. */
-const describe = (value: Schema.Json | undefined): string => {
+/** One value in a line: a fraction as `right of total`, anything else as its JSON. */
+const describe = (value: Schema.Json | undefined) => {
   if (value === undefined) return "nothing";
 
-  if (isScalar(value)) return isText(value) ? `"${value}"` : String(value);
-
-  if (hasFractionFields(value) && isFraction(value)) return `${value.right} of ${value.of}`;
-
-  if (isList(value)) return `[${value.map(describe).join(", ")}]`;
-
-  return isObject(value) ? `{${Object.keys(value).join(", ")}}` : "something else";
+  return hasFractionFields(value) && isFraction(value)
+    ? `${value.right} of ${value.of}`
+    : Option.getOrElse(encodeJson(value), () => "not JSON");
 };
 
-/** Whether a value holds fields to compare one by one: an object that isn't a fraction. */
-const isRecord = (value: Schema.Json | undefined) =>
-  value !== undefined && !isList(value) && isObject(value) && !isFraction(value);
+/** An object's own fields, so a field one side lacks is never read from a prototype. */
+const fieldsOf = (value: Schema.Json | undefined) =>
+  value !== undefined && !isList(value) && isObject(value) && !isFraction(value)
+    ? new Map(Object.entries(value))
+    : undefined;
 
 /**
  * Walks the committed file and what was measured side by side, field by field, so a number the
@@ -68,16 +63,18 @@ const compare = (
   measured: Schema.Json | undefined,
   path: ReadonlyArray<string>,
 ): ReadonlyArray<Difference> => {
-  if (isRecord(baseline) && isRecord(measured) && isObject(baseline) && isObject(measured)) {
-    return [...new Set([...Object.keys(baseline), ...Object.keys(measured)])].flatMap((key) =>
-      compare(baseline[key], measured[key], [...path, key]),
+  const was = fieldsOf(baseline);
+  const is = fieldsOf(measured);
+
+  if (was !== undefined && is !== undefined) {
+    return [...new Set([...was.keys(), ...is.keys()])].flatMap((key) =>
+      compare(was.get(key), is.get(key), [...path, key]),
     );
   }
 
-  const was = describe(baseline);
-  const is = describe(measured);
-
-  return was === is ? [] : [{ number: path.join("."), baseline: was, measured: is }];
+  return describe(baseline) === describe(measured)
+    ? []
+    : [{ number: path.join("."), baseline: describe(baseline), measured: describe(measured) }];
 };
 
 /** The numbers that differ between the committed file and what was measured, as plain JSON. */

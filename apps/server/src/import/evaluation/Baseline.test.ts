@@ -34,7 +34,7 @@ describe("Baseline", () => {
         {
           number: "weekly.passingCases",
           baseline: '["cancellation"]',
-          measured: '["cancellation", "free-day"]',
+          measured: '["cancellation","free-day"]',
         },
       ],
     },
@@ -67,7 +67,7 @@ describe("Baseline", () => {
       expected: [
         {
           number: "weekly.views.student.recall",
-          baseline: "{right, of, rounded}",
+          baseline: '{"right":28,"of":28,"rounded":1}',
           measured: "28 of 28",
         },
       ],
@@ -88,6 +88,25 @@ describe("Baseline", () => {
       name: "an empty object more",
       committed: { ...measured, retired: {} },
       expected: [{ number: "retired", baseline: "{}", measured: "nothing" }],
+    },
+    {
+      name: "a list written as one text that reads like it",
+      committed: {
+        ...measured,
+        weekly: { ...measured.weekly, passingCases: ['cancellation", "free-day'] },
+      },
+      expected: [
+        {
+          number: "weekly.passingCases",
+          baseline: '["cancellation\\", \\"free-day"]',
+          measured: '["cancellation","free-day"]',
+        },
+      ],
+    },
+    {
+      name: "a field named like the prototype",
+      committed: { ...measured, ...Object.fromEntries([["__proto__", {}]]) },
+      expected: [{ number: "__proto__", baseline: "{}", measured: "nothing" }],
     },
   ])("finds $name", ({ committed, expected }) =>
     Effect.gen(function* () {
