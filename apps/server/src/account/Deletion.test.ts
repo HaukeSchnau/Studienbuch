@@ -13,6 +13,7 @@ import { Postgres18 } from "@stu/sync/testing";
 import * as Arr from "effect/Array";
 import * as ConfigProvider from "effect/ConfigProvider";
 import * as Context from "effect/Context";
+import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as Base64Url from "effect/encoding/Base64Url";
 import * as Fiber from "effect/Fiber";
@@ -29,7 +30,9 @@ import * as Redacted from "effect/Redacted";
 import * as RpcClient from "effect/rpc/RpcClient";
 import * as SqlClient from "effect/sql/SqlClient";
 import * as Stream from "effect/Stream";
+import { Pool } from "pg";
 import { Auth } from "../auth/Auth.ts";
+import { CardLogins } from "../auth/CardLogins.ts";
 import { Deletion } from "./Deletion.ts";
 import { DemoAccounts } from "../demo/DemoAccounts.ts";
 import { Seed } from "../demo/Seed.ts";
@@ -301,6 +304,92 @@ describe.skipIf(Postgres18.socket === null)("Account deletion on PostgreSQL 18",
               forged: false,
             },
           });
+        }),
+    );
+
+    // A card sign-in holds its login while Better Auth's own pool adds the session, and the
+    // account's deletion starts in between. The sign-in finishes, and the deletion ends its session
+    // too, with nothing of the account left.
+    it.effect(
+      "a card sign-in under way and a deletion both finish, and nothing of it remains",
+      () =>
+        Effect.gen(function* () {
+          const sql = yield* SqlClient.SqlClient;
+          const login = Base64Url.encode(new Uint8Array(32).fill(9));
+
+          const [database] = yield* sql<{
+            readonly name: string;
+          }>`select current_database() as name`;
+
+          // Better Auth's pool: a session insert of its own, outside the sign-in's transaction.
+          const pool = yield* Effect.acquireRelease(
+            Effect.sync(
+              () =>
+                new Pool({
+                  connectionString: `postgresql://postgres@localhost/${database?.name}?host=${encodeURIComponent(Postgres18.socket ?? "")}`,
+                  statement_timeout: 15_000,
+                }),
+            ),
+            (opened) => Effect.promise(() => opened.end()),
+          );
+
+          yield* sql`
+          insert into auth_user (id, name, email, "emailVerified")
+          values ('carded', '', 'carded@konto.placeholder.invalid', false)
+        `;
+
+          yield* sql`
+          insert into auth_account (id, "accountId", "providerId", "userId")
+          values ('carded-card', ${yield* CardLogins.digest(login)}, ${CardLogins.provider}, 'carded')
+        `;
+
+          const held = yield* Deferred.make<void>();
+          const release = yield* Deferred.make<void>();
+
+          const signingIn = yield* Effect.forkChild(
+            CardLogins.signingIn(login, (account) =>
+              Effect.gen(function* () {
+                yield* Deferred.succeed(held, undefined);
+                yield* Deferred.await(release);
+
+                yield* Effect.tryPromise(() =>
+                  pool.query(
+                    `insert into auth_session (id, "expiresAt", token, "userId")
+                   values ('carded-session', now() + interval '1 day', 'token-carded', $1)`,
+                    [account],
+                  ),
+                );
+              }),
+            ),
+          );
+
+          yield* Deferred.await(held);
+          const deleting = yield* Effect.forkChild(Deletion.run("carded"));
+
+          // The deletion runs to its end, or waits for the login the sign-in holds.
+          yield* Effect.raceFirst(
+            Effect.asVoid(Fiber.await(deleting)),
+            sql<{ readonly waiting: number }>`
+            select count(*)::int as waiting from pg_stat_activity
+            where datname = current_database() and wait_event_type = 'Lock'
+          `.pipe(Effect.repeat({ until: ([row]) => (row?.waiting ?? 0) > 0 }), Effect.asVoid),
+          );
+
+          yield* Deferred.succeed(release, undefined);
+
+          const finished = {
+            signIn: Option.isSome(
+              yield* Effect.timeoutOption(Fiber.await(signingIn), "10 seconds"),
+            ),
+            deletion: Option.isSome(
+              yield* Effect.timeoutOption(Fiber.await(deleting), "10 seconds"),
+            ),
+          };
+
+          expect({
+            finished,
+            left: yield* mentions(["carded", "carded@konto.placeholder.invalid", "token-carded"]),
+          }).toEqual({ finished: { signIn: true, deletion: true }, left: [] });
         }),
     );
 

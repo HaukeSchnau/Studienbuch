@@ -290,15 +290,13 @@ export const deleteAccount = runtime
   .fn<void>()((_, get) =>
     Effect.andThen(
       Effect.sync(() => get.set(deletionProblem, Option.none())),
-      Deletion.deleteAccount((accountId) =>
-        leaveDeleted(
-          accountId,
-          Effect.sync(() => get.set(OfferedPrf.waiting, Option.none())),
-        ),
-      ),
-    ).pipe(
-      Effect.tapError((problem) =>
-        Effect.sync(() => get.set(deletionProblem, Option.some(problem.reason))),
+      Deletion.deleteAccount(
+        (accountId) =>
+          leaveDeleted(
+            accountId,
+            Effect.sync(() => get.set(OfferedPrf.waiting, Option.none())),
+          ),
+        (reason) => Effect.sync(() => get.set(deletionProblem, Option.some(reason))),
       ),
     ),
   )

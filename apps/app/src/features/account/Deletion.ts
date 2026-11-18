@@ -36,11 +36,13 @@ export const sentence: Record<Reason, string> = {
 
 /**
  * Deletes the signed-in account on the server, then `leave`s it on this device by its id, which
- * acts only while the device still holds that account. Fails with "not-fresh" when the sign-in is
- * older than `Keys.freshSignInMinutes`.
+ * acts only while the device still holds that account. A failure goes to `report` only while the
+ * device still holds it too, so another account never sees it. Fails with "not-fresh" when the
+ * sign-in is older than `Keys.freshSignInMinutes`.
  */
-export const deleteAccount = Effect.fn("Deletion.deleteAccount")(function* <E, R>(
-  leave: (accountId: string) => Effect.Effect<void, E, R>,
+export const deleteAccount = Effect.fn("Deletion.deleteAccount")(function* <R>(
+  leave: (accountId: string) => Effect.Effect<void, Problem, R>,
+  report: (reason: Reason) => Effect.Effect<void>,
 ) {
   const store = yield* SessionStore.Service;
   const server = yield* DeletionServer.Service;
@@ -51,25 +53,36 @@ export const deleteAccount = Effect.fn("Deletion.deleteAccount")(function* <E, R
     return yield* new Problem({ reason: "signed-out" });
   }
 
-  yield* server.delete(token.value).pipe(
-    Effect.catchTags({
-      "DeletionServer.Unreachable": () => Effect.fail(new Problem({ reason: "offline" })),
-      "AccountDeletion.NotFresh": () => Effect.fail(new Problem({ reason: "not-fresh" })),
-      // The server deleted the account before, and its answer was lost or the device couldn't
-      // finish leaving: the session is gone because the account is, so the device leaves now.
-      "AccountDeletion.SignedOut": () =>
-        server.deleted(token.value).pipe(
-          Effect.catchTags({
-            "DeletionServer.Unreachable": () => Effect.fail(new Problem({ reason: "offline" })),
-          }),
-          Effect.flatMap((deleted) =>
-            deleted ? Effect.void : Effect.fail(new Problem({ reason: "signed-out" })),
-          ),
-        ),
-    }),
-  );
+  const { accountId } = current.value;
 
-  yield* leave(current.value.accountId);
+  yield* Effect.andThen(
+    server.delete(token.value).pipe(
+      Effect.catchTags({
+        "DeletionServer.Unreachable": () => Effect.fail(new Problem({ reason: "offline" })),
+        "AccountDeletion.NotFresh": () => Effect.fail(new Problem({ reason: "not-fresh" })),
+        // The server deleted the account before, and its answer was lost or the device couldn't
+        // finish leaving: the session is gone because the account is, so the device leaves now.
+        "AccountDeletion.SignedOut": () =>
+          server.deleted(token.value).pipe(
+            Effect.catchTags({
+              "DeletionServer.Unreachable": () => Effect.fail(new Problem({ reason: "offline" })),
+            }),
+            Effect.flatMap((deleted) =>
+              deleted ? Effect.void : Effect.fail(new Problem({ reason: "signed-out" })),
+            ),
+          ),
+      }),
+    ),
+    leave(accountId),
+  ).pipe(
+    Effect.tapError((problem) =>
+      Effect.flatMap(store.current, (now) =>
+        Option.exists(now, (signed) => signed.accountId === accountId)
+          ? report(problem.reason)
+          : Effect.void,
+      ),
+    ),
+  );
 });
 
 /** An account whose session ended, and the token it ended with, if this run still knows it. */
@@ -97,7 +110,7 @@ const endedOf = (
     }),
   );
 
-/** A server that can't be reached is asked again, at most every five minutes. */
+/** A server that can't be reached, or a keychain that refuses, is asked again, at most every five minutes. */
 const askAgain = Schedule.min([Schedule.exponential("2 seconds"), Schedule.spaced("5 minutes")]);
 
 /**
@@ -122,7 +135,9 @@ export const forgetWhenDeleted = Effect.fn("Deletion.forgetWhenDeleted")(functio
 
   const check = Effect.fn("Deletion.check")(
     function* ({ accountId, token }: Ended) {
-      const asked = Option.isSome(token) ? token : yield* stored(accountId);
+      const asked = Option.isSome(token)
+        ? token
+        : yield* stored(accountId).pipe(Effect.retry({ schedule: askAgain }));
 
       if (Option.isNone(asked)) return;
 

@@ -14,6 +14,7 @@ import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import { CardLogins } from "../auth/CardLogins.ts";
+import { AccountLock } from "../account/AccountLock.ts";
 import { FreshSignIn } from "../auth/FreshSignIn.ts";
 
 export * as KeyStore from "./KeyStore.ts";
@@ -298,6 +299,8 @@ export const publishFirst = Effect.fn("KeyStore.publishFirst")(function* (
     }
   }
 
+  if (!(yield* AccountLock.hold(account))) return yield* new Keys.SignedOut();
+
   const [held] = yield* sql`
     select 1 from account_key where account_id = ${account} and generation = 0
   `;
@@ -345,7 +348,10 @@ const records = Effect.fn("KeyStore.records")(function* (account: string) {
   return yield* Effect.forEach(rows, (row) => decodeRecord(row.record));
 });
 
-/** The account's newest key record, locked until the transaction ends, so key changes queue. */
+/**
+ * The account's newest key record, locked until the transaction ends, so key changes queue. Taken
+ * after `AccountLock.hold`, in the account lock's order.
+ */
 const lockNewest = Effect.fn("KeyStore.lockNewest")(function* (account: string) {
   const sql = yield* SqlClient.SqlClient;
 
@@ -416,6 +422,8 @@ export const addWrapper = Effect.fn("KeyStore.addWrapper")(function* (
 
   return yield* sql.withTransaction(
     Effect.gen(function* () {
+      if (!(yield* AccountLock.hold(account))) return yield* new Keys.SignedOut();
+
       if (
         statement.kind !== Wrapper.kindByte.device &&
         !(yield* FreshSignIn.isFresh(account, session))
@@ -475,6 +483,8 @@ export const fetchSeals = Effect.fn("KeyStore.fetchSeals")(function* (
 
   return yield* sql.withTransaction(
     Effect.gen(function* () {
+      if (!(yield* AccountLock.hold(account))) return yield* new Keys.SignedOut();
+
       const newest = yield* lockNewest(account);
 
       if (Option.isNone(newest)) return new Keys.Seals({ records: [], wrappers: [] });

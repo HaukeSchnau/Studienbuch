@@ -18,6 +18,7 @@ import * as Redacted from "effect/Redacted";
 import * as Result from "effect/Result";
 import * as SqlClient from "effect/sql/SqlClient";
 import { FreshSignIn } from "../auth/FreshSignIn.ts";
+import { AccountLock } from "./AccountLock.ts";
 
 export * as Deletion from "./Deletion.ts";
 
@@ -40,11 +41,10 @@ const codeTypes = ["email-verification", "sign-in", "forget-password", "change-e
 const deleteRows = Effect.fn("Deletion.deleteRows")(function* (account: string) {
   const sql = yield* SqlClient.SqlClient;
 
-  const [user] = yield* sql<{ readonly email: string }>`
-        select email from auth_user where id = ${account} for update
-      `;
+  const address = yield* AccountLock.take(account);
 
-  if (user === undefined) return [];
+  if (Option.isNone(address)) return [];
+  const email = address.value;
 
   const notebooks = yield* sql<{ readonly id: string }>`
         select notebook_id as id from school_access where account_id = ${account}
@@ -75,11 +75,11 @@ const deleteRows = Effect.fn("Deletion.deleteRows")(function* (account: string) 
   // carry the account's id.
   yield* sql`
         delete from auth_verification
-        where identifier = any(${codeTypes.map((type) => `${type}-otp-${user.email}`)})
+        where identifier = any(${codeTypes.map((type) => `${type}-otp-${email}`)})
           or strpos(value, ${account}) > 0
       `;
   // Only development and preview keep mail.
-  yield* sql`delete from captured_mail where lower("to") = ${user.email.toLowerCase()}`;
+  yield* sql`delete from captured_mail where lower("to") = ${email.toLowerCase()}`;
   // Cascades to its passwords, passkeys, key records, wrappers with their seals, recovery
   // events, sign-ups and demo row.
   yield* sql`delete from auth_user where id = ${account}`;
@@ -103,18 +103,15 @@ export const run = Effect.fn("Deletion.run")(function* <E = never, R = never>(
 });
 
 /**
- * The sync engine's `Ports.Accounts`: the other half of `run`'s lock on the account's row, so a
- * command waits for a deletion under way and finds the account gone after it.
+ * The sync engine's `Ports.Accounts`: `AccountLock.hold`, so a command waits for a deletion under
+ * way and finds the account gone after it.
  */
 export const accounts = Layer.effect(
   Ports.Accounts,
   Effect.map(SqlClient.SqlClient, (sql) =>
     Ports.Accounts.of({
       hold: (account) =>
-        Effect.map(
-          sql`select 1 from auth_user where id = ${account} for share`,
-          (rows) => rows.length > 0,
-        ),
+        AccountLock.hold(account).pipe(Effect.provideService(SqlClient.SqlClient, sql)),
     }),
   ),
 );

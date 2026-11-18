@@ -1,6 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
 import { AccountDeletion } from "@stu/api/AccountDeletion";
 import { Ports } from "@stu/sync/client";
+import * as Context from "effect/Context";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as Fiber from "effect/Fiber";
@@ -17,15 +18,41 @@ import { layer as signUpStore } from "../../infra/auth/signUpStore.ts";
 import { SessionStore } from "../../infra/auth/SessionStore.ts";
 import { Device } from "../../infra/device/Device.ts";
 import { DeviceSessions } from "../../infra/keychain/DeviceSessions.ts";
+import { Keychain } from "../../infra/keychain/Keychain.ts";
 import { MemoryKeychain } from "../../infra/keychain/MemoryKeychain.ts";
 import { Account } from "./Account.ts";
 import { Deletion } from "./Deletion.ts";
 import { DeletionServer } from "./DeletionServer.ts";
 
+/** Arms the device's keychain to refuse its next read of the stored sessions. */
+class Refuse extends Context.Service<Refuse, Ref.Ref<boolean>>()("Test.Refuse") {}
+
+const keychain = Layer.effect(Keychain.Store)(
+  Effect.gen(function* () {
+    const store = yield* Keychain.Store;
+    const refuse = yield* Refuse;
+
+    return Keychain.Store.of({
+      ...store,
+      get: (name) =>
+        name.startsWith("sessions.")
+          ? Effect.flatMap(Ref.getAndSet(refuse, false), (now) =>
+              now
+                ? Effect.fail(new Keychain.Unavailable({ operation: "get", cause: "locked" }))
+                : store.get(name),
+            )
+          : store.get(name),
+    });
+  }),
+).pipe(
+  Layer.provide(MemoryKeychain.layer()),
+  Layer.provideMerge(Layer.effect(Refuse)(Ref.make(false))),
+);
+
 /** One device, signed out, with nothing kept from before. */
 const device = Layer.mergeAll(SessionStore.layer, Account.confirmations).pipe(
   Layer.provideMerge(Layer.mergeAll(DeviceSessions.layer, signUpStore)),
-  Layer.provideMerge(MemoryKeychain.layer()),
+  Layer.provideMerge(keychain),
   Layer.provideMerge(Device.layer({ name: "phone" })),
   Layer.provideMerge(Layer.succeed(Ports.Server)({ origin: new URL("https://one.example") })),
   Layer.provideMerge(AuthApiTesting.layer({ signOut: () => Effect.void })),
@@ -59,10 +86,12 @@ const signIn = (accountId: string, token: string) =>
 
 /**
  * The accounts the device was told to leave, and `leave`, which acts as the app's does: it forgets
- * the account only while the device still holds it (`AccountEngine.forgetIfHeld`).
+ * the account only while the device still holds it (`AccountEngine.forgetIfHeld`). `report` keeps
+ * the reasons a deletion reported in `reported`.
  */
 const leaving = Effect.gen(function* () {
   const left = yield* Ref.make<ReadonlyArray<string>>([]);
+  const reported = yield* Ref.make<ReadonlyArray<Deletion.Reason>>([]);
 
   const leave = (accountId: string) =>
     Effect.gen(function* () {
@@ -70,11 +99,14 @@ const leaving = Effect.gen(function* () {
       yield* Ref.update(left, (accounts) => [...accounts, accountId]);
 
       if (Option.exists(yield* store.current, (signed) => signed.accountId === accountId)) {
-        yield* store.forget;
+        yield* Effect.orDie(store.forget);
       }
     });
 
-  return { left, leave };
+  const report = (reason: Deletion.Reason) =>
+    Ref.update(reported, (reasons) => [...reasons, reason]);
+
+  return { left, leave, reported, report };
 });
 
 const holder = Effect.flatMap(SessionStore.Service, (store) =>
@@ -135,9 +167,12 @@ describe("Deletion", () => {
 
         yield* signIn("lena", "token-stored");
         yield* store.ended;
+        // The keychain still refuses the watcher's first read, as before the first unlock.
+        yield* Ref.set(yield* Refuse, true);
 
         yield* Effect.gen(function* () {
           yield* Effect.forkChild(Deletion.forgetWhenDeleted(leave), { startImmediately: true });
+          yield* TestClock.adjust("2 seconds");
           const question = yield* Queue.take(asked);
           yield* Stream.runHead(Stream.filter(store.changes, Option.isNone));
 
@@ -192,7 +227,7 @@ describe("Deletion", () => {
       Effect.gen(function* () {
         const store = yield* SessionStore.Service;
         const asked = yield* Queue.unbounded<string>();
-        const { left, leave } = yield* leaving;
+        const { left, leave, report } = yield* leaving;
         const deleting = yield* Deferred.make<void>();
         const answer = yield* Deferred.make<void>();
 
@@ -205,7 +240,7 @@ describe("Deletion", () => {
         yield* Effect.gen(function* () {
           yield* Effect.forkChild(Deletion.forgetWhenDeleted(leave), { startImmediately: true });
           yield* signIn("lena", "token-lena");
-          const deletion = yield* Effect.forkChild(Deletion.deleteAccount(leave));
+          const deletion = yield* Effect.forkChild(Deletion.deleteAccount(leave, report));
           yield* Deferred.await(deleting);
 
           // Her session ends too, and the watcher's question waits for the same slow server.
@@ -225,13 +260,59 @@ describe("Deletion", () => {
       }).pipe(Effect.provide(device)),
   );
 
+  // Lena's deletion waits for a server that then can't be reached; meanwhile Tom signs in on the
+  // phone. The failure is Lena's, so Tom's screen shows nothing of it.
+  it.effect("a deletion that fails after another account signed in reports nothing to it", () =>
+    Effect.gen(function* () {
+      const store = yield* SessionStore.Service;
+      const asked = yield* Queue.unbounded<string>();
+      const { leave, reported, report } = yield* leaving;
+      const deleting = yield* Deferred.make<void>();
+      const answer = yield* Deferred.make<void>();
+
+      const unreachable = Effect.fail(new DeletionServer.Unreachable());
+
+      const slow = server(new Set(), asked, {
+        delete: () =>
+          Effect.andThen(
+            Effect.andThen(Deferred.succeed(deleting, undefined), Deferred.await(answer)),
+            unreachable,
+          ),
+      });
+
+      yield* Effect.gen(function* () {
+        yield* signIn("lena", "token-lena");
+
+        const deletion = yield* Effect.forkChild(
+          Effect.flip(Deletion.deleteAccount(leave, report)),
+        );
+
+        yield* Deferred.await(deleting);
+        yield* store.forget;
+        yield* signIn("tom", "token-tom");
+        yield* Deferred.succeed(answer, undefined);
+        const lenas = yield* Fiber.join(deletion);
+        const forTom = yield* Ref.get(reported);
+
+        const toms = yield* Effect.flip(Deletion.deleteAccount(leave, report));
+
+        expect({
+          lenas: lenas.reason,
+          forTom,
+          toms: toms.reason,
+          after: yield* Ref.get(reported),
+        }).toEqual({ lenas: "offline", forTom: [], toms: "offline", after: ["offline"] });
+      }).pipe(Effect.provide(slow));
+    }).pipe(Effect.provide(device)),
+  );
+
   it.effect(
     "deleting here leaves the device signed out, though the server also ends this device's session",
     () =>
       Effect.gen(function* () {
         const store = yield* SessionStore.Service;
         const asked = yield* Queue.unbounded<string>();
-        const { left, leave } = yield* leaving;
+        const { left, leave, report } = yield* leaving;
 
         // As the engine reports a closed connection, while the deletion's answer is on its way. The
         // watcher's question about the ended session stops once Lena no longer holds the device.
@@ -240,7 +321,7 @@ describe("Deletion", () => {
         yield* Effect.gen(function* () {
           yield* Effect.forkChild(Deletion.forgetWhenDeleted(leave), { startImmediately: true });
           yield* signIn("lena", "token-phone");
-          yield* Deletion.deleteAccount(leave);
+          yield* Deletion.deleteAccount(leave, report);
 
           expect({
             left: [...new Set(yield* Ref.get(left))],
@@ -260,11 +341,11 @@ describe("Deletion", () => {
     () =>
       Effect.gen(function* () {
         const asked = yield* Queue.unbounded<string>();
-        const { left, leave } = yield* leaving;
+        const { left, leave, report } = yield* leaving;
         const signedOut = { delete: () => Effect.fail(new AccountDeletion.SignedOut()) };
 
         yield* signIn("lena", "token-gone");
-        yield* Deletion.deleteAccount(leave).pipe(
+        yield* Deletion.deleteAccount(leave, report).pipe(
           Effect.provide(server(new Set(["token-gone"]), asked, signedOut)),
         );
         const afterLostAnswer = yield* Ref.get(left);
@@ -272,7 +353,9 @@ describe("Deletion", () => {
         yield* signIn("tom", "token-expired");
 
         const expired = yield* Effect.flip(
-          Deletion.deleteAccount(leave).pipe(Effect.provide(server(new Set(), asked, signedOut))),
+          Deletion.deleteAccount(leave, report).pipe(
+            Effect.provide(server(new Set(), asked, signedOut)),
+          ),
         );
 
         expect({
@@ -286,12 +369,12 @@ describe("Deletion", () => {
   it.effect("a stale sign-in and no connection delete nothing and forget nothing", () =>
     Effect.gen(function* () {
       const asked = yield* Queue.unbounded<string>();
-      const { left, leave } = yield* leaving;
+      const { left, leave, report } = yield* leaving;
       yield* signIn("lena", "token-phone");
 
       const refusals = yield* Effect.all([
         Effect.flip(
-          Deletion.deleteAccount(leave).pipe(
+          Deletion.deleteAccount(leave, report).pipe(
             Effect.provide(
               server(new Set(), asked, {
                 delete: () => Effect.fail(new AccountDeletion.NotFresh()),
@@ -300,7 +383,7 @@ describe("Deletion", () => {
           ),
         ),
         Effect.flip(
-          Deletion.deleteAccount(leave).pipe(
+          Deletion.deleteAccount(leave, report).pipe(
             Effect.provide(
               server(new Set(), asked, {
                 delete: () => Effect.fail(new DeletionServer.Unreachable()),
