@@ -18,7 +18,7 @@ import * as SubscriptionRef from "effect/SubscriptionRef";
 import { AuthApi } from "../../infra/auth/AuthApi.ts";
 import { PendingSignUp } from "../../infra/auth/PendingSignUp.ts";
 import { SessionStore } from "../../infra/auth/SessionStore.ts";
-import type { Keychain } from "../../infra/keychain/Keychain.ts";
+import { Keychain } from "../../infra/keychain/Keychain.ts";
 import { Passkeys } from "../../infra/passkeys/Passkeys.ts";
 import { Forgetting } from "../../infra/runtime/Forgetting.ts";
 import { NotebookKeys } from "../keys/NotebookKeys.ts";
@@ -479,10 +479,7 @@ export const leave = Effect.fn("Account.leave")(function* (email: string, public
   }).pipe(Semaphore.withPermit(guard));
 });
 
-/**
- * The Notfallkarte of a new account without an address, handed to `offer` before the device
- * keeps the session, so the card step is there as soon as the account is.
- */
+/** The Notfallkarte of a new account without an address, which the card step shows. */
 export interface NewCard {
   readonly accountId: string;
   readonly code: Redacted.Redacted<Uint8Array>;
@@ -490,17 +487,38 @@ export interface NewCard {
   readonly withPasskey: boolean;
 }
 
+/** Hands a new account's card over in memory, or takes it back (`Offered.newCard`). */
 type Offer = (card: Option.Option<NewCard>) => Effect.Effect<void>;
 
-/** Keeps the session of a new account without an address, after `offer` got its card. */
+/**
+ * Keeps the session of a new account without an address, with its card where the card step finds
+ * it. A device that keeps its session writes the card to the account's secrets first, so no
+ * restart finds the account signed in without its card. A public computer keeps both in memory,
+ * and gets the card through `offer`, as does a device whose keychain refuses.
+ */
 const keepWithCard = Effect.fn("Account.keepWithCard")(function* (
   signedIn: AuthApi.SignedIn,
   card: NewCard,
   publicComputer: boolean,
   offer: Offer,
 ) {
-  yield* offer(Option.some(card));
-  yield* keep(signedIn, publicComputer).pipe(Effect.onError(() => offer(Option.none())));
+  const secrets = Keychain.accountSecrets(card.accountId);
+
+  const written =
+    !publicComputer &&
+    (yield* NotebookKeys.holdCard(card.code, card.withPasskey).pipe(
+      Effect.provide(secrets),
+      Effect.as(true),
+      Effect.orElseSucceed(() => false),
+    ));
+
+  if (!written) yield* offer(Option.some(card));
+
+  const takeBack = written
+    ? Effect.ignore(Effect.provide(NotebookKeys.releaseCard, secrets))
+    : offer(Option.none());
+
+  yield* keep(signedIn, publicComputer).pipe(Effect.onError(() => takeBack));
 });
 
 /**

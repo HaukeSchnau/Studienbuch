@@ -114,21 +114,23 @@ it.effect("signs up without an address, signs out, and signs in by card to the s
       Option.map((bytes) => [...bytes].join(",")),
     );
 
-    // "Konto anlegen" on a computer without passkeys, then "Deine Notfallkarte".
+    // "Konto anlegen" on a computer without passkeys, then "Deine Notfallkarte". The device keeps
+    // the card in the account's secrets before it keeps the session, so nothing is offered.
     yield* onDevice(Account.signUpWithCard(reservation, false, (card) => Ref.set(offered, card)));
 
-    const card = yield* Effect.fromOption(yield* Ref.get(offered));
     const first = engine();
 
+    // The key status starts the notebook and reconciles it. The student never presses "Ich habe
+    // ihn aufgeschrieben": this device goes before that.
     const before = yield* first.run(
       Effect.gen(function* () {
-        yield* NotebookKeys.holdCard(card.code, card.withPasskey);
         const started = yield* NotebookKeys.status;
-        yield* NotebookKeys.addCardWrapper(card.code);
+        yield* NotebookKeys.reconcile;
 
         return {
           started: started._tag,
           held: Option.isSome(yield* NotebookKeys.heldCard),
+          offered: Option.isSome(yield* Ref.get(offered)),
           rootKey: yield* rootKey,
         };
       }),
@@ -168,12 +170,12 @@ it.effect("signs up without an address, signs out, and signs in by card to the s
 
     assert.deepStrictEqual(
       {
-        before: { started: before.started, held: before.held },
+        before: { started: before.started, held: before.held, offered: before.offered },
         after,
         signedIn: signedIn.accountId,
       },
       {
-        before: { started: "Unlocked", held: true },
+        before: { started: "Unlocked", held: true, offered: false },
         after: {
           found: "Locked",
           left: { held: false, rootKey: Option.none() },

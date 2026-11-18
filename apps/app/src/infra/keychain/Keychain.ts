@@ -7,6 +7,9 @@ import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 
+import { Device } from "../device/Device.ts";
+import { Names } from "../device/Names.ts";
+
 /**
  * Secrets that never leave this device, as text under a name: the iOS keychain and Android's
  * Keystore-backed storage, IndexedDB under a non-extractable key in a browser, or memory on a
@@ -98,6 +101,20 @@ export const secrets = (namespace: string) =>
           store.set(entry(secret), Base64.encode(value)).pipe(Effect.mapError(unavailable(secret))),
         remove: (secret) => store.remove(entry(secret)).pipe(Effect.mapError(unavailable(secret))),
       };
+    }),
+  );
+
+/**
+ * An account's secrets on this device and server, where its engine keeps them. A sign-up writes a
+ * new account's Notfallkarte here before the device keeps the session.
+ */
+export const accountSecrets = (accountId: string) =>
+  Layer.unwrap(
+    Effect.gen(function* () {
+      const device = yield* Device.Service;
+      const server = yield* Ports.Server;
+
+      return secrets(Names.secrets(server.origin, device.name, accountId));
     }),
   );
 

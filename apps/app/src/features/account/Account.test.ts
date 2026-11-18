@@ -413,12 +413,32 @@ describe("Account", () => {
 
         const signUp = Account.signUpWithCard(soon, false, offer);
 
+        /** The card a sign-up left in the signed-in account's secrets on this device. */
+        const keptCard = Effect.flatMap(
+          SessionStore.Service.use((each) => each.current),
+          (signed) =>
+            Option.match(signed, {
+              onNone: () => Effect.succeedNone,
+              onSome: ({ accountId }) =>
+                Effect.provide(NotebookKeys.heldCard, Keychain.accountSecrets(accountId)),
+            }),
+        );
+
         // The answer is lost, and the student presses "Notfallkarte erstellen" again.
-        const [lost, holder] = yield* phoneRun(
+        const [lost, holder, kept] = yield* phoneRun(
           Effect.all([
             Effect.tap(reason(signUp), () => signUp),
             SessionStore.Service.use((each) => each.current),
+            keptCard,
           ]),
+          api,
+        );
+
+        // A public computer keeps nothing on disk, so its card goes through memory.
+        const kioskRun = yield* restarts;
+
+        const publicKept = yield* kioskRun(
+          Effect.andThen(Account.signUpWithCard(later, true, offer), keptCard),
           api,
         );
 
@@ -438,12 +458,18 @@ describe("Account", () => {
         );
 
         const [first, retry] = yield* Ref.get(sent);
-        const cardLogin = Effect.forEach(cards, (card) => NotebookKeys.cardLogin(card.code));
+
+        const keptLogin = Option.match(kept, {
+          onNone: () => Effect.succeed(""),
+          onSome: (card) => Effect.map(NotebookKeys.cardLogin(card.code), Redacted.value),
+        });
 
         assert.deepStrictEqual(
           {
             lost,
             retriedWithSameLogin: first !== undefined && first === retry,
+            kept: Option.map(kept, (card) => card.withPasskey),
+            publicKept: Option.isSome(publicKept),
             offered: cards.map((card) => card.withPasskey),
             holder: Option.map(holder, (signed) => signed.accountId),
             laptop,
@@ -452,8 +478,11 @@ describe("Account", () => {
           {
             lost: "offline",
             retriedWithSameLogin: true,
+            kept: Option.some(false),
+            publicKept: false,
+            // Only the public computer's card.
             offered: [false],
-            holder: Option.some(`noa-${(yield* cardLogin).map(Redacted.value).join("")}`),
+            holder: Option.some(`noa-${yield* keptLogin}`),
             laptop: { typo: "typo", short: "length", unknown: "unknown-card", typed: "mia" },
             // The typo and the short code never left the device.
             signIns: 2,
