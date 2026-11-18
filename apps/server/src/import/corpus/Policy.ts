@@ -631,9 +631,23 @@ export const store: Handlers = {
 
     if (leaf._tag === "Constant") return Result.succeed(leaf.value);
 
-    if (leaf._tag !== "PersonName" || leaf.kind === "T" || value === null) {
-      return Result.succeed(value);
+    // Each leaf keeps only the kind of value its rule is for, as the corpus does, so an object
+    // under a text field can't carry a name past the rules.
+    if (value === null) return Result.succeed(value);
+
+    if (leaf._tag === "Keep") {
+      return isObject(value) || Array.isArray(value)
+        ? Result.fail("expected a plain value")
+        : Result.succeed(value);
     }
+
+    if (leaf._tag === "PersonId") {
+      return Predicate.isNumber(value) ? Result.succeed(value) : Result.fail("expected an id");
+    }
+
+    if (!Predicate.isString(value)) return Result.fail("expected text");
+
+    if (leaf._tag !== "PersonName" || leaf.kind === "T") return Result.succeed(value);
 
     const id = leaf.by === "id" ? ancestors[0]?.id : undefined;
     const name = placeholders[leaf.kind];

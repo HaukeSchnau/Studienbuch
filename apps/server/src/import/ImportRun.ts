@@ -108,6 +108,7 @@ export const Report = Schema.Struct({
 export type Report = typeof Report.Type;
 
 const encodeReport = Schema.encodeEffect(Schema.fromJsonString(Report));
+const decodeOutcome = Schema.decodeUnknownEffect(Outcome);
 
 const emptyReport: Report = {
   reads: {},
@@ -146,6 +147,12 @@ class Superseded extends Schema.TaggedError<Superseded, { readonly brand: unique
   "ImportRun.Superseded",
   {},
 ) {}
+
+/** WebUntis answered a timetable with errors, so it may lack lessons it didn't say it lacks. */
+class AnsweredWithErrors extends Schema.TaggedError<
+  AnsweredWithErrors,
+  { readonly brand: unique symbol }
+>()("ImportRun.AnsweredWithErrors", {}) {}
 
 /** A read that failed, so the snapshot is incomplete. */
 class ReadFailed extends Schema.TaggedError<ReadFailed, { readonly brand: unique symbol }>()(
@@ -350,12 +357,19 @@ const readSnapshot = Effect.fn("ImportRun.readSnapshot")(function* (input: {
             { raw: true },
           )
           .pipe(
-            Effect.flatMap(([answer]): Effect.Effect<unknown, ReadFailed | WebUntisError> =>
-              answer === undefined
-                ? Effect.fail(new ReadFailed())
-                : Result.isFailure(answer.result)
-                  ? Effect.fail(answer.result.failure)
-                  : Effect.succeed(answer.raw),
+            Effect.flatMap(
+              ([answer]): Effect.Effect<
+                unknown,
+                ReadFailed | AnsweredWithErrors | WebUntisError
+              > => {
+                if (answer === undefined) return Effect.fail(new ReadFailed());
+
+                if (Result.isFailure(answer.result)) return Effect.fail(answer.result.failure);
+
+                return answer.result.success.errors.length > 0
+                  ? Effect.fail(new AnsweredWithErrors())
+                  : Effect.succeed(answer.raw);
+              },
             ),
           ),
         decodeJson,
@@ -437,6 +451,10 @@ const statusOf = (
     : Option.none();
 };
 
+/**
+ * Records the run's outcome once, and returns the one recorded: a publish whose commit completed
+ * while its deadline interrupted it stays published.
+ */
 const finish = Effect.fn("ImportRun.finish")(function* (
   run: string,
   outcome: Outcome,
@@ -445,12 +463,20 @@ const finish = Effect.fn("ImportRun.finish")(function* (
 ) {
   const sql = yield* SqlClient.SqlClient;
 
-  yield* sql`
+  const [row] = yield* sql<{ readonly outcome: string }>`
+    with finished as (
       update import_run
       set outcome = ${outcome}, ended_at = ${DateTime.toDateUtc(yield* DateTime.now)},
         sent = ${sent}, report = ${yield* encodeReport(report)}::jsonb
-      where id = ${run}::uuid
-    `;
+      where id = ${run}::uuid and outcome is null
+      returning outcome
+    )
+    select outcome from finished
+    union all
+    select outcome from import_run where id = ${run}::uuid and not exists (select 1 from finished)
+  `;
+
+  return yield* decodeOutcome(row?.outcome ?? outcome);
 }, Effect.orDie);
 
 /** The run after it holds the lease and its requests. */
@@ -476,7 +502,12 @@ const leased = Effect.fn("ImportRun.leased")(function* (
   const now = yield* DateTime.now;
   const window = Plan.window(profile.school, now);
   const today = CivilTime.format(window.start);
-  const known = Option.getOrElse(previous, () => SchoolImport.empty);
+  // Lessons before today never change, so neither the import nor the publish sees them.
+
+  const known = identity(
+    Option.getOrElse(previous, () => SchoolImport.empty),
+    today,
+  );
 
   const snapshot = yield* WebUntisClient.use((client) =>
     readSnapshot({ client, admit: requests.admit, profile, previous: known, window }),
@@ -542,7 +573,13 @@ const leased = Effect.fn("ImportRun.leased")(function* (
   );
 
   const result = yield* SchoolImport.Service.use((service) =>
-    service.run({ profile, now, window, previous, nightly: options.nightly }),
+    service.run({
+      profile,
+      now,
+      window,
+      previous: Option.map(previous, () => known),
+      nightly: options.nightly,
+    }),
   ).pipe(
     Effect.provide(
       NaiveImport.layer.pipe(Layer.provide(Layer.succeed(WebUntisClient)(recorded.client))),
@@ -557,7 +594,7 @@ const leased = Effect.fn("ImportRun.leased")(function* (
     today: window.start,
   });
 
-  const next = identity(SchoolImport.apply(known, result), today);
+  const next = { ...projection.state, diagnostics: [] };
   const log = yield* recorded.log;
 
   yield* Ref.update(report, (current) => ({
@@ -572,7 +609,7 @@ const leased = Effect.fn("ImportRun.leased")(function* (
   const pendingJson = yield* encodePending(projection.pending);
   const outcome: Outcome = profile.publish ? "Published" : "Dark";
 
-  yield* sql.withTransaction(
+  return yield* sql.withTransaction(
     Effect.gen(function* () {
       // The checkpoint's row stays locked until the commit, so no other run's lands in between.
       const [moved] = yield* sql`
@@ -581,6 +618,7 @@ const leased = Effect.fn("ImportRun.leased")(function* (
           previous = ${nextJson}::jsonb, pending = ${pendingJson}::jsonb
         where school_id = ${school} and revision = ${lease.revision}
           and lease_owner = ${lease.owner}::uuid
+          and lease_until > ${DateTime.toDateUtc(yield* DateTime.now)}
         returning 1
       `;
 
@@ -602,11 +640,9 @@ const leased = Effect.fn("ImportRun.leased")(function* (
         yield* Ref.update(report, (current) => ({ ...current, rows }));
       }
 
-      yield* finish(run, outcome, yield* requests.sent, yield* Ref.get(report));
+      return yield* finish(run, outcome, yield* requests.sent, yield* Ref.get(report));
     }),
   );
-
-  return outcome;
 });
 
 /**
@@ -646,7 +682,7 @@ export const run = Effect.fn("ImportRun.run")(function* (options: Options) {
 
     const requests = yield* dispatch(options.maximum, lease.until);
     const report = yield* Ref.make(emptyReport);
-    const remaining = DateTime.distance(startedAt, lease.until);
+    const remaining = DateTime.distance(yield* DateTime.now, lease.until);
 
     const exit = yield* Effect.exit(
       leased(options, lease, reservation.id, requests, report).pipe(
@@ -673,11 +709,9 @@ export const run = Effect.fn("ImportRun.run")(function* (options: Options) {
         ? { ...final, failure: Option.match(error, { onNone: () => "Defect", onSome: tagOf }) }
         : final;
 
-    // A run that published wrote its row in the same transaction.
-    if (outcome !== "Published" && outcome !== "Dark") {
-      yield* finish(reservation.id, outcome, yield* requests.sent, recorded);
-    }
+    // A run that published wrote its row in the same transaction, and that outcome stands.
+    const settled = yield* finish(reservation.id, outcome, yield* requests.sent, recorded);
 
-    return { outcome, run: Option.some(reservation.id), report: recorded } satisfies Ran;
+    return { outcome: settled, run: Option.some(reservation.id), report: recorded } satisfies Ran;
   }).pipe(Effect.ensuring(Lease.release(school, lease.owner)));
 });

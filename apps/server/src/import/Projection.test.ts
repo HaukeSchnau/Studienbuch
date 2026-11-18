@@ -280,6 +280,13 @@ describe("Projection", () => {
         waiting: [],
       },
       {
+        name: "a joint lesson waits when one of its entries moved and the other is gone",
+        previous: [lesson("eight", "ma-11", "2026-11-03", 8, [11, 12])],
+        result: [ten([11])],
+        removed: false,
+        waiting: ["eight"],
+      },
+      {
         name: "a lesson WebUntis renumbered waits for the next snapshot",
         previous: [eight],
         result: [ten([12])],

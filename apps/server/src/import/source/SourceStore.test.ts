@@ -1,10 +1,14 @@
-import { describe, expect, layer } from "@effect/vitest";
+import { assert, describe, expect, it, layer } from "@effect/vitest";
 import { School } from "@stu/core";
 import { Postgres18 } from "@stu/sync/testing";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
+import * as Result from "effect/Result";
 import * as SqlClient from "effect/sql/SqlClient";
+import { RecordedWebUntis } from "../../infra/webuntis/RecordedWebUntis.ts";
 import { SchoolTesting } from "../../school/SchoolTesting.ts";
+import { NamedSchoolTesting } from "../corpus/NamedSchoolTesting.ts";
+import { TinySchool } from "../evaluation/TinySchool.ts";
 import { SourceStore } from "./SourceStore.ts";
 
 const at = (iso: string) => DateTime.makeUnsafe(iso);
@@ -81,5 +85,20 @@ describe.skipIf(Postgres18.socket === null)("SourceStore on PostgreSQL 18", () =
         });
       }),
     );
+  });
+});
+
+describe("SourceStore", () => {
+  it("refuses a field that holds another kind of value than its rule is for", () => {
+    const path = RecordedWebUntis.paths.entries(10, "CLASS", 111);
+    const range = { start: "2026-11-02", end: "2026-11-02" };
+
+    const planted = NamedSchoolTesting.planted(TinySchool.corpus, path, (body) => {
+      NamedSchoolTesting.firstEntry(body).statusDetail = { student: { displayName: "Schüler 9" } };
+    });
+
+    const body = planted.reads.get(path)?.versions[0]?.body ?? null;
+
+    assert.isTrue(Result.isFailure(SourceStore.sanitize({ path, range, body })));
   });
 });

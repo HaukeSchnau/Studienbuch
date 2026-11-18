@@ -54,6 +54,8 @@ export interface Input {
 }
 
 export interface Projection {
+  /** What the import knows once `result` lands on `previous`, as `SchoolImport.apply` makes it. */
+  readonly state: SchoolImport.ImportResult;
   readonly data: Schools.Data;
   readonly removals: Schools.Removals;
   /** What waits for the next snapshot, for the checkpoint. */
@@ -129,7 +131,12 @@ const missingLessons = (
 
   const moved = new Set(
     missing.flatMap((lesson) => {
-      const claimed = (before.get(lesson.id) ?? []).flatMap((id) => claims.get(id) ?? []);
+      const ids = before.get(lesson.id) ?? [];
+      const claimed = ids.flatMap((id) => claims.get(id) ?? []);
+
+      // An entry of a joint lesson that no lesson claims may be gone or renumbered, which only a
+      // second snapshot tells apart.
+      if (ids.some((id) => !claims.has(id))) return [];
       const slots = new Set(claimed.map(({ date, start }) => `${date} ${start}`));
 
       const ofCourse = new Set(
@@ -229,7 +236,15 @@ const removalsOf = (input: Input, published: Schools.Data, refused: ReadonlySet<
     closureDates: ({ id, row }) => {
       const gone = confirmed.get(id);
 
-      if (gone !== undefined) return within(row.dates, gone.start, gone.end);
+      // Two holiday reads lacked the whole closure, so its published dates from today that they
+      // cover go, also those a snapshot that couldn't remove them took out of `previous` already.
+      if (gone !== undefined) {
+        return result.covers.flatMap((cover) =>
+          cover.rows === "closures"
+            ? within(row.dates, today < cover.start ? cover.start : today, cover.end)
+            : [],
+        );
+      }
 
       const first = row.dates[0];
       const last = row.dates.at(-1);
@@ -403,5 +418,5 @@ export const project = (input: Input): Projection => {
     rejected.flatMap(({ table, id }) => (table === Lesson.Row.name ? [id] : [])),
   );
 
-  return { data, ...removalsOf(input, data, refused), rejected };
+  return { state, data, ...removalsOf(input, data, refused), rejected };
 };

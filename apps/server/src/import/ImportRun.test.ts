@@ -77,6 +77,20 @@ const failingTwelve = withBatch(
       : client.timetable.getEntriesForResources(input, batchOptions),
 );
 
+/** The view of `12` answers without days and with WebUntis's error, as a partial answer can. */
+const erringTwelve = withBatch(
+  (client) => (input, batchOptions) =>
+    input.resources.includes(112)
+      ? Effect.succeed([
+          {
+            resource: 112,
+            raw: { format: 2, days: [], errors: [{ code: "PARTIAL" }] },
+            result: Result.succeed({ format: 2, days: [], errors: [{ code: "PARTIAL" }] }),
+          },
+        ])
+      : client.timetable.getEntriesForResources(input, batchOptions),
+);
+
 const options = (
   school: string,
   overrides: Partial<ImportRun.Options> = {},
@@ -170,6 +184,21 @@ const movedMondayDe = planted(TinySchool.corpus, entriesOf(111), (body) => {
   };
 });
 
+/** The recording answering a week longer, without lessons, so a run on Tuesday reads a window. */
+const throughDecember = (corpus: Corpus.Corpus): Corpus.Corpus => ({
+  ...corpus,
+  reads: new Map(
+    [...corpus.reads].map(([path, read]) => [
+      path,
+      {
+        versions: read.versions.map((version) =>
+          version.end === "2026-11-29" ? { ...version, end: "2026-12-06" } : version,
+        ),
+      },
+    ]),
+  ),
+});
+
 const bridgeDay = {
   id: 3,
   name: "Brückentag",
@@ -220,31 +249,37 @@ describe.skipIf(Postgres18.socket === null)("ImportRun on PostgreSQL 18", () => 
         }),
     );
 
-    it.effect("publishes nothing when one read fails, and the next complete run publishes", () =>
-      Effect.gen(function* () {
-        const failed = yield* runAt(
-          morning,
-          options("tiny-failing", { source: recorded(TinySchool.corpus, failingTwelve) }),
-        );
+    it.effect.each([
+      { name: "fails", school: "tiny-failing", change: failingTwelve, tag: "TransportError" },
+      {
+        name: "answers with an error",
+        school: "tiny-erring",
+        change: erringTwelve,
+        tag: "ImportRun.AnsweredWithErrors",
+      },
+    ])(
+      "publishes nothing when one read $name, and the next complete run publishes",
+      ({ school, change, tag }) =>
+        Effect.gen(function* () {
+          const failed = yield* runAt(
+            morning,
+            options(school, { source: recorded(TinySchool.corpus, change) }),
+          );
 
-        const before = {
-          rows: yield* published("tiny-failing"),
-          checkpoint: yield* checkpoint("tiny-failing"),
-        };
+          const before = { rows: yield* published(school), checkpoint: yield* checkpoint(school) };
+          const complete = yield* runAt(minutesAfter(10), options(school));
 
-        const complete = yield* runAt(minutesAfter(10), options("tiny-failing"));
-
-        expect({
-          failed: [failed.outcome, failed.report.failures, failed.report.versionsStored > 0],
-          before,
-          complete: [complete.outcome, (yield* idsOf("tiny-failing", "Lesson")).size],
-        }).toEqual({
-          // The reads that answered are stored: the store is a log.
-          failed: ["Incomplete", { TransportError: 1 }, true],
-          before: { rows: [], checkpoint: { revision: 0, previous: "", pending: "[]" } },
-          complete: ["Published", 52],
-        });
-      }),
+          expect({
+            failed: [failed.outcome, failed.report.failures, failed.report.versionsStored > 0],
+            before,
+            complete: [complete.outcome, (yield* idsOf(school, "Lesson")).size],
+          }).toEqual({
+            // The reads that answered are stored: the store is a log.
+            failed: ["Incomplete", { [tag]: 1 }, true],
+            before: { rows: [], checkpoint: { revision: 0, previous: "", pending: "[]" } },
+            complete: ["Published", 52],
+          });
+        }),
     );
 
     it.effect.each([
@@ -300,6 +335,39 @@ describe.skipIf(Postgres18.socket === null)("ImportRun on PostgreSQL 18", () => 
         }
 
         expect(seen).toEqual([true, true, false]);
+      }),
+    );
+
+    it.effect("removes every published date of a closure that two holiday reads lack", () =>
+      Effect.gen(function* () {
+        const school = "tiny-bridge-shrunk";
+        const bridge = ImportIds.closure(School.Id.make(school), bridgeDay.id);
+        const holidays = RecordedWebUntis.paths.appData;
+        const longBridge = { ...bridgeDay, end: "2026-11-22" };
+
+        const long = planted(TinySchool.corpus, holidays, (body) => {
+          body.holidays = [...list(body.holidays), longBridge];
+        });
+
+        // A day bridge again, from an answer for another school year, which covers no closure.
+        const shrunk = planted(TinySchool.corpus, holidays, (body) => {
+          body.holidays = [...list(body.holidays), bridgeDay];
+          object(body.currentSchoolYear).id = 11;
+        });
+
+        const seen: Array<boolean> = [];
+
+        for (const [index, snapshot] of [
+          long,
+          shrunk,
+          TinySchool.corpus,
+          TinySchool.corpus,
+        ].entries()) {
+          yield* runAt(minutesAfter(10 * index), options(school, { source: recorded(snapshot) }));
+          seen.push((yield* idsOf(school, "Closure")).has(bridge));
+        }
+
+        expect(seen).toEqual([true, true, true, false]);
       }),
     );
 
@@ -664,6 +732,28 @@ describe.skipIf(Postgres18.socket === null)("ImportRun on PostgreSQL 18", () => 
         });
 
         assert.deepStrictEqual(fromStore.result, fromRaw.result);
+      }),
+    );
+
+    it.effect("a live run after a dark one publishes no lesson before its own day", () =>
+      Effect.gen(function* () {
+        const school = "tiny-dark-monday";
+        const sql = yield* SqlClient.SqlClient;
+        const dark = { ...options(school).profile, publish: false };
+        const source = recorded(throughDecember(TinySchool.corpus));
+        yield* runAt(morning, options(school, { profile: dark, source }));
+
+        const tuesday = yield* runAt(
+          DateTime.add(morning, { days: 1 }),
+          options(school, { source }),
+        );
+
+        const [monday] = yield* sql<{ readonly lessons: number }>`
+          select count(*)::int as lessons from sync_row r join space s on s.id = r.space_id
+          where s.parent_id = ${school} and r.tbl = 'Lesson' and r.data->>'date' = '2026-11-02'
+        `;
+
+        expect([tuesday.outcome, monday?.lessons]).toEqual(["Published", 0]);
       }),
     );
 
