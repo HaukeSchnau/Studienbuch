@@ -16,6 +16,7 @@ import { Keyboard, StyleSheet, type TextInputSelectionChangeEvent } from "react-
 import { AccessCode } from "./AccessCode.ts";
 import { Form, Lead, OtherWay, ProblemBox, useRunning } from "./AccountForm.tsx";
 import { AccountState } from "./AccountState.ts";
+import { useForgetAnswer } from "./CodeField.tsx";
 import { Steps } from "./Steps.ts";
 import { TypedCode } from "./TypedCode.ts";
 
@@ -27,14 +28,14 @@ import { TypedCode } from "./TypedCode.ts";
 export function WelcomeScreen() {
   const router = useRouter();
   const [result, redeem] = useAtom(AccessCode.redeem, { mode: "promiseExit" });
-  const forget = useAtomSet(AccessCode.redeem);
+  const forgetResult = useForgetAnswer(AccessCode.redeem);
   const redeeming = useRunning(AccessCode.redeem);
   const keep = useAtomSet(Steps.reservation);
   const keepCode = useAtomSet(Steps.accessCode);
   const resetCardSignUp = useAtomSet(AccountState.signUpWithCard);
   const resetPasskeySignUp = useAtomSet(AccountState.signUpWithPasskey);
   const typed = Option.getOrElse(useAtomValue(Steps.accessCode), () => "");
-  const code = useAccessCode(typed, () => forget(Atom.Reset));
+  const code = useAccessCode(typed, forgetResult);
   const complete = Access.isCode(code.value);
   const reason = reasonOf(result);
 
