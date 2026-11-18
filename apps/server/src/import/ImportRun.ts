@@ -433,11 +433,13 @@ const checkpointOf = (
   today: string,
 ): SchoolImport.ImportResult => {
   const kept = without(state, ({ date }) => date < today);
+  const past = new Set(kept.exams.flatMap(({ id, date }) => (date < today ? [id] : [])));
 
   return {
     ...kept,
     lessons: kept.lessons.map((lesson) => Projection.withStockPhrase(profile, lesson)),
-    exams: kept.exams.filter(({ date }) => today <= date),
+    exams: kept.exams.filter(({ id }) => !past.has(id)),
+    links: kept.links.filter(({ id }) => !past.has(id)),
     diagnostics: [],
   };
 };
@@ -692,19 +694,14 @@ export const run = Effect.fn("ImportRun.run")(function* (options: Options) {
   return yield* Effect.gen(function* () {
     const startedAt = yield* DateTime.now;
 
-    const reserved = yield* reserve({
+    // A wait here can outlast the lease, and then the run sends nothing and can't commit.
+    const reservation = yield* reserve({
       school,
       date: School.today(options.profile.school, DateTime.toEpochMillis(startedAt)),
       nightly: options.nightly,
       maximum: options.maximum,
       startedAt,
-    }).pipe(Effect.timeoutOption(DateTime.distance(startedAt, lease.until)));
-
-    if (Option.isNone(reserved)) {
-      return { outcome: "TimedOut", run: Option.none(), report: emptyReport } satisfies Ran;
-    }
-
-    const reservation = reserved.value;
+    });
 
     if (!reservation.fits) {
       return {
@@ -716,7 +713,11 @@ export const run = Effect.fn("ImportRun.run")(function* (options: Options) {
 
     const requests = yield* dispatch(options.maximum, lease.until);
     const report = yield* Ref.make(emptyReport);
-    const remaining = DateTime.distance(yield* DateTime.now, lease.until);
+
+    const remaining = Duration.max(
+      DateTime.distance(yield* DateTime.now, lease.until),
+      Duration.zero,
+    );
 
     const exit = yield* Effect.exit(
       leased(options, lease, reservation.id, requests, report).pipe(
