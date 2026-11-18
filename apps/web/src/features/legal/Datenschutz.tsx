@@ -287,12 +287,12 @@ export function Datenschutz() {
         Wirkung für die Zukunft widerrufen (Artikel&nbsp;7 Absatz&nbsp;3 DSGVO).
       </p>
       <p>
-        Konten ohne E-Mail-Adresse können weder Ihre Schule noch wir einer bestimmten Person
-        zuordnen, und wir erheben dafür auch keine zusätzlichen Daten (Artikel&nbsp;11 Absatz&nbsp;1
-        DSGVO). Ihre Rechte üben Sie deshalb am einfachsten in der App aus: Dort sehen Sie Ihre
-        Einträge vollständig und können Ihr Konto löschen. Wenden Sie sich auf anderem Weg an uns,
-        brauchen wir einen Nachweis, dass das Konto Ihnen gehört, etwa eine Anmeldung mit Ihrer
-        Notfallkarte oder Ihrem Passkey (Artikel&nbsp;11 Absatz&nbsp;2, Artikel&nbsp;12
+        Ein Konto ohne E-Mail-Adresse ist weder mit einem Namen noch mit einer E-Mail-Adresse
+        verknüpft. Weder Ihre Schule noch wir erheben zusätzliche Daten, nur um es einer Person
+        zuzuordnen (Artikel&nbsp;11 Absatz&nbsp;1 DSGVO). Ihre Rechte üben Sie deshalb am
+        einfachsten in der App aus: Dort sehen Sie Ihre Einträge vollständig und können Ihr Konto
+        löschen. Wenden Sie sich auf anderem Weg an uns, brauchen wir einen Nachweis, dass das Konto
+        Ihnen gehört, etwa eine Anmeldung mit Ihrer Notfallkarte oder Ihrem Passkey (Artikel&nbsp;12
         Absatz&nbsp;6 DSGVO).
       </p>
 
