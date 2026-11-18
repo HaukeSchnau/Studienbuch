@@ -243,6 +243,31 @@ it.effect("refuses to sign out when a change was saved after the question, and k
   }).pipe(Effect.provide(engines("engines-unsent"))),
 );
 
+// "Konto löschen": the account and its unsent changes are gone on the server, so the device leaves
+// without the question (`None`), and what waits goes with the database. A new session starts empty.
+it.effect("a deletion leaves without the question and discards the changes that wait", () =>
+  Effect.gen(function* () {
+    const sessions = yield* SessionStore.Service;
+    const engines = yield* AccountEngine.Engines;
+    const sync = yield* lenasEngine;
+
+    yield* nameLena(sync);
+    const before = (yield* shown).count;
+
+    yield* engines.forget("lena", Option.none(), erase("lena"));
+    const left = yield* sessions.current;
+
+    yield* engines.keep(sessions.signedIn(signedIn("lena"), false));
+    const engine = yield* engines.context("lena");
+    const spaces = yield* Context.get(engine, SqlClient.SqlClient)`select id from sync_space`;
+
+    assert.deepStrictEqual(
+      { before, left, after: (yield* unsentOf("lena")).waiting, spaces: spaces.length },
+      { before: 1, left: Option.none(), after: 0, spaces: 0 },
+    );
+  }).pipe(Effect.provide(engines("engines-deleted"))),
+);
+
 // A refusal's write goes on after the screen that caused it unmounts, and stops at sign-out.
 it.effect("work in the engine's scope outlives the screen that waits for it, not the engine", () =>
   Effect.gen(function* () {

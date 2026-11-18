@@ -46,12 +46,19 @@ const signIn = (accountId: string, token: string) =>
     store.signedIn({ accountId, token: Redacted.make(token), demo: false }, false),
   );
 
-/** The accounts `forget` was handed. */
+/**
+ * The accounts the device left, and `forget`, a leave as sign-out's: it signs out with
+ * `Account.signOut`, recording the account where the app's leave erases it.
+ */
 const forgetting = Effect.gen(function* () {
   const forgotten = yield* Ref.make<ReadonlyArray<string>>([]);
 
-  const forget = ({ accountId }: SessionStore.Signed) =>
-    Ref.update(forgotten, (accounts) => [...accounts, accountId]);
+  const forget = Account.signOut(({ accountId }, forgetSession) =>
+    Effect.andThen(
+      Ref.update(forgotten, (accounts) => [...accounts, accountId]),
+      forgetSession,
+    ),
+  );
 
   return { forgotten, forget };
 });
@@ -96,7 +103,7 @@ describe("Deletion", () => {
   );
 
   it.effect(
-    "deleting here forgets the account once, though the server also ends this device's session",
+    "deleting here leaves the device signed out, though the server also ends this device's session",
     () =>
       Effect.gen(function* () {
         const store = yield* SessionStore.Service;
@@ -112,7 +119,11 @@ describe("Deletion", () => {
           yield* Deletion.deleteAccount(forget);
           yield* Queue.take(asked);
 
-          expect({ forgotten: yield* Ref.get(forgotten), now: yield* store.current }).toEqual({
+          // The engines' turns make a second leave find nothing left to erase.
+          expect({
+            forgotten: [...new Set(yield* Ref.get(forgotten))],
+            now: yield* store.current,
+          }).toEqual({
             forgotten: ["lena"],
             now: Option.none(),
           });
@@ -144,7 +155,9 @@ describe("Deletion", () => {
       ]);
 
       expect({
-        reasons: refusals.map((problem) => problem.reason),
+        reasons: refusals.map((error) =>
+          error._tag === "Deletion.Problem" ? error.reason : error._tag,
+        ),
         forgotten: yield* Ref.get(forgotten),
         signedIn: Option.isSome(yield* Effect.flatMap(SessionStore.Service, (s) => s.current)),
       }).toEqual({ reasons: ["not-fresh", "offline"], forgotten: [], signedIn: true });

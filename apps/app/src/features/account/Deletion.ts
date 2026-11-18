@@ -5,7 +5,6 @@ import * as Schema from "effect/Schema";
 import * as Stream from "effect/Stream";
 
 import { SessionStore } from "../../infra/auth/SessionStore.ts";
-import { Account } from "./Account.ts";
 import { DeletionServer } from "./DeletionServer.ts";
 
 // "Konto löschen": the server deletes the account and ends every session, then each device forgets
@@ -13,7 +12,7 @@ import { DeletionServer } from "./DeletionServer.ts";
 
 export * as Deletion from "./Deletion.ts";
 
-export const Reason = Schema.Literals(["offline", "not-fresh", "signed-out"]);
+export const Reason = Schema.Literals(["offline", "not-fresh", "signed-out", "forget-failed"]);
 
 export type Reason = typeof Reason.Type;
 
@@ -28,14 +27,17 @@ export const sentence: Record<Reason, string> = {
   "not-fresh": "Bestätige kurz, dass du es bist, dann geht es weiter.",
   "signed-out":
     "Deine Anmeldung ist abgelaufen. Melde dich neu an, dann kannst du dein Konto löschen.",
+  "forget-failed":
+    "Dein Konto ist gelöscht. Dieses Gerät konnte seine Kopie noch nicht ganz entfernen und versucht es beim nächsten Start noch einmal.",
 };
 
 /**
- * Deletes the signed-in account on the server, then signs this device out with `forget`, as
- * "Abmelden" does. Fails with "not-fresh" when the sign-in is older than `Keys.freshSignInMinutes`.
+ * Deletes the signed-in account on the server, then leaves this device with `leave`, which forgets
+ * everything the account left here as sign-out does. Fails with "not-fresh" when the sign-in is
+ * older than `Keys.freshSignInMinutes`.
  */
 export const deleteAccount = Effect.fn("Deletion.deleteAccount")(function* <E, R>(
-  forget: (signed: SessionStore.Signed) => Effect.Effect<void, E, R>,
+  leave: Effect.Effect<void, E, R>,
 ) {
   const store = yield* SessionStore.Service;
   const server = yield* DeletionServer.Service;
@@ -51,7 +53,7 @@ export const deleteAccount = Effect.fn("Deletion.deleteAccount")(function* <E, R
     }),
   );
 
-  yield* Account.signOut(forget);
+  yield* leave;
 });
 
 /** The token of a session that just ended: the same account, a token before and none now. */
@@ -67,13 +69,12 @@ const endedToken = (
     : Option.none();
 
 /**
- * Signs the device out with `forget` when the session of its account ends because the account was
- * deleted, here, on another device or for inactivity. It asks with the token that just ended. Any
- * other end keeps the account's data until it signs in again (D27); so does a question the server
- * doesn't answer, which the next start asks again, since the device keeps the token.
+ * Runs `leave` when the account's session ends because the account was deleted, asking with the
+ * token that just ended. Any other end keeps the data until it signs in again (D27). An unanswered
+ * question or a failed `leave` waits for the next start, since the device keeps the token.
  */
 export const forgetWhenDeleted = Effect.fn("Deletion.forgetWhenDeleted")(function* <E, R>(
-  forget: (signed: SessionStore.Signed) => Effect.Effect<void, E, R>,
+  leave: Effect.Effect<void, E, R>,
 ) {
   const store = yield* SessionStore.Service;
   const server = yield* DeletionServer.Service;
@@ -85,8 +86,10 @@ export const forgetWhenDeleted = Effect.fn("Deletion.forgetWhenDeleted")(functio
     ),
     Stream.runForEach((token) =>
       server.deleted(token).pipe(
-        Effect.flatMap((deleted) => (deleted ? Account.signOut(forget) : Effect.void)),
-        Effect.catchTags({ "DeletionServer.Unreachable": () => Effect.void }),
+        Effect.flatMap((deleted) => (deleted ? leave : Effect.void)),
+        Effect.catchCause((cause) =>
+          Effect.logWarning("A device of a deleted account didn't forget it yet", cause),
+        ),
       ),
     ),
   );
