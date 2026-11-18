@@ -152,9 +152,14 @@ export const status = Atom.family((accountId: string) =>
         );
       }
 
-      if (now._tag === "Offline" || Option.contains(settled.card, "offline")) {
-        get(connected(accountId));
-      }
+      // A passkey's wrapper that went offline waits on the device, and goes out from here too.
+      const offline =
+        now._tag === "Offline" ||
+        Option.contains(settled.card, "offline") ||
+        Option.contains(settled.passkey, "offline") ||
+        Option.contains(passkeyProblem, "offline");
+
+      if (offline) get(connected(accountId));
 
       // Cleared last: clearing one reads this atom again, which would interrupt the work above.
       // The card is in the account's secrets by now, so a second run finds it there.

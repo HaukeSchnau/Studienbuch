@@ -926,6 +926,46 @@ describe("NotebookKeys", () => {
       }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
   );
 
+  // A passkey sign-up starts the notebook's key with the passkey's PRF output at hand. Offline,
+  // the passkey's wrapper waits on the device and goes out with the next key step, without
+  // another prompt, so the passkey opens the notebook on a new device.
+  it.effect("a passkey's wrapper that couldn't go out goes with the next key step", () =>
+    Effect.gen(function* () {
+      const server = yield* fakeServer;
+      const phone = yield* device(server);
+      const laptop = yield* device(server);
+      const prf = Redacted.make(new Uint8Array(32).fill(9));
+      yield* phone.run(NotebookKeys.status);
+
+      yield* Ref.set(server.offline, true);
+
+      const offline = yield* reasonOf(
+        phone.run(NotebookKeys.usePasskey("credential", Option.some(prf))),
+      );
+
+      const whileOffline = (yield* phone.run(NotebookKeys.settle)).passkey;
+      yield* Ref.set(server.offline, false);
+
+      const settled = (yield* phone.run(NotebookKeys.settle)).passkey;
+      yield* laptop.run(NotebookKeys.usePasskey("credential", Option.some(prf)));
+
+      assert.deepStrictEqual(
+        {
+          offline,
+          whileOffline,
+          settled,
+          opened: Option.getOrUndefined(yield* laptop.rootKey),
+        },
+        {
+          offline: "offline",
+          whileOffline: Option.some("offline"),
+          settled: Option.none(),
+          opened: Option.getOrUndefined(yield* phone.rootKey),
+        },
+      );
+    }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
+  );
+
   // A new card retires the old one once the server holds it. For an account without an address
   // the new one is then the only way in, so a lost answer and a restart must not lose it.
   it.effect(

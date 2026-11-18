@@ -575,6 +575,58 @@ const passkeyWrapper = Effect.fn("NotebookKeys.passkeyWrapper")(function* (
   yield* add(yield* wrap("prf", prf, keys, { credentialId }));
 });
 
+const PendingPasskey = Schema.fromJsonString(
+  Schema.Struct({ credentialId: Schema.String, prf: Schema.Uint8ArrayFromBase64 }),
+);
+
+const decodePendingPasskey = Schema.decodeEffect(PendingPasskey);
+const encodePendingPasskey = Schema.encodeEffect(PendingPasskey);
+
+/**
+ * A passkey's PRF output whose wrapper the server doesn't hold yet, as after a passkey sign-up
+ * whose first key step went offline. The next key step sends it without another prompt.
+ */
+const pendingPasskey = Effect.flatMap(
+  Effect.flatMap(Ports.DeviceSecrets, (secrets) => secrets.get("pending-passkey")),
+  Option.match({
+    onNone: () => Effect.succeedNone,
+    // Only this module writes it, so a value that doesn't parse is a defect.
+    onSome: (bytes) => Effect.asSome(Effect.orDie(decodePendingPasskey(textDecoder.decode(bytes)))),
+  }),
+);
+
+const holdPasskey = Effect.fn("NotebookKeys.holdPasskey")(function* (
+  credentialId: string,
+  prf: Redacted.Redacted<Uint8Array>,
+) {
+  const text = yield* Effect.orDie(
+    encodePendingPasskey({ credentialId, prf: Redacted.value(prf) }),
+  );
+
+  yield* (yield* Ports.DeviceSecrets).set("pending-passkey", textEncoder.encode(text));
+});
+
+const dropPasskey = Effect.flatMap(Ports.DeviceSecrets, (secrets) =>
+  secrets.remove("pending-passkey"),
+);
+
+/** Sends the waiting passkey's wrapper from an unlocked device, and keeps it while it can't. */
+const settlePasskey = Effect.fn("NotebookKeys.settlePasskey")(function* (now: Status) {
+  const waiting = yield* pendingPasskey;
+
+  if (Option.isNone(waiting) || now._tag !== "Unlocked") return Option.none<Reason>();
+  const { credentialId, prf } = waiting.value;
+
+  const refused = yield* passkeyWrapper(credentialId, Redacted.make(prf)).pipe(
+    Effect.as(Option.none<Reason>()),
+    Effect.catchTags({ "NotebookKeys.Problem": (problem) => Effect.succeedSome(problem.reason) }),
+  );
+
+  if (Option.isNone(refused) || useless.has(refused.value)) yield* dropPasskey;
+
+  return refused;
+});
+
 /** Adds a `prf` wrapper for a passkey whose output opens none of its wrappers yet. */
 export const addPasskeyWrapper = (credentialId: string, prf: Redacted.Redacted<Uint8Array>) =>
   guarded(passkeyWrapper(credentialId, prf));
@@ -598,12 +650,17 @@ export const usePasskey = Effect.fn("NotebookKeys.usePasskey")(function* (
 
       if (locked) return yield* unlock;
 
+      // Offline the wrapper waits, and the next key step sends it (`settlePasskey`).
+      yield* holdPasskey(credentialId, prf.value);
+
       yield* passkeyWrapper(credentialId, prf.value).pipe(
         Effect.catchTags({
           "NotebookKeys.Problem": (refused) =>
             refused.reason === "stale" ? unlock : Effect.fail(refused),
         }),
       );
+
+      yield* dropPasskey;
     }),
   );
 });
@@ -803,7 +860,11 @@ export const sameCard = (a: Redacted.Redacted<Uint8Array>, b: Redacted.Redacted<
 export interface Settled {
   readonly status: Status;
   readonly card: Option.Option<Reason>;
+  /** Why a passkey's wrapper that waits here (`pending-passkey`) didn't go out yet. */
+  readonly passkey: Option.Option<Reason>;
 }
+
+type CardSettled = Omit<Settled, "passkey">;
 
 // A card that can't open this account's notebook is no use to keep; any other refusal may pass.
 const useless = new Set<Reason>(["no-match", "untrusted", "update"]);
@@ -818,16 +879,16 @@ const settleCard = Effect.fn("NotebookKeys.settleCard")(function* (now: Status, 
   // A new card waits for "Notfallkarte erstellen" to send it. The server holding it means its
   // answer was lost: then the card step shows it.
   if (card.replacing) {
-    if (now._tag !== "Unlocked") return { status: now, card: Option.none() } satisfies Settled;
+    if (now._tag !== "Unlocked") return { status: now, card: Option.none() } satisfies CardSettled;
     const { keys, state } = yield* current;
 
     if (yield* listed(card.code, keys, state))
       yield* replaced(card, yield* cardId(card.code, keys));
 
-    return { status: now, card: Option.none() } satisfies Settled;
+    return { status: now, card: Option.none() } satisfies CardSettled;
   }
 
-  const settled = (status: Status, reason = Option.none<Reason>()): Settled => ({
+  const settled = (status: Status, reason = Option.none<Reason>()): CardSettled => ({
     status,
     card: reason,
   });
@@ -885,9 +946,11 @@ const settleNow = Effect.gen(function* () {
   const now = yield* keyStatus;
   const card = yield* pendingCard;
 
-  return Option.isNone(card)
-    ? ({ status: now, card: Option.none() } satisfies Settled)
+  const settled = Option.isNone(card)
+    ? ({ status: now, card: Option.none() } satisfies CardSettled)
     : yield* settleCard(now, card.value);
+
+  return { ...settled, passkey: yield* settlePasskey(settled.status) } satisfies Settled;
 });
 
 /**

@@ -26,6 +26,7 @@ export const SecretName = Schema.Literals([
   "pending-key",
   "unseen-cards",
   "pending-card",
+  "pending-passkey",
 ]);
 
 export type SecretName = typeof SecretName.Type;
