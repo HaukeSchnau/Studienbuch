@@ -14,7 +14,7 @@ import { useRef, useState } from "react";
 import { Keyboard, StyleSheet, type TextInputSelectionChangeEvent } from "react-native";
 
 import { AccessCode } from "./AccessCode.ts";
-import { Form, Lead, OtherWay, ProblemBox } from "./AccountForm.tsx";
+import { Form, Lead, OtherWay, ProblemBox, useRunning } from "./AccountForm.tsx";
 import { AccountState } from "./AccountState.ts";
 import { Steps } from "./Steps.ts";
 import { TypedCode } from "./TypedCode.ts";
@@ -28,6 +28,7 @@ export function WelcomeScreen() {
   const router = useRouter();
   const [result, redeem] = useAtom(AccessCode.redeem, { mode: "promiseExit" });
   const forget = useAtomSet(AccessCode.redeem);
+  const redeeming = useRunning(AccessCode.redeem);
   const keep = useAtomSet(Steps.reservation);
   const keepCode = useAtomSet(Steps.accessCode);
   const resetCardSignUp = useAtomSet(AccountState.signUpWithCard);
@@ -38,7 +39,7 @@ export function WelcomeScreen() {
   const reason = reasonOf(result);
 
   const submit = async () => {
-    if (!complete) return;
+    if (!complete || redeeming()) return;
 
     Keyboard.dismiss();
     const exit = await redeem({ payload: { code: code.value } });

@@ -22,6 +22,7 @@ import {
   reasonOf,
   Strong,
   useCredentials,
+  useRunning,
 } from "./AccountForm.tsx";
 import { AccountState } from "./AccountState.ts";
 import { CodeField, ResendCode, useCode, useForgetAnswer } from "./CodeField.tsx";
@@ -50,6 +51,7 @@ function CodeEntry({ waiting }: { readonly waiting: Account.SigningUp }) {
   const router = useRouter();
   const { email } = waiting;
   const [result, confirm] = useAtom(AccountState.confirmEmail, { mode: "promiseExit" });
+  const confirming = useRunning(AccountState.confirmEmail);
   const forgetResult = useForgetAnswer(AccountState.confirmEmail);
   const code = useCode(forgetResult);
   const { password, setPassword } = useCredentials();
@@ -64,7 +66,7 @@ function CodeEntry({ waiting }: { readonly waiting: Account.SigningUp }) {
   const complete = code.complete && (!asksPassword || password.length > 0);
 
   const submit = async () => {
-    if (!complete) return;
+    if (!complete || confirming()) return;
 
     Keyboard.dismiss();
 

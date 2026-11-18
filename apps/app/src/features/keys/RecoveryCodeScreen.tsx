@@ -10,6 +10,7 @@ import { useState } from "react";
 import { Keyboard } from "react-native";
 
 import { HeroScreen } from "../../ui/HeroScreen.tsx";
+import { useRunning } from "../account/AccountForm.tsx";
 import { CardCodeField, KeyProblem, keyReasonOf } from "./KeysUi.tsx";
 import { KeysState } from "./KeysState.ts";
 
@@ -33,9 +34,12 @@ function EnterCode({ accountId }: { readonly accountId: string }) {
   const { color } = Theme.useTheme();
   const [code, setCode] = useTypedCode();
   const [opened, open] = useAtom(KeysState.unlockWithCode(accountId), { mode: "promiseExit" });
+  const opening = useRunning(KeysState.unlockWithCode(accountId));
   const reason = keyReasonOf(opened);
 
   const submit = async () => {
+    if (opening()) return;
+
     Keyboard.dismiss();
 
     if (Exit.isSuccess(await open(code))) router.replace("/");

@@ -1,3 +1,4 @@
+import { RegistryContext } from "@effect/atom-react";
 import { Arrive } from "@stu/ui/Arrive";
 import { Icon } from "@stu/ui/Icon";
 import { SuccessTick } from "@stu/ui/SuccessTick";
@@ -11,8 +12,9 @@ import * as Cause from "effect/Cause";
 import * as Exit from "effect/Exit";
 import * as Option from "effect/Option";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
+import type * as Atom from "effect/reactivity/Atom";
 import type { Href } from "expo-router";
-import { useRef, useState, type ComponentRef, type ReactNode } from "react";
+import { use, useRef, useState, type ComponentRef, type ReactNode } from "react";
 import { StyleSheet, View, type TextInput } from "react-native";
 
 import { RouteLink } from "../../ui/navigation/RouteLink.tsx";
@@ -20,7 +22,8 @@ import { Account } from "./Account.ts";
 
 // What the account screens share inside the sign-in card, after the old web's auth-shell.tsx: the
 // sentence under a title, the one error box, the way to the other screen, the "oder" between two
-// ways in, the passkey sentence, the reason behind a failed run and the credentials being typed.
+// ways in, the passkey sentence, the reason behind a failed run, whether it runs and the credentials
+// being typed.
 
 /** The sentence under a step's title, centred in the softer ink. */
 export function Lead({ children }: { readonly children: ReactNode }) {
@@ -222,6 +225,17 @@ export function useCredentials(initialEmail = "") {
     passwordField,
     toPassword: () => passwordField.current?.focus(),
   };
+}
+
+/**
+ * Whether `action` runs now, read from the registry when called. A submit must not start a second
+ * run of an action that isn't concurrent, which would interrupt the first, and Enter can submit
+ * again before the screen drew the first run.
+ */
+export function useRunning(action: Atom.Atom<AsyncResult.AsyncResult<unknown, unknown>>) {
+  const registry = use(RegistryContext);
+
+  return () => registry.get(action).waiting;
 }
 
 const styles = StyleSheet.create({

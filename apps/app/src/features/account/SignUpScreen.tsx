@@ -12,7 +12,15 @@ import { Keyboard, StyleSheet, View } from "react-native";
 import { RouteLink } from "../../ui/navigation/RouteLink.tsx";
 import { PublicComputerChoice } from "../keys/PublicComputerChoice.tsx";
 import { AccessCode } from "./AccessCode.ts";
-import { Form, Lead, OtherWay, ProblemText, reasonOf, useCredentials } from "./AccountForm.tsx";
+import {
+  Form,
+  Lead,
+  OtherWay,
+  ProblemText,
+  reasonOf,
+  useCredentials,
+  useRunning,
+} from "./AccountForm.tsx";
 import { AccountState } from "./AccountState.ts";
 import { Steps } from "./Steps.ts";
 
@@ -36,11 +44,12 @@ function SignUpForm({ reservation }: { readonly reservation: Access.Reservation 
     useCredentials(typed);
 
   const [result, signUp] = useAtom(AccountState.signUp, { mode: "promiseExit" });
+  const signingUp = useRunning(AccountState.signUp);
   const short = password.length < Accounts.minPasswordLength;
   const complete = email.trim() !== "" && !short;
 
   const submit = async () => {
-    if (!complete) return;
+    if (!complete || signingUp()) return;
 
     Keyboard.dismiss();
     const exit = await signUp({ email, password, reservation });

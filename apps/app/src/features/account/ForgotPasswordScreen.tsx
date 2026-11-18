@@ -18,6 +18,7 @@ import {
   reasonOf,
   Strong,
   useCredentials,
+  useRunning,
 } from "./AccountForm.tsx";
 import { AccountState } from "./AccountState.ts";
 import { CodeField, ResendCode, useCode, useForgetAnswer } from "./CodeField.tsx";
@@ -39,9 +40,12 @@ function Address() {
   const typed = Option.getOrElse(useAtomValue(Steps.forgotten), () => "");
   const { email, setEmail } = useCredentials(typed);
   const [sent, request] = useAtom(AccountState.requestPasswordReset, { mode: "promiseExit" });
+  const sending = useRunning(AccountState.requestPasswordReset);
   const keep = useAtomSet(Steps.resetSentTo);
 
   const submit = async () => {
+    if (sending()) return;
+
     Keyboard.dismiss();
 
     const exit = await request(email.trim());
