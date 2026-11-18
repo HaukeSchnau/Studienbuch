@@ -375,7 +375,7 @@ describe("Account", () => {
         const laptopRun = yield* restarts;
         const sent = yield* Ref.make<ReadonlyArray<string>>([]);
         const answerLost = yield* Ref.make(true);
-        const offered = yield* Ref.make<ReadonlyArray<Account.NewCard>>([]);
+        const offered = yield* Ref.make<ReadonlyArray<Account.OfferedCard>>([]);
 
         // @stu/e2ee's vector: this card's login, as base64url.
         const vector = "J28S-54WM-JPB9-F64S-KADS-S7CY-KYH1";
@@ -401,7 +401,7 @@ describe("Account", () => {
             ),
         });
 
-        const offer = (card: Option.Option<Account.NewCard>) =>
+        const offer = (card: Option.Option<Account.OfferedCard>) =>
           Option.match(card, {
             onNone: () => Effect.void,
             onSome: (each) => Ref.update(offered, (all) => [...all, each]),
@@ -420,7 +420,7 @@ describe("Account", () => {
             Option.match(signed, {
               onNone: () => Effect.succeedNone,
               onSome: ({ accountId }) =>
-                Effect.provide(NotebookKeys.heldCard, Keychain.accountSecrets(accountId)),
+                Effect.provide(NotebookKeys.pendingCard, Keychain.accountSecrets(accountId)),
             }),
         );
 
@@ -442,22 +442,18 @@ describe("Account", () => {
           api,
         );
 
-        const cards = yield* Ref.get(offered);
-
         const laptop = yield* laptopRun(
           Effect.all({
-            typo: reason(Account.signInWithCard(`${vector.slice(0, -1)}2`, false)),
-            short: reason(Account.signInWithCard(vector.slice(0, 20), false)),
-            unknown: reason(Account.signInWithCard(Redacted.value(unknown), false)),
-            typed: Effect.map(
-              Account.signInWithCard(vector.toLowerCase().replaceAll("-", " "), false),
-              (signed) => signed.accountId,
-            ),
+            typo: reason(Account.signInWithCard(`${vector.slice(0, -1)}2`, false, offer)),
+            short: reason(Account.signInWithCard(vector.slice(0, 20), false, offer)),
+            unknown: reason(Account.signInWithCard(Redacted.value(unknown), false, offer)),
+            typed: Account.signInWithCard(vector.toLowerCase().replaceAll("-", " "), false, offer),
           }),
           api,
         );
 
         const [first, retry] = yield* Ref.get(sent);
+        const cards = yield* Ref.get(offered);
 
         const keptLogin = Option.match(kept, {
           onNone: () => Effect.succeed(""),
@@ -468,9 +464,9 @@ describe("Account", () => {
           {
             lost,
             retriedWithSameLogin: first !== undefined && first === retry,
-            kept: Option.map(kept, (card) => card.withPasskey),
+            kept: Option.map(kept, (card) => [card.withPasskey, card.unsaved]),
             publicKept: Option.isSome(publicKept),
-            offered: cards.map((card) => card.withPasskey),
+            offered: cards.map((card) => card.unsaved),
             holder: Option.map(holder, (signed) => signed.accountId),
             laptop,
             signIns: (yield* Ref.get(sent)).filter((each) => each.startsWith("sign-in")).length,
@@ -478,10 +474,11 @@ describe("Account", () => {
           {
             lost: "offline",
             retriedWithSameLogin: true,
-            kept: Option.some(false),
+            kept: Option.some([false, true]),
             publicKept: false,
-            // Only the public computer's card.
-            offered: [false],
+            // The key status hears of every card: the phone's and the public computer's new ones,
+            // and the one the laptop signed in with.
+            offered: [true, true, false],
             holder: Option.some(`noa-${yield* keptLogin}`),
             laptop: { typo: "typo", short: "length", unknown: "unknown-card", typed: "mia" },
             // The typo and the short code never left the device.

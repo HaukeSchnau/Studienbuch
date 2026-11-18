@@ -63,7 +63,7 @@ const keyServer = Layer.effect(KeyServer.Service)(
 
 const runtime = Atom.family((accountId: string) =>
   Atom.runtime(
-    Layer.mergeAll(keyServer, NotebookKeys.keyring, authenticator).pipe(
+    Layer.mergeAll(keyServer, NotebookKeys.keyring, NotebookKeys.guard, authenticator).pipe(
       Layer.provideMerge(AccountEngine.app(accountId)),
     ),
   ),
@@ -93,46 +93,53 @@ const ofAccount =
   <A extends { readonly accountId: string }>(offered: Option.Option<A>) =>
     Option.filter(offered, (each) => each.accountId === accountId);
 
+/** Whether the account's engine reaches the server, for a key status that waits for it. */
+const connected = Atom.family((accountId: string) =>
+  runtime(accountId).atom(
+    Stream.unwrap(Effect.map(SyncClient.Service, (sync) => sync.status.changes)).pipe(
+      Stream.map((status) => status.connection === "online"),
+      Stream.changes,
+    ),
+  ),
+);
+
 /**
- * Where this device stands with the notebook's key. Reading it starts a new account's key. A PRF
- * output that a passkey sign-in or registration left then unlocks a locked device, or adds the
- * passkey's wrapper on an unlocked one; the card a sign-in left does the same for the card.
+ * Where this device stands with the notebook's key, through `NotebookKeys.settle`: reading it starts
+ * a new account's key and puts a pending Notfallkarte to work. A card or a PRF output a sign-in or
+ * sign-up left (`Offered`) joins first. A step the network stopped runs again once the account's
+ * engine reaches the server.
  */
 export const status = Atom.family((accountId: string) =>
   runtime(accountId).atom((get) =>
     Effect.gen(function* () {
-      const before = yield* NotebookKeys.status;
       const mine = ofAccount(accountId);
       const passkey = mine(get(Offered.prf));
-      const card = mine(get(Offered.typedCard));
+      const card = mine(get(Offered.card));
 
-      // A device that can't reach the server, or a public computer, has nothing to open yet.
-      const usable = before._tag === "Locked" || before._tag === "Unlocked";
+      const settled = Option.isSome(card)
+        ? yield* NotebookKeys.takeCard(card.value)
+        : yield* NotebookKeys.settle;
 
-      const use = Option.isSome(passkey)
-        ? Option.some(NotebookKeys.usePasskey(passkey.value.credentialId, passkey.value.prf))
-        : Option.isSome(card) && usable
-          ? Option.some(NotebookKeys.useCard(card.value.code))
-          : Option.none();
+      const used = Option.isSome(passkey)
+        ? Option.some(
+            yield* Effect.result(
+              NotebookKeys.usePasskey(passkey.value.credentialId, passkey.value.prf),
+            ),
+          )
+        : Option.none();
 
-      if (Option.isSome(use)) {
-        const used = yield* Effect.result(use.value);
+      const now = Option.isSome(used) ? yield* NotebookKeys.status : settled.status;
 
-        get.set(
-          signInProblem,
-          before._tag === "Locked" &&
-            used._tag === "Failure" &&
-            used.failure._tag === "NotebookKeys.Problem"
-            ? Option.some(used.failure.reason)
-            : Option.none(),
-        );
-      }
+      const passkeyProblem = Option.flatMap(used, (result) =>
+        result._tag === "Failure" && result.failure._tag === "NotebookKeys.Problem"
+          ? Option.some(result.failure.reason)
+          : Option.none(),
+      );
 
-      // Cleared last: clearing it reads this atom again, which would interrupt the unlock.
-      if (Option.isSome(passkey)) get.set(Offered.prf, Option.none());
-      else if (Option.isSome(card)) get.set(Offered.typedCard, Option.none());
-
-      const now = Option.isSome(use) ? yield* NotebookKeys.status : before;
+      get.set(
+        signInProblem,
+        now._tag === "Locked" ? Option.orElse(passkeyProblem, () => settled.card) : Option.none(),
+      );
 
       // The device's own wrapper and generation 0 reach the server after the screen moved on,
       // in the engine's scope, so sign-out stops it.
@@ -144,6 +151,16 @@ export const status = Atom.family((accountId: string) =>
           yield* AccountEngine.EngineScope,
         );
       }
+
+      if (now._tag === "Offline" || Option.contains(settled.card, "offline")) {
+        get(connected(accountId));
+      }
+
+      // Cleared last: clearing one reads this atom again, which would interrupt the work above.
+      // The card is in the account's secrets by now, so a second run finds it there.
+      if (Option.isSome(card)) get.set(Offered.card, Option.none());
+
+      if (Option.isSome(passkey)) get.set(Offered.prf, Option.none());
 
       return now;
     }),
@@ -273,99 +290,93 @@ export const createRecoveryCode = Atom.family((accountId: string) =>
 );
 
 /**
- * The new account's Notfallkarte until the student saved it, so a restart shows the same card. A
- * sign-up writes it to the account's secrets; a public computer hands it over in memory
- * (`Offered.newCard`), and this atom moves it to the account's memory secrets.
+ * The Notfallkarte the device still has work for (`NotebookKeys.PendingCard`). The card step shows
+ * it while the student hasn't saved it. It reads again after each key status, which may have taken
+ * a card in or put one to work.
  */
-export const unsavedCard = Atom.family((accountId: string) =>
-  runtime(accountId).atom((get) =>
-    Effect.gen(function* () {
-      const offered = ofAccount(accountId)(get(Offered.newCard));
+export const pendingCard = Atom.family((accountId: string) =>
+  runtime(accountId).atom((get) => {
+    get(status(accountId));
 
-      if (Option.isSome(offered)) {
-        yield* NotebookKeys.holdCard(offered.value.code, offered.value.withPasskey);
-        // Reads this atom again, which then finds the card in the secrets.
-        get.set(Offered.newCard, Option.none());
+    return NotebookKeys.pendingCard;
+  }),
+);
+
+// The account's runtime settles cards itself, so its sign-ins hand none to `Offered`.
+const kept = () => Effect.void;
+
+/**
+ * "Ich habe ihn aufgeschrieben": the key status sent the card as soon as the key existed, so this
+ * settles again only to be sure the server holds it, and resends a first key whose answer was lost
+ * on the way. A card-only account whose sign-in went stale signs in again with this card, which
+ * anyone holding the device could type from the screen anyway.
+ */
+export const saveCard = Atom.family((accountId: string) =>
+  runtime(accountId).fn<void>()((_, get) =>
+    Effect.gen(function* () {
+      const settled = yield* NotebookKeys.settle;
+      const cardOnly = Option.filter(yield* NotebookKeys.pendingCard, (card) => !card.withPasskey);
+
+      const again =
+        Option.contains(settled.card, "not-fresh") && Option.isSome(cardOnly)
+          ? yield* Effect.andThen(
+              Account.signInWithCard(
+                Redacted.value(cardOnly.value.text),
+                yield* Device.PublicComputer,
+                kept,
+              ),
+              NotebookKeys.settle,
+            )
+          : settled;
+
+      if (Option.isSome(again.card)) {
+        return yield* new NotebookKeys.Problem({ reason: again.card.value });
       }
+    }).pipe(Effect.ensuring(refresh(accountId, get))),
+  ),
+);
 
-      return yield* NotebookKeys.heldCard;
-    }),
+/** The student has the card: the card step ends (`NotebookKeys.cardSaved`). */
+export const cardSaved = Atom.family((accountId: string) =>
+  runtime(accountId).fn<void>()((_, get) =>
+    Effect.andThen(NotebookKeys.cardSaved, refresh(accountId, get)),
   ),
 );
 
 /**
- * "Ich habe ihn aufgeschrieben" (`NotebookKeys.saveHeldCard`). The key status sent the card as soon
- * as the key existed, so this retries only a send that failed, and refreshes the status it may
- * have settled.
- */
-export const sendUnsavedCard = Atom.family((accountId: string) =>
-  runtime(accountId).fn<void>()((_, get) =>
-    Effect.gen(function* () {
-      const held = yield* NotebookKeys.heldCard;
-      const publicComputer = yield* Device.PublicComputer;
-      const cardOnly = Option.filter(held, (card) => !card.withPasskey);
-
-      // A card-only account's card signs in since its sign-up, so the device makes the sign-in
-      // fresh with it. Anyone holding this device could type the code shown anyway.
-      yield* NotebookKeys.saveHeldCard.pipe(
-        Effect.catchTags({
-          "NotebookKeys.Problem": (refused) =>
-            refused.reason !== "not-fresh" || Option.isNone(cardOnly)
-              ? Effect.fail(refused)
-              : Effect.andThen(
-                  Account.signInWithCard(Redacted.value(cardOnly.value.text), publicComputer),
-                  NotebookKeys.saveHeldCard,
-                ),
-        }),
-        Effect.ensuring(refresh(accountId, get)),
-      );
-    }),
-  ),
-);
-
-/** The student has the card: the device forgets it, and the first start goes on. */
-export const releaseUnsavedCard = Atom.family((accountId: string) =>
-  runtime(accountId).fn<void>()((_, get) =>
-    Effect.andThen(
-      NotebookKeys.releaseCard,
-      Effect.sync(() => get.refresh(unsavedCard(accountId))),
-    ),
-  ),
-);
-
-/**
- * A new sign-in with the typed card: "Kurz bestätigen" by Notfallkarte, which also opens a locked
- * notebook.
+ * A new sign-in with the typed card: "Kurz bestätigen" by Notfallkarte. The card joins the key
+ * state, which finds the server holds it.
  */
 export const withCard = Atom.family((accountId: string) =>
   runtime(accountId).fn<string>()((typed, get) =>
     Effect.gen(function* () {
-      const { code } = yield* Account.signInWithCard(typed, yield* Device.PublicComputer);
+      yield* Account.signInWithCard(typed, yield* Device.PublicComputer, kept);
+      const settled = yield* NotebookKeys.settle;
 
-      yield* NotebookKeys.useCard(code);
-      yield* refresh(accountId, get);
-    }),
+      if (Option.isSome(settled.card)) {
+        return yield* new NotebookKeys.Problem({ reason: settled.card.value });
+      }
+    }).pipe(Effect.ensuring(refresh(accountId, get))),
   ),
 );
 
 /**
  * The read-back that ends the card step when the account has no passkey (D97 Q7): the code typed
- * once more must be the unsaved card's, and it signs in, which proves the server knows it.
+ * once more must be the pending card's, and it signs in, which proves the server knows it.
  */
 export const readBack = Atom.family((accountId: string) =>
   runtime(accountId).fn<string>()((typed, get) =>
     Effect.gen(function* () {
-      const held = yield* NotebookKeys.heldCard;
+      const held = yield* NotebookKeys.pendingCard;
       const code = yield* NotebookKeys.typedCard(typed);
 
       if (Option.isSome(held) && !NotebookKeys.sameCard(held.value.code, code)) {
         return yield* new NotebookKeys.Problem({ reason: "not-this-card" });
       }
 
-      yield* Account.signInWithCard(typed, yield* Device.PublicComputer);
-      yield* NotebookKeys.releaseCard;
-      yield* Effect.sync(() => get.refresh(unsavedCard(accountId)));
-    }),
+      yield* Account.signInWithCard(typed, yield* Device.PublicComputer, kept);
+      yield* NotebookKeys.cardSaved;
+    }).pipe(Effect.ensuring(refresh(accountId, get))),
   ),
 );
 

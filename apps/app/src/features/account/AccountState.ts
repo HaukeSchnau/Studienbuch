@@ -191,20 +191,20 @@ export const signInWithPasskey = runtime.fn<void>()((_, get) =>
 // The sign-ups without an address and the card's sign-in hand their secrets to `Offered` only:
 // these atoms stay alive while their screen goes, and keep what they return.
 
-const offerNewCard = (get: Atom.FnContext) => (card: Option.Option<Account.NewCard>) =>
-  Effect.sync(() => get.set(Offered.newCard, card));
+const offerCard = (get: Atom.FnContext) => (card: Option.Option<Account.OfferedCard>) =>
+  Effect.sync(() => get.set(Offered.card, card));
 
 /** An account without an address, made with its Notfallkarte (`Account.signUpWithCard`). */
 export const signUpWithCard = runtime
   .fn<Access.Reservation>()((reservation, get) =>
-    Account.signUpWithCard(reservation, chosen(get), offerNewCard(get)),
+    Account.signUpWithCard(reservation, chosen(get), offerCard(get)),
   )
   .pipe(Atom.keepAlive);
 
 /** An account without an address, made with a passkey (`Account.signUpWithPasskey`). */
 export const signUpWithPasskey = runtime
   .fn<Access.Reservation>()((reservation, get) =>
-    Effect.flatMap(Account.signUpWithPasskey(reservation, offerNewCard(get)), (used) =>
+    Effect.flatMap(Account.signUpWithPasskey(reservation, offerCard(get)), (used) =>
       Effect.sync(() => get.set(Offered.prf, Option.some(used))),
     ),
   )
@@ -213,9 +213,7 @@ export const signUpWithPasskey = runtime
 /** "Mit Notfallkarte anmelden": the card signs in, then opens the notebook. */
 export const signInWithCard = runtime
   .fn<string>()((typed, get) =>
-    Effect.flatMap(Account.signInWithCard(typed, chosen(get)), (signed) =>
-      Effect.sync(() => get.set(Offered.typedCard, Option.some(signed))),
-    ),
+    Effect.asVoid(Account.signInWithCard(typed, chosen(get), offerCard(get))),
   )
   .pipe(Atom.keepAlive);
 
@@ -245,8 +243,7 @@ export const signOut = runtime
         Effect.sync(() => {
           get.set(signedOut, true);
           get.set(Offered.prf, Option.none());
-          get.set(Offered.typedCard, Option.none());
-          get.set(Offered.newCard, Option.none());
+          get.set(Offered.card, Option.none());
         }),
         forgetSession,
       );

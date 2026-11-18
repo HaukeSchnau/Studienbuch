@@ -34,15 +34,16 @@ function Gate({
 }) {
   const status = useAtomValue(KeysState.status(accountId));
   const reading = useAtomValue(OnboardingState.reading(accountId));
-  const unsaved = useAtomValue(KeysState.unsavedCard(accountId));
+  const pending = useAtomValue(KeysState.pendingCard(accountId));
 
   // The first start's last step outlives its screen here, and goes with the account at sign-out.
   useAtomMount(OnboardingState.finish(accountId));
 
-  if (AsyncResult.isInitial(unsaved)) return null;
+  if (AsyncResult.isInitial(pending)) return null;
 
-  // A device that can't read its secrets has no card to show either.
-  const card = Option.flatten(AsyncResult.value(unsaved));
+  // A device that can't read its secrets has no card to show either. A card the student saved
+  // already, as one typed to sign in, waits for the server without a step.
+  const card = Option.filter(Option.flatten(AsyncResult.value(pending)), (each) => each.unsaved);
 
   if (Option.isSome(card)) return <SaveCardScreen accountId={accountId} card={card.value} />;
 

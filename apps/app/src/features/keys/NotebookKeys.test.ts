@@ -26,6 +26,14 @@ type FakeServer = KeyServerTesting.Fake;
 
 const fakeServer = KeyServerTesting.make;
 
+/** A card typed to sign in, which the student has. */
+const typed = (code: Redacted.Redacted<Uint8Array>) =>
+  NotebookKeys.takeCard({ code, withPasskey: false, unsaved: false });
+
+/** A new account's card, which the card step shows. */
+const fresh = (code: Redacted.Redacted<Uint8Array>, withPasskey = false) =>
+  NotebookKeys.holdCard({ code, withPasskey, unsaved: true });
+
 /** "Notfallkarte erstellen" with an answer that arrives. */
 const createCard = Effect.flatMap(NotebookKeys.newRecoveryCode, NotebookKeys.sendRecoveryCode);
 
@@ -33,10 +41,26 @@ const createCard = Effect.flatMap(NotebookKeys.newRecoveryCode, NotebookKeys.sen
 interface Setup {
   readonly publicComputer?: boolean;
   readonly demo?: boolean;
+  /** Reads of secrets yield after reading, as IndexedDB and the keychain do, so steps interleave. */
+  readonly slowSecrets?: boolean;
 }
 
+/** `secrets` whose reads yield after reading, so another fiber runs before the value is used. */
+const slow = <E, R>(secrets: Layer.Layer<Ports.DeviceSecrets, E, R>) =>
+  Layer.effect(Ports.DeviceSecrets)(
+    Effect.map(Ports.DeviceSecrets, (inner) =>
+      Ports.DeviceSecrets.of({
+        ...inner,
+        get: (name) => Effect.tap(inner.get(name), () => Effect.yieldNow),
+      }),
+    ),
+  ).pipe(Layer.provide(secrets));
+
 /** One device of Lena's: its own secrets, a keyring that keeps what it unlocked, and the server. */
-const device = (server: FakeServer, { publicComputer = false, demo = false }: Setup = {}) =>
+const device = (
+  server: FakeServer,
+  { publicComputer = false, demo = false, slowSecrets = false }: Setup = {},
+) =>
   Effect.gen(function* () {
     const unlocked = yield* Ref.make<ReadonlyArray<AccountKey.Keys>>([]);
 
@@ -65,14 +89,14 @@ const device = (server: FakeServer, { publicComputer = false, demo = false }: Se
     );
 
     const context = yield* Layer.build(
-      Layer.mergeAll(keyring, session, signedIn).pipe(
+      Layer.mergeAll(keyring, session, signedIn, NotebookKeys.guard).pipe(
         Layer.provideMerge(
           Layer.mergeAll(
             Device.layer({ name: "test" }),
             Layer.succeed(Device.PublicComputer)(publicComputer),
           ),
         ),
-        Layer.provideMerge(Keychain.secrets("test")),
+        Layer.provideMerge(slowSecrets ? slow(Keychain.secrets("test")) : Keychain.secrets("test")),
         Layer.provideMerge(MemoryKeychain.layer()),
         Layer.provideMerge(Layer.succeed(KeyServer.Service)(server.server)),
       ),
@@ -83,6 +107,7 @@ const device = (server: FakeServer, { publicComputer = false, demo = false }: Se
         A,
         E,
         | NotebookKeys.Keyring
+        | NotebookKeys.Guard
         | Ports.Session
         | SessionStore.Service
         | Ports.DeviceSecrets
@@ -195,12 +220,12 @@ describe("NotebookKeys", () => {
         const { bytes: code } = yield* RecoveryCode.generate;
 
         yield* phone.run(NotebookKeys.status);
-        yield* phone.run(NotebookKeys.useCard(code));
+        yield* phone.run(typed(code));
         // A second sign-in with the same card sends nothing new.
-        yield* phone.run(NotebookKeys.useCard(code));
+        yield* phone.run(typed(code));
 
         const locked = yield* laptop.run(NotebookKeys.status);
-        yield* laptop.run(NotebookKeys.useCard(code));
+        yield* laptop.run(typed(code));
 
         const { wrappers } = yield* Ref.get(server.stored);
 
@@ -211,6 +236,10 @@ describe("NotebookKeys", () => {
             locked: locked._tag,
             laptop: (yield* laptop.run(NotebookKeys.status))._tag,
             sameKey: Option.getOrUndefined(yield* laptop.rootKey),
+            left: [
+              Option.isSome(yield* phone.run(NotebookKeys.pendingCard)),
+              Option.isSome(yield* laptop.run(NotebookKeys.pendingCard)),
+            ],
           },
           {
             logins: [Option.some(Redacted.value(yield* NotebookKeys.cardLogin(code)))],
@@ -218,7 +247,41 @@ describe("NotebookKeys", () => {
             locked: "Locked",
             laptop: "Unlocked",
             sameKey: Option.getOrUndefined(yield* phone.rootKey),
+            left: [false, false],
           },
+        );
+      }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
+  );
+
+  // Two key steps at once on a first device, the first one's answer lost (Sol N3): each could make
+  // a key, and the second's refusal would delete the first's, which the server kept.
+  it.effect(
+    "two overlapping first keys with a lost answer end with one key, here and on the server",
+    () =>
+      Effect.gen(function* () {
+        const server = yield* fakeServer;
+        const phone = yield* device(server, { slowSecrets: true });
+        yield* Ref.set(server.loseAnswer, true);
+
+        yield* phone.run(
+          Effect.all([NotebookKeys.status, NotebookKeys.status], { concurrency: "unbounded" }),
+        );
+
+        const after = yield* phone.run(NotebookKeys.status);
+        const { records } = yield* Ref.get(server.stored);
+        const [record] = records;
+        const [opened] = yield* Ref.get(phone.unlocked);
+
+        assert.deepStrictEqual(
+          { after: after._tag, records: records.length },
+          {
+            after: "Unlocked",
+            records: 1,
+          },
+        );
+        assert.isTrue(
+          opened !== undefined && record !== undefined && AccountKey.matches(opened, record),
+          "the device holds the key the server published",
         );
       }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
   );
@@ -234,25 +297,21 @@ describe("NotebookKeys", () => {
         const laptop = yield* device(server);
         const { bytes: code } = yield* RecoveryCode.generate;
 
-        yield* phone.run(NotebookKeys.holdCard(code, false));
-        yield* phone.run(NotebookKeys.status);
-        // As the account's key status does once the device holds its key.
-        yield* phone.run(NotebookKeys.reconcile);
+        yield* phone.run(fresh(code));
+        // The account's key status, before the student ever presses "Ich habe ihn aufgeschrieben".
+        yield* phone.run(NotebookKeys.settle);
 
         const locked = yield* laptop.run(NotebookKeys.status);
-        yield* laptop.run(NotebookKeys.useCard(code));
+        yield* laptop.run(typed(code));
 
         // The press and the key status at once, on another account's first device.
         const other = yield* fakeServer;
         const tablet = yield* device(other);
         const { bytes: second } = yield* RecoveryCode.generate;
-        yield* tablet.run(NotebookKeys.holdCard(second, true));
-        yield* tablet.run(NotebookKeys.status);
+        yield* tablet.run(fresh(second, true));
 
         yield* tablet.run(
-          Effect.all([NotebookKeys.reconcile, NotebookKeys.addCardWrapper(second)], {
-            concurrency: "unbounded",
-          }),
+          Effect.all([NotebookKeys.settle, NotebookKeys.settle], { concurrency: "unbounded" }),
         );
 
         const cards = (stored: KeyServerTesting.Stored) =>
@@ -287,21 +346,29 @@ describe("NotebookKeys", () => {
         const server = yield* fakeServer;
         const phone = yield* device(server);
         const { bytes: code } = yield* RecoveryCode.generate;
-        yield* phone.run(NotebookKeys.holdCard(code, false));
+        yield* phone.run(fresh(code));
         yield* Ref.set(server.loseAnswer, true);
         const lost = yield* phone.run(NotebookKeys.status);
 
-        yield* phone.run(NotebookKeys.saveHeldCard);
+        // "Ich habe ihn aufgeschrieben".
+        const pressed = yield* phone.run(NotebookKeys.settle);
         const { wrappers } = yield* Ref.get(server.stored);
 
         assert.deepStrictEqual(
           {
             lost: lost._tag,
-            now: (yield* phone.run(NotebookKeys.status))._tag,
+            pressed: [pressed.status._tag, pressed.card],
             cards: wrappers.filter(({ statement }) => statement.kind === Wrapper.kindByte.code)
               .length,
+            // Still unsaved: the card step goes on.
+            kept: Option.map(yield* phone.run(NotebookKeys.pendingCard), (card) => card.unsaved),
           },
-          { lost: "Offline", now: "Unlocked", cards: 1 },
+          {
+            lost: "Offline",
+            pressed: ["Unlocked", Option.none<NotebookKeys.Reason>()],
+            cards: 1,
+            kept: Option.some(true),
+          },
         );
       }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
   );
@@ -317,19 +384,20 @@ describe("NotebookKeys", () => {
         const own = yield* device(server);
         const third = yield* device(server);
         const { bytes: code, text } = yield* RecoveryCode.generate;
-        yield* kiosk.run(NotebookKeys.holdCard(code, false));
-        const atKiosk = yield* kiosk.run(NotebookKeys.status);
-        yield* kiosk.run(NotebookKeys.reconcile);
+        yield* kiosk.run(fresh(code));
+        const atKiosk = (yield* kiosk.run(NotebookKeys.settle)).status;
+        // The read-back ends the step there; the card can do no more on a public computer.
+        yield* kiosk.run(NotebookKeys.cardSaved);
+        const kioskKeeps = Option.isSome(yield* kiosk.run(NotebookKeys.pendingCard));
 
-        // The own device signs in with the typed card, and the key status uses it once.
-        const typed = yield* NotebookKeys.typedCard(Redacted.value(text));
-        const started = yield* own.run(NotebookKeys.status);
-        yield* own.run(NotebookKeys.useCard(typed));
+        // The own device signs in with the card as typed, which starts the notebook's key.
+        const card = yield* NotebookKeys.typedCard(Redacted.value(text));
+        const started = (yield* own.run(typed(card))).status;
 
         const locked = yield* third.run(NotebookKeys.status);
-        yield* third.run(NotebookKeys.useCard(typed));
+        yield* third.run(typed(card));
 
-        const unsaved = { code, text, withPasskey: false };
+        const unsaved = { code, text, withPasskey: false, unsaved: true };
 
         assert.deepStrictEqual(
           {
@@ -339,6 +407,7 @@ describe("NotebookKeys", () => {
               NotebookKeys.afterSaved({ ...unsaved, withPasskey: true }, false),
             ],
             atKiosk: atKiosk._tag,
+            kioskKeeps,
             started: started._tag,
             locked: locked._tag,
             third: (yield* third.run(NotebookKeys.status))._tag,
@@ -347,9 +416,53 @@ describe("NotebookKeys", () => {
           {
             next: ["read-back", "passkey", "done"],
             atKiosk: "NotHere",
+            kioskKeeps: false,
             started: "Unlocked",
             locked: "Locked",
             third: "Unlocked",
+            sameKey: Option.getOrUndefined(yield* own.rootKey),
+          },
+        );
+      }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
+  );
+
+  // The card that signed in on the account's first own device waits through a first key whose
+  // answer was lost, and goes out with the retry (Sol N1).
+  it.effect(
+    "a typed card outlives an Offline first key, goes out with the retry and opens a third device",
+    () =>
+      Effect.gen(function* () {
+        const server = yield* fakeServer;
+        const own = yield* device(server);
+        const third = yield* device(server);
+        const { bytes: code } = yield* RecoveryCode.generate;
+        yield* Ref.set(server.loseAnswer, true);
+
+        const offline = yield* own.run(typed(code));
+        const keptOffline = Option.isSome(yield* own.run(NotebookKeys.pendingCard));
+        // The engine reaches the server again, and the key status runs once more.
+        const retried = yield* own.run(NotebookKeys.settle);
+
+        const locked = yield* third.run(NotebookKeys.status);
+        const opened = yield* third.run(typed(code));
+
+        assert.deepStrictEqual(
+          {
+            offline: [offline.status._tag, offline.card],
+            keptOffline,
+            retried: [retried.status._tag, retried.card],
+            left: Option.isSome(yield* own.run(NotebookKeys.pendingCard)),
+            locked: locked._tag,
+            opened: [opened.status._tag, opened.card],
+            sameKey: Option.getOrUndefined(yield* third.rootKey),
+          },
+          {
+            offline: ["Offline", Option.some("offline")],
+            keptOffline: true,
+            retried: ["Unlocked", Option.none<NotebookKeys.Reason>()],
+            left: false,
+            locked: "Locked",
+            opened: ["Unlocked", Option.none<NotebookKeys.Reason>()],
             sameKey: Option.getOrUndefined(yield* own.rootKey),
           },
         );

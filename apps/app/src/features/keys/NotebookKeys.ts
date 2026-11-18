@@ -14,6 +14,7 @@ import * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Redacted from "effect/Redacted";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
+import * as Semaphore from "effect/Semaphore";
 
 import { SessionStore } from "../../infra/auth/SessionStore.ts";
 import { Device } from "../../infra/device/Device.ts";
@@ -190,74 +191,97 @@ const current = Effect.gen(function* () {
 });
 
 /**
- * Makes sure the server holds this device's generation 0 and device wrapper, after a lost answer
- * or a restore, and the card of a new account that the device still holds. Answers whether the
- * account's key chain is this device's. It publishes only the device's own record and never adopts
- * another chain. M1 has generation 0 only.
+ * Every step that changes `root-key`, `pending-key` or `pending-card`, or sends a key or a wrapper,
+ * takes this one permit per account. Two first-key steps at once could each make a key, and the
+ * second one's refusal would delete the first's, which the server kept (Sol N3).
  */
-export const reconcile = Effect.gen(function* () {
-  const rootKey = yield* heldRootKey;
-  const seed = yield* heldSeed;
+export class Guard extends Context.Service<Guard, Semaphore.Semaphore>()("NotebookKeys.Guard") {}
 
-  if (Option.isNone(rootKey)) return true;
-  const server = yield* KeyServer.Service;
-  const state = yield* server.state.pipe(Effect.catchTags({ ...fromServer }));
+export const guard = Layer.effect(Guard)(Semaphore.make(1));
 
-  if (state.records.length === 0) {
-    if (Option.isNone(seed)) return true;
-    const keys = yield* Effect.orDie(AccountKey.derive(rootKey.value, yield* accountId, 0));
-    const wrapper = yield* wrap("device", seed.value, keys);
+const guarded = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+  Effect.flatMap(Guard, (permit) => Semaphore.withPermit(permit)(effect));
 
-    return yield* server.init(yield* firstRecord(keys), wrapper).pipe(
-      Effect.as(true),
-      Effect.catchTags({
-        ...fromServer,
-        "Keys.ChainExists": () => Effect.succeed(false),
-        "Keys.KeysLost": () => Effect.succeed(false),
-        "Keys.Invalid": Effect.die,
-      }),
-    );
-  }
-
-  const keys = yield* ownKeys(rootKey.value, state.records);
-
-  if (Option.isNone(keys)) return false;
-
-  // A new account's card goes out as soon as the key exists, while the sign-up is fresh: the
-  // device may be gone before the student finishes the card step.
-  const held = yield* heldCard;
-
-  if (Option.isSome(held)) {
-    yield* sendCard(held.value.code, keys.value, state).pipe(
-      Effect.catchTags({
-        "NotebookKeys.Problem": (refused) =>
-          Effect.logWarning(`The new card's wrapper didn't go out: ${refused.reason}`),
-      }),
-    );
-  }
-
-  if (Option.isNone(seed)) return true;
-  const own = yield* Effect.orDie(Wrapper.derive("device", seed.value, keys.value.accountId));
-
-  const listed = state.wrappers.some(
-    ({ statement }) =>
-      statement.kind === Wrapper.kindByte.device && sameBytes(statement.publicKey, own.publicKey),
-  );
-
-  if (listed) return true;
-
-  yield* server.addWrapper(yield* wrap("device", seed.value, keys.value), Option.none()).pipe(
-    Effect.catchTags({
-      ...fromServer,
-      // This session added its device's wrapper already, under another seed.
-      "Keys.Invalid": () => Effect.logWarning("The server took no device wrapper"),
-      "Keys.Stale": () => Effect.logWarning("The account renewed its key"),
-      "Keys.NotFresh": Effect.die,
+/**
+ * Publishes generation 0 of `keys` with this device's wrapper: the one call of `Keys.init`.
+ * Answers whether the account's chain is now this key's; another chain, or a key the server lost
+ * while a sealed notebook still uses it (`KeysLost`), answers false.
+ */
+const publish = Effect.fn("NotebookKeys.publish")(function* (
+  keys: AccountKey.Keys,
+  seed: Redacted.Redacted<Uint8Array>,
+  wrapperId: Option.Option<string>,
+) {
+  const wrapper = yield* wrap(
+    "device",
+    seed,
+    keys,
+    Option.match(wrapperId, {
+      onNone: () => ({}),
+      onSome: (id) => ({ id }),
     }),
   );
 
-  return true;
+  return yield* (yield* KeyServer.Service).init(yield* firstRecord(keys), wrapper).pipe(
+    Effect.as(true),
+    Effect.catchTags({
+      "Keys.ChainExists": () => Effect.succeed(false),
+      "Keys.KeysLost": () => Effect.succeed(false),
+      "Keys.Invalid": Effect.die,
+    }),
+  );
 });
+
+/**
+ * Makes sure the server holds this device's generation 0 and device wrapper, after a lost answer
+ * or a restore, and answers whether the account's key chain is this device's. It publishes only the
+ * device's own record and never adopts another chain. M1 has generation 0 only.
+ */
+export const reconcile = guarded(
+  Effect.gen(function* () {
+    const rootKey = yield* heldRootKey;
+    const seed = yield* heldSeed;
+
+    if (Option.isNone(rootKey)) return true;
+    const server = yield* KeyServer.Service;
+    const state = yield* server.state.pipe(Effect.catchTags({ ...fromServer }));
+
+    if (state.records.length === 0) {
+      if (Option.isNone(seed)) return true;
+      const keys = yield* Effect.orDie(AccountKey.derive(rootKey.value, yield* accountId, 0));
+
+      return yield* publish(keys, seed.value, Option.none()).pipe(
+        Effect.catchTags({ ...fromServer }),
+      );
+    }
+
+    const keys = yield* ownKeys(rootKey.value, state.records);
+
+    if (Option.isNone(keys)) return false;
+
+    if (Option.isNone(seed)) return true;
+    const own = yield* Effect.orDie(Wrapper.derive("device", seed.value, keys.value.accountId));
+
+    const listed = state.wrappers.some(
+      ({ statement }) =>
+        statement.kind === Wrapper.kindByte.device && sameBytes(statement.publicKey, own.publicKey),
+    );
+
+    if (listed) return true;
+
+    yield* server.addWrapper(yield* wrap("device", seed.value, keys.value), Option.none()).pipe(
+      Effect.catchTags({
+        ...fromServer,
+        // This session added its device's wrapper already, under another seed.
+        "Keys.Invalid": () => Effect.logWarning("The server took no device wrapper"),
+        "Keys.Stale": () => Effect.logWarning("The account renewed its key"),
+        "Keys.NotFresh": Effect.die,
+      }),
+    );
+
+    return true;
+  }),
+);
 
 /** A first device's new root key, its device seed and its wrapper's id, until the server took them. */
 interface Pending {
@@ -305,25 +329,16 @@ const newPending = Effect.gen(function* () {
 });
 
 /**
- * The first device makes the root key and its device wrapper, kept as `pending-key` until the
- * server took them, so a lost answer resends them. It stays locked when another chain won, or when
- * the server lost the key a sealed notebook still uses (`KeysLost`).
+ * The first device's key: made once and kept as `pending-key` before anything goes out, then
+ * sent again after a lost answer until the server confirms it or another chain won. Runs under
+ * `Guard`, so no second key is ever made beside it.
  */
 const start = Effect.gen(function* () {
   const secrets = yield* Ports.DeviceSecrets;
   const held = yield* heldPending;
   const pending = Option.isSome(held) ? held.value : yield* newPending;
   const keys = yield* Effect.orDie(AccountKey.derive(pending.rootKey, yield* accountId, 0));
-  const wrapper = yield* wrap("device", pending.seed, keys, { id: pending.wrapperId });
-
-  const published = yield* (yield* KeyServer.Service).init(yield* firstRecord(keys), wrapper).pipe(
-    Effect.as(true),
-    Effect.catchTags({
-      "Keys.ChainExists": () => Effect.succeed(false),
-      "Keys.KeysLost": () => Effect.succeed(false),
-      "Keys.Invalid": Effect.die,
-    }),
-  );
+  const published = yield* publish(keys, pending.seed, Option.some(pending.wrapperId));
 
   if (published) {
     yield* secrets.set("device-seed", Redacted.value(pending.seed));
@@ -369,10 +384,10 @@ const demoUnlock = Effect.fn("NotebookKeys.demoUnlock")(function* (
 });
 
 /**
- * Where this device stands. A device without a key asks the server, and the first device of an
- * account starts the notebook's key right away.
+ * Where this device stands, asking the server when it holds no key, and starting or resending a
+ * first key. Callers hold `Guard`.
  */
-export const status = Effect.gen(function* () {
+const keyStatus = Effect.gen(function* () {
   if (Option.isSome(yield* heldRootKey)) return Status.Unlocked();
 
   const offline = () => Effect.succeed(Status.Offline());
@@ -405,6 +420,15 @@ export const status = Effect.gen(function* () {
     Effect.catchTags({ "KeyServer.Unreachable": offline, "Keys.SignedOut": offline }),
   );
 });
+
+/**
+ * Where this device stands. A device that holds the key answers at once, without the network;
+ * one without asks the server under `Guard`, and the first device of an account starts the
+ * notebook's key right away.
+ */
+export const status = Effect.flatMap(heldRootKey, (held) =>
+  Option.isSome(held) ? Effect.succeed(Status.Unlocked()) : guarded(keyStatus),
+);
 
 /**
  * Keeps a root key the device just recovered, with a seed for its own device wrapper unless it's a
@@ -481,9 +505,22 @@ export const cardLogin = Effect.fn("NotebookKeys.cardLogin")(function* (
   return Redacted.make(Base64Url.encode(Redacted.value(login)));
 });
 
-/** "Mit der Notfallkarte": the code as typed. A typo stops before anything leaves the device. */
+/**
+ * "Mit der Notfallkarte": the code as typed opens a locked notebook. A typo stops before anything
+ * leaves the device.
+ */
 export const unlockWithCode = Effect.fn("NotebookKeys.unlockWithCode")(function* (typed: string) {
-  yield* recoverWith("code", yield* typedCard(typed), Keys.RecoveryCode.make({}));
+  const code = yield* typedCard(typed);
+
+  yield* guarded(
+    Effect.flatMap(keyStatus, (now) =>
+      now._tag === "Locked"
+        ? recoverWith("code", code, Keys.RecoveryCode.make({}))
+        : now._tag === "Offline"
+          ? Effect.fail(problem("offline"))
+          : Effect.void,
+    ),
+  );
 });
 
 /** Sends a wrapper. A card's goes with its login, which signs in to an account without an address. */
@@ -497,8 +534,7 @@ const add = (wrapper: Keys.Sealed, login = Option.none<Redacted.Redacted>()) =>
     }),
   );
 
-/** Adds a `prf` wrapper for a passkey whose output opens none of its wrappers yet. */
-export const addPasskeyWrapper = Effect.fn("NotebookKeys.addPasskeyWrapper")(function* (
+const passkeyWrapper = Effect.fn("NotebookKeys.passkeyWrapper")(function* (
   credentialId: string,
   prf: Redacted.Redacted<Uint8Array>,
 ) {
@@ -519,6 +555,10 @@ export const addPasskeyWrapper = Effect.fn("NotebookKeys.addPasskeyWrapper")(fun
   yield* add(yield* wrap("prf", prf, keys, { credentialId }));
 });
 
+/** Adds a `prf` wrapper for a passkey whose output opens none of its wrappers yet. */
+export const addPasskeyWrapper = (credentialId: string, prf: Redacted.Redacted<Uint8Array>) =>
+  guarded(passkeyWrapper(credentialId, prf));
+
 /**
  * A passkey's PRF output, from a sign-in or "Mit Passkey". A locked device, or one whose key the
  * account renewed elsewhere, unlocks with it. An up-to-date one adds a wrapper when the output
@@ -529,17 +569,21 @@ export const usePasskey = Effect.fn("NotebookKeys.usePasskey")(function* (
   credentialId: string,
   prf: Option.Option<Redacted.Redacted<Uint8Array>>,
 ) {
-  const locked = Option.isNone(yield* heldRootKey);
+  return yield* guarded(
+    Effect.gen(function* () {
+      const locked = Option.isNone(yield* heldRootKey);
 
-  if (Option.isNone(prf)) return locked ? yield* problem("passkey-no-match") : undefined;
-  const unlock = recoverWith("prf", prf.value, Keys.Passkey.make({ credentialId }));
+      if (Option.isNone(prf)) return locked ? yield* problem("passkey-no-match") : undefined;
+      const unlock = recoverWith("prf", prf.value, Keys.Passkey.make({ credentialId }));
 
-  if (locked) return yield* unlock;
+      if (locked) return yield* unlock;
 
-  yield* addPasskeyWrapper(credentialId, prf.value).pipe(
-    Effect.catchTags({
-      "NotebookKeys.Problem": (refused) =>
-        refused.reason === "stale" ? unlock : Effect.fail(refused),
+      yield* passkeyWrapper(credentialId, prf.value).pipe(
+        Effect.catchTags({
+          "NotebookKeys.Problem": (refused) =>
+            refused.reason === "stale" ? unlock : Effect.fail(refused),
+        }),
+      );
     }),
   );
 });
@@ -578,45 +622,41 @@ const keepUnseen = Effect.fn("NotebookKeys.keepUnseen")(function* (ids: Readonly
 });
 
 /** "Notfallkarte erstellen": a new code and its wrapper, unseen until the server took it. */
-export const newRecoveryCode = Effect.gen(function* () {
-  const { keys } = yield* current;
-  const code = yield* RecoveryCode.generate;
-  const wrapper = yield* wrap("code", code.bytes, keys, { place: "card" });
+export const newRecoveryCode = guarded(
+  Effect.gen(function* () {
+    const { keys } = yield* current;
+    const code = yield* RecoveryCode.generate;
+    const wrapper = yield* wrap("code", code.bytes, keys, { place: "card" });
 
-  yield* keepUnseen([...(yield* unseenCards), wrapper.statement.id]);
+    yield* keepUnseen([...(yield* unseenCards), wrapper.statement.id]);
 
-  return { text: code.text, wrapper, login: yield* cardLogin(code.bytes) } satisfies Card;
-});
+    return { text: code.text, wrapper, login: yield* cardLogin(code.bytes) } satisfies Card;
+  }),
+);
 
 /**
  * Sends a card's wrapper and answers its text, which the screen shows once. After a lost answer
- * the same card goes out again, so the code shown is the one the server holds.
+ * the same card goes out again, so the code shown is the one the server holds. The server retires
+ * every other card then, so the device drops a card it still had work for.
  */
-export const sendRecoveryCode = Effect.fn("NotebookKeys.sendRecoveryCode")(function* (card: Card) {
-  yield* add(card.wrapper, Option.some(card.login));
+export const sendRecoveryCode = (card: Card) =>
+  guarded(
+    Effect.gen(function* () {
+      yield* add(card.wrapper, Option.some(card.login));
+      yield* (yield* Ports.DeviceSecrets).remove("pending-card");
 
-  const id = card.wrapper.statement.id;
-  yield* keepUnseen((yield* unseenCards).filter((each) => each !== id));
+      const id = card.wrapper.statement.id;
+      yield* keepUnseen((yield* unseenCards).filter((each) => each !== id));
 
-  return card.text;
-});
+      return card.text;
+    }),
+  );
 
 /**
- * Makes sure the card opens the notebook and, for an account without an address, signs in: its
- * wrapper goes out with its login unless the server holds it already. The server then retires
- * the account's other cards (`KeyStore.addWrapper`).
- */
-export const addCardWrapper = Effect.fn("NotebookKeys.addCardWrapper")(function* (
-  code: Redacted.Redacted<Uint8Array>,
-) {
-  const { keys, state } = yield* current;
-
-  yield* sendCard(code, keys, state);
-});
-
-/**
- * `addCardWrapper` with the keys and the state at hand. The wrapper's id follows from the card,
- * so two sends of one card, as the key status and the card step can make at once, store one.
+ * A card's wrapper with its login, unless the server holds it already: the card then opens the
+ * notebook and, for an account without an address, signs in. Its id follows from the card, so a
+ * card sent twice is stored once. The server retires the account's other cards
+ * (`KeyStore.addWrapper`).
  */
 const sendCard = Effect.fn("NotebookKeys.sendCard")(function* (
   code: Redacted.Redacted<Uint8Array>,
@@ -640,34 +680,179 @@ const sendCard = Effect.fn("NotebookKeys.sendCard")(function* (
 });
 
 /**
- * A card that signed this device in: a locked device unlocks with it. An unlocked one, as the
- * account's first device is when it signed up on a public computer, makes the card open the
- * notebook too.
+ * A Notfallkarte this device still has work for, kept as `pending-card` across restarts: a new
+ * account's card the student hasn't saved (`unsaved`), which the card step shows, or any card
+ * whose wrapper the server hasn't confirmed, such as one typed to sign in on the account's first
+ * own device.
  */
-export const useCard = Effect.fn("NotebookKeys.useCard")(function* (
-  code: Redacted.Redacted<Uint8Array>,
-) {
-  if (Option.isNone(yield* heldRootKey)) {
-    return yield* recoverWith("code", code, Keys.RecoveryCode.make({}));
-  }
+export interface PendingCard {
+  readonly code: Redacted.Redacted<Uint8Array>;
+  readonly text: Redacted.Redacted;
+  /** The account signed up with a passkey, so the card step offers none and asks no read-back. */
+  readonly withPasskey: boolean;
+  readonly unsaved: boolean;
+}
 
-  yield* addCardWrapper(code);
+/** A card the device takes in; its text follows from the code. */
+export type CardIn = Omit<PendingCard, "text">;
+
+const codeLength = 16;
+const withPasskeyFlag = 1;
+const unsavedFlag = 2;
+
+// `pending-card` holds the card's 16 bytes and a byte of flags.
+export const pendingCard = Effect.map(
+  Effect.flatMap(Ports.DeviceSecrets, (secrets) => secrets.get("pending-card")),
+  Option.flatMap((bytes) => {
+    const flags = bytes[codeLength];
+
+    if (bytes.length !== codeLength + 1 || flags === undefined) return Option.none();
+    const code = Redacted.make(bytes.slice(0, codeLength));
+
+    return Option.some<PendingCard>({
+      code,
+      text: RecoveryCode.text(code),
+      withPasskey: (flags & withPasskeyFlag) !== 0,
+      unsaved: (flags & unsavedFlag) !== 0,
+    });
+  }),
+);
+
+const writeCard = (card: CardIn) =>
+  Effect.flatMap(Ports.DeviceSecrets, (secrets) =>
+    secrets.set(
+      "pending-card",
+      new Uint8Array([
+        ...Redacted.value(card.code),
+        (card.withPasskey ? withPasskeyFlag : 0) | (card.unsaved ? unsavedFlag : 0),
+      ]),
+    ),
+  );
+
+/**
+ * Takes a card into the device's key state. The same card again stays unsaved if it was, so
+ * signing in with it, as the read-back does, doesn't end the card step. A sign-up writes it before
+ * the device keeps the session, before any other key step can run for the new account.
+ */
+export const holdCard = Effect.fn("NotebookKeys.holdCard")(function* (card: CardIn) {
+  const same = Option.filter(yield* pendingCard, (held) => sameCard(held.code, card.code));
+
+  yield* writeCard({
+    code: card.code,
+    withPasskey: card.withPasskey || Option.exists(same, (held) => held.withPasskey),
+    unsaved: card.unsaved || Option.exists(same, (held) => held.unsaved),
+  });
+});
+
+/** Forgets the card, unless another one took its place meanwhile. */
+export const dropCard = (code: Redacted.Redacted<Uint8Array>) =>
+  Effect.flatMap(pendingCard, (held) =>
+    Option.exists(held, (each) => sameCard(each.code, code))
+      ? Effect.flatMap(Ports.DeviceSecrets, (secrets) => secrets.remove("pending-card"))
+      : Effect.void,
+  );
+
+/** Whether two codes are the same card. */
+export const sameCard = (a: Redacted.Redacted<Uint8Array>, b: Redacted.Redacted<Uint8Array>) =>
+  sameBytes(Redacted.value(a), Redacted.value(b));
+
+/** Where the device stands after `settle`, and why its pending card isn't working yet, if not. */
+export interface Settled {
+  readonly status: Status;
+  readonly card: Option.Option<Reason>;
+}
+
+// A card that can't open this account's notebook is no use to keep; any other refusal may pass.
+const useless = new Set<Reason>(["no-match", "untrusted", "update"]);
+
+/**
+ * Puts the pending card to work at `now`: an unlocked device sends its wrapper, a locked one opens
+ * the notebook with it. The device keeps the card until that worked and the student saved it.
+ */
+const settleCard = Effect.fn("NotebookKeys.settleCard")(function* (now: Status, card: PendingCard) {
+  const done = card.unsaved ? Effect.void : dropCard(card.code);
+
+  const settled = (status: Status, reason = Option.none<Reason>()): Settled => ({
+    status,
+    card: reason,
+  });
+
+  const refusal = (refused: Problem) => Effect.succeedSome(refused.reason);
+
+  switch (now._tag) {
+    case "Unlocked": {
+      const refused = yield* Effect.flatMap(current, ({ keys, state }) =>
+        sendCard(card.code, keys, state),
+      ).pipe(
+        Effect.as(Option.none<Reason>()),
+        Effect.catchTags({ "NotebookKeys.Problem": refusal }),
+      );
+
+      if (Option.isNone(refused)) yield* done;
+
+      return settled(now, refused);
+    }
+
+    case "Locked": {
+      const refused = yield* recoverWith("code", card.code, Keys.RecoveryCode.make({})).pipe(
+        Effect.as(Option.none<Reason>()),
+        Effect.catchTags({ "NotebookKeys.Problem": refusal }),
+      );
+
+      if (Option.isNone(refused)) {
+        yield* done;
+
+        return settled(Status.Unlocked());
+      }
+
+      if (useless.has(refused.value)) yield* done;
+
+      return settled(now, refused);
+    }
+
+    case "Offline":
+      return settled(now, Option.some("offline"));
+    case "NotHere":
+      // No key starts here: the card's first sign-in on an own device sends its wrapper.
+      yield* done;
+
+      return settled(now);
+  }
+});
+
+const settleNow = Effect.gen(function* () {
+  const now = yield* keyStatus;
+  const card = yield* pendingCard;
+
+  return Option.isNone(card)
+    ? ({ status: now, card: Option.none() } satisfies Settled)
+    : yield* settleCard(now, card.value);
 });
 
 /**
- * "Ich habe ihn aufgeschrieben": makes sure the server holds the held card's wrapper and login. It
- * asks for the key status afresh, which resends a first key whose answer was lost, instead of
- * trusting one that said Offline. A public computer starts no notebook, so there the card's first
- * sign-in on the student's own device adds the wrapper (`useCard`).
+ * The one step every caller takes to bring the device's key state forward, under `Guard`: the key
+ * first (`keyStatus`, which makes or resends a first key), then the pending card. A failure leaves
+ * both where they were, for the next step to take again.
  */
-export const saveHeldCard = Effect.gen(function* () {
-  const now = yield* status;
-  const held = yield* heldCard;
+export const settle = guarded(settleNow);
 
-  if (Option.isNone(held) || now._tag === "NotHere") return;
+/** Takes a card in (`holdCard`) and settles it at once. */
+export const takeCard = (card: CardIn) => guarded(Effect.andThen(holdCard(card), settleNow));
 
-  yield* addCardWrapper(held.value.code);
-});
+/**
+ * The student saved the card: the card step ends. The device keeps the card only until the server
+ * holds its wrapper.
+ */
+export const cardSaved = guarded(
+  Effect.gen(function* () {
+    const card = yield* pendingCard;
+
+    if (Option.isNone(card)) return;
+
+    yield* writeCard({ ...card.value, unsaved: false });
+    yield* settleNow;
+  }),
+);
 
 /**
  * What follows "Ich habe ihn aufgeschrieben". An account with a passkey is done; one without is
@@ -675,56 +860,12 @@ export const saveHeldCard = Effect.gen(function* () {
  * no notebook key starts there, so a passkey made there would let the student's own device start
  * the notebook without the card, which could then never open it.
  */
-export const afterSaved = (card: UnsavedCard, publicComputer: boolean) =>
+export const afterSaved = (card: PendingCard, publicComputer: boolean) =>
   card.withPasskey
     ? ("done" as const)
     : publicComputer
       ? ("read-back" as const)
       : ("passkey" as const);
-
-/** The card of a sign-up without an address, kept on the device until the student saved it. */
-export interface UnsavedCard {
-  readonly code: Redacted.Redacted<Uint8Array>;
-  readonly text: Redacted.Redacted;
-  /** The account signed up with a passkey, so the card step offers none and asks no read-back. */
-  readonly withPasskey: boolean;
-}
-
-const codeLength = 16;
-
-// `unsaved-card` holds the card's 16 bytes and 1 if the account has a passkey, else 0.
-export const holdCard = Effect.fn("NotebookKeys.holdCard")(function* (
-  code: Redacted.Redacted<Uint8Array>,
-  withPasskey: boolean,
-) {
-  yield* (yield* Ports.DeviceSecrets).set(
-    "unsaved-card",
-    new Uint8Array([...Redacted.value(code), withPasskey ? 1 : 0]),
-  );
-});
-
-export const heldCard = Effect.map(
-  Effect.flatMap(Ports.DeviceSecrets, (secrets) => secrets.get("unsaved-card")),
-  Option.flatMap((bytes) => {
-    if (bytes.length !== codeLength + 1) return Option.none();
-    const code = Redacted.make(bytes.slice(0, codeLength));
-
-    return Option.some<UnsavedCard>({
-      code,
-      text: RecoveryCode.text(code),
-      withPasskey: bytes[codeLength] === 1,
-    });
-  }),
-);
-
-/** Whether two codes are the same card. */
-export const sameCard = (a: Redacted.Redacted<Uint8Array>, b: Redacted.Redacted<Uint8Array>) =>
-  sameBytes(Redacted.value(a), Redacted.value(b));
-
-/** The student saved the card, or signed out: the device forgets it. */
-export const releaseCard = Effect.flatMap(Ports.DeviceSecrets, (secrets) =>
-  secrets.remove("unsaved-card"),
-);
 
 /** One way back into the notebook, as "Notizbuch-Schlüssel" lists it. */
 export interface Method {

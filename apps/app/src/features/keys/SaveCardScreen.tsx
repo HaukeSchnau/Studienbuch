@@ -21,7 +21,7 @@ import { useTypedCode } from "./RecoveryCodeScreen.tsx";
 type Step = "card" | "passkey" | "read-back";
 
 /**
- * Where the card step is. Only the card survives a restart (`KeysState.unsavedCard`), so the
+ * Where the card step is. Only the card survives a restart (`KeysState.pendingCard`), so the
  * step starts at the card again.
  */
 export function useCardStep() {
@@ -38,7 +38,7 @@ export function SaveCardScreen({
   card,
 }: {
   readonly accountId: string;
-  readonly card: NotebookKeys.UnsavedCard;
+  readonly card: NotebookKeys.PendingCard;
 }) {
   const [step, setStep] = useCardStep();
 
@@ -61,14 +61,14 @@ function ShowCard({
   onSaved,
 }: {
   readonly accountId: string;
-  readonly card: NotebookKeys.UnsavedCard;
+  readonly card: NotebookKeys.PendingCard;
   readonly onSaved: (next: "passkey" | "read-back") => void;
 }) {
   const { color } = Theme.useTheme();
   const keepsNothing = AsyncResult.getOrElse(useAtomValue(AccountState.keepsNothing), () => false);
-  const [sent, send] = useAtom(KeysState.sendUnsavedCard(accountId), { mode: "promiseExit" });
+  const [sent, send] = useAtom(KeysState.saveCard(accountId), { mode: "promiseExit" });
 
-  const [released, release] = useAtom(KeysState.releaseUnsavedCard(accountId), {
+  const [released, release] = useAtom(KeysState.cardSaved(accountId), {
     mode: "promiseExit",
   });
 
@@ -143,7 +143,7 @@ function OfferPasskey({
 }) {
   const [added, addPasskey] = useAtom(KeysState.addPasskey(accountId), { mode: "promiseExit" });
 
-  const [released, release] = useAtom(KeysState.releaseUnsavedCard(accountId), {
+  const [released, release] = useAtom(KeysState.cardSaved(accountId), {
     mode: "promiseExit",
   });
 

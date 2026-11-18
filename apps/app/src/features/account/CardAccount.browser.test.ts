@@ -16,6 +16,7 @@ import * as Ref from "effect/Ref";
 import { AuthApi } from "../../infra/auth/AuthApi.ts";
 import { AuthApiTesting } from "../../infra/auth/AuthApiTesting.ts";
 import { layer as signUpStore } from "../../infra/auth/signUpStore.ts";
+import { Keychain } from "../../infra/keychain/Keychain.ts";
 import { AccountEngine } from "../../infra/runtime/AccountEngine.ts";
 import { Layers } from "../../infra/runtime/Layers.ts";
 import { KeyServer } from "../keys/KeyServer.ts";
@@ -26,7 +27,9 @@ import { Account } from "./Account.ts";
 const accountId = "card-only-noa";
 
 const engineLayer = () =>
-  NotebookKeys.keyring.pipe(Layer.provideMerge(AccountEngine.app(accountId)));
+  Layer.mergeAll(NotebookKeys.keyring, NotebookKeys.guard).pipe(
+    Layer.provideMerge(AccountEngine.app(accountId)),
+  );
 
 type EngineServices = Layer.Success<ReturnType<typeof engineLayer>>;
 
@@ -47,7 +50,7 @@ it.effect("signs up without an address, signs out, and signs in by card to the s
 
     const keys = yield* KeyServerTesting.make;
     const signedUp = yield* Ref.make<ReadonlyArray<string>>([]);
-    const offered = yield* Ref.make(Option.none<Account.NewCard>());
+    const offered = yield* Ref.make(Option.none<Account.OfferedCard>());
 
     // As `CardLogins` answers: a login the sign-up or a card's wrapper brought signs in.
     const auth = AuthApiTesting.layer({
@@ -109,78 +112,91 @@ it.effect("signs up without an address, signs out, and signs in by card to the s
       };
     };
 
+    // "Abmelden", as `AccountState.signOut` runs it on a device of the student's own.
+    const signOut = Account.signOut((signed, forgetSession) =>
+      AccountEngine.forget(
+        signed.accountId,
+        Option.none(),
+        Layers.endSignOut(signed.accountId, forgetSession),
+      ),
+    );
+
     const rootKey = Effect.map(
       Effect.flatMap(Ports.DeviceSecrets, (secrets) => secrets.get("root-key")),
       Option.map((bytes) => [...bytes].join(",")),
     );
 
-    // "Konto anlegen" on a computer without passkeys, then "Deine Notfallkarte". The device keeps
-    // the card in the account's secrets before it keeps the session, so nothing is offered.
+    // "Konto anlegen" on a computer without passkeys, then "Deine Notfallkarte". The device holds
+    // the card in the account's secrets before it keeps the session.
     yield* onDevice(Account.signUpWithCard(reservation, false, (card) => Ref.set(offered, card)));
 
     const first = engine();
 
-    // The key status starts the notebook and reconciles it. The student never presses "Ich habe
-    // ihn aufgeschrieben": this device goes before that.
+    // The key status starts the notebook and puts the card to work. The student never presses
+    // "Ich habe ihn aufgeschrieben": this device goes before that.
     const before = yield* first.run(
       Effect.gen(function* () {
-        const started = yield* NotebookKeys.status;
-        yield* NotebookKeys.reconcile;
+        const settled = yield* NotebookKeys.settle;
 
         return {
-          started: started._tag,
-          held: Option.isSome(yield* NotebookKeys.heldCard),
-          offered: Option.isSome(yield* Ref.get(offered)),
+          started: settled.status._tag,
+          card: settled.card,
+          unsaved: Option.map(yield* NotebookKeys.pendingCard, (card) => card.unsaved),
           rootKey: yield* rootKey,
         };
       }),
     );
 
-    const text = Redacted.value(Option.getOrThrow(yield* first.run(NotebookKeys.heldCard)).text);
+    const text = Redacted.value(Option.getOrThrow(yield* first.run(NotebookKeys.pendingCard)).text);
 
-    // "Abmelden", as `AccountState.signOut` runs it on a device of the student's own.
     first.unmount();
+    yield* onDevice(signOut);
 
-    yield* onDevice(
-      Account.signOut((signed, forgetSession) =>
-        AccountEngine.forget(
-          signed.accountId,
-          Option.none(),
-          Layers.endSignOut(signed.accountId, forgetSession),
-        ),
+    // Nothing of the account stays in the keychain: no card, no key.
+    const left = yield* onDevice(
+      Effect.provide(
+        Effect.all({ card: Effect.map(NotebookKeys.pendingCard, Option.isSome), rootKey }),
+        Keychain.accountSecrets(accountId),
       ),
     );
 
     // "Mit Notfallkarte anmelden", the code typed as it reads on paper.
-    const signedIn = yield* onDevice(Account.signInWithCard(text.toLowerCase(), false));
+    const signedIn = yield* onDevice(
+      Account.signInWithCard(text.toLowerCase(), false, (card) => Ref.set(offered, card)),
+    );
+
     const second = engine();
 
     const after = yield* second.run(
       Effect.gen(function* () {
         const found = yield* NotebookKeys.status;
-        const left = { held: Option.isSome(yield* NotebookKeys.heldCard), rootKey: yield* rootKey };
-        yield* NotebookKeys.useCard(signedIn.code);
+        const settled = yield* NotebookKeys.settle;
 
-        return { found: found._tag, left, opened: (yield* NotebookKeys.status)._tag };
+        return {
+          found: found._tag,
+          opened: settled.status._tag,
+          card: settled.card,
+          left: Option.isSome(yield* NotebookKeys.pendingCard),
+        };
       }),
     );
 
     const reopened = yield* second.run(rootKey);
     second.unmount();
+    // The browser's storage is shared by every test here, so this one leaves nothing behind.
+    yield* onDevice(signOut);
 
     assert.deepStrictEqual(
       {
-        before: { started: before.started, held: before.held, offered: before.offered },
+        before: { started: before.started, card: before.card, unsaved: before.unsaved },
+        left,
         after,
-        signedIn: signedIn.accountId,
+        signedIn,
       },
       {
-        before: { started: "Unlocked", held: true, offered: false },
-        after: {
-          found: "Locked",
-          left: { held: false, rootKey: Option.none() },
-          opened: "Unlocked",
-        },
+        before: { started: "Unlocked", card: Option.none(), unsaved: Option.some(true) },
+        left: { card: false, rootKey: Option.none() },
+        after: { found: "Locked", opened: "Unlocked", card: Option.none(), left: false },
         signedIn: accountId,
       },
     );

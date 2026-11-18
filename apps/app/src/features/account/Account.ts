@@ -479,44 +479,50 @@ export const leave = Effect.fn("Account.leave")(function* (email: string, public
   }).pipe(Semaphore.withPermit(guard));
 });
 
-/** The Notfallkarte of a new account without an address, which the card step shows. */
-export interface NewCard {
+/**
+ * A Notfallkarte for an account's key state: a new account's, which the card step shows
+ * (`unsaved`), or one that signed in.
+ */
+export interface OfferedCard extends NotebookKeys.CardIn {
   readonly accountId: string;
-  readonly code: Redacted.Redacted<Uint8Array>;
-  /** The account signed up with a passkey. */
-  readonly withPasskey: boolean;
 }
 
-/** Hands a new account's card over in memory, or takes it back (`Offered.newCard`). */
-type Offer = (card: Option.Option<NewCard>) => Effect.Effect<void>;
+/** Tells the account's key status about a card in memory (`Offered.card`), or takes it back. */
+type Offer = (card: Option.Option<OfferedCard>) => Effect.Effect<void>;
 
 /**
- * Keeps the session of a new account without an address, with its card where the card step finds
- * it. A device that keeps its session writes the card to the account's secrets first, so no
- * restart finds the account signed in without its card. A public computer keeps both in memory,
- * and gets the card through `offer`, as does a device whose keychain refuses.
+ * Keeps a session that came with a card. A device that keeps its session first holds the card in
+ * the account's secrets, so no restart finds the account without it. `offer` tells the account's
+ * key status, and is the only copy on a public computer or where the keychain refuses. If the
+ * device doesn't keep the session, a card it held for it goes again.
  */
 const keepWithCard = Effect.fn("Account.keepWithCard")(function* (
   signedIn: AuthApi.SignedIn,
-  card: NewCard,
+  card: OfferedCard,
   publicComputer: boolean,
   offer: Offer,
 ) {
   const secrets = Keychain.accountSecrets(card.accountId);
+  const inSecrets = <A, E, R>(effect: Effect.Effect<A, E, R>) => Effect.provide(effect, secrets);
 
-  const written =
+  const fresh =
     !publicComputer &&
-    (yield* NotebookKeys.holdCard(card.code, card.withPasskey).pipe(
-      Effect.provide(secrets),
-      Effect.as(true),
+    (yield* inSecrets(NotebookKeys.pendingCard).pipe(
+      Effect.flatMap((held) =>
+        Effect.as(
+          inSecrets(NotebookKeys.holdCard(card)),
+          !Option.exists(held, (each) => NotebookKeys.sameCard(each.code, card.code)),
+        ),
+      ),
       Effect.orElseSucceed(() => false),
     ));
 
-  if (!written) yield* offer(Option.some(card));
+  yield* offer(Option.some(card));
 
-  const takeBack = written
-    ? Effect.ignore(Effect.provide(NotebookKeys.releaseCard, secrets))
-    : offer(Option.none());
+  const takeBack = Effect.andThen(
+    fresh ? Effect.ignore(inSecrets(NotebookKeys.dropCard(card.code))) : Effect.void,
+    offer(Option.none()),
+  );
 
   yield* keep(signedIn, publicComputer).pipe(Effect.onError(() => takeBack));
 });
@@ -546,7 +552,7 @@ export const signUpWithCard = Effect.fn("Account.signUpWithCard")(function* (
 
   yield* keepWithCard(
     signedIn,
-    { accountId: signedIn.accountId, code, withPasskey: false },
+    { accountId: signedIn.accountId, code, withPasskey: false, unsaved: true },
     publicComputer,
     offer,
   );
@@ -581,7 +587,7 @@ export const signUpWithPasskey = Effect.fn("Account.signUpWithPasskey")(function
   // A passkey stays on this device, so this is never a public computer (`Account.addPasskey`).
   yield* keepWithCard(
     signedIn,
-    { accountId: signedIn.accountId, code, withPasskey: true },
+    { accountId: signedIn.accountId, code, withPasskey: true, unsaved: true },
     false,
     offer,
   );
@@ -598,11 +604,13 @@ export const signUpWithPasskey = Effect.fn("Account.signUpWithPasskey")(function
 
 /**
  * "Mit Notfallkarte anmelden", for an account without an address. A typo stops before anything
- * leaves the device. Answers the card, which then opens the notebook (`NotebookKeys.useCard`).
+ * leaves the device. The card then goes to the account's key state, which opens the notebook with
+ * it, or gives the account's first key its wrapper (`NotebookKeys.settle`). Answers the account.
  */
 export const signInWithCard = Effect.fn("Account.signInWithCard")(function* (
   typed: string,
   publicComputer: boolean,
+  offer: Offer,
 ) {
   const api = yield* AuthApi.Service;
   const code = yield* NotebookKeys.typedCard(typed);
@@ -611,9 +619,14 @@ export const signInWithCard = Effect.fn("Account.signInWithCard")(function* (
     .cardSignIn(yield* NotebookKeys.cardLogin(code))
     .pipe(Effect.mapError(problem));
 
-  yield* keep(signedIn, publicComputer);
+  yield* keepWithCard(
+    signedIn,
+    { accountId: signedIn.accountId, code, withPasskey: false, unsaved: false },
+    publicComputer,
+    offer,
+  );
 
-  return { accountId: signedIn.accountId, code };
+  return signedIn.accountId;
 });
 
 /** A passkey ceremony's result: the passkey, and its PRF output, which stays on the device. */
