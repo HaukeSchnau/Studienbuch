@@ -7,6 +7,7 @@
   "scripts": {
     "build": "vp pack",
     "db:generate": "drizzle-kit generate",
+    "import:eval": "node src/import/evaluation/main.ts",
     "start": "node src/main.ts"
   },
   "dependencies": {
@@ -14,6 +15,7 @@
     "@better-auth/passkey": "catalog:",
     "@effect/platform-node": "catalog:",
     "@effect/sql-pg": "catalog:",
+    "@schnau/webuntis-api": "catalog:",
     "@stu/api": "workspace:*",
     "@stu/core": "workspace:*",
     "@stu/e2ee": "workspace:*",

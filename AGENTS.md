@@ -115,7 +115,7 @@ devenv on localhost is the dev environment, one instance per worktree ([ADR 0006
 An empty database is a bad test.
 
 - The demo school: `prepare` seeds it deterministically when `STUDIENBUCH_DEMO_SCHOOL=seed`, with personas: two students, and later a teacher and a parent. Dev instances and previews offer "sign in as" for them.
-- The import runs against an anonymized WebUntis corpus that lives outside this public repository. Real WebUntis data stays out of the tree.
+- The import runs against an anonymized WebUntis corpus that lives outside this public repository. Real WebUntis data stays out of the tree. `vp run import:eval` in `apps/server` measures an import against a corpus; by default it uses TinySchool, an invented school in the tree that every pull request runs on.
 - E2E tests create their own school per run, so they can run against previews and beta without a reset.
 
 ## Verifying

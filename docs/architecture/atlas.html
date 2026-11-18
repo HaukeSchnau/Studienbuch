@@ -669,7 +669,7 @@ svg .st { font-size: 12.5px; font-weight: 700; fill: var(--ink); }
     <div class="lane"><h4>M1</h4><p class="goal">Sync engine, homework as its first passenger</p><ul>
       <li class="done">Definition API, protocol, ADRs</li><li class="done">e2ee formats with vectors</li><li class="done">Sync server: push, pull, pokes</li><li class="done">Encrypted notebook, unlock</li><li class="done">Access codes, demo school</li><li class="doing">Sync client, simulation, Lab</li><li class="doing">Accounts and sign-in screens</li><li class="done">Homework on the home</li><li class="done">Homework screens</li><li>E2E: Playwright on web</li></ul></div>
     <div class="lane"><h4>M2</h4><p class="goal">School data flows down, correctly</p><ul>
-      <li>Anonymized corpus and harness</li><li>WebUntis import job</li><li>IGS school profile</li><li>Lessons in course spaces</li><li>Übersicht, Meine Woche</li></ul></div>
+      <li class="doing">Anonymized corpus and harness</li><li>WebUntis import job</li><li>IGS school profile</li><li>Lessons in course spaces</li><li>Übersicht, Meine Woche</li></ul></div>
     <div class="lane"><h4>M3</h4><p class="goal">Onboarding and profile</p><ul>
       <li>Semesters, rollover</li><li>Settings, about, feedback</li><li>Notfallkarte in password managers</li><li>App lock, off by default</li><li>QR pairing, key renewal, device removal</li></ul></div>
     <div class="lane"><h4>M4</h4><p class="goal">Grades, absences, signatures</p><ul>
@@ -753,7 +753,7 @@ svg .st { font-size: 12.5px; font-weight: 700; fill: var(--ink); }
     <li><b>The access flow is shorter.</b>domain.md has <code>access.reserve(code)</code> then <code>access.redeem(reservation)</code>. The code has one <code>Access.redeem({code})</code> that returns a reservation; the sign-up carries it in a header, and confirming the email admits, or for an account without an address the sign-up itself.<span class="src"><code>packages/api/src/Access.ts</code>, <code>apps/server/src/auth/Auth.ts</code></span></li>
     <li><b>The profile mutator changed.</b>domain.md's <code>notebook.update(cohortId?, adult?, displayName?)</code> is <code>notebookProfile.set(notebook, displayName, adult)</code>. The server-written <code>Notebook</code> row and the separate <code>CourseOffering</code> table aren't in domain.md.<span class="src"><code>packages/core/src/notebook/</code></span></li>
     <li><b>Space keys live in SQLite.</b>encryption.md keeps them in a <code>space_key</code> table and deletes them from the keychain at logout. They are in <code>sync_space_key</code> in the account database.<span class="src"><code>packages/sync/src/client/EngineTables.ts</code></span></li>
-    <li><b>architecture.md is ahead of the code.</b>It describes the WebUntis import, <code>Lesson</code>, <code>ImportStatus</code> and blobs in the present tense. There is no import code, and no server code reads the blob buckets.<span class="src"><code>apps/server/src/main.ts</code></span></li>
+    <li><b>architecture.md is ahead of the code.</b>It describes the WebUntis import, <code>Lesson</code>, <code>ImportStatus</code> and blobs in the present tense. The import exists only as its seam and the harness that measures it, nothing writes lessons, and no server code reads the blob buckets.<span class="src"><code>apps/server/src/main.ts</code></span></li>
     <li><b>Hosting details drifted.</b>hosting.md puts the R2 bucket in the Studienbuch stack (infra's tokens stack makes it), removes previews after 7 idle days (only closing the PR does), lets the preview wait on the bundle (it waits on serverSmoke) and grants 6 services (4). ADR 0010 says there is no separate <code>tsc</code> run; CI runs <code>tsc --noEmit</code>.<span class="src"><code>.calder/ci.ts</code>, <code>deploy/alchemy.run.ts</code></span></li>
   </ul>
 </section>
@@ -1062,7 +1062,7 @@ DIAGRAMS.server = {
     { id: "m-tele", x: 730, y: 330, w: 120, h: 60, t: "Telemetry", s: "OTLP if set" },
     { id: "m-jobs", x: 600, y: 404, w: 120, h: 60, t: "Jobs", s: "ClusterCron:\nheartbeat" },
     { id: "m-migr", x: 730, y: 404, w: 120, h: 60, t: "Migrations", s: "prepare applies\nserve requires" },
-    { id: "m-import", x: 730, y: 478, w: 120, h: 56, t: "WebUntis\nimport", s: "", ms: "M2" },
+    { id: "m-import", x: 730, y: 478, w: 120, h: 56, t: "Import", s: "measured on a\nrecorded corpus", k: "read" },
 
     { id: "y-tickets", x: 310, y: 594, w: 130, h: 56, t: "Tickets", s: "single use, 30 s", k: "wire" },
     { id: "y-conn", x: 310, y: 664, w: 130, h: 56, t: "Connections", s: "4 per session", k: "wire" },
@@ -1432,7 +1432,7 @@ const INFO = {
 
   r2: { t: "Cloudflare R2", k: "infra", ms: "M4", d: ["Buckets for previews (objects expire after 14 days) and beta exist, made by infra's tokens stack, and the server gets <code>S3_*</code> variables. No server code reads them yet.", "They wait for photos and signatures, blob sync in M4."] },
 
-  webuntis: { t: "WebUntis", k: "infra", ms: "M2", d: ["The school's timetable and substitutions. The import will be a job inside the server that turns provider records into rows of the school and course spaces through <code>SyncWriter</code>.", "No import code exists on main, so beta doesn't import yet."], f: ["packages/sync/src/server/SyncWriter.ts"], a: [11] },
+  webuntis: { t: "WebUntis", k: "infra", ms: "M2", d: ["The school's timetable and substitutions. The import will be a job inside the server that turns provider records into rows of the school and course spaces through <code>SyncWriter</code>.", "Only the import's seam and its harness exist, so beta doesn't import yet."], f: ["packages/sync/src/server/SyncWriter.ts", "apps/server/src/import/SchoolImport.ts"], a: [11] },
 
   otlp: { t: "OTLP export", k: "infra", ms: "M5", d: ["The server exports traces, logs and metrics over OTLP as soon as <code>OTEL_EXPORTER_OTLP_ENDPOINT</code> is set. No environment sets it today.", "Crash reporting and server OTLP are M5.3."], f: ["apps/server/src/infra/telemetry/Telemetry.ts"] },
 
@@ -1601,7 +1601,7 @@ const INFO = {
 
   "m-migr": { t: "Migrations", d: ["drizzle-kit writes the SQL from the Drizzle schema, the sync engine's tables included. <code>prepare</code> applies them; <code>serve</code> refuses a database behind the release. Eight migrations so far."], f: ["apps/server/src/infra/database/Migrations.ts", "apps/server/drizzle.config.ts", "apps/server/src/infra/database/Schema.ts"], a: [12] },
 
-  "m-import": { i: "webuntis" },
+  "m-import": { t: "Import", k: "read", d: ["An import reads WebUntis only through webuntis-api's <code>WebUntisClient</code> and returns an <code>ImportResult</code>: rows in all but name, the provider entries each came from, and the days it read completely. <code>SchoolImport.apply</code> replaces stored rows only inside those days, so a failed read deletes nothing.", "The harness runs an import on a corpus through <code>RecordedWebUntis</code>, a client that answers from recorded reads as of a given time, and measures the rows against WebUntis's own student, teacher and room views and hand-labelled cases. <code>NaiveImport</code> is the baseline to beat and <code>TinySchool</code> the invented school every pull request runs on (<code>vp run import:eval</code>). Writing to the school and course spaces comes later in M2."], f: ["apps/server/src/import/SchoolImport.ts", "apps/server/src/import/NaiveImport.ts", "apps/server/src/infra/webuntis/RecordedWebUntis.ts", "apps/server/src/import/evaluation/Evaluator.ts", "apps/server/src/import/evaluation/fixtures/TinySchool.ts"] },
 
   "y-tickets": { i: "h-ticket" },
 

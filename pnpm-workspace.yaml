@@ -119,6 +119,9 @@ catalog:
   # Better Auth's placeholder address and its transactions for our own sign-in routes, at the
   # version Better Auth itself depends on, so both share one instance.
   "@better-auth/core": 1.7.14
+  # WebUntis, read-only, behind the import's seam (m2-import-corpus.md). The harness decodes recorded
+  # bodies with its schemas, so the import sees what the live client would return.
+  "@schnau/webuntis-api": 0.4.0
 
 overrides:
   vite@*: "catalog:"
