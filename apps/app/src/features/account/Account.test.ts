@@ -1120,6 +1120,48 @@ describe("Account", () => {
     }),
   );
 
+  // A server that takes its time to end the session must not hold the next sign-in once the device
+  // forgot the account. The session it ends is the one the device erased: a sign-in kept after the
+  // sign-out read the account, as a late confirmation can be, replaced the token read then.
+  it.effect("signs in again while the server ends the session sign-out erased", () =>
+    Effect.gen(function* () {
+      const ending = yield* Queue.unbounded<string>();
+
+      yield* Effect.gen(function* () {
+        const sessions = yield* SessionStore.Service;
+
+        yield* sessions.signedIn({ ...signedIn("lena", "token-read"), demo: false }, false);
+        yield* Effect.forkChild(
+          Account.signOut((_, forgetSession) =>
+            Effect.andThen(
+              sessions.signedIn({ ...signedIn("lena", "token-kept"), demo: false }, false),
+              forgetSession,
+            ),
+          ),
+        );
+
+        const ended = yield* Queue.take(ending);
+        const next = yield* Effect.exit(Account.attempt(Effect.void));
+
+        assert.deepStrictEqual(
+          { ended, next: next._tag },
+          { ended: "token-kept", next: "Success" },
+        );
+      }).pipe(
+        Effect.provide(
+          Layer.mergeAll(
+            store,
+            confirmations(),
+            AuthApiTesting.layer({
+              signOut: (token) =>
+                Effect.andThen(Queue.offer(ending, Redacted.value(token)), Effect.never),
+            }),
+          ),
+        ),
+      );
+    }),
+  );
+
   // Lena confirmed her code on a shared device and went back; Tom signs up next. The passkey offer
   // and "Später" must not sign the device in as Lena or put Tom's passkey on her account.
   it.effect("finishes only the confirmed session of the address on screen", () =>

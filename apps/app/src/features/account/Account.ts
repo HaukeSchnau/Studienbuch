@@ -362,7 +362,7 @@ export const attempt = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
  * Runs a sign-out as the device's attempt in place of one under way, which may wait on a server
  * that never answers. That one runs on, and its sign-in keeps no session (`keep`).
  */
-export const supersede = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+const supersede = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
   Effect.flatMap(SessionStore.Service, (store) =>
     Effect.acquireUseRelease(
       SubscriptionRef.modify(store.attempt, (now) => {
@@ -859,10 +859,10 @@ export const passkeyOutput = Effect.fn("Account.passkeyOutput")(function* (crede
 });
 
 /**
- * Signs this device out: `leave` deletes the account's database and secrets (`Layers.forget`) and
- * ends with `forgetSession`, which signs the device out; then the server ends the session. Offline
- * the device still forgets everything, and the session runs out on the server. The caller asks
- * first unless nothing would be lost (`signOutWarning`), and `leave` may still refuse or fail.
+ * Signs this device out in place of an attempt under way (`supersede`): `leave` deletes the
+ * account's database and secrets (`Layers.forget`) and ends with `forgetSession`. Then the server
+ * ends the session that erased, or offline lets it run out, while the next sign-in may already run.
+ * The caller asks first unless nothing would be lost (`signOutWarning`); `leave` may refuse or fail.
  */
 export const signOut = Effect.fn("Account.signOut")(function* <E, R>(
   leave: (
@@ -873,18 +873,27 @@ export const signOut = Effect.fn("Account.signOut")(function* <E, R>(
   const store = yield* SessionStore.Service;
   const api = yield* AuthApi.Service;
   const confirmations = yield* Confirmations;
-  const current = yield* store.current;
+  const erased = yield* Ref.make(Option.none<Redacted.Redacted>());
 
-  if (Option.isSome(current)) yield* leave(current.value, store.forget);
+  yield* supersede(
+    Effect.gen(function* () {
+      const current = yield* store.current;
 
-  yield* SubscriptionRef.set(confirmations.current, Option.none());
-  yield* Ref.set(confirmations.newCard, Option.none());
-  yield* Ref.set(confirmations.newPasskeyAccount, Option.none());
+      if (Option.isSome(current)) {
+        yield* leave(
+          current.value,
+          Effect.flatMap(store.forget, (token) => Ref.set(erased, token)),
+        );
+      }
+
+      yield* SubscriptionRef.set(confirmations.current, Option.none());
+      yield* Ref.set(confirmations.newCard, Option.none());
+      yield* Ref.set(confirmations.newPasskeyAccount, Option.none());
+    }),
+  );
+
   yield* Effect.ignore(
-    Option.match(
-      Option.flatMap(current, (signed) => signed.token),
-      { onNone: () => Effect.void, onSome: api.signOut },
-    ),
+    Option.match(yield* Ref.get(erased), { onNone: () => Effect.void, onSome: api.signOut }),
   );
 });
 

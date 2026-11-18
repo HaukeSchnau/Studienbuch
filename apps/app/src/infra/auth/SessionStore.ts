@@ -59,8 +59,8 @@ export class Service extends Context.Service<
      * restart the server says so once more.
      */
     readonly ended: (token: Redacted.Redacted) => Effect.Effect<void>;
-    /** Forgets the account, at sign-out. */
-    readonly forget: Effect.Effect<void, Keychain.Unavailable>;
+    /** Forgets the account, at sign-out, and answers its token for the server to end. */
+    readonly forget: Effect.Effect<Option.Option<Redacted.Redacted>, Keychain.Unavailable>;
     /**
      * The device's one attempt. It sits here, in the device's layers, so the sign-in screens and
      * an account's own steps share it.
@@ -132,10 +132,11 @@ export const layer = Layer.effect(Service)(
         ),
       forget: Effect.flatMap(SubscriptionRef.get(ref), (current) =>
         Option.match(current, {
-          onNone: () => Effect.void,
-          onSome: ({ accountId, publicComputer }) =>
+          onNone: () => Effect.succeed(Option.none<Redacted.Redacted>()),
+          onSome: ({ accountId, publicComputer, token }) =>
             (publicComputer ? Effect.void : sessions.remove(accountId)).pipe(
               Effect.andThen(SubscriptionRef.set(ref, Option.none())),
+              Effect.as(token),
             ),
         }),
       ),
