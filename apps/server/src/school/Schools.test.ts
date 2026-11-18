@@ -249,8 +249,13 @@ describe.skipIf(Postgres18.socket === null)("Schools.publish on PostgreSQL 18", 
           // Tuesday's and German's are named, and so is Monday's, which `Data` still holds.
           const named = new Set(["ma-1-mon", "ma-1-tue", "de-1-mon"]);
 
+          // Lessons of courses with a space need no course row.
           yield* Schools.publish(
-            { ...school, lessons: { "ma-1": { "ma-1-mon": lesson("ma-1", "2026-11-16") } } },
+            {
+              ...school,
+              courses: {},
+              lessons: { "ma-1": { "ma-1-mon": lesson("ma-1", "2026-11-16") } },
+            },
             { ...keepAll, lesson: ({ id }) => named.has(id) },
           );
 
@@ -481,15 +486,27 @@ describe.skipIf(Postgres18.socket === null)("Schools.publish on PostgreSQL 18", 
           admitting,
         );
 
+        // And a publish waits for a notebook being created.
+        const creating = yield* interleave(
+          Schools.holdSpaces(School.Id.make("am-ufer"), "share"),
+          Effect.void,
+          Schools.publish(schoolWith("am-ufer", ["ma-1", "ph-1", "ch-1"]), keepAll),
+        );
+
         const physics = yield* Schools.courseSpace(School.Id.make("am-ufer"), "ph-1");
 
         expect({
           raced: [raced.blocked, outcome(raced.held), outcome(raced.waited)],
+          creating: [creating.blocked, outcome(creating.held), outcome(creating.waited)],
           // It chose the course the publish added, so it waited for all of it.
           physics: (yield* SchoolTesting.memberships("mia-ufer")).includes(
             `course ${physics} reader`,
           ),
-        }).toEqual({ raced: [true, "done", "done"], physics: true });
+        }).toEqual({
+          raced: [true, "done", "done"],
+          creating: [true, "done", "done"],
+          physics: true,
+        });
       }),
     );
 
