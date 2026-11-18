@@ -19,6 +19,7 @@ import * as SqlClient from "effect/sql/SqlClient";
 import { Pool } from "pg";
 import { Deletion } from "../account/Deletion.ts";
 import { CardLogins } from "../auth/CardLogins.ts";
+import { DatabaseTesting } from "../infra/database/DatabaseTesting.ts";
 import { SchoolTesting } from "../school/SchoolTesting.ts";
 import { KeyStore } from "./KeyStore.ts";
 
@@ -179,15 +180,6 @@ const cardAccount = (account: string, fill: number) =>
         ),
     };
   });
-
-/** Waits until `count` transactions of this database wait for a lock. */
-const waiting = (count: number) =>
-  Effect.flatMap(SqlClient.SqlClient, (sql) =>
-    sql<{ readonly waiting: number }>`
-      select count(*)::int as waiting from pg_stat_activity
-      where datname = current_database() and wait_event_type = 'Lock'
-    `.pipe(Effect.repeat({ until: ([row]) => (row?.waiting ?? 0) >= count })),
-  );
 
 /** A card's login as the device sends it: 32 bytes, base64url. */
 const loginOf = (fill: number) => Base64Url.encode(new Uint8Array(32).fill(fill));
@@ -687,7 +679,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
         );
 
         // Both wait for the replacement's locks before it goes on.
-        yield* waiting(2);
+        yield* DatabaseTesting.waiting(2);
 
         yield* Queue.offer(pause.release, undefined);
 
@@ -717,7 +709,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
         const a = yield* Effect.forkChild(rio.replace("rio-card-2", 152, loginOf(52)));
         yield* Queue.take(pause.held);
         const b = yield* Effect.forkChild(rio.replace("rio-card-3", 153, loginOf(53)));
-        yield* waiting(1);
+        yield* DatabaseTesting.waiting(1);
         yield* Queue.offer(pause.release, undefined);
         yield* Queue.take(pause.held);
 
@@ -725,7 +717,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
           KeyStore.fetchSeals("rio", Keys.RecoveryCode.make({})),
         );
 
-        yield* waiting(1);
+        yield* DatabaseTesting.waiting(1);
         yield* Queue.offer(pause.release, undefined);
 
         expect({
@@ -746,11 +738,11 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
         const a = yield* Effect.forkChild(ria.replace("ria-card-2", 162, loginOf(62)));
         yield* Queue.take(pause.held);
         const b = yield* Effect.forkChild(ria.replace("ria-card-3", 163, loginOf(63)));
-        yield* waiting(1);
+        yield* DatabaseTesting.waiting(1);
         yield* Queue.offer(pause.release, undefined);
         yield* Queue.take(pause.held);
         const c = yield* Effect.forkChild(ria.replace("ria-card-4", 164, loginOf(64)));
-        yield* waiting(1);
+        yield* DatabaseTesting.waiting(1);
         yield* Queue.offer(pause.release, undefined);
 
         expect({
@@ -798,7 +790,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
             Deletion.run("sia").pipe(Effect.provide(Deletion.ended)),
           );
 
-          yield* waiting(1);
+          yield* DatabaseTesting.waiting(1);
           yield* Queue.offer(pause.release, undefined);
 
           const signingIn = yield* Effect.forkChild(

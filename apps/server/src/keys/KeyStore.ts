@@ -274,9 +274,9 @@ export interface First {
 }
 
 /**
- * Publishes generation 0 of an account's chain in the caller's transaction, with its first wrapper
- * when given. The same keys again change nothing (the demo seed runs on every deploy, and WebKit
- * signs with fresh randomness); other keys, or a wrapper after generation 0, are `ChainExists`.
+ * Publishes generation 0 of an account's chain in one transaction, with its first wrapper when
+ * given. The same keys again change nothing (the demo seed runs on every deploy, and WebKit signs
+ * with fresh randomness); other keys, or a wrapper after generation 0, are `ChainExists`.
  */
 export const publishFirst = Effect.fn("KeyStore.publishFirst")(function* (
   account: string,
@@ -299,42 +299,51 @@ export const publishFirst = Effect.fn("KeyStore.publishFirst")(function* (
     }
   }
 
-  if (!(yield* AccountLock.hold(account, "share"))) return yield* new Keys.SignedOut();
+  return yield* sql.withTransaction(
+    Effect.gen(function* () {
+      if (!(yield* AccountLock.hold(account, "share"))) return yield* new Keys.SignedOut();
 
-  const [held] = yield* sql`
-    select 1 from account_key where account_id = ${account} and generation = 0
-  `;
+      const [held] = yield* sql`
+        select 1 from account_key where account_id = ${account} and generation = 0
+      `;
 
-  // Checked before anything is written, because the demo seed calls this outside a transaction.
-  if (held === undefined && !(yield* sealedBy(account, record))) return yield* new Keys.KeysLost();
+      if (held === undefined && !(yield* sealedBy(account, record))) {
+        return yield* new Keys.KeysLost();
+      }
 
-  // A concurrent first publish of the same account waits here for the other to commit.
-  yield* sql`
-    insert into account_key (account_id, generation, record)
-    values (${account}, 0, ${yield* recordText(record)})
-    on conflict (account_id, generation) do nothing
-  `;
+      // A concurrent first publish of the same account waits here for the other to commit.
+      yield* sql`
+        insert into account_key (account_id, generation, record)
+        values (${account}, 0, ${yield* recordText(record)})
+        on conflict (account_id, generation) do nothing
+      `;
 
-  const stored = yield* sql<{
-    readonly generation: number;
-    readonly record: typeof recordJson.Encoded;
-  }>`
-    select generation, record from account_key where account_id = ${account}
-    order by generation
-  `;
+      const stored = yield* sql<{
+        readonly generation: number;
+        readonly record: typeof recordJson.Encoded;
+      }>`
+        select generation, record from account_key where account_id = ${account}
+        order by generation
+      `;
 
-  const [zero] = stored;
+      const [zero] = stored;
 
-  if (zero === undefined) return yield* Effect.die("A key record vanished inside its transaction");
+      if (zero === undefined) {
+        return yield* Effect.die("A key record vanished inside its transaction");
+      }
 
-  if (!sameRecord(yield* decodeRecord(zero.record), record)) return yield* new Keys.ChainExists();
+      if (!sameRecord(yield* decodeRecord(zero.record), record)) {
+        return yield* new Keys.ChainExists();
+      }
 
-  if (Option.isSome(first)) {
-    // A wrapper endorsed by generation 0 after a renewal would hold a root key nobody uses.
-    if (stored.length > 1) return yield* new Keys.ChainExists();
+      if (Option.isSome(first)) {
+        // A wrapper endorsed by generation 0 after a renewal would hold a root key nobody uses.
+        if (stored.length > 1) return yield* new Keys.ChainExists();
 
-    yield* insertWrapper(account, first.value.wrapper, first.value.session);
-  }
+        yield* insertWrapper(account, first.value.wrapper, first.value.session);
+      }
+    }),
+  );
 });
 
 /** The account's key records, oldest generation first. */

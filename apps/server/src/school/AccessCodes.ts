@@ -376,8 +376,9 @@ export const admitConfirmed = Effect.fn("AccessCodes.admitConfirmed")(function* 
 
   return yield* sql.withTransaction(
     Effect.gen(function* () {
-      // First, as every write of the account's rows: a deletion under way finishes before, or after.
-      if (!(yield* AccountLock.hold(account, "share"))) return Option.none<Access.Admission>();
+      // Exclusive, as `Access.admit` takes it, and first, before the sign-up rows: a second
+      // confirmation, or a deletion, waits here for this one to end.
+      if (!(yield* AccountLock.hold(account, "update"))) return Option.none<Access.Admission>();
 
       const signedUp = yield* sql<{ readonly reservation: string }>`
         delete from access_sign_up where account_id = ${account}
@@ -469,6 +470,9 @@ export const admitSignedUp = Effect.fn("AccessCodes.admitSignedUp")(function* (
 
   return yield* sql.withTransaction(
     Effect.gen(function* () {
+      // Exclusive, as `Access.admit` takes it, and before the code's lock, as `admitConfirmed`.
+      if (!(yield* AccountLock.hold(account, "update"))) return Option.none<Access.Admission>();
+
       const [held] = yield* heldBy(sql, token);
 
       if (held === undefined || held.spentAt === null || held.spentBy !== null) {

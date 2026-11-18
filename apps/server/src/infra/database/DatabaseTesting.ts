@@ -9,16 +9,19 @@ import { Migrations } from "./Migrations.ts";
 export * as DatabaseTesting from "./DatabaseTesting.ts";
 
 /**
- * Waits until a transaction in this database waits for another's lock. It asks again at once,
- * because nothing else could tell.
+ * Waits until `count` transactions in this database wait for another's lock. It asks again at
+ * once, because nothing else could tell.
  */
-export const someoneWaits = Effect.flatMap(
-  SqlClient.SqlClient,
-  (sql) => sql`
-    select 1 from pg_stat_activity
-    where datname = current_database() and wait_event_type = 'Lock'
-  `,
-).pipe(Effect.repeat({ until: (rows) => rows.length > 0 }));
+export const waiting = (count: number) =>
+  Effect.flatMap(SqlClient.SqlClient, (sql) =>
+    sql<{ readonly waiting: number }>`
+      select count(*)::int as waiting from pg_stat_activity
+      where datname = current_database() and wait_event_type = 'Lock'
+    `.pipe(Effect.repeat({ until: ([row]) => (row?.waiting ?? 0) >= count })),
+  );
+
+/** Waits until a transaction in this database waits for another's lock. */
+export const someoneWaits = waiting(1);
 
 /**
  * A fresh database on the test run's PostgreSQL 18 at the release's schema, as `prepare` leaves it

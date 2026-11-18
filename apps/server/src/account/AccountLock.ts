@@ -1,7 +1,7 @@
 /**
  * An account's lock, taken first by every path that writes its rows: an advisory lock on its id,
- * shared, or exclusive to delete the account or replace a login, so Better Auth's own pool joins no
- * cycle. Row locks follow under it in one order: logins, the user row, the newest key record.
+ * shared, or exclusive to delete the account, replace a login or admit it to a school, so Better
+ * Auth's own pool joins no cycle. Row locks follow in one order: logins, user row, newest key.
  */
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
@@ -10,7 +10,10 @@ import * as SqlClient from "effect/sql/SqlClient";
 
 export * as AccountLock from "./AccountLock.ts";
 
-/** Shared, or exclusive for a path that deletes the account or changes or deletes a login. */
+/**
+ * Shared, or exclusive for a path that deletes the account, changes or deletes a login, or admits
+ * it to a school, since admissions of one account run one at a time.
+ */
 export type Mode = "share" | "update";
 
 /**

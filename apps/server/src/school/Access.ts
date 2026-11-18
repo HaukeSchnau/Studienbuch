@@ -11,6 +11,7 @@ import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
+import { AccountLock } from "../account/AccountLock.ts";
 import { DemoAccounts } from "../demo/DemoAccounts.ts";
 import { DemoSchool } from "../demo/DemoSchool.ts";
 import { Notebooks } from "../sync/Notebooks.ts";
@@ -64,9 +65,9 @@ export const enroll = Effect.fn("Access.enroll")(function* (
 
 /**
  * Admits the account with its first course choice, or answers its notebook there with its
- * memberships restored. Admissions of one account run one at a time, so it never gets two
- * notebooks at one school. A refused choice, or another school for a demo account, admits nothing.
- * The notebook's id is random unless the demo seed names it.
+ * memberships restored. Admissions of one account hold its lock exclusively (`AccountLock`), so it
+ * never gets two notebooks at one school. A refused choice, or another school for a demo account,
+ * admits nothing. The notebook's id is random unless the demo seed names it.
  */
 export const admit = Effect.fn("Access.admit")(function* (
   account: string,
@@ -80,11 +81,9 @@ export const admit = Effect.fn("Access.admit")(function* (
 
   return yield* sql.withTransaction(
     Effect.gen(function* () {
-      const [found] = yield* sql`
-        select 1 from auth_user where id = ${account} for no key update
-      `;
-
-      if (found === undefined) return yield* Effect.die(`The account ${account} doesn't exist`);
+      if (!(yield* AccountLock.hold(account, "update"))) {
+        return yield* Effect.die(`The account ${account} doesn't exist`);
+      }
 
       if (school !== DemoSchool.id && (yield* DemoAccounts.isDemo(account))) {
         return yield* new DemoAccount({ school });
