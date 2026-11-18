@@ -10,7 +10,9 @@ The Notfallkarte of an account without an email address signs in on any device, 
 included, and opens the notebook in the same step. A mistyped code gets its answer on the device,
 offline too, before anything is sent. A card the student replaced signs in nowhere: a new card
 retires the old one and signs out every other device of the account, which keep their entries and
-say that the sign-in ended. "Kurz bestätigen" before a new card or passkey takes the card too.
+say that the sign-in ended. "Kurz bestätigen" before a new card or passkey takes the card too. An
+account signed in on a public computer keeps its card in the tab's memory when it signs in again
+there, as its first sign-in chose.
 
 ## Example
 

@@ -17,8 +17,11 @@ card, so the new account, still empty, can't be used, and the access code's use 
 was the code's last use, signing up again needs another code that still works. The card step says
 so, and the browser asks before the tab reloads or closes. Signing out before the card is saved
 deletes it from the device with the account's other secrets. A device that can't store the card
-keeps nothing, says "Dieses Gerät konnte deine Notfallkarte gerade nicht speichern." and offers to
-try again. Without a passkey the step offers one, and if the student says "Später", it ends with
+says "Dieses Gerät konnte deine Notfallkarte gerade nicht speichern." and offers to try again. If
+it couldn't even set the card aside, nothing went to the server. If it set the card aside but
+couldn't keep it with the account, it keeps no session, and the card it set aside stays for the
+retry, which signs in to the account the server may have made already. While the sign-up runs, the
+device starts no other sign-in, and "Öffentlicher Computer" can't change. Without a passkey the step offers one, and if the student says "Später", it ends with
 typing the code back once, which also signs in with it. A public computer offers no passkey and goes
 straight to the typing: the card then gives the notebook's key its way back on the student's own
 device. "Lieber mit E-Mail-Adresse" keeps the email sign-up.
