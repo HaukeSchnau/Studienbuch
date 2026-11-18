@@ -24,6 +24,15 @@ export class Problem extends Schema.TaggedError<Problem, { readonly brand: uniqu
   { reason: Reason },
 ) {}
 
+/**
+ * Leaving failed before its point of no return (`Forgetting.begin`): nothing changed on the
+ * device, which still holds all of the account, so it can try again.
+ */
+export class Unchanged extends Schema.TaggedError<Unchanged, { readonly brand: unique symbol }>()(
+  "Deletion.Unchanged",
+  {},
+) {}
+
 export const sentence: Record<Reason, string> = {
   offline:
     "Zum Löschen braucht dein Gerät eine Verbindung zum Server. Versuch es noch einmal, wenn du online bist.",
@@ -41,7 +50,7 @@ export const sentence: Record<Reason, string> = {
  * sign-in is older than `Keys.freshSignInMinutes`.
  */
 export const deleteAccount = Effect.fn("Deletion.deleteAccount")(function* <R>(
-  leave: (accountId: string) => Effect.Effect<void, Problem, R>,
+  leave: (accountId: string) => Effect.Effect<void, Problem | Unchanged, R>,
   report: (reason: Reason) => Effect.Effect<void>,
 ) {
   const store = yield* SessionStore.Service;
@@ -74,7 +83,13 @@ export const deleteAccount = Effect.fn("Deletion.deleteAccount")(function* <R>(
       }),
     );
 
-    yield* leave(accountId);
+    // "forget-failed" holds for both: the server ended this session too, and once the device
+    // notices, `forgetWhenDeleted` leaves again.
+    yield* leave(accountId).pipe(
+      Effect.catchTags({
+        "Deletion.Unchanged": () => Effect.fail(new Problem({ reason: "forget-failed" })),
+      }),
+    );
   }).pipe(
     Effect.tapError((problem) =>
       Effect.flatMap(store.current, (now) =>
@@ -116,11 +131,12 @@ const askAgain = Schedule.min([Schedule.exponential("2 seconds"), Schedule.space
 
 /**
  * `leave`s the account whose session ended if the server says the account was deleted, asking
- * with the ended session's token. The question waits for a reachable server and stops once
- * another account or none holds the device. Any other end keeps the data (D27).
+ * with the ended session's token. The question, and a `leave` that changed nothing, wait for a
+ * reachable server and a keychain that works, and stop once another account or none holds the
+ * device. Any other end keeps the data (D27).
  */
-export const forgetWhenDeleted = Effect.fn("Deletion.forgetWhenDeleted")(function* <E, R>(
-  leave: (accountId: string) => Effect.Effect<void, E, R>,
+export const forgetWhenDeleted = Effect.fn("Deletion.forgetWhenDeleted")(function* <R>(
+  leave: (accountId: string) => Effect.Effect<void, Problem | Unchanged, R>,
 ) {
   const store = yield* SessionStore.Service;
   const sessions = yield* DeviceSessions.Service;
@@ -144,7 +160,13 @@ export const forgetWhenDeleted = Effect.fn("Deletion.forgetWhenDeleted")(functio
 
       const deleted = yield* server.deleted(asked.value).pipe(Effect.retry({ schedule: askAgain }));
 
-      if (deleted) yield* Effect.uninterruptible(leave(accountId));
+      if (!deleted) return;
+
+      // A failure past the point of no return isn't tried again here: its note finishes the rest at
+      // the next start or before the next session (`Forgetting`), and a second run could race that.
+      yield* Effect.uninterruptible(leave(accountId)).pipe(
+        Effect.retry({ schedule: askAgain, while: (error) => error._tag === "Deletion.Unchanged" }),
+      );
     },
     Effect.catchCause((cause) =>
       Effect.logWarning("A device of a deleted account didn't forget it yet", cause),

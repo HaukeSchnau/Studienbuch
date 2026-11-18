@@ -264,20 +264,21 @@ export const signOut = runtime
 /**
  * Leaves the deleted account by its id, without asking about its unsent changes, which went with it
  * on the server (`AccountEngine.forgetIfHeld`). The gates then lead to the start, not to
- * "Anmelden". A failure after the point of no return finishes at the next start.
+ * "Anmelden". A failure before the point of no return is `Deletion.Unchanged` and can run again;
+ * one after it is "forget-failed" and finishes at the next start.
  */
-const leaveDeleted = (accountId: string, forgotten: Effect.Effect<void>) =>
+export const leaveDeleted = (accountId: string, forgotten: Effect.Effect<void>) =>
   AccountEngine.forgetIfHeld(accountId, forgotten).pipe(
     Effect.catchTags({
-      // No question showed, so no change can be newer than one: `forgetIfHeld` asks none.
-      "AccountEngine.MoreUnsent": () => forgetFailed,
-      "Forgetting.Unfinished": () => forgetFailed,
-      "Keychain.Unavailable": () => forgetFailed,
-      SqlError: () => forgetFailed,
+      // `Engines.forget` fails with these before it writes the note, its point of no return.
+      "AccountEngine.MoreUnsent": () => unchanged,
+      "Keychain.Unavailable": () => unchanged,
+      SqlError: () => unchanged,
+      "Forgetting.Unfinished": () => Effect.fail(new Deletion.Problem({ reason: "forget-failed" })),
     }),
   );
 
-const forgetFailed = Effect.fail(new Deletion.Problem({ reason: "forget-failed" }));
+const unchanged = Effect.fail(new Deletion.Unchanged());
 
 /**
  * Why the device's account couldn't be deleted, for "Konto löschen". It belongs to that account:

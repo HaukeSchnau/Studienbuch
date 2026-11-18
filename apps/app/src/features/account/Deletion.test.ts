@@ -219,6 +219,39 @@ describe("Deletion", () => {
     }).pipe(Effect.provide(device)),
   );
 
+  // A failure past the point of no return leaves a note that finishes the rest at the next start
+  // (`Forgetting`), so the watcher doesn't run a second erase beside it.
+  it.effect("a leave that changed nothing runs again; one that began to erase doesn't", () =>
+    Effect.gen(function* () {
+      const store = yield* SessionStore.Service;
+      const asked = yield* Queue.unbounded<string>();
+      const tries = yield* Ref.make(0);
+
+      const leave = () =>
+        Effect.flatMap(
+          Ref.updateAndGet(tries, (n) => n + 1),
+          (n) =>
+            Effect.fail(
+              n === 1
+                ? new Deletion.Unchanged()
+                : new Deletion.Problem({ reason: "forget-failed" }),
+            ),
+        );
+
+      yield* Effect.gen(function* () {
+        yield* Effect.forkChild(Deletion.forgetWhenDeleted(leave), { startImmediately: true });
+        yield* signIn("lena", "token-lena");
+        yield* store.ended;
+        yield* Queue.take(asked);
+        yield* TestClock.adjust("2 seconds");
+        const second = yield* Ref.get(tries);
+        yield* TestClock.adjust("10 minutes");
+
+        expect({ second, later: yield* Ref.get(tries) }).toEqual({ second: 2, later: 2 });
+      }).pipe(Effect.provide(server(new Set(["token-lena"]), asked)));
+    }).pipe(Effect.provide(device)),
+  );
+
   // Lena deletes her account, and the answer is slow. Meanwhile she signs out and Tom signs in on
   // the same phone. The late answers concern Lena only, and Tom's session stays.
   it.effect(
