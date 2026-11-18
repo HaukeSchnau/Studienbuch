@@ -8,9 +8,9 @@ import { Keys } from "@stu/api/Keys";
 import { Notebook } from "@stu/core";
 import { AccountKey, CryptoSuite, SpaceKey, Wrapper } from "@stu/e2ee";
 import { Protocol } from "@stu/sync";
+import * as Crypto from "effect/Crypto";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
-import * as Hex from "effect/encoding/Hex";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
@@ -209,13 +209,20 @@ const retireOtherCards = Effect.fn("KeyStore.retireOtherCards")(function* (
   `;
 
   for (const { statement: retiredStatement } of keys) {
-    const publicKey = Hex.encode((yield* decodeStatement(retiredStatement)).publicKey);
+    const digest = yield* cardDigest(yield* decodeStatement(retiredStatement));
 
     yield* sql`
-      insert into retired_card (account_id, public_key) values (${account}, ${publicKey})
-      on conflict (account_id, public_key) do nothing
+      insert into retired_card (account_id, digest) values (${account}, ${digest})
+      on conflict (account_id, digest) do nothing
     `;
   }
+});
+
+/** What `retired_card` keeps of a card: the SHA-256 of its wrapper's public key. */
+const cardDigest = Effect.fn("KeyStore.cardDigest")(function* (statement: Wrapper.Statement) {
+  const crypto = yield* Crypto.Crypto;
+
+  return yield* Effect.orDie(crypto.digest("SHA-256", statement.publicKey));
 });
 
 /** Whether a newer card retired the statement's card, which then never comes back. */
@@ -227,7 +234,7 @@ const isRetired = Effect.fn("KeyStore.isRetired")(function* (
 
   const [row] = yield* sql`
     select 1 from retired_card
-    where account_id = ${account} and public_key = ${Hex.encode(statement.publicKey)}
+    where account_id = ${account} and digest = ${yield* cardDigest(statement)}
   `;
 
   return row !== undefined;
