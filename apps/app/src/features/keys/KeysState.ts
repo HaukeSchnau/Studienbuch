@@ -228,9 +228,15 @@ export const checkSignOut = Atom.family((accountId: string) =>
   ),
 );
 
-// The summary reads the status, so refreshing the status alone runs both again, in order.
+// The summary reads the status, so refreshing the status alone runs both again, in order. Through
+// the registry, as a confirmation's run can outlive its atom's context (`oneAttempt`).
 const refresh = (accountId: string, get: Atom.FnContext) =>
-  Effect.sync(() => get.refresh(status(accountId)));
+  Effect.sync(() => get.registry.refresh(status(accountId)));
+
+// The confirmations that sign in again run as the device's one attempt (`Account.attempt`), with
+// the sign-in screens. A second call of the same one must meet that refusal rather than interrupt
+// the first, so their atoms run `concurrent`.
+const oneAttempt = { concurrent: true };
 
 /** "Mit der Notfallkarte": the typed code. */
 export const unlockWithCode = Atom.family((accountId: string) =>
@@ -244,13 +250,17 @@ export const unlockWithCode = Atom.family((accountId: string) =>
  * device, and the confirmation that makes the sign-in fresh before a new Notfallkarte.
  */
 export const withPasskey = Atom.family((accountId: string) =>
-  runtime(accountId).fn<void>()((_, get) =>
-    Effect.gen(function* () {
-      const used = yield* Account.signInWithPasskey(yield* Device.PublicComputer);
+  runtime(accountId).fn<void>()(
+    (_, get) =>
+      Effect.gen(function* () {
+        const used = yield* Account.attempt(
+          Account.signInWithPasskey(yield* Device.PublicComputer),
+        );
 
-      yield* NotebookKeys.usePasskey(used.credentialId, used.prf);
-      yield* refresh(accountId, get);
-    }),
+        yield* NotebookKeys.usePasskey(used.credentialId, used.prf);
+        yield* refresh(accountId, get);
+      }),
+    oneAttempt,
   ),
 );
 
@@ -259,8 +269,9 @@ export const withPassword = Atom.family((accountId: string) =>
   runtime(accountId).fn<{ readonly email: string; readonly password: string }>()(
     ({ email, password }) =>
       Effect.flatMap(Device.PublicComputer, (publicComputer) =>
-        Account.signIn(email, password, publicComputer),
+        Account.attempt(Account.signIn(email, password, publicComputer)),
       ),
+    oneAttempt,
   ),
 );
 
@@ -312,27 +323,35 @@ const kept: Account.Offer = { give: () => Effect.void, withdraw: () => Effect.vo
  * anyone holding the device could type from the screen anyway.
  */
 export const saveCard = Atom.family((accountId: string) =>
-  runtime(accountId).fn<void>()((_, get) =>
-    Effect.gen(function* () {
-      const settled = yield* NotebookKeys.settle;
-      const cardOnly = Option.filter(yield* NotebookKeys.pendingCard, (card) => !card.endsAtSaved);
+  runtime(accountId).fn<void>()(
+    (_, get) =>
+      Effect.gen(function* () {
+        const settled = yield* NotebookKeys.settle;
 
-      const again =
-        Option.contains(settled.card, "not-fresh") && Option.isSome(cardOnly)
-          ? yield* Effect.andThen(
-              Account.signInWithCard(
-                Redacted.value(cardOnly.value.text),
-                yield* Device.PublicComputer,
-                kept,
-              ),
-              NotebookKeys.settle,
-            )
-          : settled;
+        const cardOnly = Option.filter(
+          yield* NotebookKeys.pendingCard,
+          (card) => !card.endsAtSaved,
+        );
 
-      if (Option.isSome(again.card)) {
-        return yield* new NotebookKeys.Problem({ reason: again.card.value });
-      }
-    }).pipe(Effect.ensuring(refresh(accountId, get))),
+        const again =
+          Option.contains(settled.card, "not-fresh") && Option.isSome(cardOnly)
+            ? yield* Effect.andThen(
+                Account.attempt(
+                  Account.signInWithCard(
+                    Redacted.value(cardOnly.value.text),
+                    yield* Device.PublicComputer,
+                    kept,
+                  ),
+                ),
+                NotebookKeys.settle,
+              )
+            : settled;
+
+        if (Option.isSome(again.card)) {
+          return yield* new NotebookKeys.Problem({ reason: again.card.value });
+        }
+      }).pipe(Effect.ensuring(refresh(accountId, get))),
+    oneAttempt,
   ),
 );
 
@@ -355,15 +374,17 @@ export const cardSaved = Atom.family((accountId: string) =>
  * state, which finds the server holds it.
  */
 export const withCard = Atom.family((accountId: string) =>
-  runtime(accountId).fn<string>()((typed, get) =>
-    Effect.gen(function* () {
-      yield* Account.signInWithCard(typed, yield* Device.PublicComputer, kept);
-      const settled = yield* NotebookKeys.settle;
+  runtime(accountId).fn<string>()(
+    (typed, get) =>
+      Effect.gen(function* () {
+        yield* Account.attempt(Account.signInWithCard(typed, yield* Device.PublicComputer, kept));
+        const settled = yield* NotebookKeys.settle;
 
-      if (Option.isSome(settled.card)) {
-        return yield* new NotebookKeys.Problem({ reason: settled.card.value });
-      }
-    }).pipe(Effect.ensuring(refresh(accountId, get))),
+        if (Option.isSome(settled.card)) {
+          return yield* new NotebookKeys.Problem({ reason: settled.card.value });
+        }
+      }).pipe(Effect.ensuring(refresh(accountId, get))),
+    oneAttempt,
   ),
 );
 
@@ -372,18 +393,20 @@ export const withCard = Atom.family((accountId: string) =>
  * once more must be the pending card's, and it signs in, which proves the server knows it.
  */
 export const readBack = Atom.family((accountId: string) =>
-  runtime(accountId).fn<string>()((typed, get) =>
-    Effect.gen(function* () {
-      const held = yield* NotebookKeys.pendingCard;
-      const code = yield* NotebookKeys.typedCard(typed);
+  runtime(accountId).fn<string>()(
+    (typed, get) =>
+      Effect.gen(function* () {
+        const held = yield* NotebookKeys.pendingCard;
+        const code = yield* NotebookKeys.typedCard(typed);
 
-      if (Option.isSome(held) && !NotebookKeys.sameCard(held.value.code, code)) {
-        return yield* new NotebookKeys.Problem({ reason: "not-this-card" });
-      }
+        if (Option.isSome(held) && !NotebookKeys.sameCard(held.value.code, code)) {
+          return yield* new NotebookKeys.Problem({ reason: "not-this-card" });
+        }
 
-      yield* Account.signInWithCard(typed, yield* Device.PublicComputer, kept);
-      yield* NotebookKeys.cardSaved;
-    }).pipe(Effect.ensuring(refresh(accountId, get))),
+        yield* Account.attempt(Account.signInWithCard(typed, yield* Device.PublicComputer, kept));
+        yield* NotebookKeys.cardSaved;
+      }).pipe(Effect.ensuring(refresh(accountId, get))),
+    oneAttempt,
   ),
 );
 

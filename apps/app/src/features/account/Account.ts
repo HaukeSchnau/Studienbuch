@@ -319,18 +319,16 @@ export class Confirmations extends Context.Service<
      * than making another. It lives in this run only: after a restart the passkey signs in.
      */
     readonly newPasskeyAccount: Ref.Ref<Option.Option<PasskeyAccount>>;
-    /** Whether a sign-in or sign-up runs on this device (`attempt`). */
-    readonly attempting: SubscriptionRef.SubscriptionRef<boolean>;
   }
 >()("Account.Confirmations") {}
 
 /**
- * Runs a sign-in or sign-up as the device's one attempt. Another one meanwhile is refused, never
- * queued, and the screens offer none, nor the "Öffentlicher Computer" choice: the place an attempt
- * read when it started holds for its card and its session.
+ * Runs a sign-in, a sign-up or an account's confirmation as the device's one attempt
+ * (`SessionStore.attempting`). Another one meanwhile is refused, never queued, and the screens
+ * offer none, nor the "Öffentlicher Computer" choice, which the attempt read when it started.
  */
 export const attempt = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
-  Effect.flatMap(Confirmations, ({ attempting }) =>
+  Effect.flatMap(SessionStore.Service, ({ attempting }) =>
     Effect.acquireUseRelease(
       SubscriptionRef.modify(attempting, (running) => [!running, true] as const),
       (mine): Effect.Effect<A, E | Problem, R> =>
@@ -388,7 +386,6 @@ export const confirmations = Layer.effect(Confirmations)(
     signingUp: Effect.flatMap(restore, SubscriptionRef.make),
     newCard: Ref.make(Option.none<Redacted.Redacted<Uint8Array>>()),
     newPasskeyAccount: Ref.make(Option.none<PasskeyAccount>()),
-    attempting: SubscriptionRef.make(false),
   }),
 );
 

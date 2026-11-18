@@ -1,20 +1,34 @@
 import { assert, it } from "@effect/vitest";
+import { Access } from "@stu/api/Access";
 import { Notebook, NotebookProfile } from "@stu/core";
-import { SyncClient } from "@stu/sync/client";
+import { Ports, SyncClient } from "@stu/sync/client";
+import * as Cause from "effect/Cause";
+import * as DateTime from "effect/DateTime";
+import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
+import * as FetchHttpClient from "effect/http/FetchHttpClient";
+import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import * as Queue from "effect/Queue";
 import * as Redacted from "effect/Redacted";
+import * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Atom from "effect/reactivity/Atom";
 import * as AtomRegistry from "effect/reactivity/AtomRegistry";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import * as Stream from "effect/Stream";
 
+import { AuthApi } from "../../infra/auth/AuthApi.ts";
+import { AuthApiTesting } from "../../infra/auth/AuthApiTesting.ts";
 import { SessionStore } from "../../infra/auth/SessionStore.ts";
+import { publicComputer } from "../../infra/device/publicComputer.ts";
 import type { Keychain } from "../../infra/keychain/Keychain.ts";
 import { AccountEngine } from "../../infra/runtime/AccountEngine.ts";
+import { KeysState } from "../keys/KeysState.ts";
+import { Offered } from "../keys/Offered.ts";
 import { Onboarding } from "../onboarding/Onboarding.ts";
 import { OnboardingState } from "../onboarding/OnboardingState.ts";
+import { Account } from "./Account.ts";
 import { AccountState } from "./AccountState.ts";
 
 const accountId = "leaves-lena";
@@ -182,5 +196,220 @@ it.effect("an account's memory lasts through a new token and the session's end, 
         afterSignOut: Option.some(Option.none()),
       },
     );
+  }).pipe(Effect.scoped),
+);
+
+/**
+ * Puts `calls` in place of the server for every runtime `registry` builds: `AuthApi.layer`, which
+ * `AccountEngine.device` holds, is built from them in the registry's layer memo map first.
+ */
+const serverAnswers = (
+  registry: AtomRegistry.AtomRegistry,
+  calls: Partial<AuthApi.Service["Service"]>,
+) =>
+  Effect.gen(function* () {
+    registry.mount(Atom.runtime.memoMap);
+    const scope = yield* Effect.scope;
+
+    // The memo map keys a layer by identity. The fake needs none of the real one's services, which
+    // the priming effect only names.
+    yield* registry
+      .get(Atom.runtime.memoMap)
+      .getOrElseMemoize(AuthApi.layer, scope, () =>
+        Layer.buildWithScope(AuthApiTesting.layer({ signOut: () => Effect.void, ...calls }), scope),
+      )
+      .pipe(
+        Effect.provide(
+          Layer.mergeAll(
+            FetchHttpClient.layer,
+            Layer.succeed(Ports.Server)({ origin: new URL(window.location.origin) }),
+          ),
+        ),
+      );
+  });
+
+/** A password sign-in the test answers: each call waits in `asked` until `answer` is done. */
+const answeredSignIn = Effect.gen(function* () {
+  const asked = yield* Queue.unbounded<string>();
+  const answer = yield* Deferred.make<void>();
+
+  const signIn = (email: string) =>
+    Effect.andThen(
+      Effect.andThen(Queue.offer(asked, email), Deferred.await(answer)),
+      Effect.succeed({ accountId: email.split("@")[0] ?? email, token: Redacted.make(email) }),
+    );
+
+  return { asked, answer, signIn };
+});
+
+const tokenNow = (registry: AtomRegistry.AtomRegistry, value: string) =>
+  AtomRegistry.toStreamResult(registry, AccountState.current).pipe(
+    Stream.filter((signed) =>
+      Option.exists(
+        Option.flatMap(signed, (each) => each.token),
+        (token) => Redacted.value(token) === value,
+      ),
+    ),
+    Stream.runHead,
+  );
+
+const isProblem = Schema.is(Account.Problem);
+
+/** Why an atom's last run failed, as the screens say it. */
+const reasonOf = (
+  registry: AtomRegistry.AtomRegistry,
+  atom: Atom.Atom<AsyncResult.AsyncResult<unknown, unknown>>,
+) => {
+  const result = registry.get(atom);
+
+  return AsyncResult.isFailure(result)
+    ? Option.flatMap(Cause.findErrorOption(result.cause), (error) =>
+        isProblem(error) ? Option.some(error.reason) : Option.none(),
+      )
+    : Option.none();
+};
+
+/** Signs out whatever the device holds, as a test before may leave its account in this browser. */
+const signOut = (registry: AtomRegistry.AtomRegistry) =>
+  Effect.gen(function* () {
+    registry.set(AccountState.signOut, Option.none());
+    yield* AtomRegistry.getResult(registry, AccountState.signOut, { suspendOnWaiting: true });
+  });
+
+// A second press while a sign-in runs: by default an atom's new call interrupts its running one,
+// which let a second request go out. The first runs on, and the second meets the device's attempt.
+it.effect("a second call of a running sign-in is refused, and the first runs to its end", () =>
+  Effect.gen(function* () {
+    const registry = AtomRegistry.make();
+    yield* Effect.addFinalizer(() => Effect.sync(() => registry.dispose()));
+    const { asked, answer, signIn } = yield* answeredSignIn;
+    yield* serverAnswers(registry, { signIn });
+    registry.mount(AccountState.current);
+    yield* signOut(registry);
+    registry.mount(AccountState.signIn);
+
+    const credentials = { email: "twice-tom@example.org", password: "geheim-genug" };
+    registry.set(AccountState.signIn, credentials);
+    yield* Queue.take(asked);
+    registry.set(AccountState.signIn, credentials);
+
+    yield* Deferred.succeed(answer, undefined);
+    yield* tokenNow(registry, credentials.email);
+
+    const result = {
+      second: reasonOf(registry, AccountState.signIn),
+      requests: 1 + (yield* Queue.size(asked)),
+    };
+
+    yield* signOut(registry);
+
+    assert.deepStrictEqual(result, { second: Option.some("busy"), requests: 1 });
+  }).pipe(Effect.scoped),
+);
+
+// A public computer's new card exists only in what the sign-up hands to the key status. A second
+// press must not lose it: the first run outlives its atom's context and hands it over anyway.
+it.effect("a public sign-up hands its card over though its button was pressed again", () =>
+  Effect.gen(function* () {
+    const registry = AtomRegistry.make();
+    yield* Effect.addFinalizer(() => Effect.sync(() => registry.dispose()));
+    const asked = yield* Queue.unbounded<string>();
+    const answer = yield* Deferred.make<void>();
+
+    yield* serverAnswers(registry, {
+      cardSignUp: () =>
+        Effect.andThen(
+          Effect.andThen(Queue.offer(asked, "card"), Deferred.await(answer)),
+          Effect.succeed({ accountId: "twice-noa", token: Redacted.make("twice-noa") }),
+        ),
+    });
+
+    registry.mount(AccountState.current);
+    yield* signOut(registry);
+    registry.set(publicComputer, true);
+
+    const reservation = new Access.Reservation({
+      token: "twice-noa-reservation",
+      schoolName: "Demoschule am Wiesengrund",
+      kind: "student",
+      expiresAt: DateTime.makeUnsafe("2999-01-01T00:00:00Z"),
+    });
+
+    registry.set(AccountState.signUpWithCard, reservation);
+    yield* Queue.take(asked);
+    registry.set(AccountState.signUpWithCard, reservation);
+
+    yield* Deferred.succeed(answer, undefined);
+    yield* tokenNow(registry, "twice-noa");
+
+    const offered = Option.map(registry.get(Offered.card), (card) => card.accountId);
+    const second = reasonOf(registry, AccountState.signUpWithCard);
+
+    yield* signOut(registry);
+    registry.set(publicComputer, false);
+
+    assert.deepStrictEqual(
+      { offered, second },
+      { offered: Option.some("twice-noa"), second: Option.some("busy") },
+    );
+  }).pipe(Effect.scoped),
+);
+
+// "Kurz bestätigen" runs in the account's own runtime. While a sign-in from the screens runs, it
+// is refused there too, so that sign-in's session can't overwrite the confirmation's token.
+it.effect("an account's confirmation is refused while a sign-in from the screens runs", () =>
+  Effect.gen(function* () {
+    const registry = AtomRegistry.make();
+    yield* Effect.addFinalizer(() => Effect.sync(() => registry.dispose()));
+    const { asked, answer, signIn } = yield* answeredSignIn;
+    yield* serverAnswers(registry, { signIn });
+    registry.mount(AccountState.current);
+    yield* signOut(registry);
+
+    const credentials = { email: "busy-ben@example.org", password: "geheim-genug" };
+    const accountId = "busy-ben";
+    const device = Atom.runtime(AccountEngine.device);
+
+    // Ben is signed in on this device, and his session ended.
+    yield* AtomRegistry.getResult(
+      registry,
+      device.atom(
+        Effect.flatMap(SessionStore.Service, (store) =>
+          Effect.andThen(
+            store.signedIn({ accountId, token: Redacted.make("old"), demo: false }, false),
+            store.ended(Redacted.make("old")),
+          ),
+        ),
+      ),
+      { suspendOnWaiting: true },
+    );
+
+    registry.mount(AccountState.signIn);
+    registry.set(AccountState.signIn, credentials);
+    yield* Queue.take(asked);
+
+    const confirm = KeysState.withPassword(accountId);
+    const unmountConfirm = registry.mount(confirm);
+    registry.set(confirm, credentials);
+
+    // Refused at once; a confirmation let through would ask the server, which waits for `answer`.
+    const confirmation = yield* Effect.race(
+      AtomRegistry.getResult(registry, confirm, { suspendOnWaiting: true }).pipe(
+        Effect.match({
+          onFailure: (error) => ("reason" in error ? error.reason : error._tag),
+          onSuccess: () => "signed in",
+        }),
+      ),
+      Effect.as(Queue.take(asked), "asked the server"),
+    );
+
+    yield* Deferred.succeed(answer, undefined);
+    yield* tokenNow(registry, credentials.email);
+    const requests = 1 + (yield* Queue.size(asked));
+
+    unmountConfirm();
+    yield* signOut(registry);
+
+    assert.deepStrictEqual({ confirmation, requests }, { confirmation: "busy", requests: 1 });
   }).pipe(Effect.scoped),
 );

@@ -113,7 +113,7 @@ export const signingUp = runtime
 const attempting = runtime
   .atom(
     Stream.unwrap(
-      Effect.map(Account.Confirmations, ({ attempting }) => SubscriptionRef.changes(attempting)),
+      Effect.map(SessionStore.Service, ({ attempting }) => SubscriptionRef.changes(attempting)),
     ),
   )
   .pipe(Atom.keepAlive);
@@ -130,8 +130,17 @@ export const useAttempting = () => AsyncResult.getOrElse(useAtomValue(attempting
  */
 const chosen = (get: Atom.FnContext) => get.registry.get(publicComputer);
 
+// Each sign-in runs as the device's one attempt (`Account.attempt`). A second call of its atom
+// must meet that refusal rather than interrupt the first, so these atoms run `concurrent`. A run
+// then outlives its atom's context, so what it hands on goes through the registry (`handOver`).
+const oneAttempt = { concurrent: true };
+
+const handOver = <W>(get: Atom.FnContext, atom: Atom.Writable<unknown, W>, value: W) =>
+  Effect.sync(() => get.registry.set(atom, value));
+
 export const signIn = runtime.fn<{ readonly email: string; readonly password: string }>()(
   ({ email, password }, get) => Account.attempt(Account.signIn(email, password, chosen(get))),
+  oneAttempt,
 );
 
 /** `reservation` as `Access.redeem` answered on the code screen. */
@@ -152,8 +161,10 @@ export const resetPassword = runtime.fn<{
   readonly email: string;
   readonly code: string;
   readonly password: string;
-}>()(({ email, code, password }, get) =>
-  Account.attempt(Account.resetPassword(email, code, password, chosen(get))),
+}>()(
+  ({ email, code, password }, get) =>
+    Account.attempt(Account.resetPassword(email, code, password, chosen(get))),
+  oneAttempt,
 );
 
 /** `password` only when the screen asked for it again, after a restart. */
@@ -175,11 +186,13 @@ export const cancelSignUp = runtime
 
 /** Signs the device in with the session that confirmed `email`, with a new passkey first. */
 export const finish = runtime
-  .fn<{ readonly email: string; readonly withPasskey: boolean }>()(({ email, withPasskey }, get) =>
-    // The PRF output goes to `OfferedPrf` only: this atom stays alive and keeps what it returns.
-    Effect.flatMap(Account.attempt(Account.finish(email, withPasskey, chosen(get))), (used) =>
-      Effect.sync(() => get.set(Offered.prf, used)),
-    ),
+  .fn<{ readonly email: string; readonly withPasskey: boolean }>()(
+    ({ email, withPasskey }, get) =>
+      // The PRF output goes to `OfferedPrf` only: this atom stays alive and keeps what it returns.
+      Effect.flatMap(Account.attempt(Account.finish(email, withPasskey, chosen(get))), (used) =>
+        handOver(get, Offered.prf, used),
+      ),
+    oneAttempt,
   )
   .pipe(Atom.keepAlive);
 
@@ -198,41 +211,49 @@ export function useLaterOnLeave(email: string) {
 }
 
 /** Signs in with a passkey, and leaves its PRF output for the notebook's unlock. */
-export const signInWithPasskey = runtime.fn<void>()((_, get) =>
-  Effect.tap(Account.attempt(Account.signInWithPasskey(chosen(get))), (used) =>
-    Effect.sync(() => get.set(Offered.prf, Option.some(used))),
-  ),
+export const signInWithPasskey = runtime.fn<void>()(
+  (_, get) =>
+    Effect.tap(Account.attempt(Account.signInWithPasskey(chosen(get))), (used) =>
+      handOver(get, Offered.prf, Option.some(used)),
+    ),
+  oneAttempt,
 );
 
 // The sign-ups without an address and the card's sign-in hand their secrets to `Offered` only:
 // these atoms stay alive while their screen goes, and keep what they return.
 
 const offerCard = (get: Atom.FnContext): Account.Offer => ({
-  give: (card) => Effect.sync(() => get.set(Offered.card, Option.some(card))),
+  give: (card) => handOver(get, Offered.card, Option.some(card)),
   withdraw: (card) => Effect.sync(() => get.registry.update(Offered.card, Offered.withdraw(card))),
 });
 
 /** An account without an address, made with its Notfallkarte (`Account.signUpWithCard`). */
 export const signUpWithCard = runtime
-  .fn<Access.Reservation>()((reservation, get) =>
-    Account.attempt(Account.signUpWithCard(reservation, chosen(get), offerCard(get))),
+  .fn<Access.Reservation>()(
+    (reservation, get) =>
+      Account.attempt(Account.signUpWithCard(reservation, chosen(get), offerCard(get))),
+    oneAttempt,
   )
   .pipe(Atom.keepAlive);
 
 /** An account without an address, made with a passkey (`Account.signUpWithPasskey`). */
 export const signUpWithPasskey = runtime
-  .fn<Access.Reservation>()((reservation, get) =>
-    Effect.flatMap(
-      Account.attempt(Account.signUpWithPasskey(reservation, offerCard(get))),
-      (used) => Effect.sync(() => get.set(Offered.prf, Option.some(used))),
-    ),
+  .fn<Access.Reservation>()(
+    (reservation, get) =>
+      Effect.flatMap(
+        Account.attempt(Account.signUpWithPasskey(reservation, offerCard(get))),
+        (used) => handOver(get, Offered.prf, Option.some(used)),
+      ),
+    oneAttempt,
   )
   .pipe(Atom.keepAlive);
 
 /** "Mit Notfallkarte anmelden": the card signs in, then opens the notebook. */
 export const signInWithCard = runtime
-  .fn<string>()((typed, get) =>
-    Effect.asVoid(Account.attempt(Account.signInWithCard(typed, chosen(get), offerCard(get)))),
+  .fn<string>()(
+    (typed, get) =>
+      Effect.asVoid(Account.attempt(Account.signInWithCard(typed, chosen(get), offerCard(get)))),
+    oneAttempt,
   )
   .pipe(Atom.keepAlive);
 

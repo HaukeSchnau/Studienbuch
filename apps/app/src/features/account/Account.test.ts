@@ -462,7 +462,7 @@ describe("Account", () => {
       const signIn = Account.attempt(Account.signIn("lena@example.org", "geheim-genug", false));
 
       const result = yield* Effect.gen(function* () {
-        const { attempting } = yield* Account.Confirmations;
+        const { attempting } = yield* SessionStore.Service;
         const first = yield* Effect.forkChild(signIn, { startImmediately: true });
         yield* Queue.take(asked);
 

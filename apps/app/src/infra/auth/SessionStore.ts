@@ -53,6 +53,11 @@ export class Service extends Context.Service<
     readonly ended: (token: Redacted.Redacted) => Effect.Effect<void>;
     /** Forgets the account, at sign-out. */
     readonly forget: Effect.Effect<void, Keychain.Unavailable>;
+    /**
+     * Whether a sign-in or sign-up that may change the account runs (`Account.attempt`). It sits
+     * here, in the device's layers, so the sign-in screens and an account's own steps share it.
+     */
+    readonly attempting: SubscriptionRef.SubscriptionRef<boolean>;
   }
 >()("SessionStore.Service") {}
 
@@ -85,8 +90,10 @@ export const layer = Layer.effect(Service)(
     );
 
     const ref = yield* SubscriptionRef.make(stored);
+    const attempting = yield* SubscriptionRef.make(false);
 
     return {
+      attempting,
       current: SubscriptionRef.get(ref),
       changes: SubscriptionRef.changes(ref),
       signedIn: Effect.fn("SessionStore.signedIn")(function* (
