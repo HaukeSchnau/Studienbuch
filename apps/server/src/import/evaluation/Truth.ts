@@ -205,6 +205,7 @@ export const build = Effect.fn("Truth.build")(function* (corpus: Corpus.Corpus) 
           start: Option.getOrElse(WebUntisEntry.timeOfDay(exam.examStart), () => -1),
           end: Option.getOrElse(WebUntisEntry.timeOfDay(exam.examEnd), () => -1),
           students: exam.students.map((student) => student.id),
+          teachers: exam.teachers.map((teacher) => teacher.id),
         })),
       );
     }

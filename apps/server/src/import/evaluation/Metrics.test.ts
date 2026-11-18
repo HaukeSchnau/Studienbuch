@@ -118,8 +118,24 @@ describe("Metrics.scoreExams", () => {
     [504, new Set(["DE/12"])],
   ]);
 
-  const truth = [{ id: 901, date: day, start: 0, end: 1, students: [501, 502] }];
+  const truth = [{ id: 901, date: day, start: 0, end: 1, students: [501, 502], teachers: [203] }];
   const exam = { id: "exam-1", courseId: "MA-E/12", date: day, start: 0, end: 1, examIds: [901] };
+
+  const teachers = new Map([["MA-E/12", new Set([203])]]);
+
+  it("counts an exam right only in a course one of its teachers teaches", () => {
+    const sitters = new Map([...enrollments].filter(([student]) => student <= 502));
+    const right = { ...exam, courseId: "MA-E/12" };
+    const sameRoster = new Map([...sitters].map(([student]) => [student, new Set(["DE/12"])]));
+
+    assert.deepStrictEqual(
+      [
+        Metrics.scoreExams(truth, [right], sitters, teachers).exams,
+        Metrics.scoreExams(truth, [{ ...exam, courseId: "DE/12" }], sameRoster, teachers).exams,
+      ],
+      [Metrics.fraction(1, 1), Metrics.fraction(0, 1)],
+    );
+  });
 
   it.each([
     {
@@ -133,7 +149,7 @@ describe("Metrics.scoreExams", () => {
       students: { recall: Metrics.fraction(2, 2), precision: Metrics.fraction(2, 6) },
     },
   ])("counts an exam shown $name", ({ ours, students }) => {
-    assert.deepStrictEqual(Metrics.scoreExams(truth, ours, enrollments), {
+    assert.deepStrictEqual(Metrics.scoreExams(truth, ours, enrollments, teachers), {
       exams: Metrics.fraction(0, 1),
       students,
     });

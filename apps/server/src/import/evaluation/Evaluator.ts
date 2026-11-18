@@ -289,6 +289,15 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
     ]),
   );
 
+  const courseTeachers = new Map<string, ReadonlySet<number>>();
+
+  for (const lesson of ours) {
+    courseTeachers.set(
+      lesson.courseId,
+      new Set([...(courseTeachers.get(lesson.courseId) ?? []), ...lesson.teachers]),
+    );
+  }
+
   const examsByTerm = [...new Set(days.map(termOf))].map((term) =>
     Metrics.scoreExams(
       truth.exams.filter((exam) => measuredDays.has(exam.date) && termOf(exam.date) === term),
@@ -296,6 +305,7 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
         .filter((exam) => measuredDays.has(exam.date) && termOf(exam.date) === term)
         .map((exam) => ({ ...exam, examIds: examRefs.get(exam.id) ?? [] })),
       new Map(students.map((student) => [student.id, enrollmentOf(student, term)])),
+      courseTeachers,
     ),
   );
 

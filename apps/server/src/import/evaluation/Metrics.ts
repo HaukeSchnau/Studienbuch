@@ -274,6 +274,7 @@ export interface TruthExam {
   readonly start: number;
   readonly end: number;
   readonly students: ReadonlyArray<number>;
+  readonly teachers: ReadonlyArray<number>;
 }
 
 export interface Exam {
@@ -287,7 +288,8 @@ export interface Exam {
 }
 
 /**
- * Per exam: our exam has its date and time, and is shown to exactly its students. Per student
+ * Per exam: our exam has its date and time, is shown to exactly its students, and sits in a course
+ * one of its teachers teaches, so a course with the same roster isn't enough. Per student
  * and exam: the exams a student sees through the courses they take, against the exam's students.
  * A truth pair credits one shown exam only, so a doubled exam isn't precise.
  */
@@ -295,6 +297,7 @@ export const scoreExams = (
   truth: ReadonlyArray<TruthExam>,
   ours: ReadonlyArray<Exam>,
   enrollments: ReadonlyMap<number, ReadonlySet<string>>,
+  courseTeachers: ReadonlyMap<string, ReadonlySet<number>>,
 ) => {
   const shownTo = (exam: Exam) =>
     [...enrollments].flatMap(([student, courses]) => (courses.has(exam.courseId) ? [student] : []));
@@ -322,7 +325,8 @@ export const scoreExams = (
         exam.date === truthExam.date &&
         exam.start === truthExam.start &&
         exam.end === truthExam.end &&
-        sameSet(shownTo(exam), truthExam.students),
+        sameSet(shownTo(exam), truthExam.students) &&
+        truthExam.teachers.some((teacher) => courseTeachers.get(exam.courseId)?.has(teacher)),
     ),
   );
 
