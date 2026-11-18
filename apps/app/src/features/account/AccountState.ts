@@ -130,6 +130,16 @@ const attempting = runtime
 export const useAttempting = () => AsyncResult.getOrElse(useAtomValue(attempting), () => false);
 
 /**
+ * Whether the sign-in of `result` runs as the device's attempt. One a sign-out took over from may
+ * wait for its server a while yet, but its screen offers a new sign-in at once.
+ */
+export const useSigningIn = (result: AsyncResult.AsyncResult<unknown, unknown>) => {
+  const attempting = useAttempting();
+
+  return result.waiting && attempting;
+};
+
+/**
  * The tab's choice when a sign-in starts. Read without a dependency: a change must not run the
  * sign-in again.
  */

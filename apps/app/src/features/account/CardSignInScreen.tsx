@@ -49,10 +49,10 @@ export function CardSignInScreen() {
         <ProblemText reason={reason} />
         <Button
           kind="action"
-          label={result.waiting || attempting ? "Anmeldung läuft …" : "Anmelden"}
+          label={attempting ? "Anmeldung läuft …" : "Anmelden"}
           block
           disabled={code.trim() === "" || attempting}
-          busy={result.waiting || attempting}
+          busy={attempting}
           onPress={submit}
         />
       </Form>

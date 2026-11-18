@@ -180,12 +180,15 @@ export function PasskeyLead({ children }: { readonly children: string }) {
   );
 }
 
-/** Why the last run of an account action failed, if it did and it says. */
+/**
+ * Why the last run of an account action failed, if it did and it says. "signed-out" only reaches a
+ * run a sign-out took over from, which no screen waits for, so it never shows.
+ */
 export const reasonOf = (
   result: AsyncResult.AsyncResult<unknown, Account.Problem | { readonly _tag: string }>,
 ) =>
   Option.flatMap(AsyncResult.error(result), (error) =>
-    error._tag === "Account.Problem" && "reason" in error
+    error._tag === "Account.Problem" && "reason" in error && error.reason !== "signed-out"
       ? Option.some(error.reason)
       : Option.none(),
   );

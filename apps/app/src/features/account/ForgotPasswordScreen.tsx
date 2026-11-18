@@ -111,6 +111,7 @@ function NewPassword({ email }: { readonly email: string }) {
   const short = password.length < Accounts.minPasswordLength;
   const complete = code.complete && !short;
   const attempting = AccountState.useAttempting();
+  const saving = AccountState.useSigningIn(result);
 
   const submit = async () => {
     if (!complete || attempting) return;
@@ -165,7 +166,7 @@ function NewPassword({ email }: { readonly email: string }) {
           label="Passwort speichern"
           block
           disabled={!complete || attempting}
-          busy={result.waiting}
+          busy={saving}
           onPress={() => void submit()}
         />
         <ResendCode

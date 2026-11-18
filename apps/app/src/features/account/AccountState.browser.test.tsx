@@ -1,6 +1,8 @@
-import { assert, it } from "@effect/vitest";
+import { RegistryContext } from "@effect/atom-react";
+import { assert, expect, it } from "@effect/vitest";
 import { Access } from "@stu/api/Access";
 import { Notebook, NotebookProfile } from "@stu/core";
+import { RecoveryCode } from "@stu/e2ee";
 import { Ports, SyncClient } from "@stu/sync/client";
 import * as Cause from "effect/Cause";
 import * as DateTime from "effect/DateTime";
@@ -25,12 +27,14 @@ import { SessionStore } from "../../infra/auth/SessionStore.ts";
 import { publicComputer } from "../../infra/device/publicComputer.ts";
 import type { Keychain } from "../../infra/keychain/Keychain.ts";
 import { AccountEngine } from "../../infra/runtime/AccountEngine.ts";
+import { render } from "../../infra/testing/render.tsx";
 import { KeysState } from "../keys/KeysState.ts";
 import { Offered } from "../keys/Offered.ts";
 import { Onboarding } from "../onboarding/Onboarding.ts";
 import { OnboardingState } from "../onboarding/OnboardingState.ts";
 import { Account } from "./Account.ts";
 import { AccountState } from "./AccountState.ts";
+import { CardSignInScreen } from "./CardSignInScreen.tsx";
 
 const accountId = "leaves-lena";
 
@@ -493,5 +497,101 @@ it.effect("sign-out wins over a sign-in that hangs, and the late answer keeps no
       afterAnswer: Option.none<string>(),
       ended: ["old", credentials.email],
     });
+  }).pipe(Effect.scoped),
+);
+
+// "Abmelden" while a card sign-in hangs on the server. The screen offers "Anmelden" again at once,
+// though the old run still waits; a new sign-in there keeps its session when the old answer comes
+// late, and the old run's refusal shows nowhere. The screen's atom stays alive, so it reads the
+// same here as after the student went to "Abmelden" and back.
+it.effect("a card sign-in that sign-out took over from leaves its screen ready for a new one", () =>
+  Effect.gen(function* () {
+    const registry = AtomRegistry.make();
+    yield* Effect.addFinalizer(() => Effect.sync(() => registry.dispose()));
+    const ending = yield* Queue.unbounded<string>();
+    const asked = yield* Queue.unbounded<string>();
+    const answer = yield* Deferred.make<void>();
+    const requests = yield* Ref.make(0);
+    const accountId = "late-cleo";
+    const card = Redacted.value(RecoveryCode.text(Redacted.make(new Uint8Array(16).fill(7))));
+
+    yield* serverAnswers(registry, {
+      // The first request waits for `answer`, the next answers at once.
+      cardSignIn: () =>
+        Effect.flatMap(
+          Ref.getAndUpdate(requests, (count) => count + 1),
+          (count) =>
+            Effect.as(
+              count === 0
+                ? Effect.andThen(Queue.offer(asked, "first"), Deferred.await(answer))
+                : Effect.void,
+              { accountId, token: Redacted.make(count === 0 ? "first" : "second") },
+            ),
+        ),
+      signOut: (token) => Queue.offer(ending, Redacted.value(token)),
+    });
+
+    registry.mount(AccountState.current);
+    yield* signOut(registry);
+
+    // Cleo is signed in on this device, and her session ended, so "Abmelden" is there too.
+    yield* AtomRegistry.getResult(
+      registry,
+      Atom.runtime(AccountEngine.device).atom(
+        Effect.flatMap(SessionStore.Service, (store) =>
+          Effect.andThen(
+            store.signedIn({ accountId, token: Redacted.make("old"), demo: false }, false),
+            store.ended(Redacted.make("old")),
+          ),
+        ),
+      ),
+      { suspendOnWaiting: true },
+    );
+
+    const view = yield* Effect.acquireDisposable(
+      Effect.promise(() =>
+        render(
+          <RegistryContext.Provider value={registry}>
+            <CardSignInScreen />
+          </RegistryContext.Provider>,
+        ),
+      ),
+    );
+
+    const press = () =>
+      Effect.promise(async () => {
+        const button = view.getByRole("button", { name: "Anmelden", exact: true });
+
+        await expect.element(button).toBeEnabled();
+        await button.click();
+      });
+
+    yield* Effect.promise(() =>
+      view.getByPlaceholder("XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX").fill(card),
+    );
+    yield* press();
+    yield* Queue.take(asked);
+    yield* signOut(registry);
+
+    yield* press();
+    yield* tokenNow(registry, "second");
+
+    yield* Deferred.succeed(answer, undefined);
+    yield* Stream.fromQueue(ending).pipe(
+      Stream.filter((token) => token === "first"),
+      Stream.runHead,
+    );
+
+    const held = Option.flatMap(
+      AsyncResult.getOrElse(registry.get(AccountState.current), () => Option.none()),
+      (signed) => Option.map(signed.token, Redacted.value),
+    );
+
+    yield* Effect.promise(() =>
+      expect.element(view.getByText(Account.sentence["signed-out"])).not.toBeInTheDocument(),
+    );
+    yield* signOut(registry);
+
+    assert.deepStrictEqual(held, Option.some("second"));
   }).pipe(Effect.scoped),
 );
