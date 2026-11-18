@@ -1,10 +1,12 @@
+import { RegistryContext, useAtomSet } from "@effect/atom-react";
 import { Accounts } from "@stu/api/Accounts";
 import { Link } from "@stu/ui/Link";
 import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
 import { useAnnounceStatus } from "@stu/ui/useAnnounce";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
-import { useEffect, useState } from "react";
+import * as Atom from "effect/reactivity/Atom";
+import { use, useEffect, useState } from "react";
 import { StyleSheet, TextInput, View } from "react-native";
 
 import { useFocused } from "@stu/ui/Field";
@@ -93,6 +95,22 @@ export function useCode(onEdit: () => void) {
       setValue(next);
     },
     clear: () => setValue(""),
+  };
+}
+
+/**
+ * Forgets the last answer of the form's `action` when what it sent changes or a new code came,
+ * unless it runs: the screen waits for that answer, and forgetting would interrupt a run that isn't
+ * concurrent. Read when called, as a new code's answer can come after the run began.
+ */
+export function useForgetAnswer(
+  action: Atom.Writable<AsyncResult.AsyncResult<unknown, unknown>, Atom.Reset>,
+) {
+  const registry = use(RegistryContext);
+  const forget = useAtomSet(action);
+
+  return () => {
+    if (!registry.get(action).waiting) forget(Atom.Reset);
   };
 }
 

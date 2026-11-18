@@ -8,7 +8,6 @@ import { Theme } from "@stu/ui/Theme";
 import * as Exit from "effect/Exit";
 import * as Option from "effect/Option";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
-import * as Atom from "effect/reactivity/Atom";
 import { Redirect, useRouter } from "expo-router";
 import { Keyboard, StyleSheet } from "react-native";
 
@@ -25,7 +24,7 @@ import {
   useCredentials,
 } from "./AccountForm.tsx";
 import { AccountState } from "./AccountState.ts";
-import { CodeField, ResendCode, useCode } from "./CodeField.tsx";
+import { CodeField, ResendCode, useCode, useForgetAnswer } from "./CodeField.tsx";
 import { Steps } from "./Steps.ts";
 
 /**
@@ -51,8 +50,8 @@ function CodeEntry({ waiting }: { readonly waiting: Account.SigningUp }) {
   const router = useRouter();
   const { email } = waiting;
   const [result, confirm] = useAtom(AccountState.confirmEmail, { mode: "promiseExit" });
-  const forget = useAtomSet(AccountState.confirmEmail);
-  const code = useCode(() => forget(Atom.Reset));
+  const forgetResult = useForgetAnswer(AccountState.confirmEmail);
+  const code = useCode(forgetResult);
   const { password, setPassword } = useCredentials();
   const [resent, sendCode] = useAtom(AccountState.sendCode, { mode: "promiseExit" });
   const cancel = useAtomSet(AccountState.cancelSignUp);
@@ -109,7 +108,7 @@ function CodeEntry({ waiting }: { readonly waiting: Account.SigningUp }) {
             value={password}
             onChangeText={(text) => {
               setPassword(text);
-              forget(Atom.Reset);
+              forgetResult();
             }}
             autoComplete="current-password"
             textContentType="password"
@@ -134,7 +133,7 @@ function CodeEntry({ waiting }: { readonly waiting: Account.SigningUp }) {
           send={() => sendCode(email).then(Exit.isSuccess)}
           onSent={() => {
             code.clear();
-            forget(Atom.Reset);
+            forgetResult();
           }}
         />
         <Button

@@ -1,4 +1,4 @@
-import { RegistryContext, useAtom, useAtomSet, useAtomValue } from "@effect/atom-react";
+import { useAtom, useAtomSet, useAtomValue } from "@effect/atom-react";
 import { Accounts } from "@stu/api/Accounts";
 import { AuthHeading } from "@stu/ui/AuthHeading";
 import { Button } from "@stu/ui/Button";
@@ -7,8 +7,6 @@ import { Text } from "@stu/ui/Text";
 import { Theme } from "@stu/ui/Theme";
 import * as Exit from "effect/Exit";
 import * as Option from "effect/Option";
-import * as Atom from "effect/reactivity/Atom";
-import { use } from "react";
 import { Keyboard } from "react-native";
 
 import { PublicComputerChoice } from "../keys/PublicComputerChoice.tsx";
@@ -22,7 +20,7 @@ import {
   useCredentials,
 } from "./AccountForm.tsx";
 import { AccountState } from "./AccountState.ts";
-import { CodeField, ResendCode, useCode } from "./CodeField.tsx";
+import { CodeField, ResendCode, useCode, useForgetAnswer } from "./CodeField.tsx";
 import { Steps } from "./Steps.ts";
 
 /**
@@ -94,17 +92,9 @@ function Address() {
 function NewPassword({ email }: { readonly email: string }) {
   const { color } = Theme.useTheme();
   const [result, reset] = useAtom(AccountState.resetPassword, { mode: "promiseExit" });
-  const forget = useAtomSet(AccountState.resetPassword);
   const keepSentTo = useAtomSet(Steps.resetSentTo);
   const keepTyped = useAtomSet(Steps.forgotten);
-  const registry = use(RegistryContext);
-
-  // A running reset keeps its result: only its answer lets `submit` forget the address. Read when
-  // called, as a resent code's answer can come after the reset began.
-  const forgetResult = () => {
-    if (!registry.get(AccountState.resetPassword).waiting) forget(Atom.Reset);
-  };
-
+  const forgetResult = useForgetAnswer(AccountState.resetPassword);
   const code = useCode(forgetResult);
   const { password, setPassword } = useCredentials();
   const [resent, request] = useAtom(AccountState.requestPasswordReset, { mode: "promiseExit" });
