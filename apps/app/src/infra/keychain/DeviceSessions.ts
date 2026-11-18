@@ -42,16 +42,16 @@ export class Service extends Context.Service<
     >;
     /**
      * Stages a sign-up's card before its request goes out: the server may make the account and
-     * lose its answer, and the card is then its only way in. It stays only while the device holds
-     * no session, so the next sign-up after a sign-out never finds it.
+     * lose its answer, and the card is then its only way in. A kept session or a sign-out removes
+     * it, and a public computer's sign-up moves it into the tab's memory (`unstage`).
      */
     readonly stage: (
       code: Redacted.Redacted<Uint8Array>,
     ) => Effect.Effect<void, Keychain.Unavailable>;
     /** Drops a staged card the device still holds beside a session, as after a run that stopped. */
     readonly tidy: Effect.Effect<void, Keychain.Unavailable>;
-    /** Drops a staged card for a session the device keeps in memory only, as `set` does. */
-    readonly unstage: Effect.Effect<void>;
+    /** Removes a staged card, as a public computer's sign-up does when it takes it into memory. */
+    readonly unstage: Effect.Effect<void, Keychain.Unavailable>;
   }
 >()("DeviceSessions.Service") {}
 
@@ -148,7 +148,7 @@ export const layer = Layer.effect(Service)(
       remove,
       staged: Effect.map(card.read, Option.map(Redacted.make)),
       stage: (code) => writer.withPermit(store.set(cardEntry, Base64.encode(Redacted.value(code)))),
-      unstage: writer.withPermit(unstaged),
+      unstage: writer.withPermit(card.remove),
       tidy: writer.withPermit(
         Effect.flatMap(tokens.read, (held) =>
           Object.keys(held).length === 0 ? Effect.void : card.remove,

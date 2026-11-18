@@ -171,23 +171,25 @@ const refuseAnyAccount = Effect.flatMap(SessionStore.Service, (store) =>
 );
 
 /**
- * Keeps a new session, so the device is signed in, unless another account holds the device. On a
- * public computer the device keeps it in memory only (`SessionStore.signedIn`). `demo` marks a
- * demo account's password sign-in (`Demo.isDemoSignIn`). It waits for a sign-out under way, and
- * a sign-out the device left unfinished finishes first (`Forgetting.Service`).
+ * Keeps a new session unless another account holds the device, in memory on a public computer.
+ * `demo` marks a persona's password sign-in (`Demo.isDemoSignIn`). A sign-out under way or left
+ * unfinished ends first (`Forgetting.Service`), and `first` stores what the session needs after
+ * it, in the same turn, since that sign-out would delete it.
  */
-export const keep = Effect.fn("Account.keep")(function* (
+export const keep = Effect.fn("Account.keep")(function* <R = never>(
   signedIn: AuthApi.SignedIn,
   publicComputer: boolean,
   demo = false,
+  first: Effect.Effect<void, Problem, R> = Effect.void,
 ) {
   const store = yield* SessionStore.Service;
   const forgetting = yield* Forgetting.Service;
+  const failed = () => Effect.fail(new Problem({ reason: "failed" }));
 
   yield* refuseOtherAccount(signedIn);
   yield* forgetting
-    .keep(store.signedIn({ ...signedIn, demo }, publicComputer))
-    .pipe(Effect.mapError(() => new Problem({ reason: "failed" })));
+    .keep(Effect.andThen(first, store.signedIn({ ...signedIn, demo }, publicComputer)))
+    .pipe(Effect.catchTags({ "Forgetting.Unfinished": failed, "Keychain.Unavailable": failed }));
 });
 
 export const signIn = Effect.fn("Account.signIn")(function* (
@@ -516,18 +518,16 @@ const keepWithCard = Effect.fn("Account.keepWithCard")(function* (
   publicComputer: boolean,
   offer: Offer,
 ) {
-  // Said before the card goes anywhere: another account's card has no place on this device yet.
-  yield* refuseOtherAccount(signedIn);
+  const hold = publicComputer
+    ? Effect.void
+    : NotebookKeys.holdCard(card).pipe(
+        Effect.provide(Keychain.accountSecrets(card.accountId)),
+        Effect.catchTags({ "DeviceSecrets.SecretsUnavailable": () => cardNotKept }),
+      );
 
-  if (!publicComputer) {
-    yield* NotebookKeys.holdCard(card).pipe(
-      Effect.provide(Keychain.accountSecrets(card.accountId)),
-      Effect.catchTags({ "DeviceSecrets.SecretsUnavailable": () => cardNotKept }),
-    );
-  }
-
-  yield* offer(Option.some(card));
-  yield* keep(signedIn, publicComputer).pipe(Effect.onError(() => offer(Option.none())));
+  yield* keep(signedIn, publicComputer, false, Effect.andThen(hold, offer(Option.some(card)))).pipe(
+    Effect.onError(() => offer(Option.none())),
+  );
 });
 
 const cardNotKept = Effect.fail(new Problem({ reason: "card-not-kept" }));
@@ -558,10 +558,23 @@ export const signUpWithCard = Effect.fn("Account.signUpWithCard")(function* (
       Effect.gen(function* () {
         yield* refuseAnyAccount;
 
-        const earlier = publicComputer ? yield* Ref.get(newCard) : yield* sessions.staged;
+        // A public computer keeps its card in the tab's memory. It takes up a card an earlier
+        // sign-up in this browser staged, so a retry reaches the account a lost answer made, and
+        // removes it before anything goes out, so nothing of it stays once the tab is gone.
+        const staged = yield* sessions.staged;
+        const held = publicComputer ? yield* Ref.get(newCard) : Option.none();
+        const earlier = Option.orElse(held, () => staged);
         const code = Option.isSome(earlier) ? earlier.value : (yield* RecoveryCode.generate).bytes;
 
-        yield* publicComputer ? Ref.set(newCard, Option.some(code)) : sessions.stage(code);
+        if (!publicComputer) {
+          yield* sessions.stage(code);
+
+          return code;
+        }
+
+        yield* Ref.set(newCard, Option.some(code));
+
+        if (Option.isSome(staged)) yield* sessions.unstage;
 
         return code;
       }).pipe(Effect.catchTags({ "Keychain.Unavailable": () => cardNotKept })),

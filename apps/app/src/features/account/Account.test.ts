@@ -22,6 +22,7 @@ import { AuthApiTesting } from "../../infra/auth/AuthApiTesting.ts";
 import { SessionStore } from "../../infra/auth/SessionStore.ts";
 import { layer as signUpStore } from "../../infra/auth/signUpStore.ts";
 import { Device } from "../../infra/device/Device.ts";
+import { Names } from "../../infra/device/Names.ts";
 import { DeviceSessions } from "../../infra/keychain/DeviceSessions.ts";
 import { PendingSignUp } from "../../infra/auth/PendingSignUp.ts";
 import { Keychain } from "../../infra/keychain/Keychain.ts";
@@ -599,51 +600,66 @@ describe("Account", () => {
       }).pipe(Effect.provide(TestCrypto.layer("Account.test card"))),
   );
 
-  // A public computer keeps its card in the tab's memory. Its session takes the place of a card
-  // an earlier sign-up on this browser staged, as any session does.
-  it.effect("stages nothing on a public computer, whose session takes a staged card's place", () =>
-    Effect.gen(function* () {
-      const kiosk = yield* device;
-      const sent = yield* Ref.make<ReadonlyArray<string>>([]);
-      const answerLost = yield* Ref.make(true);
+  // A public computer keeps its card in the tab's memory. It takes up a card an earlier sign-up in
+  // this browser staged, so the retry reaches the account a lost answer made, and removes it before
+  // anything goes out: nothing of either stays once the tab is gone.
+  it.effect(
+    "keeps a public computer's card in the tab, so the next sign-up gets a new account",
+    () =>
+      Effect.gen(function* () {
+        const kiosk = yield* device;
+        const sent = yield* Ref.make<ReadonlyArray<string>>([]);
+        const answerLost = yield* Ref.make(true);
 
-      const api = AuthApiTesting.layer({
-        cardSignUp: (login) =>
-          Effect.andThen(
-            Ref.update(sent, (all) => [...all, Redacted.value(login)]),
-            Effect.flatMap(Ref.getAndSet(answerLost, false), (lost) =>
-              lost
-                ? Effect.fail(new AuthApi.Unreachable({ cause: "answer lost" }))
-                : Effect.succeed(signedIn(`noa-${Redacted.value(login).slice(0, 8)}`, "noa-1")),
+        const api = AuthApiTesting.layer({
+          cardSignUp: (login) =>
+            Effect.andThen(
+              Ref.update(sent, (all) => [...all, Redacted.value(login)]),
+              Effect.flatMap(Ref.getAndSet(answerLost, false), (lost) =>
+                lost
+                  ? Effect.fail(new AuthApi.Unreachable({ cause: "answer lost" }))
+                  : Effect.succeed(signedIn(`noa-${Redacted.value(login).slice(0, 8)}`, "noa-1")),
+              ),
             ),
-          ),
-      });
+        });
 
-      // A sign-up in a tab that keeps its account lost its answer, and the tab closed.
-      const lost = yield* kiosk.run(
-        Effect.andThen(reason(Account.signUpWithCard(soon, false, noOffer)), staged),
-        api,
-      );
+        const signUp = (publicComputer: boolean) =>
+          Account.signUpWithCard(later, publicComputer, noOffer);
 
-      const publicTab = yield* kiosk.run(
-        Effect.andThen(Account.signUpWithCard(later, true, noOffer), staged),
-        api,
-      );
+        // A sign-up in a tab that keeps its account lost its answer, and the tab closed.
+        const lost = yield* kiosk.run(Effect.andThen(reason(signUp(false)), staged), api);
 
-      // That tab closed too, which forgets its session. The next sign-up here makes its own card.
-      yield* kiosk.run(Account.signUpWithCard(later, false, noOffer), api);
-      const [orphan, publicCard, next] = yield* Ref.get(sent);
+        // A public tab that can't remove that card sends nothing.
+        yield* kiosk.refuse({ operation: "remove", name: "sign-up-card" });
+        const refused = yield* kiosk.run(Effect.all([reason(signUp(true)), staged]), api);
+        const sentBefore = (yield* Ref.get(sent)).length;
+        yield* kiosk.refuse();
 
-      assert.deepStrictEqual(
-        {
-          lost,
-          publicTab,
-          publicHasItsOwn: publicCard !== orphan,
-          nextHasItsOwn: next !== undefined && next !== orphan && next !== publicCard,
-        },
-        { lost: true, publicTab: false, publicHasItsOwn: true, nextHasItsOwn: true },
-      );
-    }).pipe(Effect.provide(TestCrypto.layer("Account.test card"))),
+        const publicTab = yield* kiosk.run(Effect.andThen(signUp(true), staged), api);
+
+        // That tab closed too, which forgets its session and its card.
+        yield* kiosk.run(signUp(false), api);
+        const [first, retry, next] = yield* Ref.get(sent);
+
+        assert.deepStrictEqual(
+          {
+            lost,
+            refused,
+            sentBefore,
+            publicTab,
+            retriedTheSameAccount: first === retry,
+            nextHasItsOwn: next !== undefined && next !== first,
+          },
+          {
+            lost: true,
+            refused: ["card-not-kept", true],
+            sentBefore: 1,
+            publicTab: false,
+            retriedTheSameAccount: true,
+            nextHasItsOwn: true,
+          },
+        );
+      }).pipe(Effect.provide(TestCrypto.layer("Account.test card"))),
   );
 
   // A card typed on a device that can't keep it would leave a session whose first key starts
@@ -687,6 +703,41 @@ describe("Account", () => {
           afterRestart: { account: Option.none(), card: false },
         },
       );
+    }).pipe(Effect.provide(TestCrypto.layer("Account.test card"))),
+  );
+
+  // Signing back in to an account whose sign-out the device left unfinished: that sign-out
+  // finishes before the session and deletes the account's secrets, so the card comes after it.
+  it.effect("keeps a typed card past the unfinished sign-out of the same account", () =>
+    Effect.gen(function* () {
+      const laptop = yield* device;
+      const typed = RecoveryCode.text(Redacted.make(new Uint8Array(16).fill(6)));
+
+      const api = AuthApiTesting.layer({
+        cardSignIn: () => Effect.succeed(signedIn("mia", "mia-1")),
+      });
+
+      // As `Forgetting.Service` runs it: the account's earlier sign-out, then the new session.
+      const unfinished = Layer.effect(Forgetting.Service)(
+        Effect.map(Effect.context<Keychain.Store>(), (context) => ({
+          keep: (session) =>
+            Effect.andThen(
+              Keychain.forgetSecrets(
+                Names.secrets(new URL("https://one.example"), "phone", "mia"),
+              ).pipe(Effect.provide(context)),
+              session,
+            ),
+        })),
+      );
+
+      const kept = yield* laptop.run(
+        Effect.andThen(Account.signInWithCard(Redacted.value(typed), false, noOffer), held).pipe(
+          Effect.provide(unfinished),
+        ),
+        api,
+      );
+
+      assert.deepStrictEqual(kept, { account: Option.some("mia"), card: true });
     }).pipe(Effect.provide(TestCrypto.layer("Account.test card"))),
   );
 
