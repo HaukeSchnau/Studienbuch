@@ -51,14 +51,8 @@ function AccountOverview({ accountId }: { readonly accountId: string }) {
       underline
       subtitle={DateText.long(today)}
       status={<OfflineChip offline={offline} />}
-      // The way to this device and to signing out, until Mein Profil holds them.
       aside={
-        <Pill
-          label="Dieses Gerät"
-          icon="person"
-          iconOnly
-          onPress={() => router.push("/diagnose")}
-        />
+        <Pill label="Profil" icon="person" iconOnly onPress={() => router.navigate("/profil")} />
       }
       footer={{
         color: color.panelFold,

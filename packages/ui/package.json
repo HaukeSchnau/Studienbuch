@@ -23,6 +23,7 @@
     "./Hero": "./src/Hero.tsx",
     "./Icon": "./src/Icon.tsx",
     "./Link": "./src/Link.tsx",
+    "./MarkerBlob": "./src/MarkerBlob.tsx",
     "./PanelWave": "./src/PanelWave.tsx",
     "./Pill": "./src/Pill.tsx",
     "./PillChoice": "./src/PillChoice.tsx",

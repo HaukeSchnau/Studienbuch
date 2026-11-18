@@ -954,15 +954,16 @@ DIAGRAMS.app = {
     { id: "r-nf", x: 40, y: 42, w: 110, h: 70, t: "+not-found", s: "any other\naddress" },
     { id: "r-auth", x: 165, y: 42, w: 255, h: 70, t: "(auth)", s: "anmelden, mit-notfallkarte, aktivieren\nkonto-anlegen, konto-erstellen, geschafft\ne-mail-bestaetigen, passwort-vergessen" },
     { id: "r-keys", x: 435, y: 42, w: 195, h: 70, t: "(keys)", s: "notfallkarte\nnotizbuch-entsperren\nnotizbuch-schluessel" },
-    { id: "r-tabs", x: 645, y: 42, w: 175, h: 70, t: "(tabs)/(uebersicht)", s: "index, diagnose\nselbsttest, hausaufgaben\n[id], neu, bearbeiten" },
+    { id: "r-tabs", x: 645, y: 42, w: 175, h: 70, t: "(tabs)", s: "(uebersicht): hausaufgaben\n(profil): diagnose\nselbsttest, konto-loeschen" },
     { id: "r-check", x: 835, y: 42, w: 120, h: 70, t: "(check)", s: "passkey-test" },
     { id: "r-lab", x: 970, y: 42, w: 150, h: 70, t: "dev/sync-lab", s: "web, dev and\npreview only" },
 
     { id: "f-account", x: 40, y: 184, w: 150, h: 72, t: "account", s: "gates, sign-in, sign-up\nsign-out" },
     { id: "f-keys", x: 205, y: 184, w: 150, h: 72, t: "keys", s: "NotebookKeys, unlock\nNotfallkarte" },
     { id: "f-onb", x: 370, y: 184, w: 145, h: 72, t: "onboarding", s: "first start: name\nJahrgang, Kurse" },
-    { id: "f-over", x: 530, y: 184, w: 130, h: 72, t: "overview", s: "Übersicht and\nits panel" },
-    { id: "f-diag", x: 675, y: 184, w: 120, h: 72, t: "diagnostics", s: "self tests" },
+    { id: "f-over", x: 530, y: 184, w: 105, h: 72, t: "overview", s: "Übersicht and\nits panel" },
+    { id: "f-prof", x: 643, y: 184, w: 64, h: 72, t: "profile", s: "Profil" },
+    { id: "f-diag", x: 715, y: 184, w: 88, h: 72, t: "diagnostics", s: "self tests" },
     { id: "f-dev", x: 810, y: 184, w: 110, h: 72, t: "device-status", s: "today, key\nand connection" },
     { id: "f-lab", x: 935, y: 184, w: 90, h: 72, t: "sync-lab", s: "3 virtual\ndevices" },
     { id: "f-hw", x: 1040, y: 184, w: 85, h: 72, t: "homework", s: "list, page\nand sheet" },
@@ -994,14 +995,16 @@ DIAGRAMS.app = {
     { a: "r-auth", b: "f-account" },
     { a: "r-keys", b: "f-keys" },
     { a: "r-tabs", b: "f-over", ao: 0 },
-    { a: "r-tabs", b: "f-diag", as: "b", bs: "t", ao: 60, bo: -20 },
+    { a: "r-tabs", b: "f-prof", as: "b", bs: "t", ao: -30, bo: 0 },
+    { a: "r-tabs", b: "f-diag", as: "b", bs: "t", ao: 50, bo: 0 },
     { a: "r-tabs", b: "f-hw", as: "b", bs: "t", ao: 70, via: [[802, 146], [1082, 146]], bo: 0 },
     { a: "r-check", b: "f-account", as: "b", bs: "t", ao: -40, bo: 45, via: [[855, 138], [170, 138]] },
     { a: "r-lab", b: "f-lab" },
     { a: "f-account", b: "a-atoms", as: "b", bs: "t", via: [[115, 284], [720, 284]], bo: -60 },
     { a: "f-keys", b: "a-atoms", as: "b", bs: "t", via: [[280, 280], [760, 280]], bo: -20 },
     { a: "f-onb", b: "a-atoms", as: "b", bs: "t", via: [[442, 276], [800, 276]], bo: 20 },
-    { a: "f-over", b: "a-atoms", as: "b", bs: "t", ao: 45, bo: -80 },
+    { a: "f-over", b: "a-atoms", as: "b", bs: "t", ao: 35, bo: -80 },
+    { a: "f-prof", b: "a-atoms", as: "b", bs: "t", ao: 0, bo: -40 },
     { a: "f-dev", b: "a-atoms", as: "b", bs: "t", ao: -10, bo: 75 },
     { a: "f-hw", b: "a-atoms", as: "b", bs: "t", via: [[1082, 294], [870, 294]], bo: 90 },
     { a: "a-atoms", b: "a-engines" },
@@ -1487,7 +1490,7 @@ const INFO = {
 
   "r-keys": { t: "Routes (keys)", d: ["Notfallkarte, Notizbuch entsperren and Notizbuch-Schlüssel: the screens for the notebook's root key."], f: ["apps/app/src/app/(keys)/notizbuch-entsperren.tsx", "apps/app/src/features/keys/KeysScreen.tsx"], a: [25] },
 
-  "r-tabs": { t: "Routes (tabs)", d: ["The signed-in app: Übersicht with homework's list (<code>hausaufgaben</code>), a homework's page and the add and edit sheet, and the device's diagnostics and self test. Only one tab exists so far."], f: ["apps/app/src/app/(tabs)/_layout.tsx", "apps/app/src/ui/navigation/AppTabs.tsx"] },
+  "r-tabs": { t: "Routes (tabs)", d: ["The signed-in app in two tabs. Übersicht holds homework's list (<code>hausaufgaben</code>), a homework's page and the add and edit sheet. Profil holds the device's diagnostics, the self test and account deletion, which keep their old addresses (<code>/diagnose</code>, <code>/selbsttest</code>, <code>/konto-loeschen</code>) because the group adds no path. Meine Woche and Noten join with their features."], f: ["apps/app/src/app/(tabs)/_layout.tsx", "apps/app/src/app/(tabs)/(profil)/_layout.tsx", "apps/app/src/ui/navigation/AppTabs.tsx"] },
 
   "r-check": { t: "Route (check)", d: ["A passkey test that checks whether this device's authenticator gives a PRF output, the thing the passkey unlock depends on."], f: ["apps/app/src/app/(check)/passkey-test.tsx", "apps/app/src/features/account/PasskeyCheck.ts"] },
 
@@ -1501,7 +1504,9 @@ const INFO = {
 
   "f-over": { t: "features/overview", d: ["Übersicht, with \"Moin, Lena!\" in the hero and the homework panel below it: what is due, ticked in place, \"Alle\" for the full list and \"+\" for a new one, refusals with their reason, and an offline chip while changes wait.", "<code>OverviewState</code> adds the greeting and the panel's cards to homework's <code>HomeworkState.screen</code>, so the screen only draws. It depends on homework and device-status, never the other way."], f: ["apps/app/src/features/overview/OverviewScreen.tsx", "apps/app/src/features/overview/OverviewState.ts"] },
 
-  "f-diag": { t: "features/diagnostics", d: ["Dieses Gerät and Selbsttest: the crypto test vectors on this platform's WebCrypto with timings, the conformance replay on its SQLite, storage persistence and the server's revision. The start counter and the self-test open where <code>AccountState.keepsNothing</code> says, so a public computer keeps nothing of them."], f: ["apps/app/src/features/diagnostics/CryptoSelfTest.ts", "apps/app/src/features/diagnostics/SqliteSelfTest.ts"] },
+  "f-prof": { t: "features/profile", d: ["Profil, D83's slim profile: the name, Jahrgang, Klasse and school the device holds, read from onboarding's reading, then the Notizbuch-Schlüssel row, the way to the diagnostics, Abmelden and Konto löschen. A fact the device doesn't hold stays out."], f: ["apps/app/src/features/profile/ProfileScreen.tsx", "apps/app/src/features/profile/Profile.ts"] },
+
+  "f-diag": { t: "features/diagnostics", d: ["Diagnose and Selbsttest, behind Profil: the crypto test vectors on this platform's WebCrypto with timings, the conformance replay on its SQLite, storage persistence and the server's revision. The start counter and the self-test open where <code>AccountState.keepsNothing</code> says, so a public computer keeps nothing of them."], f: ["apps/app/src/features/diagnostics/CryptoSelfTest.ts", "apps/app/src/features/diagnostics/SqliteSelfTest.ts"] },
 
   "f-lab": { t: "features/sync-lab", d: ["Three virtual devices in one tab, A and B for Lena and C for Tom, each with its own engine, storage and faults, beside a server pane that shows spaces, the command log and ciphertext sizes. A green bar shows when every device agrees with the server."], f: ["apps/app/src/features/sync-lab/Lab.ts", "apps/app/src/features/sync-lab/LabDevice.ts", "apps/app/src/features/sync-lab/Agreement.ts"] },
 
@@ -1521,7 +1526,7 @@ const INFO = {
 
   "a-atoms": { t: "Atoms", k: "wire", d: ["Data and subscriptions for screens live in effect-atom atoms, each on an atom runtime built from the device's or the account's layers. React's own state and effect hooks are allowed only inside a documented <code>use…</code> hook; a lint rule checks it."], f: ["apps/app/src/features/account/AccountState.ts", "apps/app/src/features/keys/KeysState.ts", "apps/app/src/features/onboarding/OnboardingState.ts", "apps/app/src/features/overview/OverviewState.ts", "tools/oxlint/studienbuch/rules/no-ad-hoc-state-or-effects.ts"] },
 
-  "a-ui": { t: "UI pieces", d: ["The design system from packages/ui, plus app-only pieces in <code>src/ui</code>: AppTabs, the question before a destructive step (<code>useConfirm</code>, the system alert on the phones and our dialog on the web), Sheet and WebStyles, each with a <code>.web.tsx</code> or <code>.web.ts</code> twin where the browser needs something else, PanelScreen, homework's blue page, and RouteLink, the one way to link to a screen, which the browser follows without loading the page. A twin shares its file's extension, because Metro tries every platform for one extension before the next; a lint rule checks it."], f: ["apps/app/src/ui/navigation/AppTabs.web.tsx", "apps/app/src/ui/useConfirm.web.tsx", "apps/app/src/ui/navigation/RouteLink.tsx", "packages/ui/src/Tokens.ts", "tools/oxlint/studienbuch/rules/platform-twin-extension.ts"], a: [15] },
+  "a-ui": { t: "UI pieces", d: ["The design system from packages/ui, plus app-only pieces in <code>src/ui</code>: AppTabs, the question before a destructive step (<code>useConfirm</code>, the system alert on the phones and our dialog on the web), Sheet and WebStyles, each with a <code>.web.tsx</code> or <code>.web.ts</code> twin where the browser needs something else, PanelScreen, homework's blue page, SettingsRow, Profil's rows, and RouteLink, the one way to link to a screen, which the browser follows without loading the page. A twin shares its file's extension, because Metro tries every platform for one extension before the next; a lint rule checks it."], f: ["apps/app/src/ui/navigation/AppTabs.web.tsx", "apps/app/src/ui/useConfirm.web.tsx", "apps/app/src/ui/navigation/RouteLink.tsx", "packages/ui/src/Tokens.ts", "tools/oxlint/studienbuch/rules/platform-twin-extension.ts"], a: [15] },
 
   "a-dui": { i: "p-domainui" },
 

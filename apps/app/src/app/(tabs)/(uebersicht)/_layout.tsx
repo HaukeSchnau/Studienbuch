@@ -3,8 +3,8 @@ import { Tokens } from "@stu/ui/Tokens";
 import { Stack } from "expo-router";
 import { Platform } from "react-native";
 
-// A link straight to /selbsttest still opens on top of the overview, so back leads somewhere.
-export const unstable_settings = { initialRouteName: "index" };
+// A link straight to a homework page still opens on top of the overview, so back leads somewhere.
+export const unstable_settings = { anchor: "index" };
 
 export default function OverviewLayout() {
   const { color } = Theme.useTheme();
@@ -34,17 +34,6 @@ export default function OverviewLayout() {
       {/* The hero carries the title. Without toolbar buttons yet, an empty header row would only
           push it down (the mock keeps the row for its "+"). */}
       <Stack.Screen name="index" options={{ title: "Übersicht", headerShown: false }} />
-      {/* Its hero carries the title too; on iOS the header adds only the way back over it. */}
-      <Stack.Screen
-        name="diagnose"
-        options={{
-          title: "Dieses Gerät",
-          headerShown: Platform.OS === "ios",
-          headerTransparent: true,
-          headerTitle: "",
-          headerTintColor: "#FFFFFF",
-        }}
-      />
       {/* Homework's pages draw Flutter's blue header with its own way back. */}
       <Stack.Screen
         name="hausaufgaben/index"
@@ -56,20 +45,6 @@ export default function OverviewLayout() {
       />
       <Stack.Screen name="hausaufgaben/neu" options={sheet("Hausaufgabe hinzufügen")} />
       <Stack.Screen name="hausaufgaben/[id]/bearbeiten" options={sheet("Hausaufgabe bearbeiten")} />
-      <Stack.Screen
-        name="konto-loeschen"
-        options={{
-          title: "Konto löschen",
-          headerShown: Platform.OS === "ios",
-          headerTransparent: true,
-          headerTitle: "",
-          headerTintColor: "#FFFFFF",
-        }}
-      />
-      <Stack.Screen
-        name="selbsttest"
-        options={{ title: "Verschlüsselung", headerLargeTitle: Platform.OS === "ios" }}
-      />
     </Stack>
   );
 }

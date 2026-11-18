@@ -22,7 +22,7 @@ import { AccountState } from "./AccountState.ts";
 import { Deletion } from "./Deletion.ts";
 
 /**
- * "Konto löschen", behind "Dieses Gerät": what goes, the question before it goes, and a fresh
+ * "Konto löschen", behind Profil: what goes, the question before it goes, and a fresh
  * sign-in when the last one is older than `Keys.freshSignInMinutes`. Once the account is gone,
  * the gates lead to the start.
  */
@@ -84,7 +84,7 @@ function DeleteAccount({ accountId }: { readonly accountId: string }) {
     <HeroScreen
       title="Konto löschen"
       subtitle="Das lässt sich nicht rückgängig machen."
-      back="/diagnose"
+      back="/profil"
     >
       <Card padded>
         <Text>
