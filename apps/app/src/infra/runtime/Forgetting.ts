@@ -142,7 +142,8 @@ export const finish = Effect.fn("Forgetting.finish")(function* <E, R>(
 
 /**
  * Keeps a new session: `keep` runs `session` once no sign-out runs and none is left unfinished, so
- * no sign-out can delete what the new session stores.
+ * no sign-out can delete what the new session stores. A card-first sign-up stages its card in such
+ * a turn too, so it never finds a card a sign-out was still to delete.
  */
 export class Service extends Context.Service<
   Service,

@@ -89,7 +89,9 @@ function Keys({ accountId }: { readonly accountId: string }) {
   const screen = useKeysScreenState();
 
   return Option.match(screen.card, {
-    onSome: (card) => <NewCard text={card} onDone={() => screen.setCard(Option.none())} />,
+    onSome: (card) => (
+      <NewCard accountId={accountId} text={card} onDone={() => screen.setCard(Option.none())} />
+    ),
     onNone: () => <Overview accountId={accountId} screen={screen} />,
   });
 }
@@ -327,15 +329,21 @@ function Confirm({
   );
 }
 
-/** "Deine Notfallkarte": the new code, shown this once. */
+/**
+ * "Deine Notfallkarte": the new code, until "Fertig". The device keeps it until then, so after a
+ * restart the card step shows it again (`NotebookKeys.replaceCard`).
+ */
 function NewCard({
+  accountId,
   text,
   onDone,
 }: {
+  readonly accountId: string;
   readonly text: Redacted.Redacted;
   readonly onDone: () => void;
 }) {
   const { color } = Theme.useTheme();
+  const [released, release] = useAtom(KeysState.cardSaved(accountId), { mode: "promiseExit" });
 
   return (
     <HeroScreen
@@ -350,7 +358,15 @@ function NewCard({
         Screenshot: Fotos sieht jeder, der dein entsperrtes Gerät hat.
       </Text>
       <View style={styles.actions}>
-        <Button label="Fertig" block onPress={onDone} />
+        <KeyProblem reason={keyReasonOf(released)} />
+        <Button
+          label="Fertig"
+          block
+          busy={released.waiting}
+          onPress={() =>
+            void release().then((exit) => (Exit.isSuccess(exit) ? onDone() : undefined))
+          }
+        />
       </View>
     </HeroScreen>
   );

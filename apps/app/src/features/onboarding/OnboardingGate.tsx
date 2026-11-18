@@ -44,8 +44,9 @@ function Gate({
   // The device couldn't keep or read a new card: the first start waits until it can.
   if (AsyncResult.isFailure(pending)) return <CardTrouble accountId={accountId} />;
 
-  // A card the student saved already, as one typed to sign in, waits for the server without a step.
-  const card = Option.filter(pending.value, (each) => each.unsaved);
+  // A card the student saved already, as one typed to sign in, waits for the server without a step,
+  // and so does a new one the server may not hold yet.
+  const card = Option.filter(pending.value, (each) => each.unsaved && !each.replacing);
 
   if (Option.isSome(card)) return <SaveCardScreen accountId={accountId} card={card.value} />;
 

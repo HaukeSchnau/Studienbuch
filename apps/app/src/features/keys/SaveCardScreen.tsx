@@ -10,6 +10,7 @@ import * as AsyncResult from "effect/reactivity/AsyncResult";
 import { useState } from "react";
 import { Keyboard, StyleSheet, View } from "react-native";
 
+import { LeaveWarning } from "../../infra/device/LeaveWarning.tsx";
 import { AuthShell } from "../../ui/AuthShell.tsx";
 import { Form, Lead, PasskeyLead, ProblemText, reasonOf } from "../account/AccountForm.tsx";
 import { AccountState } from "../account/AccountState.ts";
@@ -41,9 +42,12 @@ export function SaveCardScreen({
   readonly card: NotebookKeys.PendingCard;
 }) {
   const [step, setStep] = useCardStep();
+  const keepsNothing = AsyncResult.getOrElse(useAtomValue(AccountState.keepsNothing), () => false);
 
   return (
     <AuthShell>
+      {/* Only the tab's memory holds the card on a public computer. */}
+      <LeaveWarning active={keepsNothing} />
       {step === "card" ? (
         <ShowCard accountId={accountId} card={card} onSaved={setStep} />
       ) : step === "passkey" ? (
@@ -94,7 +98,9 @@ function ShowCard({
   });
 
   const [passkey, withPasskey] = useAtom(KeysState.withPasskey(accountId), { mode: "promiseExit" });
+  const [left, leave] = useAtom(KeysState.leaveCard(accountId), { mode: "promiseExit" });
   const notFresh = Option.contains(keyReasonOf(sent), "not-fresh");
+  const replaced = Option.contains(keyReasonOf(sent), "no-match");
 
   const saved = async () => {
     const exit = await send();
@@ -106,6 +112,29 @@ function ShowCard({
     if (next === "done") await release();
     else onSaved(next);
   };
+
+  // The server retired this card for a newer one, which the student saw on the device that made it.
+  if (replaced) {
+    return (
+      <>
+        <AuthHeading>Deine Notfallkarte</AuthHeading>
+        <Lead>
+          Auf einem anderen Gerät hast du inzwischen eine neue Notfallkarte erstellt. Diese hier
+          gilt deshalb nicht mehr. Heb die neue auf.
+        </Lead>
+        <Form>
+          <KeyProblemBox reason={keyReasonOf(left)} />
+          <Button
+            kind="action"
+            label="Weiter"
+            block
+            busy={left.waiting}
+            onPress={() => void leave(card)}
+          />
+        </Form>
+      </>
+    );
+  }
 
   return (
     <>

@@ -196,12 +196,6 @@ export const republish = Atom.family((accountId: string) =>
 export const useHeld = (accountId: string) =>
   Option.flatten(AsyncResult.value(useAtomValue(held(accountId))));
 
-/**
- * A Notfallkarte whose wrapper didn't reach the server for sure, in memory only. "Notfallkarte
- * erstellen" sends this one again, so the code shown is always the one the server holds.
- */
-const unsentCard = AccountState.memory(Option.none<NotebookKeys.Card>());
-
 /** "Notizbuch-Schlüssel": the methods the server holds, and whether one survives this device. */
 export const summary = Atom.family((accountId: string) =>
   // After the status, which starts a new account's key when this screen is the first to ask.
@@ -260,34 +254,13 @@ export const withPassword = Atom.family((accountId: string) =>
 );
 
 /**
- * "Notfallkarte erstellen": the new code's text, which the screen shows once and keeps nowhere.
- * Fails with "not-fresh" when the sign-in is older than `Keys.freshSignInMinutes`.
+ * "Notfallkarte erstellen" (`NotebookKeys.replaceCard`): the new code's text, which the screen
+ * shows until the student saved it (`cardSaved`). Fails with "not-fresh" when the sign-in is older
+ * than `Keys.freshSignInMinutes`.
  */
 export const createRecoveryCode = Atom.family((accountId: string) =>
   runtime(accountId).fn<void>()((_, get) =>
-    Effect.gen(function* () {
-      const waiting = get(unsentCard);
-      const card = Option.isSome(waiting) ? waiting.value : yield* NotebookKeys.newRecoveryCode;
-
-      get.set(unsentCard, Option.some(card));
-
-      const text = yield* NotebookKeys.sendRecoveryCode(card).pipe(
-        Effect.tapError((refused) =>
-          // A card for an older key generation can't go out any more, nor one a newer card from
-          // another device retired since.
-          refused._tag === "NotebookKeys.Problem" &&
-          (refused.reason === "stale" || refused.reason === "no-match")
-            ? Effect.sync(() => get.set(unsentCard, Option.none()))
-            : Effect.void,
-        ),
-        // The summary leaves the card out until its code showed, either way.
-        Effect.ensuring(refresh(accountId, get)),
-      );
-
-      get.set(unsentCard, Option.none());
-
-      return text;
-    }),
+    NotebookKeys.replaceCard.pipe(Effect.ensuring(refresh(accountId, get))),
   ),
 );
 
@@ -331,7 +304,7 @@ export const saveCard = Atom.family((accountId: string) =>
   runtime(accountId).fn<void>()((_, get) =>
     Effect.gen(function* () {
       const settled = yield* NotebookKeys.settle;
-      const cardOnly = Option.filter(yield* NotebookKeys.pendingCard, (card) => !card.withPasskey);
+      const cardOnly = Option.filter(yield* NotebookKeys.pendingCard, (card) => !card.endsAtSaved);
 
       const again =
         Option.contains(settled.card, "not-fresh") && Option.isSome(cardOnly)
@@ -349,6 +322,13 @@ export const saveCard = Atom.family((accountId: string) =>
         return yield* new NotebookKeys.Problem({ reason: again.card.value });
       }
     }).pipe(Effect.ensuring(refresh(accountId, get))),
+  ),
+);
+
+/** "Weiter": the card step heard that a newer card replaced this one (`NotebookKeys.leaveCard`). */
+export const leaveCard = Atom.family((accountId: string) =>
+  runtime(accountId).fn<NotebookKeys.PendingCard>()((card, get) =>
+    Effect.andThen(NotebookKeys.leaveCard(card.code), refresh(accountId, get)),
   ),
 );
 

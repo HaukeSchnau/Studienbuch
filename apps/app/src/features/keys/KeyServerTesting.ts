@@ -24,6 +24,9 @@ export const samePublicKeys = (a: AccountKey.Record, b: AccountKey.Record) =>
 
 const since = DateTime.makeUnsafe("2026-10-29T12:00:00Z");
 
+const sameKey = (a: Uint8Array, b: Uint8Array) =>
+  a.length === b.length && a.every((byte, index) => byte === b[index]);
+
 /**
  * The server's keys in memory, answering as `KeyStore` does for one account. `seals` replaces what
  * a fetch answers, the way a server that plants a key would.
@@ -44,6 +47,10 @@ export const make = Effect.gen(function* () {
   const offline = yield* Ref.make(false);
   // The login each `addWrapper` carried, which only a card's has.
   const logins = yield* Ref.make<ReadonlyArray<Option.Option<string>>>([]);
+  // `addWrapper` of a passkey or card finds the sign-in older than `Keys.freshSignInMinutes`.
+  const notFresh = yield* Ref.make(false);
+  // The public keys of cards a newer card retired, which the server refuses from then on.
+  const retired = yield* Ref.make<ReadonlyArray<Uint8Array>>([]);
 
   const answer = <A, E>(effect: Effect.Effect<A, E>) =>
     Effect.flatMap(effect, (value) =>
@@ -98,16 +105,45 @@ export const make = Effect.gen(function* () {
           );
         },
       ),
-    addWrapper: (wrapper, login) =>
-      Effect.andThen(
-        Ref.update(logins, (all) => [...all, Option.map(login, Redacted.value)]),
-        answer(
-          Ref.update(stored, ({ records, wrappers }) => ({
+    addWrapper: Effect.fn("KeyServerTesting.addWrapper")(function* (
+      wrapper: Keys.Sealed,
+      login: Option.Option<Redacted.Redacted>,
+    ) {
+      const { statement } = wrapper;
+      const card = statement.kind === Wrapper.kindByte.code;
+      yield* Ref.update(logins, (all) => [...all, Option.map(login, Redacted.value)]);
+
+      if (statement.kind !== Wrapper.kindByte.device && (yield* Ref.get(notFresh))) {
+        return yield* new Keys.NotFresh();
+      }
+
+      if (card && (yield* Ref.get(retired)).some((key) => sameKey(key, statement.publicKey))) {
+        return yield* new Keys.Invalid({ reason: "statement" });
+      }
+
+      // A new card retires every other card of the account.
+      const { records, wrappers } = yield* Ref.get(stored);
+
+      const others = wrappers.filter(
+        (each) =>
+          card &&
+          each.statement.kind === Wrapper.kindByte.code &&
+          !sameKey(each.statement.publicKey, statement.publicKey),
+      );
+
+      return yield* answer(
+        Effect.andThen(
+          Ref.update(retired, (all) => [...all, ...others.map((each) => each.statement.publicKey)]),
+          Ref.set(stored, {
             records,
-            wrappers: withWrapper(wrappers, wrapper),
-          })),
+            wrappers: withWrapper(
+              wrappers.filter((each) => !others.includes(each)),
+              wrapper,
+            ),
+          }),
         ),
-      ),
+      );
+    }),
     fetchSeals: Effect.fn("KeyServerTesting.fetchSeals")(function* (method: Keys.Method) {
       const { records, wrappers } = yield* Ref.get(stored);
       const kind = method._tag === "Passkey" ? Wrapper.kindByte.prf : Wrapper.kindByte.code;
@@ -139,6 +175,7 @@ export const make = Effect.gen(function* () {
     demoAsked,
     offline,
     logins,
+    notFresh,
   };
 });
 

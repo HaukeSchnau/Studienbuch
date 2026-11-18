@@ -2,18 +2,15 @@ import { Access } from "@stu/api/Access";
 import { Accounts } from "@stu/api/Accounts";
 import { Demo } from "@stu/api/Demo";
 import { RecoveryCode } from "@stu/e2ee";
-import { Ports } from "@stu/sync/client";
 import * as Arr from "effect/Array";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
-import * as Base64 from "effect/encoding/Base64";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Redacted from "effect/Redacted";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Ref from "effect/Ref";
-import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 import * as Semaphore from "effect/Semaphore";
 import * as SubscriptionRef from "effect/SubscriptionRef";
@@ -21,8 +18,7 @@ import * as SubscriptionRef from "effect/SubscriptionRef";
 import { AuthApi } from "../../infra/auth/AuthApi.ts";
 import { PendingSignUp } from "../../infra/auth/PendingSignUp.ts";
 import { SessionStore } from "../../infra/auth/SessionStore.ts";
-import { Device } from "../../infra/device/Device.ts";
-import { Names } from "../../infra/device/Names.ts";
+import { DeviceSessions } from "../../infra/keychain/DeviceSessions.ts";
 import { Keychain } from "../../infra/keychain/Keychain.ts";
 import { Passkeys } from "../../infra/passkeys/Passkeys.ts";
 import { Forgetting } from "../../infra/runtime/Forgetting.ts";
@@ -56,6 +52,7 @@ export const Reason = Schema.Literals([
   "passkey-failed",
   "not-fresh",
   "unknown-card",
+  "card-not-kept",
   "sign-out-failed",
   "failed",
 ]);
@@ -98,6 +95,8 @@ export const sentence: Record<Reason, string> = {
   "not-fresh": "Melde dich kurz neu an, dann geht es weiter.",
   "unknown-card":
     "Diese Notfallkarte gehört zu keinem Konto. Vielleicht hast du sie durch eine neue ersetzt.",
+  "card-not-kept":
+    "Dieses Gerät konnte deine Notfallkarte gerade nicht speichern. Ohne sie geht es nicht weiter. Versuch es noch einmal.",
   "sign-out-failed": "Abmelden hat nicht geklappt. Versuch es noch einmal.",
   failed: "Das hat nicht geklappt. Versuch es noch einmal.",
 };
@@ -163,6 +162,13 @@ const refuseOtherAccount = Effect.fn("Account.refuseOtherAccount")(function* (
     return yield* new Problem({ reason: "other-account" });
   }
 });
+
+/** Refuses a sign-up while the device holds an account, before anything leaves the device. */
+const refuseAnyAccount = Effect.flatMap(SessionStore.Service, (store) =>
+  Effect.flatMap(store.current, (current) =>
+    Option.isSome(current) ? Effect.fail(new Problem({ reason: "other-account" })) : Effect.void,
+  ),
+);
 
 /**
  * Keeps a new session, so the device is signed in, unless another account holds the device. On a
@@ -281,10 +287,15 @@ export class Confirmations extends Context.Service<
     /** Changed only through `waitForCode`, which keeps it on the device. */
     readonly signingUp: SubscriptionRef.SubscriptionRef<Option.Option<SigningUp>>;
     /**
-     * The card of a sign-up without an address, until the new account's secrets hold it. A device
-     * that keeps its session also keeps it in its keychain (`signUpCard`).
+     * A public computer's card-first sign-up card, until its session is kept. Other devices
+     * stage it in their keychain instead (`DeviceSessions.stage`).
      */
     readonly newCard: Ref.Ref<Option.Option<Redacted.Redacted<Uint8Array>>>;
+    /**
+     * A passkey sign-up whose card the device couldn't hold, so a retry keeps its account rather
+     * than making another. It lives in this run only: after a restart the passkey signs in.
+     */
+    readonly newPasskeyAccount: Ref.Ref<Option.Option<PasskeyAccount>>;
   }
 >()("Account.Confirmations") {}
 
@@ -336,6 +347,7 @@ export const confirmations = Layer.effect(Confirmations)(
     guard: Semaphore.make(1),
     signingUp: Effect.flatMap(restore, SubscriptionRef.make),
     newCard: Ref.make(Option.none<Redacted.Redacted<Uint8Array>>()),
+    newPasskeyAccount: Ref.make(Option.none<PasskeyAccount>()),
   }),
 );
 
@@ -494,9 +506,9 @@ type Offer = (card: Option.Option<OfferedCard>) => Effect.Effect<void>;
 
 /**
  * Keeps a session that came with a card. A device that keeps its session first holds the card in
- * the account's secrets, so no restart finds the account without it. `offer` tells the account's
- * key status, and is the only copy on a public computer or where the keychain refuses. If the
- * device doesn't keep the session, a card it held for it goes again.
+ * the account's secrets, so no restart finds the account without it, and keeps nothing if it
+ * can't (`card-not-kept`). `offer` tells the account's key status, and is the only copy on a
+ * public computer.
  */
 const keepWithCard = Effect.fn("Account.keepWithCard")(function* (
   signedIn: AuthApi.SignedIn,
@@ -504,66 +516,31 @@ const keepWithCard = Effect.fn("Account.keepWithCard")(function* (
   publicComputer: boolean,
   offer: Offer,
 ) {
-  const secrets = Keychain.accountSecrets(card.accountId);
-  const inSecrets = <A, E, R>(effect: Effect.Effect<A, E, R>) => Effect.provide(effect, secrets);
+  // Said before the card goes anywhere: another account's card has no place on this device yet.
+  yield* refuseOtherAccount(signedIn);
 
-  // Whether the account's secrets hold the card now, and whether they held it before.
-  const { held, before } = publicComputer
-    ? { held: false, before: true }
-    : yield* inSecrets(NotebookKeys.pendingCard).pipe(
-        Effect.flatMap((earlier) =>
-          Effect.as(inSecrets(NotebookKeys.holdCard(card)), {
-            held: true,
-            before: Option.exists(earlier, (each) => NotebookKeys.sameCard(each.code, card.code)),
-          }),
-        ),
-        Effect.orElseSucceed(() => ({ held: false, before: true })),
-      );
+  if (!publicComputer) {
+    yield* NotebookKeys.holdCard(card).pipe(
+      Effect.provide(Keychain.accountSecrets(card.accountId)),
+      Effect.catchTags({ "DeviceSecrets.SecretsUnavailable": () => cardNotKept }),
+    );
+  }
 
   yield* offer(Option.some(card));
-
-  const takeBack = Effect.andThen(
-    held && !before ? Effect.ignore(inSecrets(NotebookKeys.dropCard(card.code))) : Effect.void,
-    offer(Option.none()),
-  );
-
-  yield* keep(signedIn, publicComputer).pipe(Effect.onError(() => takeBack));
-
-  return held;
+  yield* keep(signedIn, publicComputer).pipe(Effect.onError(() => offer(Option.none())));
 });
 
-/**
- * Where a card-first sign-up keeps its card on this device, from before its request goes out until
- * the new account's secrets hold it: the server may make the account and lose its answer, and the
- * card is then the account's only way in. A sign-up after a restart takes it up again, and signs
- * in to that account. A public computer keeps it in memory only.
- */
-const signUpCard = Effect.gen(function* () {
-  const keychain = yield* Keychain.Store;
-  const device = yield* Device.Service;
-  const server = yield* Ports.Server;
-  const entry = `card-sign-up.${Names.device(server.origin, device.name)}`;
+const cardNotKept = Effect.fail(new Problem({ reason: "card-not-kept" }));
 
-  return {
-    get: keychain.get(entry).pipe(
-      Effect.map(
-        Option.flatMap((text) =>
-          Option.map(Result.getSuccess(Base64.decode(text)), (bytes) => Redacted.make(bytes)),
-        ),
-      ),
-      Effect.orElseSucceed(() => Option.none<Redacted.Redacted<Uint8Array>>()),
-    ),
-    // A keychain that refuses leaves the card in this run's memory, as on a public computer.
-    set: (code: Redacted.Redacted<Uint8Array>) =>
-      Effect.ignore(keychain.set(entry, Base64.encode(Redacted.value(code)))),
-    remove: Effect.ignore(keychain.remove(entry)),
-  };
-});
+/** Ends a session the device didn't keep, so it doesn't wait on the server for 90 days. */
+const endUnkept = (signedIn: AuthApi.SignedIn) =>
+  Effect.flatMap(AuthApi.Service, (api) => Effect.ignore(api.signOut(signedIn.token)));
 
 /**
  * Creates an account without an address whose Notfallkarte signs up, on a device without
- * passkeys. A retry with the same reservation sends the same card, so after a lost answer it
- * signs in to the account it made rather than making a second one.
+ * passkeys. The card is staged before the request goes out and stays until the session is kept,
+ * so a retry after a lost answer, even after a restart, signs in to the account it made rather
+ * than making a second one. A device that can't stage it sends nothing (`card-not-kept`).
  */
 export const signUpWithCard = Effect.fn("Account.signUpWithCard")(function* (
   reservation: Access.Reservation,
@@ -571,43 +548,61 @@ export const signUpWithCard = Effect.fn("Account.signUpWithCard")(function* (
   offer: Offer,
 ) {
   const api = yield* AuthApi.Service;
+  const sessions = yield* DeviceSessions.Service;
+  const forgetting = yield* Forgetting.Service;
   const { newCard } = yield* Confirmations;
-  const stored = yield* signUpCard;
 
-  const earlier = yield* Ref.get(newCard);
-  const kept = Option.isSome(earlier) || publicComputer ? earlier : yield* stored.get;
-  const code = Option.isSome(kept) ? kept.value : (yield* RecoveryCode.generate).bytes;
+  // In a turn after any sign-out the device left unfinished, which removes a card staged here.
+  const code = yield* forgetting
+    .keep(
+      Effect.gen(function* () {
+        yield* refuseAnyAccount;
 
-  yield* Ref.set(newCard, Option.some(code));
+        const earlier = publicComputer ? yield* Ref.get(newCard) : yield* sessions.staged;
+        const code = Option.isSome(earlier) ? earlier.value : (yield* RecoveryCode.generate).bytes;
 
-  if (!publicComputer) yield* stored.set(code);
+        yield* publicComputer ? Ref.set(newCard, Option.some(code)) : sessions.stage(code);
+
+        return code;
+      }).pipe(Effect.catchTags({ "Keychain.Unavailable": () => cardNotKept })),
+    )
+    .pipe(
+      Effect.catchTags({
+        "Forgetting.Unfinished": () => Effect.fail(new Problem({ reason: "failed" })),
+        "Keychain.Unavailable": () => Effect.fail(new Problem({ reason: "failed" })),
+      }),
+    );
 
   const signedIn = yield* api
     .cardSignUp(yield* NotebookKeys.cardLogin(code), reservation.token)
     .pipe(Effect.mapError(problem));
 
-  const held = yield* keepWithCard(
+  // Keeping the session drops the staged card (`DeviceSessions.set`).
+  yield* keepWithCard(
     signedIn,
-    { accountId: signedIn.accountId, code, withPasskey: false, unsaved: true },
+    { accountId: signedIn.accountId, code, endsAtSaved: false, unsaved: true },
     publicComputer,
     offer,
-  );
+  ).pipe(Effect.onError(() => endUnkept(signedIn)));
 
   yield* Ref.set(newCard, Option.none());
-
-  if (held) yield* stored.remove;
 });
 
-/**
- * Creates an account without an address with a passkey, in one prompt, and gives it a new
- * Notfallkarte as its way back. The PRF output waits for the notebook's key, as at sign-in.
- */
-export const signUpWithPasskey = Effect.fn("Account.signUpWithPasskey")(function* (
+/** A passkey sign-up's new account and its card, until the device keeps them. */
+export interface PasskeyAccount {
+  readonly signedIn: AuthApi.SignedIn;
+  readonly code: Redacted.Redacted<Uint8Array>;
+  readonly used: PasskeyUsed;
+}
+
+/** The passkey prompt that makes the account, and the account's new card. */
+const passkeyAccount = Effect.fn("Account.passkeyAccount")(function* (
   reservation: Access.Reservation,
-  offer: Offer,
 ) {
   const api = yield* AuthApi.Service;
   const passkeys = yield* Passkeys.Authenticator;
+
+  yield* refuseAnyAccount;
 
   const { options, challenge } = yield* api
     .passkeySignUpOptions(reservation.token)
@@ -623,22 +618,47 @@ export const signUpWithPasskey = Effect.fn("Account.signUpWithPasskey")(function
 
   const { bytes: code } = yield* RecoveryCode.generate;
 
+  return {
+    signedIn,
+    code,
+    used: {
+      accountId: signedIn.accountId,
+      credentialId: created.credential.id,
+      prf:
+        created.prf._tag === "Output"
+          ? Option.some(Redacted.make(created.prf.output))
+          : Option.none(),
+    },
+  } satisfies PasskeyAccount;
+});
+
+/**
+ * Creates an account without an address with a passkey, in one prompt, and gives it a new
+ * Notfallkarte as its way back. The PRF output waits for the notebook's key, as at sign-in. The
+ * card isn't a way in until its wrapper reaches the server, so it needs no stage before the
+ * request; a retry after the device couldn't hold it keeps the same account.
+ */
+export const signUpWithPasskey = Effect.fn("Account.signUpWithPasskey")(function* (
+  reservation: Access.Reservation,
+  offer: Offer,
+) {
+  const { newPasskeyAccount } = yield* Confirmations;
+  const earlier = yield* Ref.get(newPasskeyAccount);
+  const made = Option.isSome(earlier) ? earlier.value : yield* passkeyAccount(reservation);
+
+  yield* Ref.set(newPasskeyAccount, Option.some(made));
+
   // A passkey stays on this device, so this is never a public computer (`Account.addPasskey`).
   yield* keepWithCard(
-    signedIn,
-    { accountId: signedIn.accountId, code, withPasskey: true, unsaved: true },
+    made.signedIn,
+    { accountId: made.signedIn.accountId, code: made.code, endsAtSaved: true, unsaved: true },
     false,
     offer,
   );
 
-  return {
-    accountId: signedIn.accountId,
-    credentialId: created.credential.id,
-    prf:
-      created.prf._tag === "Output"
-        ? Option.some(Redacted.make(created.prf.output))
-        : Option.none(),
-  } satisfies PasskeyUsed;
+  yield* Ref.set(newPasskeyAccount, Option.none());
+
+  return made.used;
 });
 
 /**
@@ -660,10 +680,10 @@ export const signInWithCard = Effect.fn("Account.signInWithCard")(function* (
 
   yield* keepWithCard(
     signedIn,
-    { accountId: signedIn.accountId, code, withPasskey: false, unsaved: false },
+    { accountId: signedIn.accountId, code, endsAtSaved: false, unsaved: false },
     publicComputer,
     offer,
-  );
+  ).pipe(Effect.onError(() => endUnkept(signedIn)));
 
   return signedIn.accountId;
 });
@@ -767,6 +787,8 @@ export const signOut = Effect.fn("Account.signOut")(function* <E, R>(
   if (Option.isSome(current)) yield* leave(current.value, store.forget);
 
   yield* SubscriptionRef.set(confirmations.current, Option.none());
+  yield* Ref.set(confirmations.newCard, Option.none());
+  yield* Ref.set(confirmations.newPasskeyAccount, Option.none());
   yield* Effect.ignore(
     Option.match(
       Option.flatMap(current, (signed) => signed.token),

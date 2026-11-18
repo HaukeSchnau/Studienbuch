@@ -28,14 +28,14 @@ const fakeServer = KeyServerTesting.make;
 
 /** A card typed to sign in, which the student has. */
 const typed = (code: Redacted.Redacted<Uint8Array>) =>
-  NotebookKeys.takeCard({ code, withPasskey: false, unsaved: false });
+  NotebookKeys.takeCard({ code, endsAtSaved: false, unsaved: false });
 
 /** A new account's card, which the card step shows. */
-const fresh = (code: Redacted.Redacted<Uint8Array>, withPasskey = false) =>
-  NotebookKeys.holdCard({ code, withPasskey, unsaved: true });
+const fresh = (code: Redacted.Redacted<Uint8Array>, endsAtSaved = false) =>
+  NotebookKeys.holdCard({ code, endsAtSaved, unsaved: true });
 
-/** "Notfallkarte erstellen" with an answer that arrives. */
-const createCard = Effect.flatMap(NotebookKeys.newRecoveryCode, NotebookKeys.sendRecoveryCode);
+/** "Notfallkarte erstellen" with an answer that arrives, and the student saved it. */
+const createCard = Effect.tap(NotebookKeys.replaceCard, () => NotebookKeys.cardSaved);
 
 /** How Lena signed in on a device: `demo` at a demo account's address with a password. */
 interface Setup {
@@ -397,14 +397,14 @@ describe("NotebookKeys", () => {
         const locked = yield* third.run(NotebookKeys.status);
         yield* third.run(typed(card));
 
-        const unsaved = { code, text, withPasskey: false, unsaved: true };
+        const unsaved = { code, text, endsAtSaved: false, unsaved: true, replacing: false };
 
         assert.deepStrictEqual(
           {
             next: [
               NotebookKeys.afterSaved(unsaved, true),
               NotebookKeys.afterSaved(unsaved, false),
-              NotebookKeys.afterSaved({ ...unsaved, withPasskey: true }, false),
+              NotebookKeys.afterSaved({ ...unsaved, endsAtSaved: true }, false),
             ],
             atKiosk: atKiosk._tag,
             kioskKeeps,
@@ -926,38 +926,127 @@ describe("NotebookKeys", () => {
       }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
   );
 
+  // A new card retires the old one once the server holds it. For an account without an address
+  // the new one is then the only way in, so a lost answer and a restart must not lose it.
   it.effect(
-    "a Notfallkarte whose answer was lost goes out again unchanged, and only then shows its code",
+    "a new Notfallkarte waits on the device from before it goes out until the student saved it",
     () =>
       Effect.gen(function* () {
         const server = yield* fakeServer;
         const phone = yield* device(server);
         const laptop = yield* device(server);
         yield* phone.run(NotebookKeys.status);
-        const card = yield* phone.run(NotebookKeys.newRecoveryCode);
+        const pending = phone.run(NotebookKeys.pendingCard);
+
+        // The server doesn't take it: it waits unseen, and no key step shows or sends it.
+        yield* Ref.set(server.notFresh, true);
+        const refused = yield* reasonOf(phone.run(NotebookKeys.replaceCard));
+        yield* phone.run(NotebookKeys.settle);
+        const waiting = yield* pending;
+        yield* Ref.set(server.notFresh, false);
+
+        // The retry sends the same card, and its answer is lost. A restart's key step finds that
+        // the server holds it, and the card step shows it.
         yield* Ref.set(server.loseAnswer, true);
-        const lost = yield* reasonOf(phone.run(NotebookKeys.sendRecoveryCode(card)));
-        // As after a restart, which forgets the card: its id stays on the device.
-        const beforeShown = yield* phone.run(NotebookKeys.summary);
-        const shown = Redacted.value(yield* phone.run(NotebookKeys.sendRecoveryCode(card)));
-        yield* laptop.run(NotebookKeys.unlockWithCode(shown));
+        const lost = yield* reasonOf(phone.run(NotebookKeys.replaceCard));
+        yield* phone.run(NotebookKeys.settle);
+        const shown = yield* pending;
+
+        const sameCard =
+          Option.isSome(waiting) && Option.isSome(shown)
+            ? NotebookKeys.sameCard(waiting.value.code, shown.value.code)
+            : false;
+
+        yield* phone.run(NotebookKeys.cardSaved);
+
+        if (Option.isSome(shown)) {
+          yield* laptop.run(NotebookKeys.unlockWithCode(Redacted.value(shown.value.text)));
+        }
 
         const codes = (yield* Ref.get(server.stored)).wrappers.filter(
           ({ statement }) => statement.kind === Wrapper.kindByte.code,
         );
 
+        const flags = (card: Option.Option<NotebookKeys.PendingCard>) =>
+          Option.map(card, ({ unsaved, replacing, endsAtSaved }) => ({
+            unsaved,
+            replacing,
+            endsAtSaved,
+          }));
+
         assert.deepStrictEqual(
           {
+            refused,
+            waiting: flags(waiting),
             lost,
-            securedBeforeShown: beforeShown.secured,
+            shown: flags(shown),
+            sameCard,
+            afterSaved: Option.isNone(yield* pending),
             codes: codes.length,
             opened: Option.getOrUndefined(yield* laptop.rootKey),
           },
           {
+            refused: "not-fresh",
+            waiting: Option.some({ unsaved: true, replacing: true, endsAtSaved: true }),
             lost: "offline",
-            securedBeforeShown: false,
+            shown: Option.some({ unsaved: true, replacing: false, endsAtSaved: true }),
+            sameCard: true,
+            afterSaved: true,
             codes: 1,
             opened: Option.getOrUndefined(yield* phone.rootKey),
+          },
+        );
+      }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
+  );
+
+  // Another device made a new card while this one still showed the old one, or held it to send.
+  it.effect(
+    "a card a newer one retired stops its work here: the card step says so, a saved one goes",
+    () =>
+      Effect.gen(function* () {
+        const server = yield* fakeServer;
+        const phone = yield* device(server);
+        const tablet = yield* device(server);
+        const laptop = yield* device(server);
+        yield* phone.run(NotebookKeys.status);
+
+        // The phone's new card is on the server, and the card step still shows it. The tablet,
+        // unlocked and offline, holds the card the student typed there.
+        const first = (yield* RecoveryCode.generate).bytes;
+        const text = Redacted.value(RecoveryCode.text(first));
+        yield* phone.run(Effect.andThen(fresh(first), NotebookKeys.settle));
+        yield* tablet.run(NotebookKeys.unlockWithCode(text));
+        yield* Ref.set(server.offline, true);
+        yield* tablet.run(typed(first));
+        yield* Ref.set(server.offline, false);
+
+        // The laptop opens the notebook with it and makes a new one.
+        yield* laptop.run(NotebookKeys.unlockWithCode(text));
+        yield* laptop.run(createCard);
+
+        const unsaved = (yield* phone.run(NotebookKeys.settle)).card;
+        const keptForTheStep = Option.isSome(yield* phone.run(NotebookKeys.pendingCard));
+        yield* phone.run(NotebookKeys.leaveCard(first));
+
+        const saved = (yield* tablet.run(NotebookKeys.settle)).card;
+        const again = (yield* tablet.run(NotebookKeys.settle)).card;
+
+        assert.deepStrictEqual(
+          {
+            unsaved,
+            keptForTheStep,
+            afterWeiter: Option.isNone(yield* phone.run(NotebookKeys.pendingCard)),
+            saved,
+            again,
+            tabletKeeps: Option.isNone(yield* tablet.run(NotebookKeys.pendingCard)),
+          },
+          {
+            unsaved: Option.some("no-match"),
+            keptForTheStep: true,
+            afterWeiter: true,
+            saved: Option.some("no-match"),
+            again: Option.none(),
+            tabletKeeps: true,
           },
         );
       }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),

@@ -89,7 +89,8 @@ export const layer = Layer.effect(Service)(
           onSome: (signed) => signed.publicComputer,
         });
 
-        if (!publicComputer) yield* sessions.set({ accountId, token, demo });
+        // Either way the session takes the place of a sign-up's staged card.
+        yield* publicComputer ? sessions.unstage : sessions.set({ accountId, token, demo });
 
         yield* SubscriptionRef.set(
           ref,

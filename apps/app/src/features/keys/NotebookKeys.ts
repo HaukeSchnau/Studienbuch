@@ -78,6 +78,7 @@ export const Reason = Schema.Literals([
   "locked",
   "signed-out",
   "not-this-card",
+  "not-stored",
 ]);
 
 export type Reason = typeof Reason.Type;
@@ -106,6 +107,8 @@ export const sentence: Record<Reason, string> = {
   "signed-out": "Deine Anmeldung ist abgelaufen. Melde dich neu an.",
   "not-this-card":
     "Das ist nicht der Code von dieser Karte. Vergleich ihn noch einmal mit deiner Notfallkarte.",
+  "not-stored":
+    "Dieses Gerät konnte das gerade nicht speichern oder lesen. Versuch es noch einmal.",
 };
 
 const problem = (reason: Reason) => new Problem({ reason });
@@ -605,20 +608,13 @@ export const usePasskey = Effect.fn("NotebookKeys.usePasskey")(function* (
   );
 });
 
-/** A new Notfallkarte: its code's text, shown once, its wrapper for the server and its login. */
-export interface Card {
-  readonly text: Redacted.Redacted;
-  readonly wrapper: Keys.Sealed;
-  readonly login: Redacted.Redacted;
-}
-
 const UnseenCards = Schema.fromJsonString(Schema.Array(Schema.String));
 const decodeUnseen = Schema.decodeEffect(UnseenCards);
 const encodeUnseen = Schema.encodeEffect(UnseenCards);
 
 /**
  * The ids of cards whose code never showed. The ids aren't secret, and they outlive a restart,
- * which forgets the code, so such a card never counts.
+ * so such a card never counts.
  */
 const unseenCards = Effect.flatMap(
   Effect.flatMap(Ports.DeviceSecrets, (secrets) => secrets.get("unseen-cards")),
@@ -638,36 +634,64 @@ const keepUnseen = Effect.fn("NotebookKeys.keepUnseen")(function* (ids: Readonly
   yield* secrets.set("unseen-cards", textEncoder.encode(text));
 });
 
-/** "Notfallkarte erstellen": a new code and its wrapper, unseen until the server took it. */
-export const newRecoveryCode = guarded(
+/**
+ * "Notfallkarte erstellen": a new card, which retires the old one once the server holds it. It
+ * waits as `pending-card` before it goes out, so after a lost answer, even after a restart, the
+ * card the server holds is one the device can still show; a retry sends the same card. It stays
+ * until the student saved it (`cardSaved`). Answers its text.
+ */
+export const replaceCard = guarded(
   Effect.gen(function* () {
-    const { keys } = yield* current;
-    const code = yield* RecoveryCode.generate;
-    const wrapper = yield* wrap("code", code.bytes, keys, { place: "card" });
+    const { keys, state } = yield* current;
+    const waiting = Option.filter(yield* pendingCard, (held) => held.replacing);
+    const code = Option.isSome(waiting) ? waiting.value.code : (yield* RecoveryCode.generate).bytes;
+    const card = { code, endsAtSaved: true, unsaved: true };
+    const id = yield* cardId(code, keys);
 
-    yield* keepUnseen([...(yield* unseenCards), wrapper.statement.id]);
+    yield* writeCard(card, true);
+    yield* keepUnseen([...new Set([...(yield* unseenCards), id])]);
 
-    return { text: code.text, wrapper, login: yield* cardLogin(code.bytes) } satisfies Card;
+    yield* sendCard(code, keys, state).pipe(
+      Effect.tapError((refused) =>
+        // A newer card from another device retired this one since its answer was lost.
+        refused.reason === "no-match" ? dropCard(code) : Effect.void,
+      ),
+    );
+
+    yield* replaced(card, id);
+
+    return RecoveryCode.text(code);
   }),
 );
 
-/**
- * Sends a card's wrapper and answers its text, which the screen shows once. After a lost answer
- * the same card goes out again, so the code shown is the one the server holds. The server retires
- * every other card then, so the device drops a card it still had work for.
- */
-export const sendRecoveryCode = (card: Card) =>
-  guarded(
-    Effect.gen(function* () {
-      yield* addCard(card.wrapper, card.login);
-      yield* (yield* Ports.DeviceSecrets).remove("pending-card");
+/** The server holds a new card: the card step may show it now. */
+const replaced = Effect.fn("NotebookKeys.replaced")(function* (card: CardIn, id: string) {
+  yield* writeCard(card);
+  yield* keepUnseen((yield* unseenCards).filter((each) => each !== id));
+});
 
-      const id = card.wrapper.statement.id;
-      yield* keepUnseen((yield* unseenCards).filter((each) => each !== id));
+const cardId = Effect.fn("NotebookKeys.cardId")(function* (
+  code: Redacted.Redacted<Uint8Array>,
+  keys: AccountKey.Keys,
+) {
+  const derived = yield* Effect.orDie(Wrapper.derive("code", code, keys.accountId));
 
-      return card.text;
-    }),
+  return `card-${Hex.encode(derived.publicKey.slice(0, 16))}`;
+});
+
+/** Whether the server lists the card's wrapper. */
+const listed = Effect.fn("NotebookKeys.listed")(function* (
+  code: Redacted.Redacted<Uint8Array>,
+  keys: AccountKey.Keys,
+  state: Keys.State,
+) {
+  const derived = yield* Effect.orDie(Wrapper.derive("code", code, keys.accountId));
+
+  return state.wrappers.some(
+    ({ statement }) =>
+      statement.kind === Wrapper.kindByte.code && sameBytes(statement.publicKey, derived.publicKey),
   );
+});
 
 /**
  * A card's wrapper with its login, unless the server holds it already: the card then opens the
@@ -680,15 +704,8 @@ const sendCard = Effect.fn("NotebookKeys.sendCard")(function* (
   keys: AccountKey.Keys,
   state: Keys.State,
 ) {
-  const derived = yield* Effect.orDie(Wrapper.derive("code", code, keys.accountId));
-
-  const known = state.wrappers.some(
-    ({ statement }) =>
-      statement.kind === Wrapper.kindByte.code && sameBytes(statement.publicKey, derived.publicKey),
-  );
-
-  if (known) return;
-  const id = `card-${Hex.encode(derived.publicKey.slice(0, 16))}`;
+  if (yield* listed(code, keys, state)) return;
+  const id = yield* cardId(code, keys);
 
   yield* addCard(yield* wrap("code", code, keys, { place: "card", id }), yield* cardLogin(code));
 });
@@ -702,17 +719,23 @@ const sendCard = Effect.fn("NotebookKeys.sendCard")(function* (
 export interface PendingCard {
   readonly code: Redacted.Redacted<Uint8Array>;
   readonly text: Redacted.Redacted;
-  /** The account signed up with a passkey, so the card step offers none and asks no read-back. */
-  readonly withPasskey: boolean;
+  /**
+   * The card step ends at "Ich habe ihn aufgeschrieben", with no passkey offer and no read-back:
+   * the account signed up with a passkey, or the card is a new one from "Notfallkarte erstellen".
+   */
+  readonly endsAtSaved: boolean;
   readonly unsaved: boolean;
+  /** A new card from "Notfallkarte erstellen" the server may not hold yet. No step shows it. */
+  readonly replacing: boolean;
 }
 
 /** A card the device takes in; its text follows from the code. */
-export type CardIn = Omit<PendingCard, "text">;
+export type CardIn = Omit<PendingCard, "text" | "replacing">;
 
 const codeLength = 16;
-const withPasskeyFlag = 1;
+const endsAtSavedFlag = 1;
 const unsavedFlag = 2;
+const replacingFlag = 4;
 
 // `pending-card` holds the card's 16 bytes and a byte of flags.
 export const pendingCard = Effect.map(
@@ -726,19 +749,22 @@ export const pendingCard = Effect.map(
     return Option.some<PendingCard>({
       code,
       text: RecoveryCode.text(code),
-      withPasskey: (flags & withPasskeyFlag) !== 0,
+      endsAtSaved: (flags & endsAtSavedFlag) !== 0,
       unsaved: (flags & unsavedFlag) !== 0,
+      replacing: (flags & replacingFlag) !== 0,
     });
   }),
 );
 
-const writeCard = (card: CardIn) =>
+const writeCard = (card: CardIn, replacing = false) =>
   Effect.flatMap(Ports.DeviceSecrets, (secrets) =>
     secrets.set(
       "pending-card",
       new Uint8Array([
         ...Redacted.value(card.code),
-        (card.withPasskey ? withPasskeyFlag : 0) | (card.unsaved ? unsavedFlag : 0),
+        (card.endsAtSaved ? endsAtSavedFlag : 0) |
+          (card.unsaved ? unsavedFlag : 0) |
+          (replacing ? replacingFlag : 0),
       ]),
     ),
   );
@@ -753,7 +779,7 @@ export const holdCard = Effect.fn("NotebookKeys.holdCard")(function* (card: Card
 
   yield* writeCard({
     code: card.code,
-    withPasskey: card.withPasskey || Option.exists(same, (held) => held.withPasskey),
+    endsAtSaved: card.endsAtSaved || Option.exists(same, (held) => held.endsAtSaved),
     unsaved: card.unsaved || Option.exists(same, (held) => held.unsaved),
   });
 });
@@ -765,6 +791,9 @@ export const dropCard = (code: Redacted.Redacted<Uint8Array>) =>
       ? Effect.flatMap(Ports.DeviceSecrets, (secrets) => secrets.remove("pending-card"))
       : Effect.void,
   );
+
+/** "Weiter" after the card step heard that a newer card from another device replaced this one. */
+export const leaveCard = (code: Redacted.Redacted<Uint8Array>) => guarded(dropCard(code));
 
 /** Whether two codes are the same card. */
 export const sameCard = (a: Redacted.Redacted<Uint8Array>, b: Redacted.Redacted<Uint8Array>) =>
@@ -786,6 +815,18 @@ const useless = new Set<Reason>(["no-match", "untrusted", "update"]);
 const settleCard = Effect.fn("NotebookKeys.settleCard")(function* (now: Status, card: PendingCard) {
   const done = card.unsaved ? Effect.void : dropCard(card.code);
 
+  // A new card waits for "Notfallkarte erstellen" to send it. The server holding it means its
+  // answer was lost: then the card step shows it.
+  if (card.replacing) {
+    if (now._tag !== "Unlocked") return { status: now, card: Option.none() } satisfies Settled;
+    const { keys, state } = yield* current;
+
+    if (yield* listed(card.code, keys, state))
+      yield* replaced(card, yield* cardId(card.code, keys));
+
+    return { status: now, card: Option.none() } satisfies Settled;
+  }
+
   const settled = (status: Status, reason = Option.none<Reason>()): Settled => ({
     status,
     card: reason,
@@ -803,6 +844,12 @@ const settleCard = Effect.fn("NotebookKeys.settleCard")(function* (now: Status, 
       );
 
       if (Option.isNone(refused)) yield* done;
+
+      // A card a newer one retired never fits again. One the student hasn't saved stays for the
+      // card step to say so (`dropCard`); any other goes now rather than at every step.
+      if (Option.exists(refused, (reason) => useless.has(reason)) && !card.unsaved) {
+        yield* dropCard(card.code);
+      }
 
       return settled(now, refused);
     }
@@ -875,7 +922,7 @@ export const cardSaved = guarded(
  * the notebook without the card, which could then never open it.
  */
 export const afterSaved = (card: PendingCard, publicComputer: boolean) =>
-  card.withPasskey
+  card.endsAtSaved
     ? ("done" as const)
     : publicComputer
       ? ("read-back" as const)

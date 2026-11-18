@@ -4,6 +4,7 @@ import { Text } from "@stu/ui/Text";
 import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
 import { Vector } from "@stu/ui/Vector";
+import { Ports } from "@stu/sync/client";
 import * as Cause from "effect/Cause";
 import * as Exit from "effect/Exit";
 import * as Option from "effect/Option";
@@ -94,20 +95,25 @@ export function MethodRow({ glyph, title, detail, onPress, busy = false }: Metho
 }
 
 const isProblem = Schema.is(NotebookKeys.Problem);
+const isUnstored = Schema.is(Ports.SecretsUnavailable);
+
+// The device's secret store refusing is said too, so no key step fails without a word.
+const reasonIn = <E,>(cause: Cause.Cause<E>): Option.Option<NotebookKeys.Reason> =>
+  Option.flatMap(Cause.findErrorOption(cause), (error) =>
+    isProblem(error)
+      ? Option.some(error.reason)
+      : isUnstored(error)
+        ? Option.some("not-stored")
+        : Option.none(),
+  );
 
 /** Why the last run of a key action failed, if a key operation said why. */
 export const keyReasonOf = (result: AsyncResult.AsyncResult<unknown, unknown>) =>
-  Option.flatMap(AsyncResult.error(result), (error) =>
-    isProblem(error) ? Option.some(error.reason) : Option.none(),
-  );
+  AsyncResult.isFailure(result) ? reasonIn(result.cause) : Option.none();
 
 /** The reason inside a failed run's exit, if a key operation said why. */
 export const keyReasonOfExit = (exit: Exit.Exit<unknown, unknown>) =>
-  Exit.isFailure(exit)
-    ? Option.flatMap(Cause.findErrorOption(exit.cause), (error) =>
-        isProblem(error) ? Option.some(error.reason) : Option.none(),
-      )
-    : Option.none();
+  Exit.isFailure(exit) ? reasonIn(exit.cause) : Option.none();
 
 /** Why a key operation didn't happen, read out as soon as it shows. */
 export function KeyProblem({ reason }: { readonly reason: Option.Option<NotebookKeys.Reason> }) {

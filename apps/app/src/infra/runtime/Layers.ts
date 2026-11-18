@@ -20,8 +20,13 @@ import { Forgetting } from "./Forgetting.ts";
 
 export * as Layers from "./Layers.ts";
 
-// Before anyone signs in: finish the sign-outs an earlier run left, and delete what M0 builds kept.
-const start = Effect.andThen(Forgetting.resume(AccountDatabase.remove), removeLeftovers);
+// Before anyone signs in: finish the sign-outs an earlier run left, drop a sign-up's card that a
+// kept session replaced, and delete what M0 builds kept.
+const start = Effect.all([
+  Forgetting.resume(AccountDatabase.remove),
+  DeviceSessions.tidy,
+  removeLeftovers,
+]);
 
 /**
  * Everything a device has before anyone signs in: the server, the sessions of the accounts signed
