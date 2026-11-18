@@ -28,10 +28,12 @@ export interface View {
   /** The resource's short name, a token in a real corpus. */
   readonly name: string;
   readonly entries: ReadonlyArray<Metrics.TruthEntry>;
+  /** The ISO weeks its timetable was read in. Only those weeks are measured for it. */
+  readonly weeks: ReadonlySet<string>;
 }
 
 export interface Truth {
-  /** Monday to Friday of every captured range. */
+  /** Monday to Friday of every captured range, within a school year. */
   readonly days: ReadonlyArray<string>;
   /** The ISO week of each of `days`, such as `2026-W45`. */
   readonly weekOf: ReadonlyMap<string, string>;
@@ -41,6 +43,8 @@ export interface Truth {
   /** Every entry of the views, each once. */
   readonly entries: ReadonlyArray<Metrics.TruthEntry>;
   readonly exams: ReadonlyArray<Metrics.TruthExam>;
+  /** WebUntis's holidays and the labelled days without school. */
+  readonly closures: ReadonlyArray<{ readonly start: string; readonly end: string }>;
 }
 
 /** The truth is incomplete, so no number measured against it would mean anything. */
@@ -80,7 +84,11 @@ const readEntries = (
         Effect.orDie,
         Effect.flatMap((results) =>
           Effect.forEach(results, ({ resource, result }) =>
-            Result.isSuccess(result)
+            // A day WebUntis wouldn't show, or explained with an error, is no evidence of an
+            // empty timetable.
+            Result.isSuccess(result) &&
+            result.success.errors.length === 0 &&
+            result.success.days.every(WebUntisEntry.shown)
               ? Effect.succeed({ resource, days: result.success.days })
               : Effect.fail(new Incomplete({ read: `${type} ${resource} ${range.start}` })),
           ),
@@ -95,8 +103,9 @@ export const build = Effect.fn("Truth.build")(function* (corpus: Corpus.Corpus) 
 
   const incomplete = (read: string) => () => new Incomplete({ read });
   const years = yield* client.schoolyears.list.pipe(Effect.mapError(incomplete("school years")));
-  const views: Array<View> = [];
+  const views = new Map<string, View>();
   const exams: Array<Metrics.TruthExam> = [];
+  const read: Array<readonly [string, string]> = [];
 
   for (const range of corpus.manifest.ranges) {
     for (const year of years) {
@@ -104,6 +113,11 @@ export const build = Effect.fn("Truth.build")(function* (corpus: Corpus.Corpus) 
       const end = [range.end, year.dateRange.end.slice(0, 10)].sort()[0] ?? range.end;
 
       if (start > end) continue;
+
+      const days = yield* schoolDays({ start, end });
+      const weeks = new Set(days.map(([, week]) => week));
+
+      read.push(...days);
 
       const directory = (resourceType: ViewType) =>
         client.timetable
@@ -119,8 +133,8 @@ export const build = Effect.fn("Truth.build")(function* (corpus: Corpus.Corpus) 
       const idsOf = (names: ReadonlyArray<string>, directory_: ReadonlyMap<string, number>) =>
         names.flatMap((name) => Option.toArray(Option.fromNullishOr(directory_.get(name))));
 
-      const entriesOf = (days: ReadonlyArray<TimetableEntryDay>) =>
-        days.flatMap((day) =>
+      const entriesOf = (timetable: ReadonlyArray<TimetableEntryDay>) =>
+        timetable.flatMap((day) =>
           day.gridEntries.map((entry): Metrics.TruthEntry => {
             const teacherNames = WebUntisEntry.names(entry, "TEACHER");
             const roomNames = WebUntisEntry.names(entry, "ROOM");
@@ -146,21 +160,27 @@ export const build = Effect.fn("Truth.build")(function* (corpus: Corpus.Corpus) 
       ] as const) {
         const names = new Map(resources.map(({ id, shortName }) => [id, shortName]));
 
-        const read = yield* readEntries(
+        const timetables = yield* readEntries(
           client,
           type,
           resources.map(({ id }) => id),
           { start, end },
         );
 
-        views.push(
-          ...read.map(({ resource, days }) => ({
+        // A resource read in several ranges is one view: its weeks of one range are no evidence
+        // about another.
+        for (const { resource, days: timetable } of timetables) {
+          const key = `${type} ${resource}`;
+          const earlier = views.get(key);
+
+          views.set(key, {
             type,
             id: resource,
             name: names.get(resource) ?? String(resource),
-            entries: entriesOf(days),
-          })),
-        );
+            entries: [...(earlier?.entries ?? []), ...entriesOf(timetable)],
+            weeks: new Set([...(earlier?.weeks ?? []), ...weeks]),
+          });
+        }
       }
 
       const list = yield* client.exams
@@ -179,22 +199,30 @@ export const build = Effect.fn("Truth.build")(function* (corpus: Corpus.Corpus) 
     }
   }
 
-  const weekOf = new Map((yield* Effect.forEach(corpus.manifest.ranges, schoolDays)).flat());
+  const weekOf = new Map(read);
+  const appData = yield* client.app.getData.pipe(Effect.mapError(incomplete("app data")));
 
   const entries = [
     ...new Map(
-      views.flatMap((view) =>
+      [...views.values()].flatMap((view) =>
         view.entries.map((entry) => [`${entry.date} ${entry.ids.join("+")}`, entry] as const),
       ),
     ).values(),
   ];
 
   return {
-    days: [...weekOf.keys()],
+    days: [...weekOf.keys()].sort(),
     weekOf,
-    views,
+    views: [...views.values()],
     changes: entries.filter((entry) => entry.status !== "Regular"),
     entries,
     exams,
+    closures: [
+      ...appData.holidays.map((holiday) => ({
+        start: holiday.start.slice(0, 10),
+        end: holiday.end.slice(0, 10),
+      })),
+      ...corpus.cases.closures,
+    ],
   } satisfies Truth;
 });

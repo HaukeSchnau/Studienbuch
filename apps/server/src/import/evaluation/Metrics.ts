@@ -3,8 +3,9 @@
  * section 6, "Metrics"). Our lesson covers a truth entry when they share the date and at least
  * one WebUntis id. Teachers and rooms compare as WebUntis ids, ours resolved through `links`.
  */
+import * as Arr from "effect/Array";
 import * as Equal from "effect/Equal";
-import type { SchoolImport } from "../SchoolImport.ts";
+import { SchoolImport } from "../SchoolImport.ts";
 
 export * as Metrics from "./Metrics.ts";
 
@@ -40,35 +41,72 @@ export const fraction = (right: number, of: number): Fraction => ({ right, of })
 
 export const add = (a: Fraction, b: Fraction): Fraction => fraction(a.right + b.right, a.of + b.of);
 
+export const sum = (fractions: ReadonlyArray<Fraction>) => fractions.reduce(add, fraction(0, 0));
+
 const ascending = (a: number, b: number) => a - b;
 
 const sameSet = (a: ReadonlyArray<number>, b: ReadonlyArray<number>) =>
   Equal.equals([...a].sort(ascending), [...b].sort(ascending));
 
-export const covers = (lesson: Lesson, entry: TruthEntry) =>
-  lesson.entries.some(
-    (claimed) => claimed.date === entry.date && claimed.ids.some((id) => entry.ids.includes(id)),
-  );
+/** Lessons by the entries they claim, each list in order of lesson ids. */
+export const byEntry = (
+  ours: ReadonlyArray<Lesson>,
+): ReadonlyMap<string, ReadonlyArray<Lesson>> => {
+  const index = new Map<string, Array<Lesson>>();
 
-const byId = (a: Lesson, b: Lesson) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+  for (const lesson of Arr.sort(ours, SchoolImport.idOrder)) {
+    for (const claimed of lesson.entries) {
+      for (const id of claimed.ids) {
+        const key = `${claimed.date} ${id}`;
+
+        index.set(key, [...(index.get(key) ?? []), lesson]);
+      }
+    }
+  }
+
+  return index;
+};
+
+/** Our lessons that cover an entry, first by id. */
+const covering = (
+  index: ReadonlyMap<string, ReadonlyArray<Lesson>>,
+  entry: { readonly date: string; readonly ids: ReadonlyArray<number> },
+) =>
+  Arr.sort(
+    [...new Set(entry.ids.flatMap((id) => index.get(`${entry.date} ${id}`) ?? []))],
+    SchoolImport.idOrder,
+  );
 
 /** The first of our lessons, by id, that covers each truth entry it covers first. */
 const claim = (truth: ReadonlyArray<TruthEntry>, ours: ReadonlyArray<Lesson>) => {
+  const entries = new Map<string, Array<TruthEntry>>();
+
+  for (const entry of truth) {
+    for (const id of entry.ids) {
+      entries.set(`${entry.date} ${id}`, [...(entries.get(`${entry.date} ${id}`) ?? []), entry]);
+    }
+  }
+
   const claimed = new Map<TruthEntry, Lesson>();
   let precise = 0;
 
-  for (const lesson of [...ours].sort(byId)) {
-    const fresh = truth.filter((entry) => !claimed.has(entry) && covers(lesson, entry));
+  for (const lesson of Arr.sort(ours, SchoolImport.idOrder)) {
+    const fresh = new Set(
+      lesson.entries.flatMap(({ date, ids }) =>
+        ids.flatMap((id) => (entries.get(`${date} ${id}`) ?? []).filter((e) => !claimed.has(e))),
+      ),
+    );
 
     for (const entry of fresh) claimed.set(entry, lesson);
 
-    if (fresh.length > 0) precise += 1;
+    if (fresh.size > 0) precise += 1;
   }
 
   return { claimed, precise };
 };
 
 export const sameAttributes = (lesson: Lesson, entry: TruthEntry) =>
+  lesson.date === entry.date &&
   lesson.start === entry.start &&
   lesson.end === entry.end &&
   lesson.status === entry.status &&
@@ -82,7 +120,7 @@ export interface ViewWeek {
   readonly covered: number;
   /** Lessons that cover an entry no earlier lesson covered, so a doubled lesson isn't precise. */
   readonly precise: number;
-  /** Covered entries whose lesson has the same start, end, status, teachers and rooms. */
+  /** Covered entries whose lesson has the same date, start, end, status, teachers and rooms. */
   readonly right: number;
 }
 
@@ -100,27 +138,23 @@ export const scoreView = (
 export const isExact = (week: ViewWeek) =>
   week.covered === week.truth && week.precise === week.ours && week.right === week.truth;
 
+const total = (weeks: ReadonlyArray<ViewWeek>, field: keyof ViewWeek) =>
+  weeks.reduce((count, week) => count + week[field], 0);
+
 /** Weeks exactly right, recall, precision and attributes over many view-weeks. */
 export const summarize = (weeks: ReadonlyArray<ViewWeek>) => ({
   weeks: fraction(weeks.filter(isExact).length, weeks.length),
-  recall: fraction(sum(weeks, "covered"), sum(weeks, "truth")),
-  precision: fraction(sum(weeks, "precise"), sum(weeks, "ours")),
-  attributes: fraction(sum(weeks, "right"), sum(weeks, "covered")),
+  recall: fraction(total(weeks, "covered"), total(weeks, "truth")),
+  precision: fraction(total(weeks, "precise"), total(weeks, "ours")),
+  attributes: fraction(total(weeks, "right"), total(weeks, "covered")),
 });
-
-const sum = (weeks: ReadonlyArray<ViewWeek>, field: keyof ViewWeek) =>
-  weeks.reduce((total, week) => total + week[field], 0);
 
 /** A student's courses: those whose lessons cover the student's entries. */
 export const enrollment = (
   entries: ReadonlyArray<TruthEntry>,
-  ours: ReadonlyArray<Lesson>,
+  index: ReadonlyMap<string, ReadonlyArray<Lesson>>,
 ): ReadonlySet<string> =>
-  new Set(
-    ours.flatMap((lesson) =>
-      entries.some((entry) => covers(lesson, entry)) ? [lesson.courseId] : [],
-    ),
-  );
+  new Set(entries.flatMap((entry) => covering(index, entry).map((lesson) => lesson.courseId)));
 
 export interface LabelledChange {
   readonly id: string;
@@ -136,7 +170,7 @@ export interface LabelledChange {
 export const scoreChanges = (
   changes: ReadonlyArray<TruthEntry>,
   labels: ReadonlyArray<LabelledChange>,
-  ours: ReadonlyArray<Lesson>,
+  index: ReadonlyMap<string, ReadonlyArray<Lesson>>,
 ) => {
   const labelOf = (entry: TruthEntry) =>
     labels.find(
@@ -144,7 +178,7 @@ export const scoreChanges = (
     );
 
   const isRight = (entry: TruthEntry) => {
-    const lesson = [...ours].sort(byId).find((each) => covers(each, entry));
+    const lesson = covering(index, entry)[0];
     const label = labelOf(entry);
 
     return (
@@ -166,43 +200,50 @@ export const scoreChanges = (
   };
 };
 
-/** School days on which we're closed exactly when the truth is. */
+export interface LabelledCourse {
+  readonly id: string;
+  /** Whether the entries belong to one course, or to as many courses as there are entries. */
+  readonly same: boolean;
+  readonly entries: ReadonlyArray<{ readonly date: string; readonly ids: ReadonlyArray<number> }>;
+}
+
+/** Labelled sets of entries whose first covering lessons share one course, or don't. */
+export const scoreCourses = (
+  cases: ReadonlyArray<LabelledCourse>,
+  index: ReadonlyMap<string, ReadonlyArray<Lesson>>,
+) => {
+  const passing = cases.filter((labelled) => {
+    const courses = labelled.entries.map(
+      (entry) => covering(index, entry)[0]?.courseId ?? "not imported",
+    );
+
+    const distinct = new Set(courses).size;
+
+    return (
+      !courses.includes("not imported") &&
+      (labelled.same ? distinct === 1 : distinct === courses.length)
+    );
+  });
+
+  return {
+    score: fraction(passing.length, cases.length),
+    passing: passing.map((labelled) => labelled.id),
+  };
+};
+
+/** Closed school days: those we close of the truth's, and those of ours that the truth closes. */
 export const scoreClosures = (
   days: ReadonlyArray<string>,
   closedInTruth: (day: string) => boolean,
   closedInOurs: (day: string) => boolean,
-): Fraction =>
-  fraction(days.filter((day) => closedInTruth(day) === closedInOurs(day)).length, days.length);
+) => {
+  const truth = days.filter(closedInTruth);
+  const ours = days.filter(closedInOurs);
 
-/**
- * Courses that meet in some evaluated weeks but not all, and whose weeks all carry one of our
- * labels. A course that meets every other week must always meet in weeks with the same label.
- */
-export const scoreAlternation = (
-  ours: ReadonlyArray<Lesson>,
-  weekOf: (date: string) => string,
-  weeks: ReadonlyArray<string>,
-  labelOf: (week: string) => string | undefined,
-): Fraction => {
-  const met = new Map<string, Set<string>>();
-
-  for (const lesson of ours) {
-    const week = weekOf(lesson.date);
-
-    if (weeks.includes(week))
-      met.set(lesson.courseId, (met.get(lesson.courseId) ?? new Set()).add(week));
-  }
-
-  const alternating = [...met.values()].filter((each) => each.size < weeks.length);
-
-  return fraction(
-    alternating.filter((each) => {
-      const labels = new Set([...each].map(labelOf));
-
-      return labels.size === 1 && !labels.has(undefined);
-    }).length,
-    alternating.length,
-  );
+  return {
+    recall: fraction(truth.filter(closedInOurs).length, truth.length),
+    precision: fraction(ours.filter(closedInTruth).length, ours.length),
+  };
 };
 
 export interface TruthExam {
@@ -225,6 +266,7 @@ export interface Exam {
 /**
  * Per exam: our exam has its date and time, and is shown to exactly its students. Per student
  * and exam: the exams a student sees through the courses they take, against the exam's students.
+ * A truth pair credits one shown exam only, so a doubled exam isn't precise.
  */
 export const scoreExams = (
   truth: ReadonlyArray<TruthExam>,
@@ -238,12 +280,19 @@ export const scoreExams = (
     shownTo(exam).map((student) => ({ student, examIds: exam.examIds })),
   );
 
-  const truthPairs = truth.flatMap((exam) =>
-    exam.students.map((student) => ({ student, id: exam.id })),
+  const truthPairs = new Set(
+    truth.flatMap((exam) => exam.students.map((student) => `${student} ${exam.id}`)),
   );
 
-  const isShown = (pair: { readonly student: number; readonly id: number }) =>
-    shown.some((each) => each.student === pair.student && each.examIds.includes(pair.id));
+  const credited = new Set<string>();
+
+  for (const each of shown) {
+    const pair = each.examIds
+      .map((id) => `${each.student} ${id}`)
+      .find((key) => truthPairs.has(key) && !credited.has(key));
+
+    if (pair !== undefined) credited.add(pair);
+  }
 
   const rightExams = truth.filter((exam) =>
     ours.some(
@@ -256,69 +305,80 @@ export const scoreExams = (
     ),
   );
 
-  const rightShown = shown.filter((each) =>
-    truthPairs.some((pair) => pair.student === each.student && each.examIds.includes(pair.id)),
-  );
-
   return {
     exams: fraction(rightExams.length, truth.length),
     students: {
-      recall: fraction(truthPairs.filter(isShown).length, truthPairs.length),
-      precision: fraction(rightShown.length, shown.length),
+      recall: fraction(credited.size, truthPairs.size),
+      precision: fraction(credited.size, shown.length),
     },
   };
 };
 
 /**
- * Of the truth entries both states cover, those whose first covering lesson moved to another
+ * Of the truth entries the later run read again, those whose first covering lesson kept its
  * course id. Homework and enrollments name a course, so a changed id loses them.
  */
-export const courseChurn = (
-  truth: ReadonlyArray<TruthEntry>,
-  before: ReadonlyArray<Lesson>,
-  after: ReadonlyArray<Lesson>,
+export const courseIdsKept = (
+  reread: ReadonlyArray<TruthEntry>,
+  before: ReadonlyMap<string, ReadonlyArray<Lesson>>,
+  after: ReadonlyMap<string, ReadonlyArray<Lesson>>,
 ): Fraction => {
-  const firstBefore = claim(truth, before).claimed;
-  const firstAfter = claim(truth, after).claimed;
-  const both = truth.filter((entry) => firstBefore.has(entry) && firstAfter.has(entry));
+  const both = reread.flatMap((entry) => {
+    const was = covering(before, entry)[0];
+    const is = covering(after, entry)[0];
+
+    return was === undefined || is === undefined ? [] : [was.courseId === is.courseId];
+  });
+
+  return fraction(both.filter((kept) => kept).length, both.length);
+};
+
+/** Our lessons' claims of WebUntis entries that the truth holds. A wrong link is an error. */
+export const scoreLinks = (
+  ours: ReadonlyArray<Lesson>,
+  truth: ReadonlyArray<TruthEntry>,
+  measured: (date: string) => boolean,
+): Fraction => {
+  const known = new Set(truth.flatMap((entry) => entry.ids.map((id) => `${entry.date} ${id}`)));
+  const claims = ours.flatMap((lesson) => lesson.entries).filter(({ date }) => measured(date));
 
   return fraction(
-    both.filter((entry) => firstBefore.get(entry)?.courseId !== firstAfter.get(entry)?.courseId)
-      .length,
-    both.length,
+    claims.filter(({ date, ids }) => ids.every((id) => known.has(`${date} ${id}`))).length,
+    claims.length,
   );
 };
 
-type Rows = Pick<
+type State = Pick<
   SchoolImport.ImportResult,
-  "courses" | "lessons" | "closures" | "exams" | "teachers" | "rooms"
+  "courses" | "lessons" | "closures" | "exams" | "teachers" | "rooms" | "weeks" | "links"
 >;
 
-const rowsOf = (state: Rows) =>
+// Ids are unique within a kind only, so each entry is keyed by its kind as well.
+const contentsOf = (state: State) =>
   new Map<string, unknown>(
-    [
-      state.courses,
-      state.lessons,
-      state.closures,
-      state.exams,
-      state.teachers,
-      state.rooms,
-    ].flatMap((rows) => rows.map((row): [string, unknown] => [row.id, row])),
+    (
+      [
+        ["course", state.courses],
+        ["lesson", state.lessons],
+        ["closure", state.closures],
+        ["exam", state.exams],
+        ["teacher", state.teachers],
+        ["room", state.rooms],
+        ["link", state.links],
+      ] as const
+    )
+      .flatMap(([kind, rows]) =>
+        rows.map((row: { readonly id: string }): [string, unknown] => [`${kind} ${row.id}`, row]),
+      )
+      .concat(state.weeks.map((week): [string, unknown] => [`week ${week.week}`, week])),
   );
 
-/** Rows that are in one state and not the other, or differ between them. */
-export const differences = (a: Rows, b: Rows) => {
-  const left = rowsOf(a);
-  const right = rowsOf(b);
+/** Rows, week labels and links that are in one state and not the other, or differ. */
+export const differences = (a: State, b: State) => {
+  const left = contentsOf(a);
+  const right = contentsOf(b);
 
   return [...new Set([...left.keys(), ...right.keys()])].filter(
-    (id) => !left.has(id) || !right.has(id) || !Equal.equals(left.get(id), right.get(id)),
+    (key) => !left.has(key) || !right.has(key) || !Equal.equals(left.get(key), right.get(key)),
   ).length;
-};
-
-/** Rows of `before` that `after` lacks. */
-export const deleted = (before: Rows, after: Rows) => {
-  const kept = rowsOf(after);
-
-  return [...rowsOf(before).keys()].filter((id) => !kept.has(id)).length;
 };

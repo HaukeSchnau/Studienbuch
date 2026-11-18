@@ -24,25 +24,33 @@ export const Evaluation = Schema.Struct({
   /** `weekly` runs the import every Monday at 06:00, `timeline` every school day. */
   mode: Schema.Literals(["weekly", "timeline"]),
   weeks: Schema.Array(Schema.String),
+  /** Students count only in the weeks after their term's two opening weeks, the Kurswahl's source. */
   views: Schema.Struct({ student: View, teacher: View, room: View }),
   changes: Fraction,
-  closures: Fraction,
+  /** Labelled entries that belong to one course, or to different ones. */
+  courses: Fraction,
+  closures: Schema.Struct({ recall: Fraction, precision: Fraction }),
+  /** Our lessons' claims of WebUntis entries that the truth holds. */
+  links: Fraction,
   exams: Fraction,
   examStudents: Schema.Struct({ recall: Fraction, precision: Fraction }),
   weekLabels: Fraction,
-  alternation: Fraction,
-  /** Entries whose course id stayed the same from one run to the next. */
+  /** Entries a run read again whose course id stayed the same. */
   courseIdsKept: Fraction,
+  /** After each run, the school days of the next seven days it had read completely. */
+  lookahead: Fraction,
+  runs: Schema.Struct({ total: Schema.Int, failed: Schema.Int }),
+  /** The first measured run, repeated. Every count but `injectedFailures` must be 0. */
   invariants: Schema.Struct({
+    failedRuns: Schema.Int,
     secondRunChanges: Schema.Int,
     reversedReadChanges: Schema.Int,
-    deletedOnFailure: Schema.Int,
+    failedReadChanges: Schema.Int,
     injectedFailures: Schema.Int,
   }),
   reads: Schema.Struct({
-    runs: Schema.Int,
     requests: Schema.Int,
-    notCaptured: Schema.Int,
+    outOfRange: Schema.Int,
     decodeFailures: Schema.Int,
   }),
   /** Ids of the labelled cases that pass. */
@@ -89,16 +97,18 @@ export const format = (report: Evaluation) =>
     line("Student attributes right", report.views.student.attributes),
     line("Teacher-weeks exactly right", report.views.teacher.weeks),
     line("Room-weeks exactly right", report.views.room.weeks),
-    line("Closure days right", report.closures),
+    line("Labelled courses right", report.courses),
+    line("Links to entries that exist", report.links),
+    line("Closed days we close", report.closures.recall),
+    line("Days we close that are closed", report.closures.precision),
     line("Exams right", report.exams),
     line("Exams shown to their students", report.examStudents.recall),
     line("Exams shown that are theirs", report.examStudents.precision),
     line("Week labels right", report.weekLabels),
-    line("Alternating courses on one label", report.alternation),
+    line("Next seven days read", report.lookahead),
     "",
-    `  A second run changed ${report.invariants.secondRunChanges} rows, reversed reads ${report.invariants.reversedReadChanges}.`,
-    `  ${report.invariants.injectedFailures} injected read failures deleted ${report.invariants.deletedOnFailure} rows.`,
-    `  ${report.reads.runs} runs made ${report.reads.requests} requests; ${report.reads.notCaptured} weren't captured, ${report.reads.decodeFailures} didn't decode.`,
+    `  ${report.runs.failed} of ${report.runs.total} runs failed; they made ${report.reads.requests} requests, ${report.reads.outOfRange} for days outside the capture, and ${report.reads.decodeFailures} bodies didn't decode.`,
+    `  Repeating the first run: ${report.invariants.failedRuns} failed, a second run changed ${report.invariants.secondRunChanges} rows, reversed reads ${report.invariants.reversedReadChanges}, ${report.invariants.injectedFailures} failed reads ${report.invariants.failedReadChanges}.`,
     `  Labelled cases passing: ${report.passingCases.length === 0 ? "none" : report.passingCases.join(", ")}`,
     ...(report.worst.length === 0
       ? []

@@ -36,16 +36,23 @@ export const names = (entry: TimetableEntry, type: string) => {
 export const ids = (entry: TimetableEntry): ReadonlyArray<number> =>
   [...entry.ids].sort((a, b) => a - b);
 
-const clock = /(?:^|T)(?<hours>\d{2}):(?<minutes>\d{2})(?::\d{2})?$/u;
+const clock = /(?:^|T)(?<hours>\d{2}):(?<minutes>\d{2})(?::(?<seconds>\d{2}))?$/u;
 
-/** `08:00` or `2026-11-09T08:00` as milliseconds since midnight. */
+/** `08:00`, `2026-11-09T08:00` or `2026-11-09T08:00:30` as milliseconds since midnight. */
 export const timeOfDay = (text: string): Option.Option<number> => {
   const groups = clock.exec(text)?.groups;
 
   return groups === undefined
     ? Option.none()
-    : Option.some((Number(groups.hours) * 60 + Number(groups.minutes)) * 60_000);
+    : Option.some(
+        ((Number(groups.hours) * 60 + Number(groups.minutes)) * 60 + Number(groups.seconds ?? 0)) *
+          1000,
+      );
 };
+
+/** Whether WebUntis showed the day, so an empty one is evidence of no lessons. */
+export const shown = (day: { readonly status: string }) =>
+  day.status === "REGULAR" || day.status === "NO_DATA";
 
 /** WebUntis's statuses in our terms. One we don't know reads as a change. */
 export const status = (entry: TimetableEntry): SchoolImport.LessonStatus => {

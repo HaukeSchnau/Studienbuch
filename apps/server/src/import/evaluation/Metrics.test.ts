@@ -68,6 +68,12 @@ describe("Metrics.scoreView", () => {
       exact: false,
     },
     {
+      name: "a lesson on another day that claims the entry",
+      ours: [lesson("a", [1], { date: "2026-11-03" }), lesson("b", [2])],
+      score: { truth: 2, ours: 2, covered: 2, precise: 2, right: 1 },
+      exact: false,
+    },
+    {
       name: "another teacher",
       ours: [lesson("a", [1], { teachers: [202] }), lesson("b", [2])],
       score: { truth: 2, ours: 2, covered: 2, precise: 2, right: 1 },
@@ -97,7 +103,7 @@ describe("Metrics.scoreChanges", () => {
       lesson("b", [2], { status: "Changed", teachers: [205], previousTeachers: [201], kind }),
     ];
 
-    assert.deepStrictEqual(Metrics.scoreChanges(changes, labels, ours), {
+    assert.deepStrictEqual(Metrics.scoreChanges(changes, labels, Metrics.byEntry(ours)), {
       score: Metrics.fraction(right, 2),
       passing,
     });
@@ -105,30 +111,65 @@ describe("Metrics.scoreChanges", () => {
 });
 
 describe("Metrics.scoreExams", () => {
-  it("counts an exam shown to students of the course who don't sit it", () => {
-    const enrollments = new Map([
-      [501, new Set(["MA-E/12"])],
-      [502, new Set(["MA-E/12"])],
-      [503, new Set(["MA-E/12"])],
-      [504, new Set(["DE/12"])],
-    ]);
+  const enrollments = new Map([
+    [501, new Set(["MA-E/12"])],
+    [502, new Set(["MA-E/12"])],
+    [503, new Set(["MA-E/12"])],
+    [504, new Set(["DE/12"])],
+  ]);
 
-    const truth = [{ id: 901, date: day, start: 0, end: 1, students: [501, 502] }];
-    const ours = [{ courseId: "MA-E/12", date: day, start: 0, end: 1, examIds: [901] }];
+  const truth = [{ id: 901, date: day, start: 0, end: 1, students: [501, 502] }];
+  const exam = { courseId: "MA-E/12", date: day, start: 0, end: 1, examIds: [901] };
 
+  it.each([
+    {
+      name: "to students of the course who don't sit it",
+      ours: [exam],
+      students: { recall: Metrics.fraction(2, 2), precision: Metrics.fraction(2, 3) },
+    },
+    {
+      name: "twice",
+      ours: [exam, { ...exam, start: 2 }],
+      students: { recall: Metrics.fraction(2, 2), precision: Metrics.fraction(2, 6) },
+    },
+  ])("counts an exam shown $name", ({ ours, students }) => {
     assert.deepStrictEqual(Metrics.scoreExams(truth, ours, enrollments), {
       exams: Metrics.fraction(0, 1),
-      students: { recall: Metrics.fraction(2, 2), precision: Metrics.fraction(2, 3) },
+      students,
     });
   });
 });
 
-describe("Metrics.courseChurn", () => {
+describe("Metrics.courseIdsKept", () => {
   it("counts an entry whose lesson moved to another course", () => {
     const truth = [entry([1]), entry([2])];
     const before = [lesson("a", [1]), lesson("b", [2])];
     const after = [lesson("a", [1]), lesson("b", [2], { courseId: "MA/13" })];
 
-    assert.deepStrictEqual(Metrics.courseChurn(truth, before, after), Metrics.fraction(1, 2));
+    assert.deepStrictEqual(
+      Metrics.courseIdsKept(truth, Metrics.byEntry(before), Metrics.byEntry(after)),
+      Metrics.fraction(1, 2),
+    );
+  });
+});
+
+describe("Metrics.scoreCourses", () => {
+  const entries = [
+    { date: day, ids: [1] },
+    { date: day, ids: [2] },
+  ];
+
+  it.each([
+    { name: "one course", same: true, courses: ["MA/12", "MA/12"], right: 1 },
+    { name: "one course split in two", same: true, courses: ["MA/12", "MA/13"], right: 0 },
+    { name: "two courses", same: false, courses: ["MA/12", "MA/13"], right: 1 },
+    { name: "two courses merged", same: false, courses: ["MA/12", "MA/12"], right: 0 },
+  ])("scores $name", ({ same, courses, right }) => {
+    const ours = courses.map((courseId, index) => lesson(`l${index}`, [index + 1], { courseId }));
+
+    assert.deepStrictEqual(
+      Metrics.scoreCourses([{ id: "case", same, entries }], Metrics.byEntry(ours)).score,
+      Metrics.fraction(right, 1),
+    );
   });
 });

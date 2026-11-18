@@ -111,7 +111,8 @@ export const layer = Layer.effect(SchoolImport.Service)(
       const covers: Array<SchoolImport.Coverage> = [];
       const diagnostics: Array<typeof SchoolImport.Diagnostic.Type> = [];
 
-      const addLesson = (day: TimetableEntryDay, entry: TimetableEntry) => {
+      /** Adds the entry's lesson, or says it couldn't, which keeps its week uncovered. */
+      const addLesson = (day: TimetableEntryDay, entry: TimetableEntry): boolean => {
         const subject = WebUntisEntry.names(entry, "SUBJECT").current[0] ?? "?";
         const course = courseId(subject, day.resource.shortName);
         const date = day.date.slice(0, 10);
@@ -122,7 +123,7 @@ export const layer = Layer.effect(SchoolImport.Service)(
         if (Option.isNone(start) || Option.isNone(end)) {
           diagnostics.push({ code: "unreadable-time", detail: `${date} ${ids.join("+")}` });
 
-          return;
+          return false;
         }
 
         const teacherNames = WebUntisEntry.names(entry, "TEACHER");
@@ -151,6 +152,8 @@ export const layer = Layer.effect(SchoolImport.Service)(
                 },
         });
         links.push({ id, refs: [SchoolImport.ProviderRef.cases.Entry.make({ date, ids })] });
+
+        return true;
       };
 
       for (const week of weeks) {
@@ -164,18 +167,29 @@ export const layer = Layer.effect(SchoolImport.Service)(
           })
           .pipe(Effect.mapError(failed("class timetables")));
 
-        const unread = results.filter(({ result }) => Result.isFailure(result));
+        // A read is complete when WebUntis answered, explained nothing with an error, showed every
+        // day, and every entry became a lesson. Only then may its week replace stored lessons.
+        const unread: Array<number> = [];
 
-        for (const { result } of results) {
-          if (Result.isSuccess(result)) {
-            for (const day of result.success.days) {
-              for (const entry of day.gridEntries) addLesson(day, entry);
-            }
+        for (const { resource, result } of results) {
+          const added = Result.isSuccess(result)
+            ? result.success.days.flatMap((day) =>
+                day.gridEntries.map((entry) => addLesson(day, entry)),
+              )
+            : [];
+
+          if (
+            Result.isFailure(result) ||
+            result.success.errors.length > 0 ||
+            !result.success.days.every(WebUntisEntry.shown) ||
+            added.includes(false)
+          ) {
+            unread.push(resource);
           }
         }
 
         diagnostics.push(
-          ...unread.map(({ resource }) => ({
+          ...unread.map((resource) => ({
             code: "read-failed",
             detail: `CLASS ${resource} ${range.start}`,
           })),
@@ -222,9 +236,7 @@ export const layer = Layer.effect(SchoolImport.Service)(
           return [];
         },
         onSome: (list) => {
-          covers.push({ rows: "exams", start: first, end: last });
-
-          return list.exams.flatMap((exam) => {
+          const read = list.exams.flatMap((exam) => {
             const id = `exam-${exam.examId}`;
             const start = WebUntisEntry.timeOfDay(exam.examStart);
             const end = WebUntisEntry.timeOfDay(exam.examEnd);
@@ -246,6 +258,12 @@ export const layer = Layer.effect(SchoolImport.Service)(
               },
             ];
           });
+
+          // An exam whose time didn't read would otherwise be deleted with nothing in its place.
+          if (read.length === list.exams.length)
+            covers.push({ rows: "exams", start: first, end: last });
+
+          return read;
         },
       });
 

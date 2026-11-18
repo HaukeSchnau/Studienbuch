@@ -1,7 +1,7 @@
 /**
- * Runs an import at 06:00 every Monday, or every school day in timeline mode, on what WebUntis
- * showed by then and the store the last run left, and measures the final store against the truth
- * (m2-import-corpus.md, section 6). The first run repeats to check what must never change.
+ * Runs an import at 06:00 every Monday of the capture, or every school day in timeline mode, on
+ * what WebUntis showed by then and the store the last run left, and measures the final store
+ * (m2-import-corpus.md, section 6). The first measured run repeats to check what must not change.
  */
 import { WebUntisClient } from "@schnau/webuntis-api";
 import { School } from "@stu/core";
@@ -10,6 +10,7 @@ import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import * as Schema from "effect/Schema";
 import { RecordedWebUntis } from "../../infra/webuntis/RecordedWebUntis.ts";
 import type { Corpus } from "../corpus/Corpus.ts";
 import { SchoolImport } from "../SchoolImport.ts";
@@ -28,6 +29,15 @@ export interface Options {
   readonly weeks: Option.Option<{ readonly from: string; readonly to: string }>;
   readonly timeline: boolean;
 }
+
+/**
+ * The import read what the corpus should hold and doesn't, so the corpus is wrong, not the
+ * import. Days outside the captured ranges are normal and don't count.
+ */
+export class NotCaptured extends Schema.TaggedError<
+  NotCaptured,
+  { readonly brand: unique symbol }
+>()("Evaluator.NotCaptured", { reads: Schema.Array(Schema.String) }) {}
 
 /** 06:00 at the school on `day`, as the instant a run starts. */
 const morning = (day: string, timeZone: string) =>
@@ -76,36 +86,40 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
   const { corpus } = options;
   const truth = yield* Truth.build(corpus);
   const weekOf = (day: string) => truth.weekOf.get(day) ?? "";
+  const captured = [...new Set(truth.days.map(weekOf))].sort();
 
-  const weeks = [...new Set(truth.days.map(weekOf))]
-    .sort()
-    .filter(
-      (week) =>
-        Option.isNone(options.weeks) ||
-        (options.weeks.value.from <= week && week <= options.weeks.value.to),
-    );
+  const weeks = captured.filter(
+    (week) =>
+      Option.isNone(options.weeks) ||
+      (options.weeks.value.from <= week && week <= options.weeks.value.to),
+  );
 
   const measured = new Set(weeks);
   const days = truth.days.filter((day) => measured.has(weekOf(day)));
   const measuredDays = new Set(days);
-
-  const starts = options.timeline
-    ? days
-    : weeks.flatMap((week) => days.find((day) => weekOf(day) === week) ?? []);
-
+  const timeZone = corpus.manifest.timeZone;
   const school = School.Id.make(corpus.manifest.id);
 
-  /** One run at 06:00 on `day`. A run that fails leaves the store as it was. */
+  /** One run at 06:00 on `day`. A run that fails leaves the store as it was, and says so. */
   const run = Effect.fn("Evaluator.run")(function* (
     day: string,
     previous: Option.Option<SchoolImport.ImportResult>,
-    recorded: Omit<RecordedWebUntis.Options, "asOf"> = {},
+    recorded: Omit<RecordedWebUntis.Options, "asOf" | "captured"> = {},
   ) {
-    const now = morning(day, corpus.manifest.timeZone);
-    const { client, log } = yield* RecordedWebUntis.make(corpus.reads, { asOf: now, ...recorded });
+    const now = morning(day, timeZone);
+
+    const { client, log } = yield* RecordedWebUntis.make(corpus.reads, {
+      asOf: now,
+      captured: corpus.manifest.ranges,
+      ...recorded,
+    });
+
+    // The import gets the stored rows and links. What earlier runs covered is the store's
+    // business: a result that repeated it would delete by an old read.
+    const stored = Option.map(previous, (state) => ({ ...state, covers: [], diagnostics: [] }));
 
     const exit = yield* SchoolImport.Service.use((service) =>
-      service.run({ school, now, previous }),
+      service.run({ school, now, previous: stored }),
     ).pipe(
       Effect.provide(
         options.importLayer.pipe(Layer.provide(Layer.succeed(WebUntisClient)(client))),
@@ -116,51 +130,66 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
     const before = Option.getOrElse(previous, () => SchoolImport.empty);
 
     return {
+      day,
       state: Exit.isSuccess(exit) ? SchoolImport.apply(before, exit.value) : before,
+      covers: Exit.isSuccess(exit) ? exit.value.covers : [],
+      failed: Exit.isFailure(exit),
       log: yield* log,
     };
   });
 
-  const states: Array<SchoolImport.ImportResult> = [];
-  const logs: Array<RecordedWebUntis.Log> = [];
+  // The runs span the whole capture, so the store holds every term's opening weeks whichever
+  // weeks are measured.
+  const starts = options.timeline
+    ? truth.days
+    : captured.flatMap((week) => truth.days.find((day) => weekOf(day) === week) ?? []);
+
+  const runs: Array<Effect.Success<ReturnType<typeof run>>> = [];
 
   for (const day of starts) {
-    const { state, log } = yield* run(day, Option.fromNullishOr(states.at(-1)));
-
-    states.push(state);
-    logs.push(log);
+    runs.push(yield* run(day, Option.fromNullishOr(runs.at(-1)?.state)));
   }
 
-  const final = states.at(-1) ?? SchoolImport.empty;
+  const gaps = [...new Set(runs.flatMap((each) => each.log.notCaptured))].sort();
+
+  if (gaps.length > 0) return yield* new NotCaptured({ reads: gaps });
+
+  const final = runs.at(-1)?.state ?? SchoolImport.empty;
   const ours = lessonsOf(final);
+  const index = Metrics.byEntry(ours);
   const inWeek = (week: string) => (date: string) => weekOf(date) === week;
 
-  // A student's courses are held for a term, as a Kurswahl would be: those of their entries in its
-  // first two full weeks, added ones aside. A changed or cancelled lesson is still their course.
+  // A student's courses are held for a term, as a Kurswahl would be: those of their entries in
+  // the term's first two full captured weeks, added ones aside. Only later weeks measure them.
   const termOf = (day: string) =>
     corpus.cases.terms.find((term) => term.start <= day && day <= term.end)?.id;
 
-  const fullWeeks = weeks.filter((week) => days.filter((day) => weekOf(day) === week).length === 5);
+  const opening = (term: string | undefined) =>
+    new Set(
+      captured
+        .filter((week) => {
+          const weekDays = truth.days.filter(inWeek(week));
 
+          return weekDays.length === 5 && weekDays.every((day) => termOf(day) === term);
+        })
+        .slice(0, 2),
+    );
+
+  const termOfWeek = (week: string) => termOf(truth.days.find(inWeek(week)) ?? "");
   const students = truth.views.filter((view) => view.type === "STUDENT");
   const enrollments = new Map<string, ReadonlySet<string>>();
 
   const enrollmentOf = (student: Truth.View, term: string | undefined) => {
     const key = `${student.id} ${term}`;
-
-    const opening = new Set(
-      fullWeeks
-        .filter((week) => days.some((day) => weekOf(day) === week && termOf(day) === term))
-        .slice(0, 2),
-    );
+    const weeksOfTerm = opening(term);
 
     const courses =
       enrollments.get(key) ??
       Metrics.enrollment(
         student.entries.filter(
-          (entry) => entry.status !== "Added" && opening.has(weekOf(entry.date)),
+          (entry) => entry.status !== "Added" && weeksOfTerm.has(weekOf(entry.date)),
         ),
-        ours,
+        index,
       );
 
     enrollments.set(key, courses);
@@ -168,25 +197,40 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
     return courses;
   };
 
+  const lessonsIn = new Map<string, Array<Metrics.Lesson>>();
+
+  for (const lesson of ours) {
+    lessonsIn.set(weekOf(lesson.date), [...(lessonsIn.get(weekOf(lesson.date)) ?? []), lesson]);
+  }
+
   const viewWeeks = (type: Truth.ViewType) =>
     truth.views
       .filter((view) => view.type === type)
       .flatMap((view) =>
-        weeks.map((week) => {
-          const truthEntries = view.entries.filter((entry) => inWeek(week)(entry.date));
-          const term = termOf(days.find(inWeek(week)) ?? "");
-          const courses = type === "STUDENT" ? enrollmentOf(view, term) : new Set<string>();
+        weeks
+          .filter(
+            (week) =>
+              view.weeks.has(week) && (type !== "STUDENT" || !opening(termOfWeek(week)).has(week)),
+          )
+          .map((week) => {
+            const courses =
+              type === "STUDENT" ? enrollmentOf(view, termOfWeek(week)) : new Set<string>();
 
-          const mine = ours.filter(
-            (lesson) =>
-              inWeek(week)(lesson.date) &&
-              (type === "STUDENT"
+            const mine = (lessonsIn.get(week) ?? []).filter((lesson) =>
+              type === "STUDENT"
                 ? courses.has(lesson.courseId)
-                : (type === "TEACHER" ? lesson.teachers : lesson.rooms).includes(view.id)),
-          );
+                : (type === "TEACHER" ? lesson.teachers : lesson.rooms).includes(view.id),
+            );
 
-          return { view, week, score: Metrics.scoreView(truthEntries, mine) };
-        }),
+            return {
+              view,
+              week,
+              score: Metrics.scoreView(
+                view.entries.filter((entry) => inWeek(week)(entry.date)),
+                mine,
+              ),
+            };
+          }),
       );
 
   const studentWeeks = viewWeeks("STUDENT");
@@ -194,7 +238,14 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
   const changes = Metrics.scoreChanges(
     truth.changes.filter((entry) => measuredDays.has(entry.date)),
     corpus.cases.changes,
-    ours,
+    index,
+  );
+
+  const courses = Metrics.scoreCourses(
+    corpus.cases.courses.filter((labelled) =>
+      labelled.entries.every((entry) => measuredDays.has(entry.date)),
+    ),
+    index,
   );
 
   const closedIn =
@@ -232,31 +283,60 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
     ),
   );
 
-  const exams = {
-    exams: examsByTerm.map((each) => each.exams).reduce(Metrics.add, Metrics.fraction(0, 0)),
-    students: {
-      recall: examsByTerm
-        .map((each) => each.students.recall)
-        .reduce(Metrics.add, Metrics.fraction(0, 0)),
-      precision: examsByTerm
-        .map((each) => each.students.precision)
-        .reduce(Metrics.add, Metrics.fraction(0, 0)),
-    },
-  };
+  // Course ids are compared on what each run read again, its own lesson coverage.
+  const kept = Metrics.sum(
+    runs.slice(1).map((later, position) => {
+      const earlier = runs[position];
 
-  const churn = states
-    .slice(1)
-    .map((state, index) =>
-      Metrics.courseChurn(truth.entries, lessonsOf(states[index] ?? state), lessonsOf(state)),
-    )
-    .reduce(Metrics.add, Metrics.fraction(0, 0));
+      const reread = truth.entries.filter(
+        (entry) =>
+          measuredDays.has(entry.date) &&
+          later.covers.some(
+            (cover) =>
+              cover.rows === "lessons" && cover.start <= entry.date && entry.date <= cover.end,
+          ),
+      );
 
-  const first = starts[0] ?? days[0] ?? corpus.manifest.ranges[0]?.start ?? "";
-  const once = (yield* run(first, Option.none())).state;
-  const again = (yield* run(first, Option.some(once))).state;
-  const reversed = (yield* run(first, Option.none(), { reversed: true })).state;
+      return earlier === undefined
+        ? Metrics.fraction(0, 0)
+        : Metrics.courseIdsKept(
+            reread,
+            Metrics.byEntry(lessonsOf(earlier.state)),
+            Metrics.byEntry(lessonsOf(later.state)),
+          );
+    }),
+  );
 
-  const failing = yield* run(first, Option.some(once), {
+  // What a student can look up after each run: the next seven days' school days, read completely.
+  const lookahead = Metrics.sum(
+    runs.flatMap((each) => {
+      if (!measuredDays.has(each.day)) return [];
+
+      const until = DateTime.formatIsoDate(
+        DateTime.setZoneNamedUnsafe(
+          DateTime.add(morning(each.day, timeZone), { days: 7 }),
+          timeZone,
+        ),
+      );
+
+      const ahead = truth.days.filter((day) => each.day < day && day <= until);
+
+      const read = ahead.filter((day) =>
+        each.state.covers.some(
+          (cover) => cover.rows === "lessons" && cover.start <= day && day <= cover.end,
+        ),
+      );
+
+      return [Metrics.fraction(read.length, ahead.length)];
+    }),
+  );
+
+  const first = starts.find((day) => measuredDays.has(day)) ?? days[0] ?? "";
+  const base = yield* run(first, Option.none());
+  const again = yield* run(first, Option.some(base.state));
+  const reversed = yield* run(first, Option.none(), { reversed: true });
+
+  const failing = yield* run(first, Option.some(base.state), {
     failures: { seed: "import-eval", oneIn: 3 },
   });
 
@@ -271,30 +351,33 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
       room: Metrics.summarize(viewWeeks("ROOM").map(({ score }) => score)),
     },
     changes: changes.score,
-    closures: Metrics.scoreClosures(
-      days,
-      closedIn(corpus.cases.closures),
-      closedIn(final.closures),
-    ),
-    exams: exams.exams,
-    examStudents: exams.students,
+    courses: courses.score,
+    closures: Metrics.scoreClosures(days, closedIn(truth.closures), closedIn(final.closures)),
+    links: Metrics.scoreLinks(ours, truth.entries, (date) => measuredDays.has(date)),
+    exams: Metrics.sum(examsByTerm.map((each) => each.exams)),
+    examStudents: {
+      recall: Metrics.sum(examsByTerm.map((each) => each.students.recall)),
+      precision: Metrics.sum(examsByTerm.map((each) => each.students.precision)),
+    },
     weekLabels: Metrics.fraction(labelsRight.length, labelled.length),
-    alternation: Metrics.scoreAlternation(ours, weekOf, weeks, ourLabel),
-    courseIdsKept: Metrics.fraction(churn.of - churn.right, churn.of),
+    courseIdsKept: kept,
+    lookahead,
+    runs: { total: runs.length, failed: runs.filter((each) => each.failed).length },
     invariants: {
-      secondRunChanges: Metrics.differences(once, again),
-      reversedReadChanges: Metrics.differences(once, reversed),
-      deletedOnFailure: Metrics.deleted(once, failing.state),
+      failedRuns: [base, again, reversed, failing].filter((each) => each.failed).length,
+      secondRunChanges: Metrics.differences(base.state, again.state),
+      reversedReadChanges: Metrics.differences(base.state, reversed.state),
+      failedReadChanges: Metrics.differences(base.state, failing.state),
       injectedFailures: failing.log.injected.length,
     },
     reads: {
-      runs: logs.length,
-      requests: logs.reduce((total, log) => total + log.requests, 0),
-      notCaptured: logs.reduce((total, log) => total + log.notCaptured.length, 0),
-      decodeFailures: logs.reduce((total, log) => total + log.decodeFailures.length, 0),
+      requests: runs.reduce((count, each) => count + each.log.requests, 0),
+      outOfRange: runs.reduce((count, each) => count + each.log.outOfRange.length, 0),
+      decodeFailures: runs.reduce((count, each) => count + each.log.decodeFailures.length, 0),
     },
     passingCases: [
       ...changes.passing,
+      ...courses.passing,
       ...labelsRight.map((each) => each.id),
       ...closuresPassing.map((each) => each.id),
     ].sort(),

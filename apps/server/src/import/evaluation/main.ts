@@ -12,7 +12,7 @@ import * as Schema from "effect/Schema";
 import { Corpus } from "../corpus/Corpus.ts";
 import { NaiveImport } from "../NaiveImport.ts";
 import { Evaluator } from "./Evaluator.ts";
-import { TinySchool } from "./fixtures/TinySchool.ts";
+import { TinySchool } from "./TinySchool.ts";
 import { Report } from "./Report.ts";
 
 const imports = { naive: NaiveImport.layer };

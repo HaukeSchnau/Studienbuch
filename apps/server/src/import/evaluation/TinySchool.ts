@@ -6,8 +6,8 @@
 import { School } from "@stu/core";
 import * as DateTime from "effect/DateTime";
 import * as Equal from "effect/Equal";
-import { RecordedWebUntis } from "../../../infra/webuntis/RecordedWebUntis.ts";
-import type { Corpus } from "../../corpus/Corpus.ts";
+import { RecordedWebUntis } from "../../infra/webuntis/RecordedWebUntis.ts";
+import type { Corpus } from "../corpus/Corpus.ts";
 
 export * as TinySchool from "./TinySchool.ts";
 
@@ -181,11 +181,13 @@ const plan: ReadonlyArray<Slot> = [
   },
 ];
 
-// Case: the first two weeks after the autumn break, 2026-W44 and W45, are A and B, against ISO
-// parity, which makes W44 a B-week.
+// Case: the weeks after the autumn break, 2026-W44 to W46, are A, B and A, against ISO parity,
+// which makes W44 a B-week. W44 and W45 open the capture and give each student's Kurswahl; W46
+// is measured against it.
 const weeks = [
   { label: "A", days: ["2026-10-26", "2026-10-27", "2026-10-28", "2026-10-29", "2026-10-30"] },
   { label: "B", days: ["2026-11-02", "2026-11-03", "2026-11-04", "2026-11-05", "2026-11-06"] },
+  { label: "A", days: ["2026-11-09", "2026-11-10", "2026-11-11", "2026-11-12", "2026-11-13"] },
 ] as const;
 
 // Case: a free day, a Friday WebUntis lists among its holidays.
@@ -351,7 +353,7 @@ const timetable = (view: (typeof views)[number], version: 1 | 2, dates: Readonly
   errors: [],
 });
 
-const range = { start: "2026-10-26", end: "2026-11-08" };
+const range = { start: "2026-10-26", end: "2026-11-15" };
 
 const entryReads = views.map((view): [string, RecordedWebUntis.Read] => {
   const before = timetable(view, 1, [lateChangeDay]);
@@ -541,7 +543,7 @@ const idsOn = (date: string, index: number) => {
 export const corpus: Corpus.Corpus = {
   manifest: {
     id: "tiny-school",
-    capturedAt: DateTime.makeUnsafe("2026-11-06T17:00:00Z"),
+    capturedAt: DateTime.makeUnsafe("2026-11-13T17:00:00Z"),
     policy: 0,
     timeZone: School.defaultTimeZone,
     ranges: [range],
@@ -578,6 +580,32 @@ export const corpus: Corpus.Corpus = {
         date: "2026-11-06",
         entryIds: idsOn("2026-11-06", 11),
         kind: "Supervised",
+      },
+    ],
+    courses: [
+      {
+        id: "ma23-one-course",
+        same: true,
+        entries: [
+          { date: "2026-10-28", ids: idsOn("2026-10-28", 4) },
+          { date: "2026-10-28", ids: idsOn("2026-10-28", 5) },
+        ],
+      },
+      {
+        id: "ma-e-two-groups",
+        same: false,
+        entries: [
+          { date: "2026-10-26", ids: idsOn("2026-10-26", 2) },
+          { date: "2026-10-27", ids: idsOn("2026-10-27", 3) },
+        ],
+      },
+      {
+        id: "ma-e-group-kept",
+        same: true,
+        entries: [
+          { date: "2026-10-26", ids: idsOn("2026-10-26", 2) },
+          { date: "2026-11-09", ids: idsOn("2026-11-09", 2) },
+        ],
       },
     ],
     weeks: [

@@ -44,6 +44,16 @@ export const Cases = Schema.Struct({
   ),
   /** Days without school, checked against the state's calendar and the school's own free days. */
   closures: Schema.Array(Schema.Struct({ id: Schema.String, ...Range.fields })),
+  /** Entries that belong to one course, such as MA23's two rows, or to different ones. */
+  courses: Schema.Array(
+    Schema.Struct({
+      id: Schema.String,
+      same: Schema.Boolean,
+      entries: Schema.Array(
+        Schema.Struct({ date: SchoolImport.Day, ids: Schema.Array(Schema.Int) }),
+      ),
+    }),
+  ),
   /** The terms, for which the harness holds each student's courses as a Kurswahl would. */
   terms: Schema.Array(Schema.Struct({ id: Schema.String, ...Range.fields })),
 });

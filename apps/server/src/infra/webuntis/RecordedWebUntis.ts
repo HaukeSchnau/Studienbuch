@@ -8,6 +8,7 @@ import {
   InvalidRequestError,
   TransportError,
   type ExamsListRequest,
+  type TimetableEntriesRequest,
   type WebUntisClient,
 } from "@schnau/webuntis-api";
 import {
@@ -78,11 +79,14 @@ export interface Options {
    * answers with the earliest, so a capture taken after the fact replays at any earlier time.
    */
   readonly asOf: DateTime.Utc;
+  /** The days the capture read. A day outside them is `outOfRange`, a day inside them a gap. */
+  readonly captured?: ReadonlyArray<{ readonly start: string; readonly end: string }>;
   /** Answers every list in reverse order, which must change nothing an import concludes. */
   readonly reversed?: boolean;
   /**
-   * Fails about one timetable read in `oneIn`, picked by a hash of `seed` and the read, whatever
-   * their order. A failed directory read fails a whole run and proves nothing, so only these fail.
+   * Fails about one read in `oneIn`, picked by a hash of `seed` and the read, whatever their
+   * order. School years and directories never fail: without them a run can't start, which is safe
+   * and proves nothing.
    */
   readonly failures?: { readonly seed: string; readonly oneIn: number };
 }
@@ -90,6 +94,9 @@ export interface Options {
 /** What one run's reads did, by read. */
 export interface Log {
   readonly requests: number;
+  /** Reads of days outside the captured ranges, which an import's lookahead makes normal. */
+  readonly outOfRange: ReadonlyArray<string>;
+  /** Reads the recording lacks although it should hold them: a gap in the corpus. */
   readonly notCaptured: ReadonlyArray<string>;
   readonly decodeFailures: ReadonlyArray<string>;
   readonly injected: ReadonlyArray<string>;
@@ -165,19 +172,26 @@ export const make = Effect.fn("RecordedWebUntis.make")(function* (
 ) {
   const log = yield* Ref.make<Log>({
     requests: 0,
+    outOfRange: [],
     notCaptured: [],
     decodeFailures: [],
     injected: [],
   });
 
-  const note = (field: "notCaptured" | "decodeFailures" | "injected", read: string) =>
-    Ref.update(log, (current) => ({ ...current, [field]: [...current[field], read] }));
+  const note = (
+    field: "outOfRange" | "notCaptured" | "decodeFailures" | "injected",
+    read: string,
+  ) => Ref.update(log, (current) => ({ ...current, [field]: [...current[field], read] }));
 
   const bodyOf = (version: Version) =>
     options.reversed === true ? reverseDeep(version.body) : version.body;
 
-  const notCaptured = (read: string) =>
-    note("notCaptured", read).pipe(
+  const inRange = (day: string) =>
+    options.captured === undefined ||
+    options.captured.some((range) => range.start <= day && day <= range.end);
+
+  const notCaptured = (read: string, day?: string) =>
+    note(day === undefined || inRange(day) ? "notCaptured" : "outOfRange", read).pipe(
       Effect.andThen(
         Effect.fail(
           new TransportError({
@@ -197,14 +211,14 @@ export const make = Effect.fn("RecordedWebUntis.make")(function* (
       ),
     );
 
-  /** Counts one request, and fails a timetable read when the run injects a failure for `key`. */
-  const request = Effect.fn("RecordedWebUntis.request")(function* (key: string, timetable = false) {
+  /** Counts one request, and fails it when the run injects a failure for `key`. */
+  const request = Effect.fn("RecordedWebUntis.request")(function* (key: string, fallible = true) {
     yield* Ref.update(log, (current) => ({ ...current, requests: current.requests + 1 }));
 
     const failures = options.failures;
 
     if (
-      timetable &&
+      fallible &&
       failures !== undefined &&
       Math.abs(Hash.string(`${failures.seed} ${key}`)) % failures.oneIn === 0
     ) {
@@ -225,13 +239,14 @@ export const make = Effect.fn("RecordedWebUntis.make")(function* (
   const answer = <A, E>(
     path: string,
     decode: (body: Schema.Json) => Effect.Effect<A, E>,
+    fallible = true,
   ): Effect.Effect<A, TransportError | DecodeError> =>
-    request(path).pipe(
+    request(path, fallible).pipe(
       Effect.andThen(latest(path)),
       Effect.flatMap((body) => decode(body).pipe(Effect.catch(() => decodeFailed(path)))),
     );
 
-  const years = answer(paths.schoolYears, decodeYears);
+  const years = answer(paths.schoolYears, decodeYears, false);
 
   // The lookup isn't a request: an import that reads entries has read the years already.
   const yearOf = (day: string): Effect.Effect<number, TransportError | DecodeError> =>
@@ -245,25 +260,39 @@ export const make = Effect.fn("RecordedWebUntis.make")(function* (
             dateRange.start.slice(0, 10) <= day && day <= dateRange.end.slice(0, 10),
         );
 
-        return year === undefined ? notCaptured(`school year of ${day}`) : Effect.succeed(year.id);
+        return year === undefined
+          ? notCaptured(`school year of ${day}`, day)
+          : Effect.succeed(year.id);
       }),
     );
 
   const decodedVersions = new Map<Version, Exit.Exit<TimetableEntries, unknown>>();
 
+  /** The live client refuses a range that ends before it starts, before it sends anything. */
+  const backwards = (range: { readonly start: string; readonly end: string }) =>
+    range.start > range.end
+      ? Effect.fail(new InvalidRequestError({ path: "end", message: "must not be before start" }))
+      : Effect.void;
+
   /** One resource's entries, assembled day by day from the versions that cover each day. */
-  const entries = Effect.fn("RecordedWebUntis.entries")(function* (input: {
-    readonly resourceType: TimetableResourceType;
-    readonly resource: number;
-    readonly start: string;
-    readonly end: string;
-  }) {
-    yield* request(
-      `entries ${input.resourceType} ${input.resource} ${input.start}..${input.end}`,
-      true,
-    );
+  const entries = Effect.fn("RecordedWebUntis.entries")(function* (input: TimetableEntriesRequest) {
+    const key = `entries ${input.resourceType} ${input.resource} ${input.start}..${input.end}`;
+
+    yield* backwards(input);
+    yield* request(key);
+
+    // The capture asks with webuntis-api's defaults, so it can't answer another query.
+    if (
+      input.timetableType !== undefined ||
+      input.format !== undefined ||
+      input.layout !== undefined ||
+      input.periodTypes !== undefined
+    ) {
+      return yield* notCaptured(`${key} with another query`);
+    }
 
     const days: Array<TimetableEntryDay> = [];
+    const used = new Set<TimetableEntries>();
     const raw: Array<unknown> = [];
     let format = 2;
 
@@ -274,7 +303,7 @@ export const make = Effect.fn("RecordedWebUntis.make")(function* (
         Option.flatMap((read) => pick(read, options.asOf, day)),
       );
 
-      if (Option.isNone(version)) return yield* notCaptured(`${path} ${day}`);
+      if (Option.isNone(version)) return yield* notCaptured(`${path} ${day}`, day);
 
       const body = bodyOf(version.value);
       const decoded = decodedVersions.get(version.value) ?? decodeEntries(body);
@@ -284,6 +313,7 @@ export const make = Effect.fn("RecordedWebUntis.make")(function* (
       if (Exit.isFailure(decoded)) return yield* decodeFailed(`${path} ${day}`);
 
       format = decoded.value.format;
+      used.add(decoded.value);
 
       const index = decoded.value.days.findIndex((each) => each.date.slice(0, 10) === day);
       const found = decoded.value.days[index];
@@ -299,9 +329,11 @@ export const make = Effect.fn("RecordedWebUntis.make")(function* (
       raw.reverse();
     }
 
-    const decoded: TimetableEntries = { format, days, errors: [] };
+    // WebUntis's errors explain an answer, so they travel with every day taken from it.
+    const errors = [...used].flatMap((each) => each.errors);
+    const decoded: TimetableEntries = { format, days, errors };
 
-    return { decoded, raw: { format, days: raw, errors: [] } };
+    return { decoded, raw: { format, days: raw, errors } };
   });
 
   const missing = (method: string) => request(method).pipe(Effect.andThen(notCaptured(method)));
@@ -379,7 +411,9 @@ export const make = Effect.fn("RecordedWebUntis.make")(function* (
       getGrid: () => missing("timetable.getGrid"),
       getFilter: (input) =>
         yearOf(input.start.slice(0, 10)).pipe(
-          Effect.flatMap((year) => answer(paths.filter(year, input.resourceType), decodeFilter)),
+          Effect.flatMap((year) =>
+            answer(paths.filter(year, input.resourceType), decodeFilter, false),
+          ),
         ),
       getEntriesSettings: () => missing("timetable.getEntriesSettings"),
       getMenu: missing("timetable.getMenu"),
@@ -393,17 +427,23 @@ export const make = Effect.fn("RecordedWebUntis.make")(function* (
           ? Effect.fail(
               new InvalidRequestError({ path: "resources", message: "at least one resource" }),
             )
-          : Effect.forEach(
-              options.reversed === true ? [...input.resources].reverse() : input.resources,
-              (resource) =>
-                entries({ ...input, resource }).pipe(
-                  Effect.map(({ decoded, raw }) =>
-                    entriesOptions?.raw === true
-                      ? { resource, raw, result: Result.succeed(decoded) }
-                      : { resource, result: Result.succeed(decoded) },
-                  ),
-                  Effect.catch((error) => Effect.succeed({ resource, result: Result.fail(error) })),
+          : backwards(input).pipe(
+              Effect.andThen(
+                Effect.forEach(
+                  options.reversed === true ? [...input.resources].reverse() : input.resources,
+                  (resource) =>
+                    entries({ ...input, resource }).pipe(
+                      Effect.map(({ decoded, raw }) =>
+                        entriesOptions?.raw === true
+                          ? { resource, raw, result: Result.succeed(decoded) }
+                          : { resource, result: Result.succeed(decoded) },
+                      ),
+                      Effect.catch((error) =>
+                        Effect.succeed({ resource, result: Result.fail(error) }),
+                      ),
+                    ),
                 ),
+              ),
             ),
       getEntriesWeekOverview: () => missing("timetable.getEntriesWeekOverview"),
     },

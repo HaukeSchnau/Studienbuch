@@ -7,7 +7,7 @@ const day = "2026-11-04";
 
 const student = { id: 501, shortName: "S1", longName: "Schüler 1", displayName: "Schüler 1" };
 
-const timetable = (status: string) => ({
+const timetable = (status: string, errors: ReadonlyArray<{ readonly code: string }> = []) => ({
   format: 2,
   days: [
     {
@@ -41,7 +41,7 @@ const timetable = (status: string) => ({
       backEntries: [],
     },
   ],
-  errors: [],
+  errors,
 });
 
 // A cancellation that WebUntis withdrew at 10:00 on the day.
@@ -73,7 +73,7 @@ const recording: RecordedWebUntis.Recording = new Map([
           observedAt: DateTime.makeUnsafe("2026-11-04T09:00:00Z"),
           start: day,
           end: day,
-          body: timetable("REGULAR"),
+          body: timetable("REGULAR", [{ code: "PARTIAL" }]),
         },
       ],
     },
@@ -114,6 +114,32 @@ describe("RecordedWebUntis", () => {
   ])("answers $name", ({ asOf, statuses }) =>
     Effect.gen(function* () {
       assert.deepStrictEqual(yield* statusesAt(asOf), statuses);
+    }),
+  );
+
+  it.effect("keeps the errors WebUntis answered with, and refuses a range that ends first", () =>
+    Effect.gen(function* () {
+      const { client } = yield* RecordedWebUntis.make(recording, {
+        asOf: DateTime.makeUnsafe("2026-11-06T17:00:00Z"),
+      });
+
+      const request = {
+        resourceType: "STUDENT" as const,
+        resource: student.id,
+        start: day,
+        end: day,
+      };
+
+      const answered = yield* client.timetable.getEntries(request);
+
+      const backwards = yield* client.timetable
+        .getEntriesForResources({ ...request, resources: [student.id], end: "2026-11-03" })
+        .pipe(Effect.flip);
+
+      assert.deepStrictEqual(
+        { errors: answered.errors, backwards: backwards._tag },
+        { errors: [{ code: "PARTIAL" }], backwards: "InvalidRequestError" },
+      );
     }),
   );
 
