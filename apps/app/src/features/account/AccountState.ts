@@ -222,37 +222,7 @@ export const signInWithPasskey = runtime.fn<void>()((_, get) =>
  */
 export const signedOut = Atom.make(false).pipe(Atom.keepAlive);
 
-/**
- * Leaves this device as sign-out does (`Account.signOut`): in one turn of the engines
- * (`AccountEngine.forget`), with `unsent` as there, the account's database, secrets and session go,
- * and `forgotten` runs before the session does, which is when the gates move on. Any failure is
- * `failure`.
- */
-const leaveDevice = <E>(
-  unsent: Option.Option<AccountEngine.Unsent>,
-  forgotten: Effect.Effect<void>,
-  failure: E,
-) =>
-  Account.signOut(({ accountId, publicComputer }, forgetSession) => {
-    const signedOutHere = Effect.andThen(forgotten, forgetSession);
-
-    return AccountEngine.forget(
-      accountId,
-      unsent,
-      // A public computer's account kept everything in its engine, which `forget` stopped.
-      Effect.gen(function* () {
-        if (publicComputer) return yield* signedOutHere;
-
-        yield* Layers.endSignOut(accountId, signedOutHere);
-      }),
-    );
-  }).pipe(
-    Effect.catchTags({
-      "Forgetting.Unfinished": () => Effect.fail(failure),
-      "Keychain.Unavailable": () => Effect.fail(failure),
-      SqlError: () => Effect.fail(failure),
-    }),
-  );
+const failed = Effect.fail(new Account.Problem({ reason: "sign-out-failed" }));
 
 /**
  * Signs the device out (`Account.signOut`). `unsent` is what the question before showed
@@ -261,35 +231,71 @@ const leaveDevice = <E>(
  */
 export const signOut = runtime
   .fn<Option.Option<AccountEngine.Unsent>>()((unsent, get) =>
-    leaveDevice(
-      unsent,
-      Effect.sync(() => {
-        get.set(signedOut, true);
-        get.set(OfferedPrf.waiting, Option.none());
+    Account.signOut(({ accountId, publicComputer }, forgetSession) => {
+      // Before the session goes, which is when the gates move on.
+      const signedOutHere = Effect.andThen(
+        Effect.sync(() => {
+          get.set(signedOut, true);
+          get.set(OfferedPrf.waiting, Option.none());
+        }),
+        forgetSession,
+      );
+
+      return AccountEngine.forget(
+        accountId,
+        unsent,
+        // A public computer's account kept everything in its engine, which `forget` stopped.
+        Effect.gen(function* () {
+          if (publicComputer) return yield* signedOutHere;
+
+          yield* Layers.endSignOut(accountId, signedOutHere);
+        }),
+      );
+    }).pipe(
+      Effect.catchTags({
+        "Forgetting.Unfinished": () => failed,
+        "Keychain.Unavailable": () => failed,
+        SqlError: () => failed,
       }),
-      new Account.Problem({ reason: "sign-out-failed" }),
     ),
   )
   .pipe(Atom.keepAlive);
 
-// A deleted account's unsent changes are gone with it on the server, so a device that leaves after
-// a deletion asks nothing about them (`None`), and the gates lead to the start, not to "Anmelden".
-const leaveDeleted = (forgotten: Effect.Effect<void>) =>
-  leaveDevice(Option.none(), forgotten, new Deletion.Problem({ reason: "forget-failed" }));
+/**
+ * Leaves the deleted account by its id, without asking about its unsent changes, which went with it
+ * on the server (`AccountEngine.forgetIfHeld`). The gates then lead to the start, not to
+ * "Anmelden". A failure after the point of no return finishes at the next start.
+ */
+const leaveDeleted = (accountId: string, forgotten: Effect.Effect<void>) =>
+  AccountEngine.forgetIfHeld(accountId, forgotten).pipe(
+    Effect.catchTags({
+      "Forgetting.Unfinished": () => forgetFailed,
+      "Keychain.Unavailable": () => forgetFailed,
+      SqlError: () => forgetFailed,
+    }),
+  );
+
+const forgetFailed = Effect.fail(new Deletion.Problem({ reason: "forget-failed" }));
 
 /** "Konto löschen" (`Deletion.deleteAccount`). */
 export const deleteAccount = runtime
   .fn<void>()((_, get) =>
-    Deletion.deleteAccount(
-      leaveDeleted(Effect.sync(() => get.set(OfferedPrf.waiting, Option.none()))),
+    Deletion.deleteAccount((accountId) =>
+      leaveDeleted(
+        accountId,
+        Effect.sync(() => get.set(OfferedPrf.waiting, Option.none())),
+      ),
     ),
   )
   .pipe(Atom.keepAlive);
 
 const forgetWhenDeleted = runtime
   .atom((get) =>
-    Deletion.forgetWhenDeleted(
-      leaveDeleted(Effect.sync(() => get.set(OfferedPrf.waiting, Option.none()))),
+    Deletion.forgetWhenDeleted((accountId) =>
+      leaveDeleted(
+        accountId,
+        Effect.sync(() => get.set(OfferedPrf.waiting, Option.none())),
+      ),
     ),
   )
   .pipe(Atom.keepAlive);

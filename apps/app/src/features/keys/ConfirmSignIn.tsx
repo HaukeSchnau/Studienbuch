@@ -67,7 +67,9 @@ function WithPasskey({
   readonly accountId: string;
   readonly onConfirmed: () => void;
 }) {
-  const [passkey, withPasskey] = useAtom(KeysState.withPasskey(accountId), { mode: "promiseExit" });
+  const [passkey, withPasskey] = useAtom(KeysState.confirmWithPasskey(accountId), {
+    mode: "promiseExit",
+  });
 
   return (
     <>

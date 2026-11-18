@@ -1,6 +1,6 @@
 /**
- * `Sync.push`: commands in mutation id order, each in its own transaction, whose first statement
- * bumps and locks the client's row (sync.md, section 2). A refusal still advances the last
+ * `Sync.push`: commands in mutation id order, each in its own transaction, whose first statements
+ * hold the account (`Ports.Accounts`) and bump and lock the client's row (sync.md, section 2). A refusal still advances the last
  * mutation id, in a second transaction that records the reason. The batch stops at `Retry` or
  * `Stale`.
  */
@@ -29,7 +29,7 @@ import { CanonicalJson } from "../transaction/CanonicalJson.ts";
 import { Contract } from "./Contract.ts";
 import { Decision } from "./Decision.ts";
 import { MutateCommand } from "./MutateCommand.ts";
-import type { Ports } from "./Ports.ts";
+import { Ports } from "./Ports.ts";
 import { Pokes } from "./Pokes.ts";
 import { SealCommand } from "./SealCommand.ts";
 import { SyncEpoch } from "./SyncEpoch.ts";
@@ -199,6 +199,8 @@ export const make = Effect.fn("Push.make")(function* (minimum: Contract.Minimum)
     SqlClient.SqlClient | SyncSchema.Service | Ports.AccountKeys | CryptoSuite.Service
   >();
 
+  const accounts = yield* Ports.Accounts;
+
   /**
    * What the command log keeps of a command: never content it can't read, and of a command past a
    * bound only its kind, size and hash, because its name or version may not fit the columns.
@@ -238,6 +240,12 @@ export const make = Effect.fn("Push.make")(function* (minimum: Contract.Minimum)
     account: string,
     command: Command.Any,
   ) {
+    // The account was deleted while its connection was still open, which the revocation is about
+    // to close. Nothing may be written for it, and the protocol has no answer for a deleted account.
+    if (!(yield* accounts.hold(account))) {
+      return yield* Effect.die(`The account ${account} is gone`);
+    }
+
     const [bumped] = yield* sql<{
       readonly account: string;
       readonly lastMutationId: number;

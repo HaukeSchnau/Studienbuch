@@ -15,13 +15,19 @@ import { CryptoSuite } from "@stu/e2ee";
 import { Command } from "@stu/sync";
 import { Listener, Ports, Push, Spaces, SyncServer, SyncWriter } from "@stu/sync/server";
 import { Postgres18 } from "@stu/sync/testing";
+import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
+import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
+import * as Exit from "effect/Exit";
+import * as Fiber from "effect/Fiber";
 import * as Layer from "effect/Layer";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import * as Stream from "effect/Stream";
+import { Deletion } from "../account/Deletion.ts";
 import { DatabaseTesting } from "../infra/database/DatabaseTesting.ts";
+import { SchoolTesting } from "../school/SchoolTesting.ts";
 import { Sync } from "./Sync.ts";
 
 /** No sessions: these tests write and push rows, and open no connection. */
@@ -30,9 +36,38 @@ const noSessions = Layer.succeed(
   Ports.SessionResolver.of({ resolve: () => Effect.succeedNone, revoked: Stream.never }),
 );
 
+/** Holds Mia's first push right after it holds her account, until `release`. */
+class Pause extends Context.Service<
+  Pause,
+  { readonly held: Deferred.Deferred<void>; readonly release: Deferred.Deferred<void> }
+>()("Test.Pause") {}
+
+const pausing = Layer.effect(Ports.Accounts)(
+  Effect.gen(function* () {
+    const accounts = yield* Ports.Accounts;
+    const pause = yield* Pause;
+
+    return Ports.Accounts.of({
+      hold: (account) =>
+        Effect.tap(accounts.hold(account), () =>
+          account === "mia"
+            ? Effect.andThen(Deferred.succeed(pause.held, undefined), Deferred.await(pause.release))
+            : Effect.void,
+        ),
+    });
+  }),
+).pipe(
+  Layer.provide(Deletion.accounts),
+  Layer.provideMerge(
+    Layer.effect(Pause)(
+      Effect.all({ held: Deferred.make<void>(), release: Deferred.make<void>() }),
+    ),
+  ),
+);
+
 const engine = SyncServer.layer(Studienbuch.schema).pipe(
   Layer.provideMerge(Listener.layer(PgClient.PgClient, (notification) => notification.payload)),
-  Layer.provideMerge(Layer.mergeAll(noSessions, Sync.accountKeys, CryptoSuite.layer)),
+  Layer.provideMerge(Layer.mergeAll(noSessions, Sync.accountKeys, pausing, CryptoSuite.layer)),
   Layer.provideMerge(DatabaseTesting.prepared),
   Layer.provideMerge(NodeServices.layer),
 );
@@ -137,10 +172,10 @@ const enroll = (
     at: DateTime.makeUnsafe(0),
   });
 
-/** What Lena's push answered, as `<mutation id> <outcome or refusal>`. */
-const push = (client: string, commands: ReadonlyArray<Command.Any>) =>
+/** What the account's push answered, as `<mutation id> <outcome or refusal>`. */
+const pushAs = (account: string, client: string, commands: ReadonlyArray<Command.Any>) =>
   Effect.flatMap(Push.Service, (service) =>
-    service.push("lena", {
+    service.push(account, {
       clientId: client,
       syncEpoch: null,
       contract: Studienbuch.schema.contract,
@@ -155,6 +190,9 @@ const push = (client: string, commands: ReadonlyArray<Command.Any>) =>
     ),
   );
 
+const push = (client: string, commands: ReadonlyArray<Command.Any>) =>
+  pushAs("lena", client, commands);
+
 const courses = Effect.flatMap(SqlClient.SqlClient, (sql) =>
   sql<{ readonly space: string }>`
     select m.space_id as space from space_member m join space s on s.id = m.space_id
@@ -168,6 +206,7 @@ describe.skipIf(Postgres18.socket === null)("Sync with Studienbuch's definition"
       "an enrollment reaches only its notebook's own school, and only while Lena attends it",
       () =>
         Effect.gen(function* () {
+          yield* SchoolTesting.account("lena");
           const here = yield* school("here", ["here-ma", "here-de"]);
           const there = yield* school("there", ["there-ph"]);
           // Lena attends both schools, with a notebook at each.
@@ -198,6 +237,60 @@ describe.skipIf(Postgres18.socket === null)("Sync with Studienbuch's definition"
             after: [],
           });
         }),
+    );
+
+    // Mia's phone pushes over a connection still open while she deletes her account. Her deletion
+    // waits for the push and deletes what it wrote, and a push after it writes nothing.
+    it.effect("a push racing a deletion leaves nothing of the account", () =>
+      Effect.gen(function* () {
+        const sql = yield* SqlClient.SqlClient;
+        const pause = yield* Pause;
+        const race = yield* school("race", ["race-ma"]);
+        yield* SchoolTesting.account("mia");
+        yield* admit("mia", race.id, "mia-notebook");
+
+        yield* sql`
+          insert into school_access (account_id, school_id, notebook_id)
+          values ('mia', ${race.id}, 'mia-notebook')
+        `;
+
+        const pushing = yield* Effect.forkChild(
+          pushAs("mia", "mia-phone", [enroll(1, "mia-notebook", race.term, ["race-ma"])]),
+        );
+
+        yield* Deferred.await(pause.held);
+        const deleting = yield* Effect.forkChild(Deletion.run("mia"));
+
+        // The deletion runs to its end, or waits for the account the push holds.
+        yield* Effect.raceFirst(
+          Effect.asVoid(Fiber.await(deleting)),
+          sql<{ readonly waiting: number }>`
+            select count(*)::int as waiting from pg_stat_activity
+            where datname = current_database() and wait_event_type = 'Lock'
+          `.pipe(Effect.repeat({ until: ([row]) => (row?.waiting ?? 0) > 0 }), Effect.asVoid),
+        );
+
+        yield* Deferred.succeed(pause.release, undefined);
+        const raced = yield* Effect.exit(Fiber.join(pushing));
+        yield* Fiber.join(deleting);
+
+        const after = yield* Effect.exit(
+          pushAs("mia", "mia-laptop", [enroll(1, "mia-notebook", race.term, ["race-ma"])]),
+        );
+
+        const left = yield* sql<{ readonly line: string }>`
+          select 'sync_client ' || id as line from sync_client where account_id = 'mia'
+          union all select 'command_log ' || client_id from command_log where account_id = 'mia'
+          union all select 'space_member ' || space_id from space_member where account_id = 'mia'
+          union all select 'space ' || id from space where id = 'mia-notebook'
+        `;
+
+        expect({
+          raced: Exit.isSuccess(raced),
+          after: Exit.isFailure(after),
+          left: left.map((row) => row.line),
+        }).toEqual({ raced: true, after: true, left: [] });
+      }),
     );
   });
 });

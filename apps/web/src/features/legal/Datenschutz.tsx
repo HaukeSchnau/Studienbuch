@@ -246,11 +246,11 @@ export function Datenschutz() {
         Konten und die zugehörigen Zugangsdaten speichern wir, solange das Konto besteht.
         Abgelaufene Sitzungen sowie Bestätigungs- und Wiederherstellungstoken werden gelöscht,
         sobald sie für ihren Sicherheitszweck nicht mehr benötigt werden. Ihr Konto können Sie
-        jederzeit in der App löschen. Geräte, die sich danach noch einmal verbinden, löschen dabei
-        ihre Kopie. Ein Gerät, das sich nie wieder verbindet, behält seine Einträge, bis Sie die App
-        oder die Websitedaten löschen. Datensicherungen bewahren wir bis zu 35&nbsp;Tage auf. Mit
-        einem Konto löschen wir auch die Sicherungen seiner Schlüssel, sodass ältere Kopien
-        verschlüsselter Inhalte danach von niemandem mehr geöffnet werden können.
+        jederzeit in der App löschen. Geräte, die bei der Löschung noch angemeldet sind, löschen
+        ihre Kopie, sobald sie sich wieder verbinden. Auf anderen Geräten bleiben Ihre Einträge, bis
+        Sie dort die App oder die Websitedaten löschen. Datensicherungen bewahren wir bis zu
+        35&nbsp;Tage auf. Mit einem Konto löschen wir auch die Sicherungen seiner Schlüssel, sodass
+        ältere Kopien verschlüsselter Inhalte danach von niemandem mehr geöffnet werden können.
       </p>
 
       <h2>6. Ihre Rechte</h2>

@@ -30,6 +30,7 @@ import * as RpcClient from "effect/rpc/RpcClient";
 import * as SqlClient from "effect/sql/SqlClient";
 import * as Stream from "effect/Stream";
 import { Auth } from "../auth/Auth.ts";
+import { Deletion } from "./Deletion.ts";
 import { DemoAccounts } from "../demo/DemoAccounts.ts";
 import { Seed } from "../demo/Seed.ts";
 import { Deployment } from "../infra/config/Deployment.ts";
@@ -281,6 +282,33 @@ describe.skipIf(Postgres18.socket === null)("Account deletion on PostgreSQL 18",
             resolved: [Option.none(), Option.none()],
             deleted: { phone: true, laptop: true, tom: false, nobody: false },
           });
+        }),
+    );
+
+    it.effect(
+      "deletes the codes of its own address only, though `_` matches any letter in LIKE",
+      () =>
+        Effect.gen(function* () {
+          const sql = yield* SqlClient.SqlClient;
+
+          yield* sql`
+          insert into auth_user (id, name, email, "emailVerified") values
+            ('a-under-b', '', 'a_b@example.org', true), ('a-x-b', '', 'axb@example.org', true)
+        `;
+
+          yield* sql`
+          insert into auth_verification (id, identifier, value, "expiresAt") values
+            ('code-a-under-b', 'email-verification-otp-a_b@example.org', 'hash:0', now() + interval '1 hour'),
+            ('code-a-x-b', 'email-verification-otp-axb@example.org', 'hash:0', now() + interval '1 hour')
+        `;
+
+          yield* Deletion.run("a-under-b");
+
+          const codes = yield* sql<{ readonly id: string }>`
+          select id from auth_verification where id like 'code-a-%' order by id
+        `;
+
+          expect(codes.map((row) => row.id)).toEqual(["code-a-x-b"]);
         }),
     );
 

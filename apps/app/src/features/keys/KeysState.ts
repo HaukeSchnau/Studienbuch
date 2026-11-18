@@ -203,7 +203,7 @@ export const unlockWithCode = Atom.family((accountId: string) =>
 
 /**
  * A passkey prompt, which also signs in again, and its PRF output: "Mit Passkey" on a locked
- * device, and the confirmation that makes the sign-in fresh before a new Notfallkarte.
+ * device, which fails when the passkey can't open the notebook.
  */
 export const withPasskey = Atom.family((accountId: string) =>
   runtime(accountId).fn<void>()((_, get) =>
@@ -211,6 +211,21 @@ export const withPasskey = Atom.family((accountId: string) =>
       const used = yield* Account.signInWithPasskey(yield* Device.PublicComputer);
 
       yield* NotebookKeys.usePasskey(used.credentialId, used.prf);
+      yield* refresh(accountId, get);
+    }),
+  ),
+);
+
+/**
+ * "Mit Passkey bestätigen": a passkey prompt that signs in again, which is all "Kurz bestätigen"
+ * needs. Its PRF output unlocks or heals what it can (`NotebookKeys.afterConfirmation`).
+ */
+export const confirmWithPasskey = Atom.family((accountId: string) =>
+  runtime(accountId).fn<void>()((_, get) =>
+    Effect.gen(function* () {
+      const used = yield* Account.signInWithPasskey(yield* Device.PublicComputer);
+
+      yield* NotebookKeys.afterConfirmation(used.credentialId, used.prf);
       yield* refresh(accountId, get);
     }),
   ),

@@ -5,6 +5,7 @@ import { TestCrypto } from "@stu/e2ee/testing";
 import { Ports } from "@stu/sync/client";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
+import * as Exit from "effect/Exit";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
@@ -687,6 +688,34 @@ describe("NotebookKeys", () => {
           },
         );
       }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
+  );
+
+  // "Kurz bestätigen" on a locked laptop with a passkey that gives no PRF output: the sign-in it made
+  // is the confirmation, though the passkey can't open the notebook.
+  it.effect("a passkey that confirmed a sign-in confirms, though it can't unlock the device", () =>
+    Effect.gen(function* () {
+      const server = yield* fakeServer;
+      const phone = yield* device(server);
+      const laptop = yield* device(server);
+      yield* phone.run(NotebookKeys.status);
+
+      const unlocking = yield* reasonOf(
+        laptop.run(NotebookKeys.usePasskey("cred-1", Option.none())),
+      );
+
+      const confirmed = yield* Effect.exit(
+        laptop.run(NotebookKeys.afterConfirmation("cred-1", Option.none())),
+      );
+
+      assert.deepStrictEqual(
+        {
+          unlocking,
+          confirmed: Exit.isSuccess(confirmed),
+          locked: Option.isNone(yield* laptop.rootKey),
+        },
+        { unlocking: "passkey-no-match", confirmed: true, locked: true },
+      );
+    }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
   );
 
   it.effect("a passkey unlocks a device again after the account renewed its key elsewhere", () =>

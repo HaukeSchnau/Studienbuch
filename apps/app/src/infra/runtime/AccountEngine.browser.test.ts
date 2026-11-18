@@ -244,7 +244,7 @@ it.effect("refuses to sign out when a change was saved after the question, and k
 );
 
 // "Konto löschen": the account and its unsent changes are gone on the server, so the device leaves
-// without the question (`None`), and what waits goes with the database. A new session starts empty.
+// without the question, and what waits goes with the database. A new session starts empty.
 it.effect("a deletion leaves without the question and discards the changes that wait", () =>
   Effect.gen(function* () {
     const sessions = yield* SessionStore.Service;
@@ -254,7 +254,7 @@ it.effect("a deletion leaves without the question and discards the changes that 
     yield* nameLena(sync);
     const before = (yield* shown).count;
 
-    yield* engines.forget("lena", Option.none(), erase("lena"));
+    yield* AccountEngine.forgetIfHeld("lena", Effect.void);
     const left = yield* sessions.current;
 
     yield* engines.keep(sessions.signedIn(signedIn("lena"), false));
@@ -266,6 +266,35 @@ it.effect("a deletion leaves without the question and discards the changes that 
       { before: 1, left: Option.none(), after: 0, spaces: 0 },
     );
   }).pipe(Effect.provide(engines("engines-deleted"))),
+);
+
+// Lena signed out and Tom signed in before the answer about Lena's deletion arrived. The answer
+// concerns Lena, who left with everything she had, so Tom's session and data stay.
+it.effect("a late deletion of an account the device no longer holds leaves the one it holds", () =>
+  Effect.gen(function* () {
+    const sessions = yield* SessionStore.Service;
+    const engines = yield* AccountEngine.Engines;
+    yield* lenasEngine;
+    yield* engines.forget("lena", Option.none(), erase("lena"));
+
+    yield* engines.keep(sessions.signedIn(signedIn("tom"), false));
+    const toms = Context.get(yield* engines.context("tom"), SqlClient.SqlClient);
+    yield* toms`insert into sync_space (id, kind, role, version) values ('nb-tom', 'notebook', 'owner', 1)`;
+
+    yield* AccountEngine.forgetIfHeld("lena", Effect.void);
+
+    const spaces = yield* Context.get(yield* engines.context("tom"), SqlClient.SqlClient)<{
+      readonly id: string;
+    }>`select id from sync_space`;
+
+    assert.deepStrictEqual(
+      {
+        holder: Option.map(yield* sessions.current, (signed) => signed.accountId),
+        spaces: spaces.map((row) => row.id),
+      },
+      { holder: Option.some("tom"), spaces: ["nb-tom"] },
+    );
+  }).pipe(Effect.provide(engines("engines-late-deletion"))),
 );
 
 // A refusal's write goes on after the screen that caused it unmounts, and stops at sign-out.

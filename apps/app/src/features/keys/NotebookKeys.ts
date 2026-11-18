@@ -495,7 +495,7 @@ export const addPasskeyWrapper = Effect.fn("NotebookKeys.addPasskeyWrapper")(fun
  * opens none of the passkey's (self-healing, recovery.md section 4), as long as the passkey has
  * fewer than `Keys.wrappersPerPasskey`.
  */
-export const usePasskey = Effect.fn("NotebookKeys.usePasskey")(function* (
+const applyPasskey = Effect.fn("NotebookKeys.usePasskey")(function* (
   credentialId: string,
   prf: Option.Option<Redacted.Redacted<Uint8Array>>,
 ) {
@@ -513,6 +513,24 @@ export const usePasskey = Effect.fn("NotebookKeys.usePasskey")(function* (
     }),
   );
 });
+
+export const usePasskey = applyPasskey;
+
+/**
+ * The passkey that confirmed a sign-in for "Kurz bestätigen" (`usePasskey`). The fresh sign-in is
+ * what the step needs, so an unlock it can't give, as a passkey without PRF output on a locked
+ * device, leaves the confirmation standing.
+ */
+export const afterConfirmation = (
+  credentialId: string,
+  prf: Option.Option<Redacted.Redacted<Uint8Array>>,
+) =>
+  applyPasskey(credentialId, prf).pipe(
+    Effect.catchTags({
+      "NotebookKeys.Problem": (refused) =>
+        Effect.logInfo("The passkey confirmed but didn't unlock", { reason: refused.reason }),
+    }),
+  );
 
 /** A new Notfallkarte: its code's text, shown once, and its wrapper for the server. */
 export interface Card {

@@ -25,6 +25,9 @@ export class Ended extends Context.Service<Ended, PubSub.PubSub<string>>()("Dele
 
 export const ended = Layer.effect(Ended)(PubSub.unbounded<string>());
 
+/** The email-OTP plugin's code types, whose identifier is `<type>-otp-<address>`. */
+const codeTypes = ["email-verification", "sign-in", "forget-password", "change-email"];
+
 /**
  * Deletes the account and everything the server keeps of it, and answers the ids of the sessions
  * that ended, for `Ended`. Each session leaves a `deleted_session` row, so its device wipes itself
@@ -66,10 +69,12 @@ export const run = Effect.fn("Deletion.run")(function* (account: string) {
       yield* sql`delete from space where id = any(${notebooks.map((row) => row.id)})`;
       // The code's use stays spent.
       yield* sql`update access_reservation set spent_by = null where spent_by = ${account}`;
-      // Codes for the address, and passkey challenges, which carry the account's id.
+      // Codes for the address, by Better Auth's identifiers for them, and passkey challenges, which
+      // carry the account's id.
       yield* sql`
         delete from auth_verification
-        where identifier like ${`%-otp-${user.email}`} or strpos(value, ${account}) > 0
+        where identifier = any(${codeTypes.map((type) => `${type}-otp-${user.email}`)})
+          or strpos(value, ${account}) > 0
       `;
       // Only development and preview keep mail.
       yield* sql`delete from captured_mail where lower("to") = ${user.email.toLowerCase()}`;
@@ -81,6 +86,23 @@ export const run = Effect.fn("Deletion.run")(function* (account: string) {
     }),
   );
 });
+
+/**
+ * The sync engine's `Ports.Accounts`: the other half of `run`'s lock on the account's row, so a
+ * command waits for a deletion under way and finds the account gone after it.
+ */
+export const accounts = Layer.effect(
+  Ports.Accounts,
+  Effect.map(SqlClient.SqlClient, (sql) =>
+    Ports.Accounts.of({
+      hold: (account) =>
+        Effect.map(
+          sql`select 1 from auth_user where id = ${account} for share`,
+          (rows) => rows.length > 0,
+        ),
+    }),
+  ),
+);
 
 /** Ends the sessions for the resolver, once their rows are gone. */
 export const announce = (sessions: ReadonlyArray<string>) =>

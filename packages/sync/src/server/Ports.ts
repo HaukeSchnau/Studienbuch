@@ -35,6 +35,19 @@ export class SessionResolver extends Context.Service<
 >()("@stu/sync/server/SessionResolver") {}
 
 /**
+ * The accounts `apps/server` keeps. Deleting an account locks it, so every command, whose first
+ * statement registers or bumps its client, holds the account first: a deletion under way waits for
+ * the command and then deletes what it wrote, and a command after the deletion finds it gone.
+ */
+export class Accounts extends Context.Service<
+  Accounts,
+  {
+    /** Holds the account for share until the transaction ends. False once it's gone. */
+    readonly hold: (accountId: string) => Effect.Effect<boolean, SqlError.SqlError>;
+  }
+>()("@stu/sync/server/Accounts") {}
+
+/**
  * The account key records `apps/server` keeps, which a `Seal` checks its key boxes' and history
  * links' signatures against.
  */

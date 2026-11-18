@@ -93,8 +93,9 @@ function DeleteAccount({ accountId }: { readonly accountId: string }) {
           mehr.
         </Text>
         <Text variant="subhead" style={{ color: color.inkSoft }}>
-          Auf diesem Gerät ist danach alles weg. Deine anderen Geräte löschen ihre Kopie, sobald sie
-          sich wieder verbinden.
+          Auf diesem Gerät ist danach alles weg. Geräte, die bei der Löschung noch angemeldet sind,
+          löschen ihre Kopie, sobald sie sich wieder verbinden. Auf anderen Geräten bleiben deine
+          Einträge, bis du dort die App oder die Websitedaten löschst.
         </Text>
       </Card>
       {waiting ? (
