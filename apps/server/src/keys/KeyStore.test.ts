@@ -3,6 +3,7 @@ import { Keys } from "@stu/api/Keys";
 import { AccountKey, SpaceKey, Wrapper } from "@stu/e2ee";
 import { TestCrypto } from "@stu/e2ee/testing";
 import { Postgres18 } from "@stu/sync/testing";
+import * as Cause from "effect/Cause";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
@@ -19,6 +20,7 @@ import * as SqlClient from "effect/sql/SqlClient";
 import { Pool } from "pg";
 import { Deletion } from "../account/Deletion.ts";
 import { CardLogins } from "../auth/CardLogins.ts";
+import { FreshSignIn } from "../auth/FreshSignIn.ts";
 import { DatabaseTesting } from "../infra/database/DatabaseTesting.ts";
 import { SchoolTesting } from "../school/SchoolTesting.ts";
 import { KeyStore } from "./KeyStore.ts";
@@ -844,6 +846,41 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
           last: Option.isSome(yield* CardLogins.owner(loginOf(64))),
           retired: Option.isNone(yield* CardLogins.owner(loginOf(62))),
         }).toEqual({ a: true, b: true, c: true, last: true, retired: true });
+      }),
+    );
+
+    // Someone signed in with Noor's old card asks to delete her account while she replaces the
+    // card. The deletion waits for the replacement, which ends that session, and then refuses.
+    it.effect("a deletion queued behind a replacement checks its sign-in after it", () =>
+      Effect.gen(function* () {
+        const sql = yield* SqlClient.SqlClient;
+        const pause = yield* Pause;
+        const noor = yield* cardAccount("noor", 180);
+        const finder = yield* signedIn("noor", 1);
+
+        yield* Ref.set(pause.armed, 1);
+        const replacing = yield* Effect.forkChild(noor.replace("noor-card-2", 182, loginOf(82)));
+        yield* Queue.take(pause.held);
+
+        const fresh = Effect.flatMap(FreshSignIn.isFresh("noor", finder), (isFresh) =>
+          isFresh ? Effect.void : Effect.fail("not-fresh" as const),
+        );
+
+        const deleting = yield* Effect.forkChild(
+          Deletion.run("noor", fresh).pipe(Effect.provide(Deletion.ended)),
+        );
+
+        yield* DatabaseTesting.waiting(1);
+        yield* Queue.offer(pause.release, undefined);
+
+        expect({
+          replacing: Exit.isSuccess(yield* Fiber.await(replacing)),
+          deleting: Exit.match(yield* Fiber.await(deleting), {
+            onSuccess: () => "deleted",
+            onFailure: (cause) => Cause.findErrorOption(cause),
+          }),
+          left: (yield* sql`select 1 from auth_user where id = 'noor'`).length,
+        }).toEqual({ replacing: true, deleting: Option.some("not-fresh"), left: 1 });
       }),
     );
 

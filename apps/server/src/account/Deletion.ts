@@ -35,16 +35,22 @@ export const ended = Layer.effect(Ended)(PubSub.unbounded<string>());
 const codeTypes = ["email-verification", "sign-in", "forget-password", "change-email"];
 
 /**
- * Deletes the account's rows in the caller's transaction and answers the ids of the sessions that
- * ended. Each session leaves a `deleted_session` row, so its device wipes itself when it comes
- * back. An account that is gone already deletes nothing.
+ * Deletes the account's rows in the caller's transaction once `guard` passed, and answers the ids
+ * of the sessions that ended. Each session leaves a `deleted_session` row, so its device wipes
+ * itself when it comes back. An account that is gone already deletes nothing.
  */
-const deleteRows = Effect.fn("Deletion.deleteRows")(function* (account: string) {
+const deleteRows = Effect.fn("Deletion.deleteRows")(function* <E, R>(
+  account: string,
+  guard: Effect.Effect<void, E, R>,
+) {
   const sql = yield* SqlClient.SqlClient;
 
   const address = yield* AccountLock.take(account);
 
   if (Option.isNone(address)) return [];
+  // Under the lock, so it sees what a path the deletion waited for changed, such as a new card
+  // that ended the session asking.
+  yield* guard;
   const email = address.value;
 
   const notebooks = yield* sql<{ readonly id: string }>`
@@ -90,15 +96,15 @@ const deleteRows = Effect.fn("Deletion.deleteRows")(function* (account: string) 
 
 /**
  * Deletes the account and everything the server keeps of it in one transaction, after `guard`
- * passed inside it, then ends its sessions for this process's resolver (`Ended`), so no caller
- * can delete without closing the account's connections.
+ * passed inside it under the account's lock, then ends its sessions for this process's resolver
+ * (`Ended`), so no caller can delete without closing the account's connections.
  */
 export const run = Effect.fn("Deletion.run")(function* <E = never, R = never>(
   account: string,
   guard: Effect.Effect<void, E, R> = Effect.void,
 ) {
   const sql = yield* SqlClient.SqlClient;
-  const sessions = yield* sql.withTransaction(Effect.andThen(guard, deleteRows(account)));
+  const sessions = yield* sql.withTransaction(deleteRows(account, guard));
 
   yield* Effect.flatMap(Ended, (pubsub) => PubSub.publishAll(pubsub, sessions));
 });
