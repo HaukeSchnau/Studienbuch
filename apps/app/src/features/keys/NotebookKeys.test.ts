@@ -966,6 +966,51 @@ describe("NotebookKeys", () => {
     }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
   );
 
+  // A passkey sign-up whose device went offline before the account's first key, and a locked
+  // device that signed in with the passkey offline. The output waits on each device, and the key
+  // step after reconnecting sends its wrapper or opens the notebook, without another prompt.
+  it.effect("a passkey's output from before the first key goes out once the device is back", () =>
+    Effect.gen(function* () {
+      const server = yield* fakeServer;
+      const phone = yield* device(server);
+      const tablet = yield* device(server);
+      const laptop = yield* device(server);
+      const prf = Redacted.make(new Uint8Array(32).fill(8));
+      const use = NotebookKeys.usePasskey("credential", Option.some(prf));
+
+      yield* Ref.set(server.offline, true);
+      const phoneOffline = yield* reasonOf(phone.run(Effect.andThen(NotebookKeys.settle, use)));
+      yield* Ref.set(server.offline, false);
+      const phoneBack = yield* phone.run(NotebookKeys.settle);
+
+      yield* Ref.set(server.offline, true);
+      const tabletOffline = yield* reasonOf(tablet.run(use));
+      yield* Ref.set(server.offline, false);
+      const tabletBack = yield* tablet.run(NotebookKeys.settle);
+
+      yield* laptop.run(use);
+
+      assert.deepStrictEqual(
+        {
+          phoneOffline,
+          phoneBack: [phoneBack.status._tag, phoneBack.passkey],
+          tabletOffline,
+          tabletBack: [tabletBack.status._tag, tabletBack.passkey],
+          tablet: Option.getOrUndefined(yield* tablet.rootKey),
+          laptop: Option.getOrUndefined(yield* laptop.rootKey),
+        },
+        {
+          phoneOffline: "offline",
+          phoneBack: ["Unlocked", Option.none()],
+          tabletOffline: "offline",
+          tabletBack: ["Unlocked", Option.none()],
+          tablet: Option.getOrUndefined(yield* phone.rootKey),
+          laptop: Option.getOrUndefined(yield* phone.rootKey),
+        },
+      );
+    }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
+  );
+
   // A new card retires the old one once the server holds it. For an account without an address
   // the new one is then the only way in, so a lost answer and a restart must not lose it.
   it.effect(

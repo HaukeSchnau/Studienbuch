@@ -43,7 +43,7 @@ export const make = Effect.gen(function* () {
   // The root key the server derives for a demo account, and how often a device asked for it.
   const demoKey = yield* Ref.make(Option.none<Redacted.Redacted<Uint8Array>>());
   const demoAsked = yield* Ref.make(0);
-  // `state` doesn't answer, as without a network.
+  // `state` and `fetchSeals` don't answer, as without a network.
   const offline = yield* Ref.make(false);
   // The login each `addWrapper` carried, which only a card's has.
   const logins = yield* Ref.make<ReadonlyArray<Option.Option<string>>>([]);
@@ -145,6 +145,7 @@ export const make = Effect.gen(function* () {
       );
     }),
     fetchSeals: Effect.fn("KeyServerTesting.fetchSeals")(function* (method: Keys.Method) {
+      if (yield* Ref.get(offline)) return yield* new KeyServer.Unreachable();
       const { records, wrappers } = yield* Ref.get(stored);
       const kind = method._tag === "Passkey" ? Wrapper.kindByte.prf : Wrapper.kindByte.code;
 

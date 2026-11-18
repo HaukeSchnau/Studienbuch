@@ -575,6 +575,10 @@ const passkeyWrapper = Effect.fn("NotebookKeys.passkeyWrapper")(function* (
   yield* add(yield* wrap("prf", prf, keys, { credentialId }));
 });
 
+// A card or passkey that can't open this account's notebook is no use to keep; any other refusal
+// may pass.
+const useless = new Set<Reason>(["no-match", "passkey-no-match", "untrusted", "update"]);
+
 const PendingPasskey = Schema.fromJsonString(
   Schema.Struct({ credentialId: Schema.String, prf: Schema.Uint8ArrayFromBase64 }),
 );
@@ -583,8 +587,9 @@ const decodePendingPasskey = Schema.decodeEffect(PendingPasskey);
 const encodePendingPasskey = Schema.encodeEffect(PendingPasskey);
 
 /**
- * A passkey's PRF output whose wrapper the server doesn't hold yet, as after a passkey sign-up
- * whose first key step went offline. The next key step sends it without another prompt.
+ * A passkey's PRF output the device still has work for: a wrapper the server doesn't hold yet, or
+ * a locked notebook it opens, as after a sign-in or sign-up whose key step went offline. The next
+ * key step does it without another prompt (`settlePasskey`).
  */
 const pendingPasskey = Effect.flatMap(
   Effect.flatMap(Ports.DeviceSecrets, (secrets) => secrets.get("pending-passkey")),
@@ -610,21 +615,54 @@ const dropPasskey = Effect.flatMap(Ports.DeviceSecrets, (secrets) =>
   secrets.remove("pending-passkey"),
 );
 
-/** Sends the waiting passkey's wrapper from an unlocked device, and keeps it while it can't. */
+/**
+ * Puts a passkey's output that waits here to work at `now`: a locked device opens the notebook
+ * with it, an unlocked one sends its wrapper, or opens with it after the account renewed its key
+ * elsewhere. It stays until that worked or never can, and no prompt is needed again.
+ */
 const settlePasskey = Effect.fn("NotebookKeys.settlePasskey")(function* (now: Status) {
   const waiting = yield* pendingPasskey;
+  const settled = (status: Status, reason = Option.none<Reason>()) => ({ status, passkey: reason });
 
-  if (Option.isNone(waiting) || now._tag !== "Unlocked") return Option.none<Reason>();
-  const { credentialId, prf } = waiting.value;
+  if (Option.isNone(waiting)) return settled(now);
+  const { credentialId } = waiting.value;
+  const prf = Redacted.make(waiting.value.prf);
 
-  const refused = yield* passkeyWrapper(credentialId, Redacted.make(prf)).pipe(
-    Effect.as(Option.none<Reason>()),
-    Effect.catchTags({ "NotebookKeys.Problem": (problem) => Effect.succeedSome(problem.reason) }),
+  const unlock = Effect.as(
+    recoverWith("prf", prf, Keys.Passkey.make({ credentialId })),
+    Status.Unlocked(),
   );
 
-  if (Option.isNone(refused) || useless.has(refused.value)) yield* dropPasskey;
+  const work = Effect.gen(function* () {
+    switch (now._tag) {
+      case "Locked":
+        return yield* unlock;
+      case "Unlocked":
+        return yield* Effect.as(passkeyWrapper(credentialId, prf), now).pipe(
+          Effect.catchTags({
+            "NotebookKeys.Problem": (refused) =>
+              refused.reason === "stale" ? unlock : Effect.fail(refused),
+          }),
+        );
+      case "Offline":
+        return yield* problem("offline");
+      case "NotHere":
+        // No key starts on a public computer; a sign-in on an own device brings the output again.
+        return yield* problem("passkey-no-match");
+    }
+  });
 
-  return refused;
+  const result = yield* work.pipe(
+    Effect.map((status) => settled(status)),
+    Effect.catchTags({
+      "NotebookKeys.Problem": (refused) =>
+        Effect.succeed(settled(now, Option.some(refused.reason))),
+    }),
+  );
+
+  if (Option.isNone(result.passkey) || useless.has(result.passkey.value)) yield* dropPasskey;
+
+  return result;
 });
 
 /** Adds a `prf` wrapper for a passkey whose output opens none of its wrappers yet. */
@@ -646,21 +684,13 @@ export const usePasskey = Effect.fn("NotebookKeys.usePasskey")(function* (
       const locked = Option.isNone(yield* heldRootKey);
 
       if (Option.isNone(prf)) return locked ? yield* problem("passkey-no-match") : undefined;
-      const unlock = recoverWith("prf", prf.value, Keys.Passkey.make({ credentialId }));
 
-      if (locked) return yield* unlock;
-
-      // Offline the wrapper waits, and the next key step sends it (`settlePasskey`).
+      // Held before anything goes out, so a step the network stopped goes on at the next key
+      // step, even before the account's first key exists (`settlePasskey`).
       yield* holdPasskey(credentialId, prf.value);
+      const settled = yield* settlePasskey(locked ? Status.Locked() : Status.Unlocked());
 
-      yield* passkeyWrapper(credentialId, prf.value).pipe(
-        Effect.catchTags({
-          "NotebookKeys.Problem": (refused) =>
-            refused.reason === "stale" ? unlock : Effect.fail(refused),
-        }),
-      );
-
-      yield* dropPasskey;
+      if (Option.isSome(settled.passkey)) return yield* problem(settled.passkey.value);
     }),
   );
 });
@@ -866,9 +896,6 @@ export interface Settled {
 
 type CardSettled = Omit<Settled, "passkey">;
 
-// A card that can't open this account's notebook is no use to keep; any other refusal may pass.
-const useless = new Set<Reason>(["no-match", "untrusted", "update"]);
-
 /**
  * Puts the pending card to work at `now`: an unlocked device sends its wrapper, a locked one opens
  * the notebook with it. The device keeps the card until that worked and the student saved it.
@@ -950,7 +977,7 @@ const settleNow = Effect.gen(function* () {
     ? ({ status: now, card: Option.none() } satisfies CardSettled)
     : yield* settleCard(now, card.value);
 
-  return { ...settled, passkey: yield* settlePasskey(settled.status) } satisfies Settled;
+  return { ...settled, ...(yield* settlePasskey(settled.status)) } satisfies Settled;
 });
 
 /**

@@ -162,10 +162,16 @@ export const status = Atom.family((accountId: string) =>
       if (offline) get(connected(accountId));
 
       // Cleared last: clearing one reads this atom again, which would interrupt the work above.
-      // The card is in the account's secrets by now, so a second run finds it there.
+      // The card is in the account's secrets by now, and so is a passkey's output unless the
+      // device couldn't store it, so a second run finds them there.
       if (Option.isSome(card)) get.set(Offered.card, Option.none());
 
-      if (Option.isSome(passkey)) get.set(Offered.prf, Option.none());
+      const handedOver = Option.exists(
+        used,
+        (result) => result._tag === "Success" || result.failure._tag === "NotebookKeys.Problem",
+      );
+
+      if (handedOver) get.set(Offered.prf, Option.none());
 
       return now;
     }),
