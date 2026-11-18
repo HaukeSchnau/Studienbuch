@@ -41,15 +41,9 @@ export const createSchool = Effect.gen(function* () {
   const id = School.Id.make(`dev-${suffix}`);
   const school = { name: `Schule ${suffix}`, timeZone: School.defaultTimeZone };
 
-  const { data, term } = yield* Schools.simple({
-    id,
-    school,
-    today: yield* Schools.today(school),
-    gradeLevel,
-    subjects,
-  });
-
-  yield* Schools.publish(data);
+  const today = yield* Schools.today(school);
+  const { data, term } = yield* Schools.simple({ id, school, today, gradeLevel, subjects });
+  yield* Schools.publish(data, Schools.removeMissing(today));
 
   const { code } = yield* Effect.orDie(
     // One run of the end-to-end tests signs up a handful of students to its own school.

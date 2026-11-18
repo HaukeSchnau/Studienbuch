@@ -69,6 +69,21 @@ export const IsoWeek = Schema.String.check(
   ),
 );
 
+/** A time of day as milliseconds since midnight, such as `28_800_000` for 08:00. */
+export const TimeOfDay = Schema.Int.check(Schema.isBetween({ minimum: 0, maximum: 86_400_000 }));
+
+/**
+ * An instant as a UTC timestamp, written as `2026-11-18T06:30:00.000Z`. It is for when something
+ * happened, such as the import's last read, never for when school happens.
+ */
+export const Instant = Schema.String.check(
+  Schema.isPattern(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u, {
+    expected: "an instant as YYYY-MM-DDTHH:mm:ss.sssZ",
+  }),
+).pipe(Schema.decodeTo(Schema.DateTimeUtc, SchemaTransformation.dateTimeUtcFromString));
+
+export type Instant = typeof Instant.Type;
+
 /** A closed range: `start` and `end` both belong to it. */
 export const DateRange = Schema.Struct({ start: PlainDate, end: PlainDate }).check(
   Schema.makeFilter(({ start, end }) => order(start, end) <= 0, {

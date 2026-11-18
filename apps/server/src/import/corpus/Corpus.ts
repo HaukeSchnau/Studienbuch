@@ -3,7 +3,7 @@
  * (m2-import-corpus.md, sections 2 and 3). It lives in a directory, or in memory for an invented
  * school: `manifest.json`, `reads/<RecordedWebUntis path>.json` and `truth/cases.json`.
  */
-import { CivilTime } from "@stu/core";
+import { CivilTime, Lesson } from "@stu/core";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Path from "effect/Path";
@@ -49,7 +49,7 @@ export const Cases = Schema.Struct({
       id: Schema.String,
       date: SchoolImport.Day,
       entryIds: Schema.Array(Schema.Int),
-      kind: SchoolImport.ChangeKind,
+      kind: Lesson.ChangeKind,
     }),
   ),
   /** Which week is an A-week, such as `2026-W44`. */

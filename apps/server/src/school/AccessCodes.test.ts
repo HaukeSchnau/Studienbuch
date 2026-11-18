@@ -24,6 +24,11 @@ const data: Schools.Data = {
   classes: {},
   courses: {},
   offerings: {},
+  teachers: {},
+  rooms: {},
+  closures: {},
+  weekLabels: {},
+  lessons: {},
 };
 
 /**
@@ -84,7 +89,7 @@ describe.skipIf(Postgres18.socket === null)("AccessCodes on PostgreSQL 18", () =
   layer(SchoolTesting.database)((it) => {
     it.effect("two students confirming a single-use code at once spend it once", () =>
       Effect.gen(function* () {
-        yield* Schools.publish(data);
+        yield* Schools.publish(data, SchoolTesting.replacing);
 
         const minted = yield* AccessCodes.mint({
           school,
@@ -126,7 +131,7 @@ describe.skipIf(Postgres18.socket === null)("AccessCodes on PostgreSQL 18", () =
       "a sign-up without an address takes the use before its account exists, and of two racing for the last one, one gets it",
       () =>
         Effect.gen(function* () {
-          yield* Schools.publish(data);
+          yield* Schools.publish(data, SchoolTesting.replacing);
           const minted = yield* AccessCodes.mint({ school, kind: "student", maxUses: 1 });
           const ada = yield* AccessCodes.reserve(minted.code);
           const cem = yield* AccessCodes.reserve(minted.code);
@@ -181,7 +186,7 @@ describe.skipIf(Postgres18.socket === null)("AccessCodes on PostgreSQL 18", () =
       "admits through the confirming device's reservation, if this address carried it",
       () =>
         Effect.gen(function* () {
-          yield* Schools.publish(data);
+          yield* Schools.publish(data, SchoolTesting.replacing);
           const code = yield* AccessCodes.mint({ school, kind: "student", maxUses: 30 });
           const mine = yield* AccessCodes.reserve(code.code);
           const someone = yield* AccessCodes.reserve(code.code);
@@ -203,7 +208,7 @@ describe.skipIf(Postgres18.socket === null)("AccessCodes on PostgreSQL 18", () =
 
     it.effect("two accounts of one reservation confirming at once spend its code once", () =>
       Effect.gen(function* () {
-        yield* Schools.publish(data);
+        yield* Schools.publish(data, SchoolTesting.replacing);
 
         const minted = yield* AccessCodes.mint({
           school,
@@ -242,7 +247,7 @@ describe.skipIf(Postgres18.socket === null)("AccessCodes on PostgreSQL 18", () =
     it.effect("two confirmations of one sign-up at once admit it once", () =>
       Effect.gen(function* () {
         const sql = yield* SqlClient.SqlClient;
-        yield* Schools.publish(data);
+        yield* Schools.publish(data, SchoolTesting.replacing);
 
         const minted = yield* AccessCodes.mint({
           school,
@@ -308,7 +313,7 @@ describe.skipIf(Postgres18.socket === null)("AccessCodes on PostgreSQL 18", () =
         Effect.gen(function* () {
           const sql = yield* SqlClient.SqlClient;
 
-          yield* Schools.publish(data);
+          yield* Schools.publish(data, SchoolTesting.replacing);
 
           const code = yield* AccessCodes.mint({ school, kind: "student", maxUses: 30 });
           const spent = yield* AccessCodes.reserve(code.code);
@@ -344,7 +349,7 @@ describe.skipIf(Postgres18.socket === null)("AccessCodes on PostgreSQL 18", () =
 
     it.effect("a reservation creates a few accounts at most, and a spent one no more", () =>
       Effect.gen(function* () {
-        yield* Schools.publish(data);
+        yield* Schools.publish(data, SchoolTesting.replacing);
 
         const minted = yield* AccessCodes.mint({ school, kind: "student", maxUses: 30 });
         const { token } = yield* AccessCodes.reserve(minted.code);
@@ -370,7 +375,7 @@ describe.skipIf(Postgres18.socket === null)("AccessCodes on PostgreSQL 18", () =
 
     it.effect("refuses a code that is revoked, expired, used up or mistyped", () =>
       Effect.gen(function* () {
-        yield* Schools.publish(data);
+        yield* Schools.publish(data, SchoolTesting.replacing);
         const once = yield* AccessCodes.mint({ school, kind: "student", maxUses: 1 });
         const { token } = yield* AccessCodes.reserve(once.code);
         yield* signUp("tom", token);

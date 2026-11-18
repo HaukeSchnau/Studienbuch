@@ -4,7 +4,7 @@
  */
 import type { TimetableEntry } from "@schnau/webuntis-api/schemas";
 import * as Option from "effect/Option";
-import type { SchoolImport } from "./SchoolImport.ts";
+import type { Lesson } from "@stu/core";
 
 export * as WebUntisEntry from "./WebUntisEntry.ts";
 
@@ -55,7 +55,7 @@ export const shown = (day: { readonly status: string }) =>
   day.status === "REGULAR" || day.status === "NO_DATA";
 
 /** WebUntis's statuses in our terms. One we don't know reads as a change. */
-export const status = (entry: TimetableEntry): SchoolImport.LessonStatus => {
+export const status = (entry: TimetableEntry): Lesson.Status => {
   switch (entry.status) {
     case "REGULAR":
       return "Regular";

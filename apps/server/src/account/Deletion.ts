@@ -57,6 +57,16 @@ const deleteRows = Effect.fn("Deletion.deleteRows")(function* <E, R>(
         select notebook_id as id from school_access where account_id = ${account}
       `;
 
+  // Its spaces in id order, as commands and a school's publish lock them, before its memberships
+  // go. A publish that grants a notebook's courses holds the notebook, then its memberships.
+  yield* sql`
+        select 1 from space
+        where id in (select space_id from space_member where account_id = ${account})
+          or id = any(${notebooks.map((row) => row.id)})
+        order by id
+        for no key update
+      `;
+
   const sessions = yield* sql<{ readonly id: string }>`
         with ended as (
           delete from auth_session where "userId" = ${account} returning id, token

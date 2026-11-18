@@ -6,7 +6,7 @@
  */
 import { WebUntisClient } from "@schnau/webuntis-api";
 import type { TimetableEntry, TimetableEntryDay } from "@schnau/webuntis-api/schemas";
-import { CivilTime, Course, School } from "@stu/core";
+import { CivilTime, Course, type Lesson, School } from "@stu/core";
 import * as Arr from "effect/Array";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
@@ -63,7 +63,7 @@ const idsFor = (
     return id === undefined ? [] : [toId(id)];
   });
 
-const changeKind = (entry: TimetableEntry, status: SchoolImport.LessonStatus) => {
+const changeKind = (entry: TimetableEntry, status: Lesson.Status) => {
   if (status === "Cancelled") return "Cancelled";
 
   if (WebUntisEntry.names(entry, "TEACHER").removed.length > 0) return "Substitution";

@@ -36,7 +36,7 @@ export const run = Effect.gen(function* () {
   return yield* Effect.gen(function* () {
     const today = yield* DemoSchool.today;
     const { data, term } = yield* DemoSchool.data(today);
-    yield* Schools.publish(data);
+    yield* Schools.publish(data, Schools.removeMissing(today));
 
     // Anyone may sign up to the demo school where anyone may sign in as its students. A
     // development or preview database lives for one branch, so a thousand outlast its testers.

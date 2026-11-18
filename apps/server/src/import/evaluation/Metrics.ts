@@ -5,6 +5,7 @@
  */
 import * as Arr from "effect/Array";
 import * as Equal from "effect/Equal";
+import type { Lesson } from "@stu/core";
 import { SchoolImport } from "../SchoolImport.ts";
 
 export * as Metrics from "./Metrics.ts";
@@ -15,7 +16,7 @@ export interface TruthEntry {
   readonly ids: ReadonlyArray<number>;
   readonly start: number;
   readonly end: number;
-  readonly status: SchoolImport.LessonStatus;
+  readonly status: Lesson.Status;
   readonly teachers: ReadonlyArray<number>;
   readonly rooms: ReadonlyArray<number>;
   readonly previousTeachers: ReadonlyArray<number>;
@@ -26,7 +27,7 @@ export interface TruthEntry {
 export interface Lesson extends Omit<TruthEntry, "ids"> {
   readonly id: string;
   readonly courseId: string;
-  readonly kind: SchoolImport.ChangeKind | undefined;
+  readonly kind: Lesson.ChangeKind | undefined;
   /** The entries its links claim. */
   readonly entries: ReadonlyArray<{ readonly date: string; readonly ids: ReadonlyArray<number> }>;
 }
@@ -177,7 +178,7 @@ export interface LabelledChange {
   readonly id: string;
   readonly date: string;
   readonly entryIds: ReadonlyArray<number>;
-  readonly kind: SchoolImport.ChangeKind;
+  readonly kind: Lesson.ChangeKind;
 }
 
 /**
