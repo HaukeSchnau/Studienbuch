@@ -19,6 +19,7 @@ export const Reason = Schema.Literals([
   "offline",
   "not-fresh",
   "signed-out",
+  "demo",
   "not-forgotten",
   "forget-failed",
 ]);
@@ -39,8 +40,12 @@ export class Unchanged extends Schema.TaggedError<Unchanged, { readonly brand: u
   {},
 ) {}
 
-/** Whether the server deleted the account already, and only this device's copy waits. */
-export const isGone = (reason: Reason) => reason === "not-forgotten" || reason === "forget-failed";
+/**
+ * Whether pressing "Konto löschen" again can't change anything: the server deleted the account
+ * already and only this device's copy waits, or it never deletes this one (D98).
+ */
+export const isFinal = (reason: Reason) =>
+  reason === "demo" || reason === "not-forgotten" || reason === "forget-failed";
 
 /** A server that can't be reached, or a keychain that refuses, is asked again, at most every five minutes. */
 const askAgain = Schedule.min([Schedule.exponential("2 seconds"), Schedule.spaced("5 minutes")]);
@@ -64,6 +69,7 @@ export const sentence: Record<Reason, string> = {
   "not-fresh": "Bestätige kurz, dass du es bist, dann geht es weiter.",
   "signed-out":
     "Deine Anmeldung ist abgelaufen. Melde dich neu an, dann kannst du dein Konto löschen.",
+  demo: "Dieses Demo-Konto teilen sich alle Tester, darum lässt es sich nicht löschen.",
   "not-forgotten":
     "Dein Konto ist gelöscht. Dieses Gerät hat seine Kopie noch nicht entfernt. Lass die App offen, dann entfernt es sie, sobald es kann.",
   "forget-failed":
@@ -101,6 +107,7 @@ export const deleteAccount = Effect.fn("Deletion.deleteAccount")(function* <R>(
       Effect.catchTags({
         "DeletionServer.Unreachable": () => Effect.fail(new Problem({ reason: "offline" })),
         "AccountDeletion.NotFresh": () => Effect.fail(new Problem({ reason: "not-fresh" })),
+        "AccountDeletion.DemoAccount": () => Effect.fail(new Problem({ reason: "demo" })),
         // The server deleted the account before, and its answer was lost or the device couldn't
         // finish leaving: the session is gone because the account is, so the device leaves now. The
         // student waits on the screen, so the server is asked a few times, not until it answers.

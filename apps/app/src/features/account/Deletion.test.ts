@@ -503,40 +503,55 @@ describe("Deletion", () => {
       }).pipe(Effect.provide(device)),
   );
 
-  it.effect("a stale sign-in and no connection delete nothing and forget nothing", () =>
-    Effect.gen(function* () {
-      const asked = yield* Queue.unbounded<string>();
-      const { left, leave, report } = yield* leaving;
-      yield* signIn("lena", "token-phone");
+  it.effect(
+    "a stale sign-in, no connection and a demo persona delete nothing and forget nothing",
+    () =>
+      Effect.gen(function* () {
+        const asked = yield* Queue.unbounded<string>();
+        const { left, leave, report } = yield* leaving;
+        yield* signIn("lena", "token-phone");
 
-      const refusals = yield* Effect.all([
-        Effect.flip(
-          Deletion.deleteAccount(leave, report).pipe(
-            Effect.provide(
-              server(new Set(), asked, {
-                delete: () => Effect.fail(new AccountDeletion.NotFresh()),
-              }),
+        const refusals = yield* Effect.all([
+          Effect.flip(
+            Deletion.deleteAccount(leave, report).pipe(
+              Effect.provide(
+                server(new Set(), asked, {
+                  delete: () => Effect.fail(new AccountDeletion.NotFresh()),
+                }),
+              ),
             ),
           ),
-        ),
-        Effect.flip(
-          Deletion.deleteAccount(leave, report).pipe(
-            Effect.provide(
-              server(new Set(), asked, {
-                delete: () => Effect.fail(new DeletionServer.Unreachable()),
-              }),
+          Effect.flip(
+            Deletion.deleteAccount(leave, report).pipe(
+              Effect.provide(
+                server(new Set(), asked, {
+                  delete: () => Effect.fail(new DeletionServer.Unreachable()),
+                }),
+              ),
             ),
           ),
-        ),
-      ]);
+          Effect.flip(
+            Deletion.deleteAccount(leave, report).pipe(
+              Effect.provide(
+                server(new Set(), asked, {
+                  delete: () => Effect.fail(new AccountDeletion.DemoAccount()),
+                }),
+              ),
+            ),
+          ),
+        ]);
 
-      expect({
-        reasons: refusals.map((error) =>
-          error._tag === "Deletion.Problem" ? error.reason : error._tag,
-        ),
-        left: yield* Ref.get(left),
-        holder: yield* holder,
-      }).toEqual({ reasons: ["not-fresh", "offline"], left: [], holder: Option.some("lena") });
-    }).pipe(Effect.provide(device)),
+        expect({
+          reasons: refusals.map((error) =>
+            error._tag === "Deletion.Problem" ? error.reason : error._tag,
+          ),
+          left: yield* Ref.get(left),
+          holder: yield* holder,
+        }).toEqual({
+          reasons: ["not-fresh", "offline", "demo"],
+          left: [],
+          holder: Option.some("lena"),
+        });
+      }).pipe(Effect.provide(device)),
   );
 });

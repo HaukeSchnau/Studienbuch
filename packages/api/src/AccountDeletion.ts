@@ -19,6 +19,12 @@ export class NotFresh extends Schema.TaggedError<NotFresh, { readonly brand: uni
   {},
 ) {}
 
+/** A demo persona that every tester shares, so nobody deletes it (D98). */
+export class DemoAccount extends Schema.TaggedError<
+  DemoAccount,
+  { readonly brand: unique symbol }
+>()("AccountDeletion.DemoAccount", {}) {}
+
 /** The server can't answer now, as when its database fails. Asking again later may work. */
 export class Unavailable extends Schema.TaggedError<
   Unavailable,
@@ -28,9 +34,9 @@ export class Unavailable extends Schema.TaggedError<
 export const Rpcs = RpcGroup.make(
   /**
    * Deletes the account of the request's session with everything the server keeps of it, and
-   * ends the sessions of all its devices.
+   * ends the sessions of all its devices. A demo persona's refuses (`DemoAccount`).
    */
-  Rpc.make("AccountDeletion.delete", { error: Schema.Union([SignedOut, NotFresh]) }),
+  Rpc.make("AccountDeletion.delete", { error: Schema.Union([SignedOut, NotFresh, DemoAccount]) }),
   /**
    * Whether the request's bearer token belonged to an account that was deleted. A device asks once
    * its session ended, with the token it still holds, and wipes itself on `true`.

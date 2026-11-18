@@ -18,6 +18,7 @@ import * as Redacted from "effect/Redacted";
 import * as Result from "effect/Result";
 import * as SqlClient from "effect/sql/SqlClient";
 import { FreshSignIn } from "../auth/FreshSignIn.ts";
+import { DemoAccounts } from "../demo/DemoAccounts.ts";
 import { AccountLock } from "./AccountLock.ts";
 
 export * as Deletion from "./Deletion.ts";
@@ -201,6 +202,15 @@ export const handlers = AccountDeletion.Rpcs.toLayer(
           if (Option.isNone(session)) return yield* new AccountDeletion.SignedOut();
 
           const { accountId, sessionId } = session.value;
+
+          // Before the sign-in check, so a tester isn't asked to confirm for a refusal.
+          if (
+            yield* DemoAccounts.isDemo(accountId).pipe(
+              Effect.provideService(SqlClient.SqlClient, sql),
+            )
+          ) {
+            return yield* new AccountDeletion.DemoAccount();
+          }
 
           const fresh = Effect.flatMap(FreshSignIn.isFresh(accountId, sessionId), (isFresh) =>
             isFresh ? Effect.void : Effect.fail(new AccountDeletion.NotFresh()),

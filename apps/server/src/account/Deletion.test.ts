@@ -238,8 +238,11 @@ describe.skipIf(Postgres18.socket === null)("Account deletion on PostgreSQL 18",
       () =>
         Effect.gen(function* () {
           const client = yield* rpc;
+          const sql = yield* SqlClient.SqlClient;
           const resolver = yield* Ports.SessionResolver;
           const devices = yield* lenaEverywhere;
+          // A shared persona can't delete itself (D98), so Lena's account stands for a student's own.
+          yield* sql`delete from demo_account where account_id = 'demo-lena'`;
           const tom = (yield* client["Demo.signIn"]({ persona: "tom" })).token;
           const needles = yield* lena;
           const before = yield* mentions(needles);
@@ -306,6 +309,32 @@ describe.skipIf(Postgres18.socket === null)("Account deletion on PostgreSQL 18",
             },
           });
         }),
+    );
+
+    // D98: every tester shares the personas, so none deletes one for the rest. The refusal comes
+    // before the sign-in check, so a stale sign-in isn't asked to confirm only to be refused.
+    it.effect("refuses to delete a demo persona's account and leaves every row in place", () =>
+      Effect.gen(function* () {
+        const client = yield* rpc;
+        const tom = (yield* client["Demo.signIn"]({ persona: "tom" })).token;
+        const before = yield* mentions(["demo-tom"]);
+        const deleting = client["AccountDeletion.delete"](undefined, bearer(tom));
+        const fresh = yield* Effect.flip(deleting);
+        yield* ageSession(tom);
+        const stale = yield* Effect.flip(deleting);
+
+        expect({
+          refused: [fresh._tag, stale._tag],
+          rows: before.length > 4,
+          after: yield* mentions(["demo-tom"]),
+          session: Option.isSome(yield* sessionOf(tom)),
+        }).toEqual({
+          refused: ["AccountDeletion.DemoAccount", "AccountDeletion.DemoAccount"],
+          rows: true,
+          after: before,
+          session: true,
+        });
+      }),
     );
 
     // The question about an ended session meets a failing database. The device can't tell yet

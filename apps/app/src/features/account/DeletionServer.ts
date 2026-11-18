@@ -21,7 +21,13 @@ export class Service extends Context.Service<
   {
     readonly delete: (
       token: Redacted.Redacted,
-    ) => Effect.Effect<void, Unreachable | AccountDeletion.SignedOut | AccountDeletion.NotFresh>;
+    ) => Effect.Effect<
+      void,
+      | Unreachable
+      | AccountDeletion.SignedOut
+      | AccountDeletion.NotFresh
+      | AccountDeletion.DemoAccount
+    >;
     /** Whether the token's account was deleted. */
     readonly deleted: (token: Redacted.Redacted) => Effect.Effect<boolean, Unreachable>;
   }
