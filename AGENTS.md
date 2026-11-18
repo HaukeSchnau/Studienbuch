@@ -80,9 +80,9 @@ The domain. UI copy is German, code is English:
 
 1. **Killing by pattern.** Kill only a PID you captured at spawn, or the owner of your port from `ss -H -ltnp` after confirming `/proc/<pid>/cwd` is your worktree. Your own agent process has this worktree's path in its argv, and the host runs other agents' dev servers.
 2. **Logging the school out of WebUntis.** Two logins with one WebUntis account log each other out, and beta's import will use the school's account. Develop and test the import against the anonymized corpus. A live login needs Hauke's go, and once beta imports, its import paused first.
-3. **Baking in an origin.** One web build serves every preview, beta and later prod. `EXPO_PUBLIC_API_URL` exists for native builds only, set per EAS environment.
+3. **Baking in an origin.** One web build serves every preview, beta and later prod. `EXPO_PUBLIC_API_URL` exists for native builds only, set for the store builds in `.calder/ci.ts`.
 4. **Leaking plaintext.** Content of encrypted tables exists in plaintext only on devices. Logs, spans, error messages, the command log, Postgres, dumps and the blob store carry ids, tags and ciphertext. Real names and real student data stay out of fixtures, logs and the repository.
-5. **Changing srv-2 by hand.** Previews, beta, their databases, the app stores and EAS change only through the pipeline (Calder and the Alchemy stack). Reading status and logs is fine. Anything that writes needs Hauke's go at the time.
+5. **Changing srv-2 by hand.** Previews, beta, their databases and the app stores change only through the pipeline (Calder and the Alchemy stack). Reading status and logs is fine. Anything that writes needs Hauke's go at the time.
 
 ## Hit every surface
 
@@ -139,6 +139,7 @@ Agents work through pull requests ([ADR 0008](docs/adr/0008-agents-work-through-
 - A PR that changes what a user sees links its preview and shows before and after screenshots.
 - A new or redesigned screen starts from its counterpart in the legacy Flutter app or the old web (`legacy-2026-10`), and its PR shows the two side by side. Departing from the legacy look needs Hauke's OK on that comparison first.
 - The orchestrator merges once checks pass and the preview looks right. Hauke can open any preview and never has to review code.
+- A revert that puts the app back to a tree built before reaches TestFlight and Play only if it also raises the version in `apps/app/package.json`, because Calder reuses the earlier store builds (`.calder/ci.ts`).
 - The catalog in `pnpm-workspace.yaml` is append-only while packages run in parallel: add entries only for dependencies you introduce. Regenerate `pnpm-lock.yaml` with `pnpm install` after a rebase, never merge it by hand.
 - Reviewer agents follow [docs/internals/review.md](docs/internals/review.md): what to check per area, and what not to report.
 
@@ -156,7 +157,7 @@ Most code changes need no documentation change, because agents can read the code
 
 ## How it works
 
-Every synced row lives in exactly one space: a student's notebook, a school, a course, and later chats and family spaces. Membership is the only read rule. Devices push commands and pull rows. A command runs its mutator from `packages/core` against local SQLite, so the screen updates at once, and waits in the outbox until the server settles it. For readable tables (`Mutate`), the server runs the same mutator again and may refuse it. For encrypted tables (`Seal`), the device's result is authoritative, and the server checks membership, key epoch, base version and signatures without reading the content. Rows come back by per-space version cursors, and a device's view is always its base rows plus a replay of its outbox. The WebUntis import comes in M2 as a job inside the server: a school profile will turn provider records into rows, and `SyncWriter` will write them on the same versioned path. CI builds one architecture-independent JS bundle (server, landing page and console, Expo web export), and srv-2 runs it with its own Node 26 as a `Fleet.Service`, one per preview and one for beta. Native builds reach phones through TestFlight and Play internal, and JS changes through EAS Update.
+Every synced row lives in exactly one space: a student's notebook, a school, a course, and later chats and family spaces. Membership is the only read rule. Devices push commands and pull rows. A command runs its mutator from `packages/core` against local SQLite, so the screen updates at once, and waits in the outbox until the server settles it. For readable tables (`Mutate`), the server runs the same mutator again and may refuse it. For encrypted tables (`Seal`), the device's result is authoritative, and the server checks membership, key epoch, base version and signatures without reading the content. Rows come back by per-space version cursors, and a device's view is always its base rows plus a replay of its outbox. The WebUntis import comes in M2 as a job inside the server: a school profile will turn provider records into rows, and `SyncWriter` will write them on the same versioned path. CI builds one architecture-independent JS bundle (server, landing page and console, Expo web export), and srv-2 runs it with its own Node 26 as a `Fleet.Service`, one per preview and one for beta. Native builds reach phones through TestFlight and Play internal: Calder builds them after each push to main that changes the app, and until M5.16's update server runs, that is also how new JavaScript reaches them.
 
 ## Where code lives
 

@@ -618,7 +618,7 @@ svg .st { font-size: 12.5px; font-weight: 700; fill: var(--ink); }
 
 <section id="ship">
   <h2><span class="n">10</span>From commit to phone</h2>
-  <p>A pull request gets a preview as soon as the bundle passes its smoke test, before the other checks finish, so Hauke can look early. A push to main deploys to beta only after every check. The native path is configured but not connected: EAS profiles and channels exist, no CI job calls them.</p>
+  <p>A pull request gets a preview as soon as the bundle passes its smoke test, before the other checks finish, so Hauke can look early. A push to main deploys to beta only after every check. Once beta runs the commit, Calder builds the native app for TestFlight and Play internal, unless neither its fingerprint nor its files changed.</p>
   <div class="dia wide" data-d="ship"></div>
   <p class="scrollhint">Scroll the diagram sideways.</p>
 </section>
@@ -835,8 +835,8 @@ DIAGRAMS.system = {
     { id: "native", x: 20, y: 192, w: 205, h: 66, t: "iOS and Android app", s: "Expo, SQLCipher, keychain\nEXPO_PUBLIC_API_URL", k: "plain" },
     { id: "webapp", x: 20, y: 284, w: 205, h: 66, t: "Browser at /app", s: "Expo web SPA, SQLite in OPFS\nservice worker for offline", k: "plain" },
     { id: "site", x: 20, y: 376, w: 205, h: 58, t: "Browser at / and /console", s: "landing, legal, console", k: "plain" },
-    { id: "stores", x: 20, y: 470, w: 205, h: 58, t: "TestFlight, Play internal", s: "store builds point at beta", k: "plain", ms: "M0" },
-    { id: "eas", x: 250, y: 470, w: 180, h: 58, t: "EAS Build, Update", s: "profiles exist, CI\ndoesn't call them yet", k: "infra", ms: "M0" },
+    { id: "stores", x: 20, y: 470, w: 205, h: 58, t: "TestFlight, Play internal", s: "store builds point at beta", k: "plain" },
+    { id: "storebuilds", x: 250, y: 470, w: 180, h: 58, t: "Store builds", s: "Calder's Expo steps\non m1", k: "infra" },
 
     { id: "caddy", x: 470, y: 212, w: 180, h: 62, t: "Caddy", s: "TLS, reverse proxy\nTailnet only for previews", k: "wire" },
     { id: "ctrl", x: 700, y: 212, w: 180, h: 62, t: "Service controller", s: "Fleet.Service to systemd\nsecrets in /run/fleet", k: "infra" },
@@ -875,8 +875,8 @@ DIAGRAMS.system = {
     { a: "calder", b: "ctrl", l: "alchemy deploy\nFleet.Service", k: "plain", ao: 0 },
     { a: "calder", b: "alstate", l: "state", k: "dash" },
     { a: "calder", b: "cfdns", k: "dash", as: "t", bs: "t", via: [[785, 8], [340, 8]] },
-    { a: "eas", b: "stores", l: "upload", k: "plain", ms: "M0" },
-    { a: "stores", b: "native", k: "plain", as: "l", bs: "l", via: [[10, 499], [10, 225]], ms: "M0" },
+    { a: "storebuilds", b: "stores", l: "upload", k: "plain" },
+    { a: "stores", b: "native", k: "plain", as: "l", bs: "l", via: [[10, 499], [10, 225]] },
     { a: "devserver", b: "devpg", l: "SQL", k: "plain" },
     { a: "devserver", b: "vite", l: "proxies / and /console", k: "wire", as: "t", bs: "l", ao: 50, via: [[190, 646], [530, 646], [530, 666]], la: [380, 640] },
     { a: "devserver", b: "metro", l: "proxies /app", k: "wire", as: "b", bs: "l", ao: 50, via: [[190, 782], [530, 782], [530, 738]], la: [380, 776] },
@@ -1352,7 +1352,7 @@ DIAGRAMS.ship = {
   groups: [
     { x: 10, y: 10, w: 1160, h: 236, t: "A pull request", k: "wire" },
     { x: 10, y: 262, w: 1160, h: 170, t: "A push to main", k: "read" },
-    { x: 10, y: 448, w: 1160, h: 180, t: "Phones: wired in config, not in CI yet", k: "dash" },
+    { x: 10, y: 448, w: 1160, h: 180, t: "Phones: store builds once beta is ready", k: "dash" },
   ],
   nodes: [
     { id: "c-push", x: 30, y: 48, w: 150, h: 70, t: "jj-push", s: "a bookmark to Gitea\nPR opened with tea" },
@@ -1371,9 +1371,9 @@ DIAGRAMS.ship = {
     { id: "c-ready", x: 950, y: 300, w: 205, h: 76, t: "ready-beta", s: "/api/health/ready\nreports the revision", k: "wire" },
     { id: "c-nightly", x: 30, y: 388, w: 400, h: 34, t: "Nightly at 03:00: the whole plan again, without reuse", s: "", k: "note" },
 
-    { id: "c-eas", x: 30, y: 486, w: 230, h: 90, t: "EAS Build", s: "profiles beta and\nproduction; runtime\nversion = fingerprint", k: "infra", ms: "M0" },
-    { id: "c-stores", x: 300, y: 486, w: 230, h: 90, t: "TestFlight, Play internal", s: "store builds with\nEXPO_PUBLIC_API_URL\nof beta", k: "infra", ms: "M0" },
-    { id: "c-ota", x: 570, y: 486, w: 230, h: 90, t: "EAS Update", s: "channel beta: JS-only\nchanges reach phones\nwithout a store build", k: "infra", ms: "M0" },
+    { id: "c-builds", x: 30, y: 486, w: 230, h: 90, t: "Store builds", s: "testflight, play on m1\nkeyed by fingerprint\nand the app's files", k: "infra" },
+    { id: "c-stores", x: 300, y: 486, w: 230, h: 90, t: "TestFlight, Play internal", s: "store builds with\nEXPO_PUBLIC_API_URL\nof beta", k: "infra" },
+    { id: "c-ota", x: 570, y: 486, w: 230, h: 90, t: "Over-the-air updates", s: "our own update server;\nuntil then no build\nasks for updates", k: "infra", ms: "M5" },
     { id: "c-phone", x: 840, y: 486, w: 315, h: 90, t: "Lena's phone", s: "talks to beta; the web app needs\nnone of this, beta serves it at /app", k: "plain" },
   ],
   edges: [
@@ -1389,9 +1389,10 @@ DIAGRAMS.ship = {
     { a: "c-beta", b: "c-prepare", k: "wire" },
     { a: "c-prepare", b: "c-ready", k: "wire" },
     { a: "c-build", b: "c-merge", l: "checks green, preview looks right", as: "b", bs: "t", ao: -60, via: [[455, 256], [105, 256]], la: [270, 252] },
-    { a: "c-eas", b: "c-stores", ms: "M0" },
-    { a: "c-stores", b: "c-phone", ms: "M0", as: "b", bs: "b", ey: 604 },
-    { a: "c-ota", b: "c-phone", ms: "M0" },
+    { a: "c-ready", b: "c-builds", l: "after ready-beta", as: "b", bs: "t", ao: -62, bo: 100, via: [[990, 440], [245, 440]], la: [600, 436] },
+    { a: "c-builds", b: "c-stores" },
+    { a: "c-stores", b: "c-phone", as: "b", bs: "b", ey: 604 },
+    { a: "c-ota", b: "c-phone", ms: "M5" },
     { a: "c-ready", b: "c-phone", l: "HTTPS, WSS", as: "b", bs: "t", k: "wire", ao: 0, bo: 100 },
   ],
 };
@@ -1404,19 +1405,19 @@ const INFO = {
 
   gitea: { t: "Gitea", k: "infra", d: ["The real home of the code at git.schnau.dev. Agents push a bookmark with jj and open the PR with <code>tea</code>; GitHub is a mirror for outside contributors.", "Every PR and every push to main starts a Calder run."], a: [8] },
 
-  calder: { t: "Calder", k: "infra", d: ["Hauke's CI and deploy system. It runs <code>.calder/ci.ts</code>: checks, the bundle, the flake checks, then the preview or beta deploy.", "It runs on srv-2 and builds the x86_64 bundle on the tower or dev-hauke, the aarch64 checks elsewhere. It reuses results that <code>calder check</code> already produced."], f: [".calder/ci.ts", ".calder/flake.ts"], a: [7, 10] },
+  calder: { t: "Calder", k: "infra", d: ["Hauke's CI and deploy system. It runs <code>.calder/ci.ts</code>: checks, the bundle, the flake checks, then the preview or beta deploy, and after beta the store builds.", "It runs on srv-2 and builds the x86_64 bundle on the tower or dev-hauke, the aarch64 checks elsewhere. It reuses results that <code>calder check</code> already produced."], f: [".calder/ci.ts", ".calder/flake.ts"], a: [7, 10] },
 
   alstate: { t: "Alchemy state", k: "infra", d: ["Alchemy keeps what each stage created (the Fleet service, the DNS record, generated secrets such as the auth secret of a preview) in a Cloudflare worker called <code>alchemy-state-store-fleet</code>."], f: ["deploy/alchemy.run.ts"], a: [6] },
 
-  native: { t: "iOS and Android app", k: "plain", d: ["The Expo app as a store build. It keeps one SQLCipher database per account, its secrets in the keychain, and talks to the server named in <code>EXPO_PUBLIC_API_URL</code>.", "No store build exists yet: EAS isn't wired into CI."], f: ["apps/app/app.config.ts", "apps/app/eas.json", "apps/app/src/infra/api/ServerOrigin.ts"], a: [13, 15] },
+  native: { t: "iOS and Android app", k: "plain", d: ["The Expo app as a store build. It keeps one SQLCipher database per account, its secrets in the keychain, and talks to the server named in <code>EXPO_PUBLIC_API_URL</code>.", "It has no over-the-air updates until our own update server runs (M5.16), so new JavaScript reaches it only in a new store build."], f: ["apps/app/app.config.ts", "apps/app/src/infra/api/ServerOrigin.ts"], a: [13, 15] },
 
   webapp: { t: "Browser at /app", k: "plain", d: ["The same Expo app exported for the web, served by the server under <code>/app</code> as a single-page app. SQLite runs as wa-sqlite in a worker on OPFS, one tab owns a device's database, and a service worker lets it start offline.", "It always calls its own origin, so one build serves every preview and beta."], f: ["apps/app/src/infra/sqlite/database.web.ts", "apps/app/public/sw.js", "apps/server/src/routes/WebBuilds.ts"], a: [14, 16, 5] },
 
   site: { t: "Landing page and console", k: "plain", d: ["TanStack Start pages, prerendered: the landing page, Impressum, Datenschutz and the console SPA under <code>/console</code>.", "Today the console shows the server's revision and, on dev and previews, the captured mail. The landing page draws its app screens with stand-in components in <code>apps/web/src/domain-ui/app/</code>, not yet with the app's own."], f: ["apps/web/src/routes/index.tsx", "apps/web/src/routes/console.tsx", "apps/web/src/features/marketing/Screens.tsx"], a: [3] },
 
-  stores: { t: "TestFlight and Play internal", k: "plain", ms: "M0", d: ["Store builds for testers, pointing at beta. The profiles exist in <code>eas.json</code>, and Calder already holds an Expo token and the Play upload keystore, but no CI job builds or uploads yet.", "The mobile release pipeline is M0-WP17, not started yet; the store release train for production is M5.4."], f: ["apps/app/eas.json"] },
+  stores: { t: "TestFlight and Play internal", k: "plain", d: ["Builds for testers, with <code>EXPO_PUBLIC_API_URL</code> of beta. Internal testers get each TestFlight build without Apple's beta review.", "The store release train for production is M5.4."], f: [".calder/ci.ts"] },
 
-  eas: { t: "EAS Build and EAS Update", k: "infra", ms: "M0", d: ["Two profiles, <code>beta</code> and <code>production</code>, each with its own update channel. The runtime version is the native fingerprint, so a JS-only change can reach phones as an update while a native change needs a new build.", "Nothing calls EAS from CI today, and <code>eas-cli</code> isn't a dependency."], f: ["apps/app/eas.json", "apps/app/app.config.ts", "apps/app/fingerprint.config.js"] },
+  storebuilds: { t: "Store builds", k: "infra", d: ["Calder's <code>@calder-ci/std/Expo</code> steps on each push to main, once beta runs the commit: <code>testflight</code> archives and uploads on m1, <code>play</code> builds a bundle signed with the upload key and releases it to the internal track, also on m1 until the tower's workers have an Android SDK.", "Each is keyed by the native fingerprint (<code>runtime-ios</code>, <code>runtime-android</code>, which pull requests show too) and by the app's files, since without over-the-air updates a new build is how new JavaScript reaches testers. A push that changes neither reuses the last builds."], f: [".calder/ci.ts", "apps/app/app.config.ts", "apps/app/fingerprint.config.js"] },
 
   caddy: { t: "Caddy", k: "wire", d: ["srv-2's front door. It terminates TLS and proxies each hostname to the loopback port of its service. Preview routes answer 403 to anyone outside the Tailnet.", "The routes come from the service controller through infra's agent-service route sources."], a: [6, 7] },
 
@@ -1544,7 +1545,7 @@ const INFO = {
 
   "i-offline": { t: "Offline start", k: "infra", d: ["On the web the service worker serves the last build of <code>/app</code> when the network is gone, so the app starts offline with its local data. Development builds run without one."], f: ["apps/app/src/infra/offline/ServiceWorker.ts", "apps/app/public/sw.js", "docs/operations/service-worker.md"], a: [16] },
 
-  "i-origin": { t: "Server origin", k: "infra", d: ["The web app calls its own origin, so one build serves every preview and beta. Native builds name their server in <code>EXPO_PUBLIC_API_URL</code>, set per EAS environment. A lint rule refuses baked-in origins."], f: ["apps/app/src/infra/api/ServerOrigin.ts", "tools/oxlint/studienbuch/rules/no-baked-origin.ts"], a: [3] },
+  "i-origin": { t: "Server origin", k: "infra", d: ["The web app calls its own origin, so one build serves every preview and beta. Native builds name their server in <code>EXPO_PUBLIC_API_URL</code>, set per store build. A lint rule refuses baked-in origins."], f: ["apps/app/src/infra/api/ServerOrigin.ts", "tools/oxlint/studienbuch/rules/no-baked-origin.ts"], a: [3] },
 
   /* server */
   "h-rpc": { t: "/api/rpc", k: "wire", d: ["Effect RPC over HTTP POST, JSON. One endpoint for every group in packages/api. Answers carry <code>cache-control: no-store</code>, because some hold sessions or demo root keys."], f: ["apps/server/src/routes/Rpc.ts", "packages/api/src/Api.ts"] },
@@ -1799,11 +1800,11 @@ const INFO = {
 
   "c-nightly": { t: "Nightly", d: ["At 03:00 the whole plan runs again without reuse. The simulation could run with more seeds here; it doesn't yet."], f: [".calder/ci.ts"] },
 
-  "c-eas": { i: "eas" },
+  "c-builds": { i: "storebuilds" },
 
   "c-stores": { i: "stores" },
 
-  "c-ota": { t: "EAS Update", k: "infra", ms: "M0", d: ["JS-only changes reach phones on the <code>beta</code> channel without a store build, as long as the native fingerprint (the runtime version) didn't change. Not wired into CI yet."], f: ["apps/app/app.config.ts", "apps/app/fingerprint.config.js"] },
+  "c-ota": { t: "Over-the-air updates", k: "infra", ms: "M5", d: ["JavaScript for installed builds whose native fingerprint matches, from an Expo Updates server of our own with code signing (M5.16, D94). Until it runs, builds have updates off and ask no server, Expo's included."], f: ["apps/app/app.config.ts", "apps/app/fingerprint.config.js"] },
 
   "c-phone": { t: "Lena's phone", d: ["Talks to beta. The web app needs no store at all: beta serves it at <code>/app</code>, and every deploy reaches it on the next load."], f: ["apps/app/src/infra/updates/BuildInfo.ts"] },
 };

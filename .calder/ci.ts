@@ -1,5 +1,5 @@
 import { Files, Flake, Nix, On, Step, Task, cmd } from "@calder-ci/core";
-import { Environments, Pnpm, Vitest } from "@calder-ci/std";
+import { Environments, Expo, Pnpm, Vitest } from "@calder-ci/std";
 import { Schema } from "effect";
 import { flake } from "./flake.ts";
 
@@ -172,6 +172,55 @@ const checks = [
   ...flakeChecks,
 ];
 
+// The native app, from the TestFlight and Play internal builds of every push to main that changes it.
+
+/**
+ * What every step of the native app evaluates its config with, the same for each (std's Expo). Store
+ * builds talk to beta; the web export never sees this, so one web build serves every deployment.
+ */
+const app = { dir: "apps/app", env: { EXPO_PUBLIC_API_URL: "https://beta.studienbuch.app" } };
+
+/** The native layer's fingerprint on each platform (apps/app/fingerprint.config.js). */
+const runtimeIos = Expo.runtimeVersion("ios", { ...app, shell, setup: install });
+const runtimeAndroid = Expo.runtimeVersion("android", { ...app, shell, setup: install });
+
+/**
+ * The store builds are keyed by the fingerprint and, while there are no over-the-air updates (D94),
+ * by everything the app bundles too: a new build is then the only way new JavaScript reaches testers.
+ * Once M5.16's update server ships JavaScript, drop `inputs` so only a native change rebuilds. Calder
+ * reuses a key it built before, even in `calder rerun --force`, so a revert to such a tree uploads
+ * nothing unless it also raises the version in apps/app/package.json, which the fingerprint hashes.
+ */
+const store = { ...app, shell, inputs: Files.workspace("apps/app") };
+
+/** Urbs UG's App Store Connect key: the project's secret, and its identifiers. */
+const appStoreConnect = {
+  key: "app-store-connect",
+  keyId: "85N8Y9CZC4",
+  issuerId: "e4b59e5f-0f40-4b1b-996e-b7a01664676a",
+};
+
+/** The store builds wait until beta runs this commit, so a tester's build never meets an older server. */
+const storeBuilds = (ready: Step.Any) => [
+  Expo.testflight({
+    ...store,
+    runtime: runtimeIos,
+    appId: "6751515035",
+    appStoreConnect,
+    after: [ready],
+  }).pipe(Step.timeout("90 minutes")),
+  // On m1, like hopwatch's, until the tower's workers get an Android SDK, a JDK and gplay.
+  Expo.playInternal({
+    ...store,
+    platform: "aarch64-darwin",
+    runtime: runtimeAndroid,
+    keystore: "play-upload-keystore",
+    password: "play-upload-password",
+    serviceAccount: "play-service-account",
+    after: [ready],
+  }).pipe(Step.timeout("90 minutes")),
+];
+
 export default Environments.project({
   stack: {
     shell,
@@ -189,7 +238,8 @@ export default Environments.project({
   readiness: (outputs) => outputs.readiness,
   // A preview waits for none of the checks but the one that runs what it deploys (ADR 0007).
   previews: { url: (_pr, outputs) => outputs.url, after: [serverSmoke] },
-  environments: { beta: { on: { push: "main" }, after: checks } },
+  environments: { beta: { on: { push: "main" }, after: checks, then: storeBuilds } },
   nightly: "0 3 * * *",
-  rules: [On.pullRequest([pnpmDeps]), On.push("main", [pnpmDeps])],
+  // A pull request shows its fingerprints, so a change to the native layer is visible before merging.
+  rules: [On.pullRequest([pnpmDeps, runtimeIos, runtimeAndroid]), On.push("main", [pnpmDeps])],
 });
