@@ -9,7 +9,7 @@ import * as AsyncResult from "effect/reactivity/AsyncResult";
 import { Keyboard } from "react-native";
 
 import type { AuthApi } from "../../infra/auth/AuthApi.ts";
-import { ProblemText, reasonOf, useCredentials } from "../account/AccountForm.tsx";
+import { ProblemText, reasonOf, useCredentials, useRunning } from "../account/AccountForm.tsx";
 import { ConfirmByCard } from "./ConfirmByCard.tsx";
 import { KeysState } from "./KeysState.ts";
 
@@ -106,10 +106,12 @@ function WithPassword({
     mode: "promiseExit",
   });
 
+  const running = useRunning(KeysState.withPassword(accountId));
+
   // The keyboard's submit isn't disabled with the button, and a second call of the running atom
   // would answer both with "busy".
   const submit = () => {
-    if (withPasswordResult.waiting) return;
+    if (running()) return;
 
     Keyboard.dismiss();
     void withPassword({ email, password }).then(confirmedBy(onConfirmed));
