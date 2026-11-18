@@ -52,12 +52,17 @@ function SignUpForm({ reservation }: { readonly reservation: Access.Reservation 
     <>
       <AuthHeading>Konto erstellen</AuthHeading>
       <Lead>{AccessCode.describe(reservation)}</Lead>
+      <OtherWay
+        question="Freiwillig."
+        label="Ohne E-Mail-Adresse geht es auch."
+        href="/konto-anlegen"
+        back
+      />
       <Form>
         <PublicComputerChoice />
         <Field
           pill
           label="E-Mail-Adresse"
-          hint="Freiwillig. Ohne E-Mail-Adresse geht es auch."
           value={email}
           onChangeText={setEmail}
           invalid={Option.contains(reasonOf(result), "invalid-email")}
