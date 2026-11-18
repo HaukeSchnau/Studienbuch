@@ -139,7 +139,7 @@ Agents work through pull requests ([ADR 0008](docs/adr/0008-agents-work-through-
 - A PR that changes what a user sees links its preview and shows before and after screenshots.
 - A new or redesigned screen starts from its counterpart in the legacy Flutter app or the old web (`legacy-2026-10`), and its PR shows the two side by side. Departing from the legacy look needs Hauke's OK on that comparison first.
 - The orchestrator merges once checks pass and the preview looks right. Hauke can open any preview and never has to review code.
-- A revert that puts the app back to a tree built before reaches TestFlight and Play only after `calder rerun --force <main's newest push run>`, because Calder reuses the earlier store builds (`.calder/ci.ts`).
+- A revert that puts the app back to a tree built before reaches TestFlight and Play only if it also raises the version in `apps/app/package.json`, because Calder reuses the earlier store builds (`.calder/ci.ts`).
 - The catalog in `pnpm-workspace.yaml` is append-only while packages run in parallel: add entries only for dependencies you introduce. Regenerate `pnpm-lock.yaml` with `pnpm install` after a rebase, never merge it by hand.
 - Reviewer agents follow [docs/internals/review.md](docs/internals/review.md): what to check per area, and what not to report.
 
