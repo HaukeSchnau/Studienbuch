@@ -96,7 +96,13 @@ function NewPassword({ email }: { readonly email: string }) {
   const forget = useAtomSet(AccountState.resetPassword);
   const keepSentTo = useAtomSet(Steps.resetSentTo);
   const keepTyped = useAtomSet(Steps.forgotten);
-  const code = useCode(() => forget(Atom.Reset));
+
+  // A running reset keeps its result: only its answer lets `submit` forget the address.
+  const forgetResult = () => {
+    if (!result.waiting) forget(Atom.Reset);
+  };
+
+  const code = useCode(forgetResult);
   const { password, setPassword } = useCredentials();
   const [resent, request] = useAtom(AccountState.requestPasswordReset, { mode: "promiseExit" });
   const short = password.length < Accounts.minPasswordLength;
@@ -164,7 +170,7 @@ function NewPassword({ email }: { readonly email: string }) {
           send={() => request(email).then(Exit.isSuccess)}
           onSent={() => {
             code.clear();
-            forget(Atom.Reset);
+            forgetResult();
           }}
         />
       </Form>
