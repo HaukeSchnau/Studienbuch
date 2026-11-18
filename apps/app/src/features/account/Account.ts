@@ -181,12 +181,12 @@ const refuseAnyAccount = Effect.flatMap(SessionStore.Service, (store) =>
 );
 
 /**
- * Keeps a new session in the turn that installs sessions (`Forgetting.Service`), after any
- * sign-out under way or left unfinished. That turn refuses another account, so two sign-ins never
- * both keep one, and fixes where the session goes (`SessionStore.publicComputerFor`). `first`
- * stores what the session needs there, before it. `demo` marks a persona (`Demo.isDemoSignIn`).
+ * Keeps a new session in the turn that installs sessions (`Forgetting.Service`), after any sign-out
+ * under way or left unfinished. That turn refuses another account and fixes where the session goes
+ * (`SessionStore.publicComputerFor`); `first` stores what it needs there, before it. It ends no
+ * session: a caller that holds none for a retry ends it when this fails (`endUnkept`).
  */
-export const keep = Effect.fn("Account.keep")(function* <R = never>(
+const keep = Effect.fn("Account.keep")(function* <R = never>(
   signedIn: AuthApi.SignedIn,
   chosen: boolean,
   demo = false,
@@ -205,12 +205,9 @@ export const keep = Effect.fn("Account.keep")(function* <R = never>(
     yield* store.signedIn({ ...signedIn, demo }, publicComputer);
   });
 
-  yield* forgetting.keep(install).pipe(
-    Effect.catchTags({ "Forgetting.Unfinished": failed, "Keychain.Unavailable": failed }),
-    Effect.tapError((problem) =>
-      problem.reason === "other-account" ? endUnkept(signedIn) : Effect.void,
-    ),
-  );
+  yield* forgetting
+    .keep(install)
+    .pipe(Effect.catchTags({ "Forgetting.Unfinished": failed, "Keychain.Unavailable": failed }));
 });
 
 export const signIn = Effect.fn("Account.signIn")(function* (
@@ -221,7 +218,9 @@ export const signIn = Effect.fn("Account.signIn")(function* (
   const api = yield* AuthApi.Service;
   const signedIn = yield* api.signIn(email.trim(), password).pipe(Effect.mapError(problem));
 
-  yield* keep(signedIn, publicComputer, Demo.isDemoSignIn(email, signedIn.accountId));
+  yield* keep(signedIn, publicComputer, Demo.isDemoSignIn(email, signedIn.accountId)).pipe(
+    Effect.tapError(() => endUnkept(signedIn)),
+  );
 });
 
 /**
@@ -762,7 +761,7 @@ export const signInWithPasskey = Effect.fn("Account.signInWithPasskey")(function
     .passkeySignIn(challenge, asserted.credential)
     .pipe(Effect.mapError(problem));
 
-  yield* keep(signedIn, publicComputer);
+  yield* keep(signedIn, publicComputer).pipe(Effect.tapError(() => endUnkept(signedIn)));
 
   return {
     accountId: signedIn.accountId,

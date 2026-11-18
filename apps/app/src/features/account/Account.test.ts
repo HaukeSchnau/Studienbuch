@@ -271,7 +271,11 @@ describe("Account", () => {
         signIn: (email) =>
           Effect.andThen(
             Effect.andThen(Queue.offer(asked, email), Deferred.await(answer)),
-            Effect.succeed(signedIn(email.slice(0, 4), `token-${email.slice(0, 4)}`)),
+            Effect.sync(() => {
+              const name = email.split("@")[0] ?? email;
+
+              return signedIn(name, `token-${name}`);
+            }),
           ),
         signOut: (token) => Ref.update(ended, (all) => [...all, Redacted.value(token)]),
       });
@@ -300,16 +304,22 @@ describe("Account", () => {
         Effect.provide(Layer.mergeAll(sessionsOn(MemoryKeychain.layer()), oneTurnAtATime, api)),
       );
 
-      const refused = [lena, tom].filter((each) => each._tag === "Failure");
+      // Whichever fiber's turn came first won; the other ended its own session only.
+      const [winner, loser] = lena._tag === "Success" ? ["lena", "tom"] : ["tom", "lena"];
 
       assert.deepStrictEqual(
-        { refused: refused.length, kept: kept.length, ended: (yield* Ref.get(ended)).length },
-        { refused: 1, kept: 1, ended: 1 },
-      );
-
-      assert.deepStrictEqual(
-        refused.map((each) => (each._tag === "Failure" ? each.failure.reason : "")),
-        ["other-account"],
+        {
+          refused: [lena, tom].flatMap((each) =>
+            each._tag === "Failure" ? [each.failure.reason] : [],
+          ),
+          kept: kept.map((each) => [each.accountId, Redacted.value(each.token)]),
+          ended: yield* Ref.get(ended),
+        },
+        {
+          refused: ["other-account"],
+          kept: [[winner, `token-${winner}`]],
+          ended: [`token-${loser}`],
+        },
       );
     }),
   );
@@ -483,10 +493,13 @@ describe("Account", () => {
   );
 
   // A sign-out stopped after its point of no return, so its note stays. The next session waits
-  // until what the account left is gone, or the device would start it on half-deleted data.
+  // until what the account left is gone, or the device would start it on half-deleted data. The
+  // session it couldn't keep ends on the server, rather than waiting there unused for 90 days.
   it.effect("keeps a new session only once the sign-out the device left unfinished finished", () =>
     Effect.gen(function* () {
       const tries = yield* Ref.make(0);
+      const tokens = yield* Ref.make(0);
+      const ended = yield* Ref.make<ReadonlyArray<string>>([]);
 
       const finish = Effect.flatMap(
         Ref.updateAndGet(tries, (count) => count + 1),
@@ -496,25 +509,35 @@ describe("Account", () => {
             : Effect.void,
       );
 
+      const signIn = Account.signIn("lena@example.org", "geheim-genug", false);
+
       yield* Effect.gen(function* () {
         const sessions = yield* SessionStore.Service;
 
-        const refused = yield* Effect.flip(Account.keep(signedIn("lena", "token-lena"), false));
+        const refused = yield* Effect.flip(signIn);
 
         assert.strictEqual(refused.reason, "failed");
         assert.isTrue(Option.isNone(yield* sessions.current));
 
-        yield* Account.keep(signedIn("lena", "token-lena"), false);
+        yield* signIn;
 
         assert.deepStrictEqual(
           Option.map(yield* sessions.current, (signed) => signed.accountId),
           Option.some("lena"),
         );
+        assert.deepStrictEqual(yield* Ref.get(ended), ["token-1"]);
       }).pipe(
         Effect.provide(
           Layer.mergeAll(
             store,
-            AuthApiTesting.layer({}),
+            AuthApiTesting.layer({
+              signIn: () =>
+                Effect.map(
+                  Ref.updateAndGet(tokens, (count) => count + 1),
+                  (count) => signedIn("lena", `token-${count}`),
+                ),
+              signOut: (token) => Ref.update(ended, (all) => [...all, Redacted.value(token)]),
+            }),
             Layer.succeed(Forgetting.Service)({
               keep: (session) => Effect.andThen(finish, session),
             }),
