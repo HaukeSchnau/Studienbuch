@@ -16,6 +16,7 @@ import * as Context from "effect/Context";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as Base64Url from "effect/encoding/Base64Url";
+import * as Exit from "effect/Exit";
 import * as Fiber from "effect/Fiber";
 import * as FetchHttpClient from "effect/http/FetchHttpClient";
 import * as Headers from "effect/http/Headers";
@@ -378,11 +379,14 @@ describe.skipIf(Postgres18.socket === null)("Account deletion on PostgreSQL 18",
           yield* Deferred.succeed(release, undefined);
 
           const finished = {
-            signIn: Option.isSome(
+            // Each ended within the time, and succeeded: the sign-in made its session.
+            signIn: Option.exists(
               yield* Effect.timeoutOption(Fiber.await(signingIn), "10 seconds"),
+              (exit) => Exit.isSuccess(exit) && Option.isSome(exit.value),
             ),
-            deletion: Option.isSome(
+            deletion: Option.exists(
               yield* Effect.timeoutOption(Fiber.await(deleting), "10 seconds"),
+              Exit.isSuccess,
             ),
           };
 

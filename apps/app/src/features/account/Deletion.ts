@@ -47,16 +47,16 @@ export const deleteAccount = Effect.fn("Deletion.deleteAccount")(function* <R>(
   const store = yield* SessionStore.Service;
   const server = yield* DeletionServer.Service;
   const current = yield* store.current;
-  const token = Option.flatMap(current, (signed) => signed.token);
 
-  if (Option.isNone(current) || Option.isNone(token)) {
-    return yield* new Problem({ reason: "signed-out" });
-  }
+  if (Option.isNone(current)) return yield* new Problem({ reason: "signed-out" });
 
-  const { accountId } = current.value;
+  const { accountId, token } = current.value;
 
-  yield* Effect.andThen(
-    server.delete(token.value).pipe(
+  yield* Effect.gen(function* () {
+    // Its session ended: the device holds the account and no token to delete it with.
+    if (Option.isNone(token)) return yield* new Problem({ reason: "signed-out" });
+
+    yield* server.delete(token.value).pipe(
       Effect.catchTags({
         "DeletionServer.Unreachable": () => Effect.fail(new Problem({ reason: "offline" })),
         "AccountDeletion.NotFresh": () => Effect.fail(new Problem({ reason: "not-fresh" })),
@@ -72,9 +72,10 @@ export const deleteAccount = Effect.fn("Deletion.deleteAccount")(function* <R>(
             ),
           ),
       }),
-    ),
-    leave(accountId),
-  ).pipe(
+    );
+
+    yield* leave(accountId);
+  }).pipe(
     Effect.tapError((problem) =>
       Effect.flatMap(store.current, (now) =>
         Option.exists(now, (signed) => signed.accountId === accountId)

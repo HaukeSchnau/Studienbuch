@@ -111,7 +111,7 @@ export const accounts = Layer.effect(
   Effect.map(SqlClient.SqlClient, (sql) =>
     Ports.Accounts.of({
       hold: (account) =>
-        AccountLock.hold(account).pipe(Effect.provideService(SqlClient.SqlClient, sql)),
+        AccountLock.hold(account, "share").pipe(Effect.provideService(SqlClient.SqlClient, sql)),
     }),
   ),
 );

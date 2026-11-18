@@ -299,7 +299,7 @@ export const publishFirst = Effect.fn("KeyStore.publishFirst")(function* (
     }
   }
 
-  if (!(yield* AccountLock.hold(account))) return yield* new Keys.SignedOut();
+  if (!(yield* AccountLock.hold(account, "share"))) return yield* new Keys.SignedOut();
 
   const [held] = yield* sql`
     select 1 from account_key where account_id = ${account} and generation = 0
@@ -348,38 +348,23 @@ const records = Effect.fn("KeyStore.records")(function* (account: string) {
   return yield* Effect.forEach(rows, (row) => decodeRecord(row.record));
 });
 
-/**
- * The account's newest key record, locked until the transaction ends, so key changes queue. Taken
- * after `AccountLock.hold`, in the account lock's order.
- */
+/** The account's newest key record, locked for update (`AccountLock.newestKey`), so key changes queue. */
 const lockNewest = Effect.fn("KeyStore.lockNewest")(function* (account: string) {
-  const sql = yield* SqlClient.SqlClient;
+  const stored = yield* AccountLock.newestKey(account, "update");
 
-  const [row] = yield* sql<{ readonly record: typeof recordJson.Encoded }>`
-    select record from account_key where account_id = ${account}
-    order by generation desc limit 1
-    for update
-  `;
-
-  return row === undefined ? Option.none() : Option.some(yield* decodeRecord(row.record));
+  return Option.isNone(stored) ? Option.none() : Option.some(yield* decodeRecord(stored.value));
 });
 
 /**
- * The account's newest key record, held for share until the transaction ends. A renewal that locks
- * it later waits for that transaction, and one that commits while this read is under way goes
- * unseen. M3's rotate must re-read the newest generation after taking its lock, and lock spaces
- * before `account_key` in the order a Seal does, or the two deadlock.
+ * The account's newest key record, held for share until the transaction ends (`AccountLock`). A
+ * renewal that locks it later waits for that transaction, and one that commits while this read is
+ * under way goes unseen. M3's rotate must re-read the newest generation after taking its lock, and
+ * lock spaces before `account_key` in the order a Seal does, or the two deadlock.
  */
 export const newest = Effect.fn("KeyStore.newest")(function* (account: string) {
-  const sql = yield* SqlClient.SqlClient;
+  const stored = yield* AccountLock.newestKey(account, "share");
 
-  const [row] = yield* sql<{ readonly record: typeof recordJson.Encoded }>`
-    select record from account_key where account_id = ${account}
-    order by generation desc limit 1
-    for share
-  `;
-
-  return row === undefined ? Option.none() : Option.some(yield* decodeRecord(row.record));
+  return Option.isNone(stored) ? Option.none() : Option.some(yield* decodeRecord(stored.value));
 });
 
 /** What `Keys.state` answers: the chain and every wrapper's statement. */
@@ -422,7 +407,14 @@ export const addWrapper = Effect.fn("KeyStore.addWrapper")(function* (
 
   return yield* sql.withTransaction(
     Effect.gen(function* () {
-      if (!(yield* AccountLock.hold(account))) return yield* new Keys.SignedOut();
+      // An email account's card never signs in, so only an account without an address replaces its
+      // card's login, and takes its logins for update up front.
+      const replacing =
+        statement.kind === Wrapper.kindByte.code && !(yield* CardLogins.hasAddress(account));
+
+      if (!(yield* AccountLock.hold(account, replacing ? "update" : "share"))) {
+        return yield* new Keys.SignedOut();
+      }
 
       if (
         statement.kind !== Wrapper.kindByte.device &&
@@ -455,11 +447,7 @@ export const addWrapper = Effect.fn("KeyStore.addWrapper")(function* (
         if (count >= Keys.wrappersPerPasskey) return yield* new Keys.Invalid({ reason: "limit" });
       }
 
-      // An email account's card never signs in, so its login is ignored.
-      const ended =
-        statement.kind === Wrapper.kindByte.code && !(yield* CardLogins.hasAddress(account))
-          ? yield* replaceCard(account, session, statement, login)
-          : [];
+      const ended = replacing ? yield* replaceCard(account, session, statement, login) : [];
 
       yield* insertWrapper(account, wrapper, session);
 
@@ -483,7 +471,7 @@ export const fetchSeals = Effect.fn("KeyStore.fetchSeals")(function* (
 
   return yield* sql.withTransaction(
     Effect.gen(function* () {
-      if (!(yield* AccountLock.hold(account))) return yield* new Keys.SignedOut();
+      if (!(yield* AccountLock.hold(account, "share"))) return yield* new Keys.SignedOut();
 
       const newest = yield* lockNewest(account);
 

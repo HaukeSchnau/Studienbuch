@@ -306,6 +306,27 @@ describe("Deletion", () => {
     }).pipe(Effect.provide(device)),
   );
 
+  // Lena's session ended while "Konto löschen" was open. The screen says why it can't delete.
+  it.effect("an account whose session already ended is told so", () =>
+    Effect.gen(function* () {
+      const store = yield* SessionStore.Service;
+      const asked = yield* Queue.unbounded<string>();
+      const { leave, reported, report } = yield* leaving;
+
+      yield* signIn("lena", "token-lena");
+      yield* store.ended;
+
+      const refused = yield* Effect.flip(
+        Deletion.deleteAccount(leave, report).pipe(Effect.provide(server(new Set(), asked))),
+      );
+
+      expect({ refused: refused.reason, reported: yield* Ref.get(reported) }).toEqual({
+        refused: "signed-out",
+        reported: ["signed-out"],
+      });
+    }).pipe(Effect.provide(device)),
+  );
+
   it.effect(
     "deleting here leaves the device signed out, though the server also ends this device's session",
     () =>

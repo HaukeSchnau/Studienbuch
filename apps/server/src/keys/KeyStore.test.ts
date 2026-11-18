@@ -3,11 +3,17 @@ import { Keys } from "@stu/api/Keys";
 import { AccountKey, SpaceKey, Wrapper } from "@stu/e2ee";
 import { TestCrypto } from "@stu/e2ee/testing";
 import { Postgres18 } from "@stu/sync/testing";
+import * as Context from "effect/Context";
+import * as Crypto from "effect/Crypto";
+import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
+import * as Exit from "effect/Exit";
+import * as Fiber from "effect/Fiber";
 import * as Base64Url from "effect/encoding/Base64Url";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Redacted from "effect/Redacted";
+import * as Ref from "effect/Ref";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import { CardLogins } from "../auth/CardLogins.ts";
@@ -101,6 +107,51 @@ const withoutAddress = (id: string) =>
       values (${id}, '', ${`${id}x9@konto.placeholder.invalid`}, false)
     `,
   );
+
+/** Stops the next ask for random bytes, once `armed`, until `release`. */
+class Pause extends Context.Service<
+  Pause,
+  {
+    readonly armed: Ref.Ref<boolean>;
+    readonly held: Deferred.Deferred<void>;
+    readonly release: Deferred.Deferred<void>;
+  }
+>()("Test.Pause") {}
+
+/** `SchoolTesting.database` with a `Crypto` that `Pause` stops once. */
+const pausing = Layer.effect(Crypto.Crypto)(
+  Effect.gen(function* () {
+    const crypto = yield* Crypto.Crypto;
+    const pause = yield* Pause;
+
+    return {
+      ...crypto,
+      randomBytes: (size: number) =>
+        Effect.andThen(
+          Effect.flatMap(Ref.getAndSet(pause.armed, false), (armed) =>
+            armed
+              ? Effect.andThen(
+                  Deferred.succeed(pause.held, undefined),
+                  Deferred.await(pause.release),
+                )
+              : Effect.void,
+          ),
+          crypto.randomBytes(size),
+        ),
+    };
+  }),
+).pipe(
+  Layer.provideMerge(
+    Layer.effect(Pause)(
+      Effect.all({
+        armed: Ref.make(false),
+        held: Deferred.make<void>(),
+        release: Deferred.make<void>(),
+      }),
+    ),
+  ),
+  Layer.provideMerge(SchoolTesting.database),
+);
 
 /** A card's login as the device sends it: 32 bytes, base64url. */
 const loginOf = (fill: number) => Base64Url.encode(new Uint8Array(32).fill(fill));
@@ -549,6 +600,77 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
             ole: yield* records("ole"),
           }).toEqual({ second: "Keys.KeysLost", afterSecond: 0, back: true, uta: 1, ole: 1 });
         }),
+    );
+  });
+  // Pia replaces her Notfallkarte on her phone while her laptop adds its own wrapper and fetches
+  // seals. The replacement holds her logins for update from its start, so the others wait for it
+  // instead of holding her logins while it waits for her key record.
+  layer(Layer.mergeAll(pausing, TestCrypto.layer("KeyStore.test")))((it) => {
+    it.effect("a card replacement and other key writes of the account all finish", () =>
+      Effect.gen(function* () {
+        const sql = yield* SqlClient.SqlClient;
+        const pause = yield* Pause;
+        yield* withoutAddress("pia");
+        const pia = yield* firstDevice("pia", 140);
+        const session = yield* signedIn("pia", 0);
+        const laptopSession = yield* signedIn("pia", 1);
+        const first = Option.some({ wrapper: pia.device, session });
+        yield* sql.withTransaction(KeyStore.publishFirst("pia", pia.record, first));
+        yield* KeyStore.addWrapper(
+          "pia",
+          session,
+          yield* cardFrom("pia-card-1", 141, pia.keys),
+          Option.some(loginOf(41)),
+        );
+
+        // The next card's replacement stops after its locks, when it asks for its login's row id.
+        yield* Ref.set(pause.armed, true);
+
+        const replacing = yield* Effect.forkChild(
+          KeyStore.addWrapper(
+            "pia",
+            session,
+            yield* cardFrom("pia-card-2", 142, pia.keys),
+            Option.some(loginOf(42)),
+          ),
+        );
+
+        yield* Deferred.await(pause.held);
+
+        const laptop = yield* Effect.forkChild(
+          KeyStore.addWrapper(
+            "pia",
+            laptopSession,
+            yield* device("pia-laptop", 143, pia.keys),
+            Option.none(),
+          ),
+        );
+
+        const fetching = yield* Effect.forkChild(
+          KeyStore.fetchSeals("pia", Keys.RecoveryCode.make({})),
+        );
+
+        // Both wait for the replacement's locks before it goes on.
+        yield* sql<{ readonly waiting: number }>`
+          select count(*)::int as waiting from pg_stat_activity
+          where datname = current_database() and wait_event_type = 'Lock'
+        `.pipe(Effect.repeat({ until: ([row]) => (row?.waiting ?? 0) >= 2 }));
+
+        yield* Deferred.succeed(pause.release, undefined);
+
+        const exits = {
+          replacing: yield* Fiber.await(replacing),
+          laptop: yield* Fiber.await(laptop),
+          fetching: yield* Fiber.await(fetching),
+        };
+
+        expect({
+          replacing: Exit.isSuccess(exits.replacing),
+          laptop: Exit.isSuccess(exits.laptop),
+          fetching: Exit.isSuccess(exits.fetching),
+          card: Option.isSome(yield* CardLogins.owner(loginOf(42))),
+        }).toEqual({ replacing: true, laptop: true, fetching: true, card: true });
+      }),
     );
   });
 });
