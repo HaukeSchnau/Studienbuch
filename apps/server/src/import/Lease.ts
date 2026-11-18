@@ -152,6 +152,9 @@ export const pause = Effect.fn("Lease.pause")(
     yield* drained(school).pipe(
       Effect.repeat({ schedule: Schedule.spaced("1 second"), until: (done) => done }),
     );
+
+    // Its owner may have resumed meanwhile, and then the pause it waited for is gone.
+    if ((yield* state(school))?.pausedBy !== by) return yield* new NotPausedBy({ by });
   },
   Effect.catchTags({ SqlError: Effect.die }),
 );

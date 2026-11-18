@@ -282,12 +282,14 @@ const offeringRow = (offering: SchoolImport.ImportedOffering) => {
 };
 
 /** The lesson as its row, with WebUntis's text only when it is one of the profile's stock phrases. */
-const lessonRow = (
+/** The lesson with WebUntis's text only when it is one of the profile's stock phrases. */
+export const withStockPhrase = (
   profile: SchoolProfile.SchoolProfile,
   lesson: SchoolImport.ImportedLesson,
-): Encoded<typeof Lesson.Row> => {
-  const { id: _, change, ...fields } = lesson;
+): SchoolImport.ImportedLesson => {
+  const { change, ...fields } = lesson;
 
+  // A table's codec refuses a field that is present and undefined, which the import's rows have.
   if (change === undefined) return fields;
 
   const { text, ...rest } = change;
@@ -297,6 +299,15 @@ const lessonRow = (
   );
 
   return { ...fields, change: Option.isSome(phrase) ? { ...rest, text: phrase.value } : rest };
+};
+
+const lessonRow = (
+  profile: SchoolProfile.SchoolProfile,
+  lesson: SchoolImport.ImportedLesson,
+): Encoded<typeof Lesson.Row> => {
+  const { id: _, ...row } = withStockPhrase(profile, lesson);
+
+  return row;
 };
 
 export const project = (input: Input): Projection => {

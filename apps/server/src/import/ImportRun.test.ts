@@ -597,6 +597,52 @@ describe.skipIf(Postgres18.socket === null)("ImportRun on PostgreSQL 18", () => 
       }),
     );
 
+    it.effect("a pause its owner resumed while it waited fails", () =>
+      Effect.gen(function* () {
+        const school = School.Id.make("tiny-resumed");
+        const reading = yield* Deferred.make<void>();
+        const release = yield* Deferred.make<void>();
+
+        const run = yield* Effect.forkChild(
+          runAt(
+            morning,
+            options(school, { source: recorded(TinySchool.corpus, held(reading, release)) }),
+          ),
+        );
+
+        yield* Deferred.await(reading);
+        const clock = yield* TestClock.make();
+
+        const pause = yield* Effect.forkChild(
+          Effect.flip(
+            Lease.pause(school, "live-test-a").pipe(Effect.provideService(Clock.Clock, clock)),
+          ),
+        );
+
+        const leased = Lease.drained(school).pipe(ImportTesting.at(minutesAfter(1)));
+
+        // The pause is written before it waits, so the resume finds it.
+        while (
+          yield* Lease.resume(school, "live-test-a").pipe(
+            Effect.as(false),
+            Effect.orElseSucceed(() => true),
+          )
+        ) {
+          yield* leased;
+        }
+
+        yield* Deferred.succeed(release, undefined);
+        yield* Fiber.join(run);
+
+        while (pause.pollUnsafe() === undefined) {
+          yield* clock.adjust("1 second");
+          yield* leased;
+        }
+
+        expect((yield* Fiber.join(pause))._tag).toBe("Lease.NotPausedBy");
+      }),
+    );
+
     it.effect("clears a lease only for the claim that took it", () =>
       Effect.gen(function* () {
         const school = School.Id.make("tiny-lease");
@@ -695,6 +741,8 @@ describe.skipIf(Postgres18.socket === null)("ImportRun on PostgreSQL 18", () => 
 
             entry.position4 = [...list(entry.position4), { current: student, removed: null }];
             entry.secretNote = "Schüler 2";
+            entry.status = "CHANGED";
+            entry.substitutionText = "Herr Beispiel fehlt";
           },
         );
 
@@ -711,6 +759,7 @@ describe.skipIf(Postgres18.socket === null)("ImportRun on PostgreSQL 18", () => 
           where school_id = ${school} and path = ${RecordedWebUntis.paths.filter(10, "CLASS")}
         `;
 
+        const kept = (yield* checkpoint(school))?.previous ?? "";
         const stored = yield* SourceStore.recording(school);
         const fromStore = yield* ImportTesting.naive({ ...named, reads: stored });
         const fromRaw = yield* ImportTesting.naive(named);
@@ -720,6 +769,8 @@ describe.skipIf(Postgres18.socket === null)("ImportRun on PostgreSQL 18", () => 
           drift: ran.report.drift,
           // Students stay in the students' own directory, which this plan doesn't read.
           directoryStudents: directory?.students,
+          // The store keeps WebUntis's free text; the checkpoint only stock phrases, as rows do.
+          freeText: [text.includes("Herr Beispiel"), kept.includes("Herr Beispiel")],
           // The exam's students, the account's own name, and the planted ones.
           names: ["Schüler", '"S1"', '"S4"', '"S9"', "Konto A", "secretNote"].filter((name) =>
             text.includes(name),
@@ -728,6 +779,7 @@ describe.skipIf(Postgres18.socket === null)("ImportRun on PostgreSQL 18", () => 
           outcome: "Published",
           drift: ["<year>/entries/CLASS/<id> days[].gridEntries[].secretNote"],
           directoryStudents: 0,
+          freeText: [true, false],
           names: [],
         });
 
@@ -770,27 +822,29 @@ describe.skipIf(Postgres18.socket === null)("ImportRun on PostgreSQL 18", () => 
             checkpoint: yield* checkpoint(school),
           };
 
+          // WebUntis leaves out 9 November for `11.1`, so the live run doesn't cover that week.
+          const withoutMonday = planted(TinySchool.corpus, entriesOf(111), (body) => {
+            body.days = list(body.days).filter((day) => object(day).date !== "2026-11-09");
+          });
+
           const live = yield* runAt(
             minutesAfter(10),
-            options(school, { source: recorded(withoutMondayDe) }),
+            options(school, { source: recorded(withoutMonday) }),
           );
 
           expect({
             first: first.outcome,
             rows: afterDark.rows,
             revision: afterDark.checkpoint?.revision,
-            live: live.outcome,
-            // The live run publishes its snapshot, which lacks the lesson, and waits for a second one
-            // that lacks it, as it would after a live run that published it.
+            live: [live.outcome, (yield* checkpoint(school))?.revision],
+            // Only the dark run saw the lesson, and nothing published says it is there.
             monday: (yield* idsOf(school, "Lesson")).has(mondayDe(school)),
-            pending: live.report.pending,
           }).toEqual({
             first: "Dark",
             rows: [],
             revision: 1,
-            live: "Published",
+            live: ["Published", 2],
             monday: false,
-            pending: 1,
           });
         }),
     );
