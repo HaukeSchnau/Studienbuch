@@ -54,7 +54,7 @@ function DeleteAccount({ accountId }: { readonly accountId: string }) {
   const lifecycle = AsyncResult.value(useAtomValue(AppLifecycle.state));
   const offline = Option.exists(lifecycle, (state) => !state.online);
 
-  const reason = Option.orElse(Option.flatMap(AsyncResult.error(deleted), reasonOf), () =>
+  const reason = Option.orElse(useAtomValue(AccountState.deletionProblem), () =>
     offline ? Option.some<Deletion.Reason>("offline") : Option.none(),
   );
 

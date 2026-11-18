@@ -269,6 +269,8 @@ export const signOut = runtime
 const leaveDeleted = (accountId: string, forgotten: Effect.Effect<void>) =>
   AccountEngine.forgetIfHeld(accountId, forgotten).pipe(
     Effect.catchTags({
+      // No question showed, so no change can be newer than one: `forgetIfHeld` asks none.
+      "AccountEngine.MoreUnsent": () => forgetFailed,
       "Forgetting.Unfinished": () => forgetFailed,
       "Keychain.Unavailable": () => forgetFailed,
       SqlError: () => forgetFailed,
@@ -277,13 +279,26 @@ const leaveDeleted = (accountId: string, forgotten: Effect.Effect<void>) =>
 
 const forgetFailed = Effect.fail(new Deletion.Problem({ reason: "forget-failed" }));
 
-/** "Konto löschen" (`Deletion.deleteAccount`). */
+/**
+ * Why the device's account couldn't be deleted, for "Konto löschen". It belongs to that account:
+ * another account holding the device starts without one.
+ */
+export const deletionProblem = memory(Option.none<Deletion.Reason>());
+
+/** "Konto löschen" (`Deletion.deleteAccount`), which leaves its reason in `deletionProblem`. */
 export const deleteAccount = runtime
   .fn<void>()((_, get) =>
-    Deletion.deleteAccount((accountId) =>
-      leaveDeleted(
-        accountId,
-        Effect.sync(() => get.set(OfferedPrf.waiting, Option.none())),
+    Effect.andThen(
+      Effect.sync(() => get.set(deletionProblem, Option.none())),
+      Deletion.deleteAccount((accountId) =>
+        leaveDeleted(
+          accountId,
+          Effect.sync(() => get.set(OfferedPrf.waiting, Option.none())),
+        ),
+      ),
+    ).pipe(
+      Effect.tapError((problem) =>
+        Effect.sync(() => get.set(deletionProblem, Option.some(problem.reason))),
       ),
     ),
   )

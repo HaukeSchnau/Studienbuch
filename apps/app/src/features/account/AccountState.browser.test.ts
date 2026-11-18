@@ -158,8 +158,13 @@ it.effect("an account's memory lasts through a new token and the session's end, 
     const card = AccountState.memory(Option.none<string>());
     registry.set(card, Option.some("card"));
 
+    // Her deletion went through, but this device couldn't erase her copy yet.
+    registry.set(AccountState.deletionProblem, Option.some("forget-failed" as const));
+
     /** What the registry holds for `card`, without reading it, which would build it again. */
     const held = () => registry.getNodes().get(card)?.valueOption();
+
+    const problem = () => registry.getNodes().get(AccountState.deletionProblem)?.valueOption();
 
     yield* session(
       (store) => store.ended,
@@ -171,15 +176,26 @@ it.effect("an account's memory lasts through a new token and the session's end, 
     yield* signIn("second");
 
     const afterSignIn = held();
+    const problemBefore = problem();
 
     yield* session((store) => store.forget, Option.isNone);
+    const afterSignOut = held();
+
+    // Another student signs in on the device and opens "Konto löschen": the button is there.
+    yield* session(
+      (store) =>
+        store.signedIn({ accountId: "another", token: Redacted.make("other"), demo: false }, true),
+      (signed) => Option.exists(signed, (each) => each.accountId === "another"),
+    );
 
     assert.deepStrictEqual(
-      { afterEnd, afterSignIn, afterSignOut: held() },
+      { afterEnd, afterSignIn, afterSignOut, problemBefore, problemAfter: problem() },
       {
         afterEnd: Option.some(Option.some("card")),
         afterSignIn: Option.some(Option.some("card")),
         afterSignOut: Option.some(Option.none()),
+        problemBefore: Option.some(Option.some("forget-failed")),
+        problemAfter: Option.some(Option.none()),
       },
     );
   }).pipe(Effect.scoped),
