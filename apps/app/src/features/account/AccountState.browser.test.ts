@@ -413,3 +413,51 @@ it.effect("an account's confirmation is refused while a sign-in from the screens
     assert.deepStrictEqual({ confirmation, requests }, { confirmation: "busy", requests: 1 });
   }).pipe(Effect.scoped),
 );
+
+// "Abmelden" while a confirmation's sign-in waits for the server. Let through, the sign-out would
+// finish first, and the late answer would then sign the student in again on a device they left.
+it.effect(
+  "sign-out is refused while a sign-in runs, so its answer can't sign anyone in after",
+  () =>
+    Effect.gen(function* () {
+      const registry = AtomRegistry.make();
+      yield* Effect.addFinalizer(() => Effect.sync(() => registry.dispose()));
+      const { asked, answer, signIn } = yield* answeredSignIn;
+      yield* serverAnswers(registry, { signIn });
+      registry.mount(AccountState.current);
+      yield* signOut(registry);
+
+      const credentials = { email: "late-lia@example.org", password: "geheim-genug" };
+      const accountId = "late-lia";
+      const device = Atom.runtime(AccountEngine.device);
+
+      yield* AtomRegistry.getResult(
+        registry,
+        device.atom(
+          Effect.flatMap(SessionStore.Service, (store) =>
+            store.signedIn({ accountId, token: Redacted.make("old"), demo: false }, false),
+          ),
+        ),
+        { suspendOnWaiting: true },
+      );
+
+      const confirm = KeysState.withPassword(accountId);
+      const unmountConfirm = registry.mount(confirm);
+      registry.set(confirm, credentials);
+      yield* Queue.take(asked);
+
+      registry.set(AccountState.signOut, Option.none());
+      yield* Effect.exit(
+        AtomRegistry.getResult(registry, AccountState.signOut, { suspendOnWaiting: true }),
+      );
+      const refused = reasonOf(registry, AccountState.signOut);
+
+      yield* Deferred.succeed(answer, undefined);
+      yield* tokenNow(registry, credentials.email);
+
+      unmountConfirm();
+      yield* signOut(registry);
+
+      assert.deepStrictEqual(refused, Option.some("busy"));
+    }).pipe(Effect.scoped),
+);

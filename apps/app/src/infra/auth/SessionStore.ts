@@ -54,8 +54,9 @@ export class Service extends Context.Service<
     /** Forgets the account, at sign-out. */
     readonly forget: Effect.Effect<void, Keychain.Unavailable>;
     /**
-     * Whether a sign-in or sign-up that may change the account runs (`Account.attempt`). It sits
-     * here, in the device's layers, so the sign-in screens and an account's own steps share it.
+     * Whether a sign-in, sign-up or sign-out that may change the account runs (`Account.attempt`).
+     * It sits here, in the device's layers, so the sign-in screens and an account's own steps share
+     * it.
      */
     readonly attempting: SubscriptionRef.SubscriptionRef<boolean>;
   }

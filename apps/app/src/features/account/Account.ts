@@ -323,7 +323,7 @@ export class Confirmations extends Context.Service<
 >()("Account.Confirmations") {}
 
 /**
- * Runs a sign-in, a sign-up or an account's confirmation as the device's one attempt
+ * Runs a sign-in, a sign-up, an account's confirmation or a sign-out as the device's one attempt
  * (`SessionStore.attempting`). Another one meanwhile is refused, never queued, and the screens
  * offer none, nor the "Öffentlicher Computer" choice, which the attempt read when it started.
  */
