@@ -27,6 +27,10 @@ const light = {
   dangerTint: "#F6E1E3",
   warning: "#8D5703",
   warningTint: "#FEEDDA",
+  // The yellow note stuck on a changed lesson (D76), its ink and its folded corner.
+  note: "#FFE27A",
+  noteInk: "#203755",
+  noteFold: "#E9C649",
   // The brand green: hero fill and illustrations. Only large text sits on it.
   hero: "#33A42B",
   heroEdge: "#3B7FD9",
@@ -74,6 +78,9 @@ const dark = {
   dangerTint: "#3D1D20",
   warning: "#E2A94F",
   warningTint: "#33240C",
+  note: "#D8BC55",
+  noteInk: "#1C1A0E",
+  noteFold: "#B89B35",
   hero: "#1F6D18",
   heroEdge: "#5B9AED",
   heroUnderline: "#A9CBFA",

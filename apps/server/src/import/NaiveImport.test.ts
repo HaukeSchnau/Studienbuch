@@ -187,6 +187,38 @@ describe("NaiveImport", () => {
     }),
   );
 
+  it.effect("names a teacher by the long name where it says more than the short one", () =>
+    Effect.gen(function* () {
+      // LB's long name repeats the short one, LC's is blank, LD's has spaces around it.
+      const longNames = new Map<unknown, string>([
+        ["LB", "LB"],
+        ["LC", " "],
+        ["LD", " Dornhecke "],
+      ]);
+
+      const corpus = planted(
+        TinySchool.corpus,
+        RecordedWebUntis.paths.filter(10, "TEACHER"),
+        (body) => {
+          for (const each of list(body.teachers)) {
+            const teacher = object(object(each).teacher);
+
+            teacher.longName = longNames.get(teacher.shortName) ?? teacher.longName ?? null;
+          }
+        },
+      );
+
+      const { result } = yield* ImportTesting.naive(corpus);
+
+      assert.deepStrictEqual(
+        result.teachers
+          .map(({ shortName, displayName }) => `${shortName}: ${displayName ?? "none"}`)
+          .slice(0, 4),
+        ["LA: Lehrkraft A", "LB: none", "LC: none", "LD: Dornhecke"],
+      );
+    }),
+  );
+
   it.effect("keeps a class's lessons when the directory drops the class", () =>
     Effect.gen(function* () {
       const before = yield* ImportTesting.naive(TinySchool.corpus);
