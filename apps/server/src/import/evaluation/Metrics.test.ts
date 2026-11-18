@@ -118,22 +118,47 @@ describe("Metrics.scoreExams", () => {
     [504, new Set(["DE/12"])],
   ]);
 
-  const truth = [{ id: 901, date: day, start: 0, end: 1, students: [501, 502], teachers: [203] }];
+  const truth = [
+    {
+      id: 901,
+      date: day,
+      start: 0,
+      end: 1,
+      students: [501, 502],
+      teachers: [203],
+      subject: "MA-E",
+    },
+  ];
+
   const exam = { id: "exam-1", courseId: "MA-E/12", date: day, start: 0, end: 1, examIds: [901] };
 
-  const teachers = new Map([["MA-E/12", new Set([203])]]);
+  const teachers = new Map([
+    ["MA-E/12", new Set([203])],
+    ["MA-E/13", new Set([204])],
+    ["PH/12", new Set([203])],
+  ]);
 
-  it("counts an exam right only in a course one of its teachers teaches", () => {
+  const subjects = new Map([
+    ["MA-E/12", "MA-E"],
+    ["MA-E/13", "MA-E"],
+    ["PH/12", "PH"],
+  ]);
+
+  it("counts an exam right only in a course of its subject that one of its teachers teaches", () => {
     const sitters = new Map([...enrollments].filter(([student]) => student <= 502));
-    const right = { ...exam, courseId: "MA-E/12" };
-    const sameRoster = new Map([...sitters].map(([student]) => [student, new Set(["DE/12"])]));
+
+    const scoreIn = (courseId: string) =>
+      Metrics.scoreExams(
+        truth,
+        [{ ...exam, courseId }],
+        new Map([...sitters].map(([student]) => [student, new Set([courseId])])),
+        teachers,
+        subjects,
+      ).exams;
 
     assert.deepStrictEqual(
-      [
-        Metrics.scoreExams(truth, [right], sitters, teachers).exams,
-        Metrics.scoreExams(truth, [{ ...exam, courseId: "DE/12" }], sameRoster, teachers).exams,
-      ],
-      [Metrics.fraction(1, 1), Metrics.fraction(0, 1)],
+      [scoreIn("MA-E/12"), scoreIn("MA-E/13"), scoreIn("PH/12")],
+      [Metrics.fraction(1, 1), Metrics.fraction(0, 1), Metrics.fraction(0, 1)],
     );
   });
 
@@ -149,7 +174,7 @@ describe("Metrics.scoreExams", () => {
       students: { recall: Metrics.fraction(2, 2), precision: Metrics.fraction(2, 6) },
     },
   ])("counts an exam shown $name", ({ ours, students }) => {
-    assert.deepStrictEqual(Metrics.scoreExams(truth, ours, enrollments, teachers), {
+    assert.deepStrictEqual(Metrics.scoreExams(truth, ours, enrollments, teachers, subjects), {
       exams: Metrics.fraction(0, 1),
       students,
     });

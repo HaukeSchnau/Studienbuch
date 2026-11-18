@@ -7,6 +7,7 @@ import type { WebUntisClient } from "@schnau/webuntis-api";
 import type { TimetableEntryDay } from "@schnau/webuntis-api/schemas";
 import { CivilTime } from "@stu/core";
 import * as Arr from "effect/Array";
+import type * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Result from "effect/Result";
@@ -98,28 +99,43 @@ const readEntries = (
       )
     : Effect.succeed([]);
 
-export const build = Effect.fn("Truth.build")(function* (corpus: Corpus.Corpus) {
-  const { client } = yield* RecordedWebUntis.make(corpus.reads, {
-    asOf: corpus.manifest.capturedAt,
-  });
+const incomplete = (read: string) => () => new Incomplete({ read });
 
-  const incomplete = (read: string) => () => new Incomplete({ read });
+type Range = { readonly start: string; readonly end: string };
+
+/** The parts of `a` that lie within `b`. */
+const within = (a: Range, b: Range): ReadonlyArray<Range> => {
+  const start = [a.start, b.start].sort()[1] ?? a.start;
+  const end = [a.end, b.end].sort()[0] ?? a.end;
+
+  return start <= end ? [{ start, end }] : [];
+};
+
+/** Each student's, teacher's and room's timetable on the school days of `ranges`. */
+const readViews = Effect.fn("Truth.readViews")(function* (
+  client: WebUntisClient["Service"],
+  ranges: ReadonlyArray<Range>,
+) {
   const years = yield* client.schoolyears.list.pipe(Effect.mapError(incomplete("school years")));
   const views = new Map<string, View>();
-  const exams: Array<Metrics.TruthExam> = [];
   const read: Array<readonly [string, string]> = [];
+  const parts: Array<Range & { readonly year: number }> = [];
 
-  for (const range of corpus.manifest.ranges) {
+  for (const range of ranges) {
     for (const year of years) {
-      const start = [range.start, year.dateRange.start.slice(0, 10)].sort()[1] ?? range.start;
-      const end = [range.end, year.dateRange.end.slice(0, 10)].sort()[0] ?? range.end;
+      const [part] = within(range, {
+        start: year.dateRange.start.slice(0, 10),
+        end: year.dateRange.end.slice(0, 10),
+      });
 
-      if (start > end) continue;
+      if (part === undefined) continue;
 
-      const days = yield* schoolDays({ start, end });
+      const { start, end } = part;
+      const days = yield* schoolDays(part);
       const weeks = new Set(days.map(([, week]) => week));
 
       read.push(...days);
+      parts.push({ ...part, year: year.id });
 
       const directory = (resourceType: ViewType) =>
         client.timetable
@@ -193,26 +209,8 @@ export const build = Effect.fn("Truth.build")(function* (corpus: Corpus.Corpus) 
           });
         }
       }
-
-      const list = yield* client.exams
-        .list({ start, end })
-        .pipe(Effect.mapError(incomplete(`exams ${year.id}`)));
-
-      exams.push(
-        ...list.exams.map((exam) => ({
-          id: exam.examId,
-          date: exam.examStart.slice(0, 10),
-          start: Option.getOrElse(WebUntisEntry.timeOfDay(exam.examStart), () => -1),
-          end: Option.getOrElse(WebUntisEntry.timeOfDay(exam.examEnd), () => -1),
-          students: exam.students.map((student) => student.id),
-          teachers: exam.teachers.map((teacher) => teacher.id),
-        })),
-      );
     }
   }
-
-  const weekOf = new Map(read);
-  const appData = yield* client.app.getData.pipe(Effect.mapError(incomplete("app data")));
 
   const entries = [
     ...new Map(
@@ -221,6 +219,39 @@ export const build = Effect.fn("Truth.build")(function* (corpus: Corpus.Corpus) 
       ),
     ).values(),
   ];
+
+  return { views, read, parts, entries };
+});
+
+/** What WebUntis showed at the capture's end. */
+export const build = Effect.fn("Truth.build")(function* (corpus: Corpus.Corpus) {
+  const { client } = yield* RecordedWebUntis.make(corpus.reads, {
+    asOf: corpus.manifest.capturedAt,
+  });
+
+  const { views, read, parts, entries } = yield* readViews(client, corpus.manifest.ranges);
+  const exams: Array<Metrics.TruthExam> = [];
+
+  for (const { year, start, end } of parts) {
+    const list = yield* client.exams
+      .list({ start, end })
+      .pipe(Effect.mapError(incomplete(`exams ${year}`)));
+
+    exams.push(
+      ...list.exams.map((exam) => ({
+        id: exam.examId,
+        date: exam.examStart.slice(0, 10),
+        start: Option.getOrElse(WebUntisEntry.timeOfDay(exam.examStart), () => -1),
+        end: Option.getOrElse(WebUntisEntry.timeOfDay(exam.examEnd), () => -1),
+        students: exam.students.map((student) => student.id),
+        teachers: exam.teachers.map((teacher) => teacher.id),
+        subject: exam.subject.shortName,
+      })),
+    );
+  }
+
+  const weekOf = new Map(read);
+  const appData = yield* client.app.getData.pipe(Effect.mapError(incomplete("app data")));
 
   return {
     days: [...weekOf.keys()].sort(),
@@ -237,4 +268,21 @@ export const build = Effect.fn("Truth.build")(function* (corpus: Corpus.Corpus) 
       ...corpus.cases.closures,
     ],
   } satisfies Truth;
+});
+
+/**
+ * Every entry on the captured days of `range`, as WebUntis showed it at `asOf`, so a run is
+ * measured against what it could have read.
+ */
+export const entriesAt = Effect.fn("Truth.entriesAt")(function* (
+  corpus: Corpus.Corpus,
+  asOf: DateTime.Utc,
+  range: Range,
+) {
+  const { client } = yield* RecordedWebUntis.make(corpus.reads, { asOf });
+
+  return (yield* readViews(
+    client,
+    corpus.manifest.ranges.flatMap((captured) => within(captured, range)),
+  )).entries;
 });

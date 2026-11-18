@@ -39,6 +39,12 @@ export class NotCaptured extends Schema.TaggedError<
   { readonly brand: unique symbol }
 >()("Evaluator.NotCaptured", { reads: Schema.Array(Schema.String) }) {}
 
+/** The weeks asked for hold none the corpus captured, so the numbers would measure nothing. */
+export class NothingMeasured extends Schema.TaggedError<
+  NothingMeasured,
+  { readonly brand: unique symbol }
+>()("Evaluator.NothingMeasured", { captured: Schema.Array(Schema.String) }) {}
+
 /** 06:00 at the school on `day`, as the instant a run starts. */
 const morning = (day: string, timeZone: string) =>
   DateTime.toUtc(
@@ -93,6 +99,8 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
       Option.isNone(options.weeks) ||
       (options.weeks.value.from <= week && week <= options.weeks.value.to),
   );
+
+  if (weeks.length === 0) return yield* new NothingMeasured({ captured });
 
   const measured = new Set(weeks);
   const days = truth.days.filter((day) => measured.has(weekOf(day)));
@@ -298,6 +306,8 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
     );
   }
 
+  const courseSubjects = new Map(final.courses.map((course) => [course.id, course.subject]));
+
   const examsByTerm = [...new Set(days.map(termOf))].map((term) =>
     Metrics.scoreExams(
       truth.exams.filter((exam) => measuredDays.has(exam.date) && termOf(exam.date) === term),
@@ -306,6 +316,7 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
         .map((exam) => ({ ...exam, examIds: examRefs.get(exam.id) ?? [] })),
       new Map(students.map((student) => [student.id, enrollmentOf(student, term)])),
       courseTeachers,
+      courseSubjects,
     ),
   );
 
@@ -320,25 +331,24 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
       ),
   );
 
-  // What a student can look up after each run: the lessons of the next seven days in the store.
+  // What a student can look up after each run: the lessons of the next seven days in the store,
+  // against what WebUntis showed when the run read them. Later changes are later runs' business.
   const lookahead = Metrics.sum(
-    runs.flatMap((each, position) => {
-      if (!measuredDays.has(each.day)) return [];
+    yield* Effect.forEach(
+      runs.flatMap((each, position) => (measuredDays.has(each.day) ? [{ each, position }] : [])),
+      Effect.fnUntraced(function* ({ each, position }) {
+        const now = morning(each.day, timeZone);
 
-      const until = DateTime.formatIsoDate(
-        DateTime.setZoneNamedUnsafe(
-          DateTime.add(morning(each.day, timeZone), { days: 7 }),
-          timeZone,
-        ),
-      );
+        const dayIn = (days: number) =>
+          DateTime.formatIsoDate(
+            DateTime.setZoneNamedUnsafe(DateTime.add(now, { days }), timeZone),
+          );
 
-      return [
-        Metrics.held(
-          truth.entries.filter((entry) => each.day < entry.date && entry.date <= until),
-          stores[position] ?? new Map(),
-        ),
-      ];
-    }),
+        const entries = yield* Truth.entriesAt(corpus, now, { start: dayIn(1), end: dayIn(7) });
+
+        return Metrics.held(entries, stores[position] ?? new Map());
+      }),
+    ),
   );
 
   return {
