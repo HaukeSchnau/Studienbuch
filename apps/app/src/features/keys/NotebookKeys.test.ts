@@ -223,6 +223,61 @@ describe("NotebookKeys", () => {
       }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
   );
 
+  // A new account's card is its way back as soon as its first device has the key: that device may
+  // be gone before the student presses "Ich habe ihn aufgeschrieben".
+  it.effect(
+    "the first device's key sends the held card with its login, so the card opens the next device",
+    () =>
+      Effect.gen(function* () {
+        const server = yield* fakeServer;
+        const phone = yield* device(server);
+        const laptop = yield* device(server);
+        const { bytes: code } = yield* RecoveryCode.generate;
+
+        yield* phone.run(NotebookKeys.holdCard(code, false));
+        yield* phone.run(NotebookKeys.status);
+        // As the account's key status does once the device holds its key.
+        yield* phone.run(NotebookKeys.reconcile);
+
+        const locked = yield* laptop.run(NotebookKeys.status);
+        yield* laptop.run(NotebookKeys.useCard(code));
+
+        // The press and the key status at once, on another account's first device.
+        const other = yield* fakeServer;
+        const tablet = yield* device(other);
+        const { bytes: second } = yield* RecoveryCode.generate;
+        yield* tablet.run(NotebookKeys.holdCard(second, true));
+        yield* tablet.run(NotebookKeys.status);
+
+        yield* tablet.run(
+          Effect.all([NotebookKeys.reconcile, NotebookKeys.addCardWrapper(second)], {
+            concurrency: "unbounded",
+          }),
+        );
+
+        const cards = (stored: KeyServerTesting.Stored) =>
+          stored.wrappers.filter(({ statement }) => statement.kind === Wrapper.kindByte.code)
+            .length;
+
+        assert.deepStrictEqual(
+          {
+            login: (yield* Ref.get(server.logins)).filter(Option.isSome),
+            locked: locked._tag,
+            laptop: (yield* laptop.run(NotebookKeys.status))._tag,
+            sameKey: Option.getOrUndefined(yield* laptop.rootKey),
+            cards: [cards(yield* Ref.get(server.stored)), cards(yield* Ref.get(other.stored))],
+          },
+          {
+            login: [Option.some(Redacted.value(yield* NotebookKeys.cardLogin(code)))],
+            locked: "Locked",
+            laptop: "Unlocked",
+            sameKey: Option.getOrUndefined(yield* phone.rootKey),
+            cards: [1, 1],
+          },
+        );
+      }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
+  );
+
   it.effect(
     "a demo account's devices unlock with the key the server derives for it, and publish no wrapper",
     () =>

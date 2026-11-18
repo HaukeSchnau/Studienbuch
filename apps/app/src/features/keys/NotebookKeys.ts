@@ -7,6 +7,7 @@ import * as Data from "effect/Data";
 import type * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Base64Url from "effect/encoding/Base64Url";
+import * as Hex from "effect/encoding/Hex";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
@@ -190,8 +191,9 @@ const current = Effect.gen(function* () {
 
 /**
  * Makes sure the server holds this device's generation 0 and device wrapper, after a lost answer
- * or a restore, and answers whether the account's key chain is this device's. It publishes only the
- * device's own record and never adopts another chain. M1 has generation 0 only.
+ * or a restore, and the card of a new account that the device still holds. Answers whether the
+ * account's key chain is this device's. It publishes only the device's own record and never adopts
+ * another chain. M1 has generation 0 only.
  */
 export const reconcile = Effect.gen(function* () {
   const rootKey = yield* heldRootKey;
@@ -220,6 +222,19 @@ export const reconcile = Effect.gen(function* () {
   const keys = yield* ownKeys(rootKey.value, state.records);
 
   if (Option.isNone(keys)) return false;
+
+  // A new account's card goes out as soon as the key exists, while the sign-up is fresh: the
+  // device may be gone before the student finishes the card step.
+  const held = yield* heldCard;
+
+  if (Option.isSome(held)) {
+    yield* sendCard(held.value.code, keys.value, state).pipe(
+      Effect.catchTags({
+        "NotebookKeys.Problem": (refused) =>
+          Effect.logWarning(`The new card's wrapper didn't go out: ${refused.reason}`),
+      }),
+    );
+  }
 
   if (Option.isNone(seed)) return true;
   const own = yield* Effect.orDie(Wrapper.derive("device", seed.value, keys.value.accountId));
@@ -595,6 +610,19 @@ export const addCardWrapper = Effect.fn("NotebookKeys.addCardWrapper")(function*
   code: Redacted.Redacted<Uint8Array>,
 ) {
   const { keys, state } = yield* current;
+
+  yield* sendCard(code, keys, state);
+});
+
+/**
+ * `addCardWrapper` with the keys and the state at hand. The wrapper's id follows from the card,
+ * so two sends of one card, as the key status and the card step can make at once, store one.
+ */
+const sendCard = Effect.fn("NotebookKeys.sendCard")(function* (
+  code: Redacted.Redacted<Uint8Array>,
+  keys: AccountKey.Keys,
+  state: Keys.State,
+) {
   const derived = yield* Effect.orDie(Wrapper.derive("code", code, keys.accountId));
 
   const known = state.wrappers.some(
@@ -603,9 +631,10 @@ export const addCardWrapper = Effect.fn("NotebookKeys.addCardWrapper")(function*
   );
 
   if (known) return;
+  const id = `card-${Hex.encode(derived.publicKey.slice(0, 16))}`;
 
   yield* add(
-    yield* wrap("code", code, keys, { place: "card" }),
+    yield* wrap("code", code, keys, { place: "card", id }),
     Option.some(yield* cardLogin(code)),
   );
 });

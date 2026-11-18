@@ -100,7 +100,8 @@ function ShowCard({
           reason={Option.filter(keyReasonOf(sent), (reason) => reason !== "not-fresh")}
         />
         {notFresh ? (
-          // Only an account with a passkey gets here: a card-only one signs in with this card.
+          // Only after a first send that failed, once the sign-in is stale, and only with a
+          // passkey: a card-only account signs in again with this card.
           <>
             <Text variant="subhead">
               Bestätige kurz mit deinem Passkey, dann gilt deine Notfallkarte.

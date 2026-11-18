@@ -273,9 +273,9 @@ export const createRecoveryCode = Atom.family((accountId: string) =>
 );
 
 /**
- * The new account's Notfallkarte until the student saved it. A sign-up's card (`Offered.newCard`)
- * goes into the device's secrets first, so a restart shows the same card again: one the server
- * knows, which a new card wouldn't be once the sign-in is no longer fresh.
+ * The new account's Notfallkarte until the student saved it, so a restart shows the same card. A
+ * sign-up writes it to the account's secrets; a public computer hands it over in memory
+ * (`Offered.newCard`), and this atom moves it to the account's memory secrets.
  */
 export const unsavedCard = Atom.family((accountId: string) =>
   runtime(accountId).atom((get) =>
@@ -294,9 +294,10 @@ export const unsavedCard = Atom.family((accountId: string) =>
 );
 
 /**
- * "Ich habe ihn aufgeschrieben": the unsaved card's wrapper goes to the server, with the login that
- * signs in to an account without an address. A public computer starts no notebook, so there the
- * card's first sign-in on the student's own device adds it (`NotebookKeys.useCard`).
+ * "Ich habe ihn aufgeschrieben": makes sure the server holds the unsaved card's wrapper and login.
+ * The key status sent them as soon as the key existed (`NotebookKeys.reconcile`), so this only
+ * retries a send that failed. A public computer starts no notebook, so there the card's first
+ * sign-in on the student's own device adds it (`NotebookKeys.useCard`).
  */
 export const sendUnsavedCard = Atom.family((accountId: string) =>
   runtime(accountId).fn<void>()((_, get) =>
