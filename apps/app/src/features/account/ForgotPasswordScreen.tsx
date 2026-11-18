@@ -1,4 +1,4 @@
-import { useAtom, useAtomSet, useAtomValue } from "@effect/atom-react";
+import { RegistryContext, useAtom, useAtomSet, useAtomValue } from "@effect/atom-react";
 import { Accounts } from "@stu/api/Accounts";
 import { AuthHeading } from "@stu/ui/AuthHeading";
 import { Button } from "@stu/ui/Button";
@@ -8,6 +8,7 @@ import { Theme } from "@stu/ui/Theme";
 import * as Exit from "effect/Exit";
 import * as Option from "effect/Option";
 import * as Atom from "effect/reactivity/Atom";
+import { use } from "react";
 import { Keyboard } from "react-native";
 
 import { PublicComputerChoice } from "../keys/PublicComputerChoice.tsx";
@@ -96,10 +97,12 @@ function NewPassword({ email }: { readonly email: string }) {
   const forget = useAtomSet(AccountState.resetPassword);
   const keepSentTo = useAtomSet(Steps.resetSentTo);
   const keepTyped = useAtomSet(Steps.forgotten);
+  const registry = use(RegistryContext);
 
-  // A running reset keeps its result: only its answer lets `submit` forget the address.
+  // A running reset keeps its result: only its answer lets `submit` forget the address. Read when
+  // called, as a resent code's answer can come after the reset began.
   const forgetResult = () => {
-    if (!result.waiting) forget(Atom.Reset);
+    if (!registry.get(AccountState.resetPassword).waiting) forget(Atom.Reset);
   };
 
   const code = useCode(forgetResult);
