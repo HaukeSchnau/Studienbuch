@@ -70,7 +70,7 @@ describe("Metrics.scoreView", () => {
     {
       name: "a lesson on another day that claims the entry",
       ours: [lesson("a", [1], { date: "2026-11-03" }), lesson("b", [2])],
-      score: { truth: 2, ours: 2, covered: 2, precise: 2, right: 1 },
+      score: { truth: 2, ours: 2, covered: 1, precise: 1, right: 1 },
       exact: false,
     },
     {
@@ -119,7 +119,7 @@ describe("Metrics.scoreExams", () => {
   ]);
 
   const truth = [{ id: 901, date: day, start: 0, end: 1, students: [501, 502] }];
-  const exam = { courseId: "MA-E/12", date: day, start: 0, end: 1, examIds: [901] };
+  const exam = { id: "exam-1", courseId: "MA-E/12", date: day, start: 0, end: 1, examIds: [901] };
 
   it.each([
     {
@@ -129,7 +129,7 @@ describe("Metrics.scoreExams", () => {
     },
     {
       name: "twice",
-      ours: [exam, { ...exam, start: 2 }],
+      ours: [exam, { ...exam, id: "exam-2", start: 2 }],
       students: { recall: Metrics.fraction(2, 2), precision: Metrics.fraction(2, 6) },
     },
   ])("counts an exam shown $name", ({ ours, students }) => {

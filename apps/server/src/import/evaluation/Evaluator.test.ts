@@ -81,6 +81,7 @@ const both = {
   weekLabels: of(0, 2),
   invariants: {
     failedRuns: 0,
+    danglingCourses: 0,
     secondRunChanges: 0,
     reversedReadChanges: 0,
     failedReadChanges: 0,
@@ -119,8 +120,8 @@ describe("Evaluator", () => {
         },
         // "Betreuung" reads as a substitution, and Monday's run never sees Wednesday's version.
         changes: of(3, 5),
-        courseIdsKept: of(22, 22),
-        lookahead: of(14, 14),
+        courseIdsKept: of(53, 53),
+        lookahead: of(29, 29),
         runs: { total: 3, failed: 0 },
         reads: { requests: 36, outOfRange: 3, decodeFailures: 0 },
         passingCases: [
@@ -158,8 +159,8 @@ describe("Evaluator", () => {
           },
         },
         changes: of(4, 5),
-        courseIdsKept: of(238, 238),
-        lookahead: of(60, 60),
+        courseIdsKept: of(393, 393),
+        lookahead: of(125, 125),
         runs: { total: 15, failed: 0 },
         reads: { requests: 180, outOfRange: 15, decodeFailures: 0 },
         passingCases: [
@@ -213,7 +214,8 @@ describe("Evaluator", () => {
         studentWeeks: report.views.student.weeks,
         kept: report.courseIdsKept,
       }),
-      expected: { studentWeeks: of(0, 8), kept: of(0, 22) },
+      // Lessons the later runs didn't touch keep their ids; the rest change.
+      expected: { studentWeeks: of(0, 8), kept: of(31, 53) },
     },
     {
       name: "links lessons to entries WebUntis doesn't have",
@@ -249,11 +251,47 @@ describe("Evaluator", () => {
         });
       }),
       measure: (report: Effect.Success<ReturnType<typeof evaluate>>) => report.lookahead,
-      expected: of(12, 14),
+      expected: of(23, 29),
+    },
+    {
+      name: "claims every week read without importing a lesson",
+      importLayer: variant((result) => Effect.succeed({ ...result, lessons: [], links: [] })),
+      measure: (report: Effect.Success<ReturnType<typeof evaluate>>) => ({
+        lookahead: report.lookahead,
+        recall: report.views.student.recall,
+      }),
+      expected: { lookahead: of(0, 29), recall: of(0, 26) },
+    },
+    {
+      name: "drops its course rows",
+      importLayer: variant((result) => Effect.succeed({ ...result, courses: [] })),
+      measure: (report: Effect.Success<ReturnType<typeof evaluate>>) =>
+        report.invariants.danglingCourses,
+      expected: 36,
     },
   ])("scores an import that $name worse", ({ importLayer, measure, expected }) =>
     Effect.gen(function* () {
       assert.deepStrictEqual(measure(yield* evaluate(importLayer)), expected);
+    }),
+  );
+
+  it.effect("measures the same when the capture's ranges overlap", () =>
+    Effect.gen(function* () {
+      const split = {
+        ...TinySchool.corpus,
+        manifest: {
+          ...TinySchool.corpus.manifest,
+          ranges: [
+            { start: "2026-10-26", end: "2026-11-04" },
+            { start: "2026-11-02", end: "2026-11-15" },
+          ],
+        },
+      };
+
+      const { worst: _, ...whole } = yield* evaluate(NaiveImport.layer);
+      const { worst: __, ...overlapping } = yield* evaluate(NaiveImport.layer, false, split);
+
+      assert.deepStrictEqual(overlapping, whole);
     }),
   );
 

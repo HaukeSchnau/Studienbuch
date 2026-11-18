@@ -150,7 +150,19 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
     runs.push(yield* run(day, Option.fromNullishOr(runs.at(-1)?.state)));
   }
 
-  const gaps = [...new Set(runs.flatMap((each) => each.log.notCaptured))].sort();
+  // The first measured run, repeated: as a second run, with reversed reads and with failing reads.
+  const first = starts.find((day) => measuredDays.has(day)) ?? days[0] ?? "";
+  const base = yield* run(first, Option.none());
+  const again = yield* run(first, Option.some(base.state));
+  const reversed = yield* run(first, Option.none(), { reversed: true });
+
+  const failing = yield* run(first, Option.some(base.state), {
+    failures: { seed: "import-eval", oneIn: 3 },
+  });
+
+  const gaps = [
+    ...new Set([...runs, base, again, reversed, failing].flatMap((each) => each.log.notCaptured)),
+  ].sort();
 
   if (gaps.length > 0) return yield* new NotCaptured({ reads: gaps });
 
@@ -203,15 +215,19 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
     lessonsIn.set(weekOf(lesson.date), [...(lessonsIn.get(weekOf(lesson.date)) ?? []), lesson]);
   }
 
+  // Students are scored only on weeks after their term's opening weeks, never on earlier ones.
+  const held = (week: string) => {
+    const openingWeeks = [...opening(termOfWeek(week))];
+
+    return openingWeeks.length > 0 && openingWeeks.every((each) => each < week);
+  };
+
   const viewWeeks = (type: Truth.ViewType) =>
     truth.views
       .filter((view) => view.type === type)
       .flatMap((view) =>
         weeks
-          .filter(
-            (week) =>
-              view.weeks.has(week) && (type !== "STUDENT" || !opening(termOfWeek(week)).has(week)),
-          )
+          .filter((week) => view.weeks.has(week) && (type !== "STUDENT" || held(week)))
           .map((week) => {
             const courses =
               type === "STUDENT" ? enrollmentOf(view, termOfWeek(week)) : new Set<string>();
@@ -283,33 +299,20 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
     ),
   );
 
-  // Course ids are compared on what each run read again, its own lesson coverage.
+  const stores = runs.map((each) => Metrics.byEntry(lessonsOf(each.state)));
+  const measuredEntries = truth.entries.filter((entry) => measuredDays.has(entry.date));
+
   const kept = Metrics.sum(
-    runs.slice(1).map((later, position) => {
-      const earlier = runs[position];
-
-      const reread = truth.entries.filter(
-        (entry) =>
-          measuredDays.has(entry.date) &&
-          later.covers.some(
-            (cover) =>
-              cover.rows === "lessons" && cover.start <= entry.date && entry.date <= cover.end,
-          ),
-      );
-
-      return earlier === undefined
-        ? Metrics.fraction(0, 0)
-        : Metrics.courseIdsKept(
-            reread,
-            Metrics.byEntry(lessonsOf(earlier.state)),
-            Metrics.byEntry(lessonsOf(later.state)),
-          );
-    }),
+    stores
+      .slice(1)
+      .map((after, position) =>
+        Metrics.courseIdsKept(measuredEntries, stores[position] ?? new Map(), after),
+      ),
   );
 
-  // What a student can look up after each run: the next seven days' school days, read completely.
+  // What a student can look up after each run: the lessons of the next seven days in the store.
   const lookahead = Metrics.sum(
-    runs.flatMap((each) => {
+    runs.flatMap((each, position) => {
       if (!measuredDays.has(each.day)) return [];
 
       const until = DateTime.formatIsoDate(
@@ -319,26 +322,14 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
         ),
       );
 
-      const ahead = truth.days.filter((day) => each.day < day && day <= until);
-
-      const read = ahead.filter((day) =>
-        each.state.covers.some(
-          (cover) => cover.rows === "lessons" && cover.start <= day && day <= cover.end,
+      return [
+        Metrics.held(
+          truth.entries.filter((entry) => each.day < entry.date && entry.date <= until),
+          stores[position] ?? new Map(),
         ),
-      );
-
-      return [Metrics.fraction(read.length, ahead.length)];
+      ];
     }),
   );
-
-  const first = starts.find((day) => measuredDays.has(day)) ?? days[0] ?? "";
-  const base = yield* run(first, Option.none());
-  const again = yield* run(first, Option.some(base.state));
-  const reversed = yield* run(first, Option.none(), { reversed: true });
-
-  const failing = yield* run(first, Option.some(base.state), {
-    failures: { seed: "import-eval", oneIn: 3 },
-  });
 
   return {
     corpus: options.corpusName,
@@ -364,7 +355,11 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
     lookahead,
     runs: { total: runs.length, failed: runs.filter((each) => each.failed).length },
     invariants: {
-      failedRuns: [base, again, reversed, failing].filter((each) => each.failed).length,
+      // A failing-reads rerun in which no read failed tested nothing, so it counts as failed.
+      failedRuns:
+        [base, again, reversed, failing].filter((each) => each.failed).length +
+        (failing.log.injected.length === 0 ? 1 : 0),
+      danglingCourses: Metrics.dangling(final),
       secondRunChanges: Metrics.differences(base.state, again.state),
       reversedReadChanges: Metrics.differences(base.state, reversed.state),
       failedReadChanges: Metrics.differences(base.state, failing.state),

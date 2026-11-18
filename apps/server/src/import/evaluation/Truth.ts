@@ -78,17 +78,19 @@ const readEntries = (
   type: ViewType,
   resources: ReadonlyArray<number>,
   range: { readonly start: string; readonly end: string },
+  schoolDays: ReadonlyArray<string>,
 ) =>
   Arr.isReadonlyArrayNonEmpty(resources)
     ? client.timetable.getEntriesForResources({ resourceType: type, resources, ...range }).pipe(
         Effect.orDie,
         Effect.flatMap((results) =>
           Effect.forEach(results, ({ resource, result }) =>
-            // A day WebUntis wouldn't show, or explained with an error, is no evidence of an
-            // empty timetable.
+            // A school day WebUntis left out or wouldn't show, or explained with an error, is no
+            // evidence of an empty timetable.
             Result.isSuccess(result) &&
             result.success.errors.length === 0 &&
-            result.success.days.every(WebUntisEntry.shown)
+            result.success.days.every(WebUntisEntry.shown) &&
+            schoolDays.every((day) => result.success.days.some((each) => each.date.startsWith(day)))
               ? Effect.succeed({ resource, days: result.success.days })
               : Effect.fail(new Incomplete({ read: `${type} ${resource} ${range.start}` })),
           ),
@@ -165,6 +167,7 @@ export const build = Effect.fn("Truth.build")(function* (corpus: Corpus.Corpus) 
           type,
           resources.map(({ id }) => id),
           { start, end },
+          days.map(([day]) => day),
         );
 
         // A resource read in several ranges is one view: its weeks of one range are no evidence
@@ -177,7 +180,15 @@ export const build = Effect.fn("Truth.build")(function* (corpus: Corpus.Corpus) 
             type,
             id: resource,
             name: names.get(resource) ?? String(resource),
-            entries: [...(earlier?.entries ?? []), ...entriesOf(timetable)],
+            // Overlapping ranges read some days twice; each entry counts once.
+            entries: [
+              ...new Map(
+                [...(earlier?.entries ?? []), ...entriesOf(timetable)].map((entry) => [
+                  `${entry.date} ${entry.ids.join("+")}`,
+                  entry,
+                ]),
+              ).values(),
+            ],
             weeks: new Set([...(earlier?.weeks ?? []), ...weeks]),
           });
         }
@@ -216,7 +227,7 @@ export const build = Effect.fn("Truth.build")(function* (corpus: Corpus.Corpus) 
     views: [...views.values()],
     changes: entries.filter((entry) => entry.status !== "Regular"),
     entries,
-    exams,
+    exams: [...new Map(exams.map((exam) => [exam.id, exam])).values()],
     closures: [
       ...appData.holidays.map((holiday) => ({
         start: holiday.start.slice(0, 10),

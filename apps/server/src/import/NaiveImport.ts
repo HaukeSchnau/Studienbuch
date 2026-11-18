@@ -32,6 +32,9 @@ const weeksFrom = Effect.fn("NaiveImport.weeksFrom")(function* (now: DateTime.Ut
     return Effect.all({
       start: encodeDate(CivilTime.addDays(monday, offset)),
       end: encodeDate(CivilTime.addDays(monday, offset + 6)),
+      weekdays: Effect.forEach([0, 1, 2, 3, 4], (day) =>
+        encodeDate(CivilTime.addDays(monday, offset + day)),
+      ),
       label: Effect.succeed({
         week: isoWeek,
         label: Number(isoWeek.slice(-2)) % 2 === 1 ? "A" : "B",
@@ -168,7 +171,7 @@ export const layer = Layer.effect(SchoolImport.Service)(
           .pipe(Effect.mapError(failed("class timetables")));
 
         // A read is complete when WebUntis answered, explained nothing with an error, showed every
-        // day, and every entry became a lesson. Only then may its week replace stored lessons.
+        // weekday, and every entry became a lesson. Only then may its week replace stored lessons.
         const unread: Array<number> = [];
 
         for (const { resource, result } of results) {
@@ -182,6 +185,9 @@ export const layer = Layer.effect(SchoolImport.Service)(
             Result.isFailure(result) ||
             result.success.errors.length > 0 ||
             !result.success.days.every(WebUntisEntry.shown) ||
+            !week.weekdays.every((day) =>
+              result.success.days.some((each) => each.date.startsWith(day)),
+            ) ||
             added.includes(false)
           ) {
             unread.push(resource);

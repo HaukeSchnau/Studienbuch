@@ -190,8 +190,18 @@ export const make = Effect.fn("RecordedWebUntis.make")(function* (
     options.captured === undefined ||
     options.captured.some((range) => range.start <= day && day <= range.end);
 
-  const notCaptured = (read: string, day?: string) =>
-    note(day === undefined || inRange(day) ? "notCaptured" : "outOfRange", read).pipe(
+  /** Logs each missing read, as a gap when its day lies inside the captured ranges, and fails. */
+  const notCaptured = (
+    read: string,
+    day?: string,
+    more: ReadonlyArray<readonly [string, string]> = [],
+  ) =>
+    Effect.forEach(
+      [[read, day] as const, ...more],
+      ([each, eachDay]) =>
+        note(eachDay === undefined || inRange(eachDay) ? "notCaptured" : "outOfRange", each),
+      { discard: true },
+    ).pipe(
       Effect.andThen(
         Effect.fail(
           new TransportError({
@@ -249,20 +259,25 @@ export const make = Effect.fn("RecordedWebUntis.make")(function* (
   const years = answer(paths.schoolYears, decodeYears, false);
 
   // The lookup isn't a request: an import that reads entries has read the years already.
+  const recordedYears = latest(paths.schoolYears).pipe(
+    Effect.flatMap((body) =>
+      decodeYears(body).pipe(Effect.catch(() => decodeFailed(paths.schoolYears))),
+    ),
+  );
+
+  const yearIn = (all: Effect.Success<typeof recordedYears>, day: string) =>
+    all.find(
+      ({ dateRange }) => dateRange.start.slice(0, 10) <= day && day <= dateRange.end.slice(0, 10),
+    )?.id;
+
   const yearOf = (day: string): Effect.Effect<number, TransportError | DecodeError> =>
-    latest(paths.schoolYears).pipe(
-      Effect.flatMap((body) =>
-        decodeYears(body).pipe(Effect.catch(() => decodeFailed(paths.schoolYears))),
-      ),
+    recordedYears.pipe(
       Effect.flatMap((all) => {
-        const year = all.find(
-          ({ dateRange }) =>
-            dateRange.start.slice(0, 10) <= day && day <= dateRange.end.slice(0, 10),
-        );
+        const year = yearIn(all, day);
 
         return year === undefined
           ? notCaptured(`school year of ${day}`, day)
-          : Effect.succeed(year.id);
+          : Effect.succeed(year);
       }),
     );
 
@@ -283,10 +298,10 @@ export const make = Effect.fn("RecordedWebUntis.make")(function* (
 
     // The capture asks with webuntis-api's defaults, so it can't answer another query.
     if (
-      input.timetableType !== undefined ||
-      input.format !== undefined ||
-      input.layout !== undefined ||
-      input.periodTypes !== undefined
+      (input.timetableType ?? "STANDARD") !== "STANDARD" ||
+      (input.format ?? 2) !== 2 ||
+      (input.layout ?? "START_TIME") !== "START_TIME" ||
+      (input.periodTypes ?? "") !== ""
     ) {
       return yield* notCaptured(`${key} with another query`);
     }
@@ -296,14 +311,29 @@ export const make = Effect.fn("RecordedWebUntis.make")(function* (
     const raw: Array<unknown> = [];
     let format = 2;
 
+    const years = yield* recordedYears;
+
+    // Every day is looked up before a miss fails the read, so a day outside the capture can't
+    // hide a gap on another.
+    const missing: Array<readonly [string, string]> = [];
+
     for (const day of yield* datesBetween(input.start, input.end)) {
-      const path = paths.entries(yield* yearOf(day), input.resourceType, input.resource);
+      const year = yearIn(years, day);
+
+      const path =
+        year === undefined
+          ? `school year of ${day}`
+          : paths.entries(year, input.resourceType, input.resource);
 
       const version = Option.fromNullishOr(recording.get(path)).pipe(
         Option.flatMap((read) => pick(read, options.asOf, day)),
       );
 
-      if (Option.isNone(version)) return yield* notCaptured(`${path} ${day}`, day);
+      if (Option.isNone(version)) {
+        missing.push([year === undefined ? path : `${path} ${day}`, day]);
+
+        continue;
+      }
 
       const body = bodyOf(version.value);
       const decoded = decodedVersions.get(version.value) ?? decodeEntries(body);
@@ -322,6 +352,14 @@ export const make = Effect.fn("RecordedWebUntis.make")(function* (
         days.push(found);
         raw.push(Option.getOrUndefined(decodeRawDays(body))?.days[index]);
       }
+    }
+
+    // Gaps are listed day by day; a read that only reaches past the capture counts once.
+    const gaps = missing.filter(([, day]) => inRange(day));
+    const [firstMissing, ...moreGaps] = gaps.length > 0 ? gaps : missing;
+
+    if (firstMissing !== undefined) {
+      return yield* notCaptured(firstMissing[0], firstMissing[1], gaps.length > 0 ? moreGaps : []);
     }
 
     if (options.reversed === true) {

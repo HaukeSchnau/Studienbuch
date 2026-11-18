@@ -35,14 +35,16 @@ export const Evaluation = Schema.Struct({
   exams: Fraction,
   examStudents: Schema.Struct({ recall: Fraction, precision: Fraction }),
   weekLabels: Fraction,
-  /** Entries a run read again whose course id stayed the same. */
+  /** Entries two consecutive stores both hold whose course id stayed the same. */
   courseIdsKept: Fraction,
-  /** After each run, the school days of the next seven days it had read completely. */
+  /** After each run, the entries of the next seven days that the store holds. */
   lookahead: Fraction,
   runs: Schema.Struct({ total: Schema.Int, failed: Schema.Int }),
   /** The first measured run, repeated. Every count but `injectedFailures` must be 0. */
   invariants: Schema.Struct({
     failedRuns: Schema.Int,
+    /** Lessons and exams in the final store that name a course it lacks. */
+    danglingCourses: Schema.Int,
     secondRunChanges: Schema.Int,
     reversedReadChanges: Schema.Int,
     failedReadChanges: Schema.Int,
@@ -105,9 +107,10 @@ export const format = (report: Evaluation) =>
     line("Exams shown to their students", report.examStudents.recall),
     line("Exams shown that are theirs", report.examStudents.precision),
     line("Week labels right", report.weekLabels),
-    line("Next seven days read", report.lookahead),
+    line("Next seven days in the store", report.lookahead),
     "",
     `  ${report.runs.failed} of ${report.runs.total} runs failed; they made ${report.reads.requests} requests, ${report.reads.outOfRange} for days outside the capture, and ${report.reads.decodeFailures} bodies didn't decode.`,
+    `  ${report.invariants.danglingCourses} lessons and exams name a course the store lacks.`,
     `  Repeating the first run: ${report.invariants.failedRuns} failed, a second run changed ${report.invariants.secondRunChanges} rows, reversed reads ${report.invariants.reversedReadChanges}, ${report.invariants.injectedFailures} failed reads ${report.invariants.failedReadChanges}.`,
     `  Labelled cases passing: ${report.passingCases.length === 0 ? "none" : report.passingCases.join(", ")}`,
     ...(report.worst.length === 0
