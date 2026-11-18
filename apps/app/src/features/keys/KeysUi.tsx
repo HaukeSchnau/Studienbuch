@@ -159,8 +159,8 @@ export function CardCodeField(
 }
 
 /**
- * A Notfallkarte's code in two lines of four groups and three, as the card prints it. Screen
- * readers read the groups one by one.
+ * A Notfallkarte's code as its seven groups of four, which wrap between groups and never inside
+ * one, however wide the phone's monospaced font is. Screen readers read the groups one by one.
  */
 export function CardCode({ text }: { readonly text: Redacted.Redacted }) {
   const { color } = Theme.useTheme();
@@ -171,13 +171,13 @@ export function CardCode({ text }: { readonly text: Redacted.Redacted }) {
       <Text variant="footnote" style={{ color: color.accent }}>
         Studienbuch Notfallkarte
       </Text>
-      <View accessible accessibilityLabel={`Code: ${groups.join(", ")}`}>
-        <Text variant="title2" selectable style={styles.code}>
-          {groups.slice(0, 4).join("-")}
-        </Text>
-        <Text variant="title2" selectable style={styles.code}>
-          {groups.slice(4).join("-")}
-        </Text>
+      <View accessible accessibilityLabel={`Code: ${groups.join(", ")}`} style={styles.groups}>
+        {groups.map((group, index) => (
+          // oxlint-disable-next-line react/no-array-index-key -- a group's place in the code is its identity, and two groups can read alike.
+          <Text key={index} variant="title2" selectable style={styles.code}>
+            {group}
+          </Text>
+        ))}
       </View>
       <Text variant="footnote" style={{ color: color.inkSoft }}>
         Studienbuch fragt nie nach diesem Code. Gib ihn nur in der Studienbuch-App ein.
@@ -192,7 +192,8 @@ const styles = StyleSheet.create({
     borderRadius: Tokens.radius.field,
     padding: Tokens.space.lg,
   },
-  code: { letterSpacing: 2, fontVariant: ["tabular-nums"], fontFamily: Theme.codeFontFamily },
+  groups: { flexDirection: "row", flexWrap: "wrap", columnGap: Tokens.space.md, rowGap: 2 },
+  code: { letterSpacing: 1, fontVariant: ["tabular-nums"], fontFamily: Theme.codeFontFamily },
   typed: { fontFamily: Theme.codeFontFamily, fontSize: 15, letterSpacing: 0 },
   tile: {
     width: 40,
