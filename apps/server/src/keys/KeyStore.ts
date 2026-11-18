@@ -8,6 +8,7 @@ import { Keys } from "@stu/api/Keys";
 import { Notebook } from "@stu/core";
 import { AccountKey, CryptoSuite, SpaceKey, Wrapper } from "@stu/e2ee";
 import { Protocol } from "@stu/sync";
+import * as Crypto from "effect/Crypto";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
@@ -175,8 +176,9 @@ const insertWrapper = Effect.fn("KeyStore.insertWrapper")(function* (
 });
 
 /**
- * Deletes the account's code wrappers of any other card than the statement's, with their seals.
- * The same card saved twice derives the same public key, so its other wrappers stay.
+ * Deletes the account's code wrappers of any other card than the statement's, with their seals,
+ * and remembers their public keys as retired. The same card saved twice derives the same public
+ * key, so its other wrappers stay.
  */
 const retireOtherCards = Effect.fn("KeyStore.retireOtherCards")(function* (
   account: string,
@@ -200,9 +202,43 @@ const retireOtherCards = Effect.fn("KeyStore.retireOtherCards")(function* (
     }
   }
 
-  if (retired.length > 0) {
-    yield* sql`delete from key_wrapper where account_id = ${account} and id in ${sql.in(retired)}`;
+  if (retired.length === 0) return;
+
+  const keys = yield* sql<{ readonly statement: typeof statementJson.Encoded }>`
+    delete from key_wrapper where account_id = ${account} and id in ${sql.in(retired)}
+    returning statement
+  `;
+
+  for (const { statement: retiredStatement } of keys) {
+    const digest = yield* cardDigest(yield* decodeStatement(retiredStatement));
+
+    yield* sql`
+      insert into retired_card (account_id, digest) values (${account}, ${digest})
+      on conflict (account_id, digest) do nothing
+    `;
   }
+});
+
+/** What `retired_card` keeps of a card: the SHA-256 of its wrapper's public key. */
+const cardDigest = Effect.fn("KeyStore.cardDigest")(function* (statement: Wrapper.Statement) {
+  const crypto = yield* Crypto.Crypto;
+
+  return yield* Effect.orDie(crypto.digest("SHA-256", statement.publicKey));
+});
+
+/** Whether a newer card retired the statement's card, which then never comes back. */
+const isRetired = Effect.fn("KeyStore.isRetired")(function* (
+  account: string,
+  statement: Wrapper.Statement,
+) {
+  const sql = yield* SqlClient.SqlClient;
+
+  const [row] = yield* sql`
+    select 1 from retired_card
+    where account_id = ${account} and digest = ${yield* cardDigest(statement)}
+  `;
+
+  return row !== undefined;
 });
 
 /**
@@ -403,7 +439,7 @@ export const state = Effect.fn("KeyStore.state")(function* (account: string) {
 /**
  * Adds a wrapper at the newest generation, and answers the other sessions a new card ended. A
  * passkey or Notfallkarte needs the session to be at most `Keys.freshSignInMinutes` old, so a thief
- * with an unlocked phone can't quietly add one.
+ * with an unlocked phone can't quietly add one. A new card makes the old one useless.
  */
 export const addWrapper = Effect.fn("KeyStore.addWrapper")(function* (
   account: string,
@@ -456,7 +492,20 @@ export const addWrapper = Effect.fn("KeyStore.addWrapper")(function* (
         if (count >= Keys.wrappersPerPasskey) return yield* new Keys.Invalid({ reason: "limit" });
       }
 
-      const ended = replacing ? yield* replaceCard(account, session, statement, login) : [];
+      // A device that resends a card after a lost answer, when another device replaced it since,
+      // finds it retired. "statement" is what the app one release back knows.
+      if (statement.kind === Wrapper.kindByte.code && (yield* isRetired(account, statement))) {
+        return yield* new Keys.Invalid({ reason: "statement" });
+      }
+
+      // A new card retires the old one for every account, and replaces its login only when the
+      // account has no address.
+      const ended: ReadonlyArray<string> =
+        statement.kind !== Wrapper.kindByte.code
+          ? []
+          : replacing
+            ? yield* replaceCard(account, session, statement, login)
+            : yield* Effect.as(retireOtherCards(account, statement), []);
 
       yield* insertWrapper(account, wrapper, session);
 

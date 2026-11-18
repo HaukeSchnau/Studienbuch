@@ -100,7 +100,7 @@ export const make = Effect.fnUntraced(function* (
   return {
     /** A device's transport, before faults. */
     transport: (device: Device): Ports.Transport["Service"] => ({
-      connect: Effect.gen(function* () {
+      connect: Effect.fn("Network.connect")(function* () {
         const ready = yield* Deferred.make<Link>();
 
         yield* accept(device, ready);

@@ -51,7 +51,7 @@ export const session = Layer.succeed(Ports.Session, {
   accountId: actor,
   token: Effect.succeedSome(token),
   changes: Stream.make(Option.some(token)),
-  ended: Effect.void,
+  ended: () => Effect.void,
 });
 
 /** Secrets in memory, as on a public computer. A test reads them through the same service. */
@@ -88,7 +88,7 @@ export const disconnected = Layer.mergeAll(
     changes: Stream.make({ foreground: true, online: false }),
   }),
   Layer.succeed(Ports.Transport, {
-    connect: Effect.die("A disconnected test device tried to connect"),
+    connect: () => Effect.die("A disconnected test device tried to connect"),
   }),
 );
 

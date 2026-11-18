@@ -1,4 +1,3 @@
-import { Ports } from "@stu/sync/client";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Socket from "effect/socket/Socket";
@@ -7,7 +6,6 @@ import { ApiProtocol } from "../api/ApiProtocol.ts";
 import { ServerOrigin } from "../api/ServerOrigin.ts";
 import { Device } from "../device/Device.ts";
 import { VirtualDevice } from "../device/VirtualDevice.ts";
-import { Names } from "../device/Names.ts";
 import { DeviceSessions } from "../keychain/DeviceSessions.ts";
 import { Keychain } from "../keychain/Keychain.ts";
 import { MemoryKeychain } from "../keychain/MemoryKeychain.ts";
@@ -22,8 +20,13 @@ import { Forgetting } from "./Forgetting.ts";
 
 export * as Layers from "./Layers.ts";
 
-// Before anyone signs in: finish the sign-outs an earlier run left, and delete what M0 builds kept.
-const start = Effect.andThen(Forgetting.resume(AccountDatabase.remove), removeLeftovers);
+// Before anyone signs in: finish the sign-outs an earlier run left, drop a sign-up's card that a
+// kept session replaced, and delete what M0 builds kept.
+const start = Effect.all([
+  Forgetting.resume(AccountDatabase.remove),
+  DeviceSessions.tidy,
+  removeLeftovers,
+]);
 
 /**
  * Everything a device has before anyone signs in: the server, the sessions of the accounts signed
@@ -48,23 +51,13 @@ export const device = (options: Device.Options) =>
  */
 export const app = device({ name: VirtualDevice.current });
 
-const secrets = (accountId: string) =>
-  Layer.unwrap(
-    Effect.gen(function* () {
-      const device = yield* Device.Service;
-      const server = yield* Ports.Server;
-
-      return Keychain.secrets(Names.secrets(server.origin, device.name, accountId));
-    }),
-  );
-
 /**
  * What a signed-in account adds on top of its device's layers: its secrets and its database. On a
  * public computer both live in memory of their own, so closing the layer forgets them.
  */
 export const account = (accountId: string, publicComputer: boolean) => {
   const stores = Layer.mergeAll(
-    secrets(accountId),
+    Keychain.accountSecrets(accountId),
     AccountDatabase.layer(accountId, publicComputer),
     Layer.succeed(Device.PublicComputer)(publicComputer),
   );

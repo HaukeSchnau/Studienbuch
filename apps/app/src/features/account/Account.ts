@@ -1,6 +1,7 @@
 import { Access } from "@stu/api/Access";
 import { Accounts } from "@stu/api/Accounts";
 import { Demo } from "@stu/api/Demo";
+import { RecoveryCode } from "@stu/e2ee";
 import * as Arr from "effect/Array";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
@@ -9,6 +10,7 @@ import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Redacted from "effect/Redacted";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
+import * as Ref from "effect/Ref";
 import * as Schema from "effect/Schema";
 import * as Semaphore from "effect/Semaphore";
 import * as SubscriptionRef from "effect/SubscriptionRef";
@@ -16,10 +18,11 @@ import * as SubscriptionRef from "effect/SubscriptionRef";
 import { AuthApi } from "../../infra/auth/AuthApi.ts";
 import { PendingSignUp } from "../../infra/auth/PendingSignUp.ts";
 import { SessionStore } from "../../infra/auth/SessionStore.ts";
-import type { Keychain } from "../../infra/keychain/Keychain.ts";
+import { DeviceSessions } from "../../infra/keychain/DeviceSessions.ts";
+import { Keychain } from "../../infra/keychain/Keychain.ts";
 import { Passkeys } from "../../infra/passkeys/Passkeys.ts";
 import { Forgetting } from "../../infra/runtime/Forgetting.ts";
-import type { NotebookKeys } from "../keys/NotebookKeys.ts";
+import { NotebookKeys } from "../keys/NotebookKeys.ts";
 
 // Signing up, in and out on this device. Signing in needs the network once; after that the device
 // works on its own data, and an ended session only pauses sync until the same account signs in
@@ -48,6 +51,10 @@ export const Reason = Schema.Literals([
   "passkey-no-biometrics",
   "passkey-failed",
   "not-fresh",
+  "unknown-card",
+  "card-not-kept",
+  "busy",
+  "signed-out",
   "sign-out-failed",
   "failed",
 ]);
@@ -88,6 +95,12 @@ export const sentence: Record<Reason, string> = {
     "Für einen Passkey braucht dein Gerät Face ID oder Touch ID. Richte es in den Einstellungen ein.",
   "passkey-failed": "Mit dem Passkey hat es nicht geklappt. Versuch es noch einmal.",
   "not-fresh": "Melde dich kurz neu an, dann geht es weiter.",
+  "unknown-card":
+    "Diese Notfallkarte gehört zu keinem Konto. Vielleicht hast du sie durch eine neue ersetzt.",
+  "card-not-kept":
+    "Dieses Gerät konnte deine Notfallkarte gerade nicht speichern. Ohne sie geht es nicht weiter. Versuch es noch einmal.",
+  busy: "Auf diesem Gerät läuft schon eine Anmeldung. Warte, bis sie fertig ist.",
+  "signed-out": "Du hast dich abgemeldet, bevor die Anmeldung fertig war. Melde dich neu an.",
   "sign-out-failed": "Abmelden hat nicht geklappt. Versuch es noch einmal.",
   failed: "Das hat nicht geklappt. Versuch es noch einmal.",
 };
@@ -110,6 +123,7 @@ const reasons = new Map<string, Reason>(
     FAILED_TO_VERIFY_REGISTRATION: "passkey-failed",
     CHALLENGE_NOT_FOUND: "passkey-failed",
     SESSION_NOT_FRESH: "not-fresh",
+    [Accounts.unknownCard]: "unknown-card",
   } satisfies Record<string, Reason>),
 );
 
@@ -136,41 +150,77 @@ const passkeyProblem = (error: Passkeys.Failed) =>
 
 /**
  * Refuses a new session while the device still holds another account whose session ended: its
- * database may hold changes that never reached the server, so that account signs out first. The
- * refused session ends on the server.
+ * database may hold changes that never reached the server, so that account signs out first.
  */
+const refuseOther = (
+  held: Option.Option<SessionStore.Signed>,
+  signedIn: AuthApi.SignedIn,
+): Effect.Effect<void, Problem> =>
+  Option.exists(held, (signed) => signed.accountId !== signedIn.accountId)
+    ? Effect.fail(new Problem({ reason: "other-account" }))
+    : Effect.void;
+
+/** Ends a session the device didn't keep, so it doesn't wait on the server for 90 days. */
+const endUnkept = (signedIn: AuthApi.SignedIn) =>
+  Effect.flatMap(AuthApi.Service, (api) => Effect.ignore(api.signOut(signedIn.token)));
+
+/** `refuseOther` before the session is kept, so a screen can say it early. */
 const refuseOtherAccount = Effect.fn("Account.refuseOtherAccount")(function* (
   signedIn: AuthApi.SignedIn,
 ) {
   const store = yield* SessionStore.Service;
-  const api = yield* AuthApi.Service;
-  const current = yield* store.current;
 
-  if (Option.exists(current, (signed) => signed.accountId !== signedIn.accountId)) {
-    yield* Effect.ignore(api.signOut(signedIn.token));
+  yield* refuseOther(yield* store.current, signedIn).pipe(
+    Effect.tapError(() => endUnkept(signedIn)),
+  );
+});
 
-    return yield* new Problem({ reason: "other-account" });
-  }
+/** Refuses a sign-up while the device holds an account, before anything leaves the device. */
+const refuseAnyAccount = Effect.flatMap(SessionStore.Service, (store) =>
+  Effect.flatMap(store.current, (current) =>
+    Option.isSome(current) ? Effect.fail(new Problem({ reason: "other-account" })) : Effect.void,
+  ),
+);
+
+/** The generation an attempt began in (`attempt`), which `keep` checks. */
+const Began = Context.Reference<Option.Option<number>>("Account.Began", {
+  defaultValue: () => Option.none(),
 });
 
 /**
- * Keeps a new session, so the device is signed in, unless another account holds the device. On a
- * public computer the device keeps it in memory only (`SessionStore.signedIn`). `demo` marks a
- * demo account's password sign-in (`Demo.isDemoSignIn`). It waits for a sign-out under way, and
- * a sign-out the device left unfinished finishes first (`Forgetting.Service`).
+ * Keeps a new session in the turn that installs sessions (`Forgetting.Service`), after any sign-out
+ * under way or left unfinished. That turn refuses another account, and an attempt a sign-out
+ * superseded; it fixes where the session goes (`SessionStore.publicComputerFor`). It ends no
+ * session: a caller that holds none for a retry ends it when this fails (`endUnkept`).
  */
-export const keep = Effect.fn("Account.keep")(function* (
+const keep = Effect.fn("Account.keep")(function* <R = never>(
   signedIn: AuthApi.SignedIn,
-  publicComputer: boolean,
+  chosen: boolean,
   demo = false,
+  first: (publicComputer: boolean) => Effect.Effect<void, Problem, R> = () => Effect.void,
 ) {
   const store = yield* SessionStore.Service;
   const forgetting = yield* Forgetting.Service;
+  const failed = () => Effect.fail(new Problem({ reason: "failed" }));
 
-  yield* refuseOtherAccount(signedIn);
+  const install = Effect.gen(function* () {
+    const { generation } = yield* SubscriptionRef.get(store.attempt);
+
+    if (Option.exists(yield* Began, (began) => began !== generation)) {
+      return yield* new Problem({ reason: "signed-out" });
+    }
+
+    const held = yield* store.current;
+    const publicComputer = SessionStore.publicComputerFor(held, signedIn.accountId, chosen);
+
+    yield* refuseOther(held, signedIn);
+    yield* first(publicComputer);
+    yield* store.signedIn({ ...signedIn, demo }, publicComputer);
+  });
+
   yield* forgetting
-    .keep(store.signedIn({ ...signedIn, demo }, publicComputer))
-    .pipe(Effect.mapError(() => new Problem({ reason: "failed" })));
+    .keep(install)
+    .pipe(Effect.catchTags({ "Forgetting.Unfinished": failed, "Keychain.Unavailable": failed }));
 });
 
 export const signIn = Effect.fn("Account.signIn")(function* (
@@ -181,7 +231,9 @@ export const signIn = Effect.fn("Account.signIn")(function* (
   const api = yield* AuthApi.Service;
   const signedIn = yield* api.signIn(email.trim(), password).pipe(Effect.mapError(problem));
 
-  yield* keep(signedIn, publicComputer, Demo.isDemoSignIn(email, signedIn.accountId));
+  yield* keep(signedIn, publicComputer, Demo.isDemoSignIn(email, signedIn.accountId)).pipe(
+    Effect.tapError(() => endUnkept(signedIn)),
+  );
 });
 
 /**
@@ -269,8 +321,65 @@ export class Confirmations extends Context.Service<
     readonly guard: Semaphore.Semaphore;
     /** Changed only through `waitForCode`, which keeps it on the device. */
     readonly signingUp: SubscriptionRef.SubscriptionRef<Option.Option<SigningUp>>;
+    /**
+     * A card-first sign-up's card, until its session is kept, so a retry sends it in either
+     * place. A device that keeps its session stages it too (`DeviceSessions.stage`).
+     */
+    readonly newCard: Ref.Ref<Option.Option<Redacted.Redacted<Uint8Array>>>;
+    /**
+     * A passkey sign-up whose card the device couldn't hold, so a retry keeps its account rather
+     * than making another. It lives in this run only: after a restart the passkey signs in.
+     */
+    readonly newPasskeyAccount: Ref.Ref<Option.Option<PasskeyAccount>>;
   }
 >()("Account.Confirmations") {}
+
+/**
+ * Runs a sign-in, a sign-up or an account's confirmation as the device's one attempt
+ * (`SessionStore.attempt`). Another one meanwhile is refused, never queued, and the screens offer
+ * none, nor the "Öffentlicher Computer" choice, which the attempt read when it started.
+ */
+export const attempt = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+  Effect.flatMap(SessionStore.Service, (store) =>
+    Effect.acquireUseRelease(
+      SubscriptionRef.modify(store.attempt, (now) =>
+        now.running
+          ? [Option.none<number>(), now]
+          : [Option.some(now.generation), { ...now, running: true }],
+      ),
+      (began): Effect.Effect<A, E | Problem, R> =>
+        Option.isSome(began)
+          ? Effect.provideService(effect, Began, began)
+          : Effect.fail(new Problem({ reason: "busy" })),
+      Option.match({
+        onNone: () => Effect.void,
+        onSome: (generation) => endAttempt(store, generation),
+      }),
+    ),
+  );
+
+/**
+ * Runs a sign-out as the device's attempt in place of one under way, which may wait on a server
+ * that never answers. That one runs on, and its sign-in keeps no session (`keep`).
+ */
+const supersede = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+  Effect.flatMap(SessionStore.Service, (store) =>
+    Effect.acquireUseRelease(
+      SubscriptionRef.modify(store.attempt, (now) => {
+        const generation = now.generation + 1;
+
+        return [generation, { running: true, generation }] as const;
+      }),
+      () => effect,
+      (generation) => endAttempt(store, generation),
+    ),
+  );
+
+/** Ends the attempt of `generation`, unless a sign-out took over from it. */
+const endAttempt = (store: SessionStore.Service["Service"], generation: number) =>
+  SubscriptionRef.update(store.attempt, (now) =>
+    now.generation === generation ? { ...now, running: false } : now,
+  );
 
 /**
  * A sign-up waiting for its address's code. The device keeps address and reservation, so a
@@ -319,6 +428,8 @@ export const confirmations = Layer.effect(Confirmations)(
     current: SubscriptionRef.make(Option.none<Confirmed>()),
     guard: Semaphore.make(1),
     signingUp: Effect.flatMap(restore, SubscriptionRef.make),
+    newCard: Ref.make(Option.none<Redacted.Redacted<Uint8Array>>()),
+    newPasskeyAccount: Ref.make(Option.none<PasskeyAccount>()),
   }),
 );
 
@@ -464,6 +575,210 @@ export const leave = Effect.fn("Account.leave")(function* (email: string, public
   }).pipe(Semaphore.withPermit(guard));
 });
 
+/**
+ * A Notfallkarte for an account's key state: a new account's, which the card step shows
+ * (`unsaved`), or one that signed in.
+ */
+export interface OfferedCard extends NotebookKeys.CardIn {
+  readonly accountId: string;
+}
+
+/**
+ * Hands a card in memory to the account's key status (`Offered.card`). A sign-in whose session
+ * isn't kept takes back the card it handed, and only that one.
+ */
+export interface Offer {
+  readonly give: (card: OfferedCard) => Effect.Effect<void>;
+  readonly withdraw: (card: OfferedCard) => Effect.Effect<void>;
+}
+
+/**
+ * Keeps a session that came with a card, which goes where the session goes. A device that keeps
+ * its session first holds the card in the account's secrets, so no restart finds the account
+ * without it, and keeps nothing if it can't (`card-not-kept`). `offer` tells the account's key
+ * status, and is the only copy on a public computer.
+ */
+const keepWithCard = Effect.fn("Account.keepWithCard")(function* (
+  signedIn: AuthApi.SignedIn,
+  card: OfferedCard,
+  chosen: boolean,
+  offer: Offer,
+) {
+  const hold = (publicComputer: boolean) =>
+    Effect.andThen(
+      publicComputer
+        ? Effect.void
+        : NotebookKeys.holdCard(card).pipe(
+            Effect.provide(Keychain.accountSecrets(card.accountId)),
+            Effect.catchTags({ "DeviceSecrets.SecretsUnavailable": () => cardNotKept }),
+          ),
+      offer.give(card),
+    );
+
+  yield* keep(signedIn, chosen, false, hold).pipe(Effect.onError(() => offer.withdraw(card)));
+});
+
+const cardNotKept = Effect.fail(new Problem({ reason: "card-not-kept" }));
+
+/**
+ * Creates an account without an address whose Notfallkarte signs up, on a device without
+ * passkeys. The card is staged before the request goes out and stays until the session is kept,
+ * so a retry after a lost answer, even after a restart, signs in to the account it made rather
+ * than making a second one. A device that can't stage it sends nothing (`card-not-kept`).
+ */
+export const signUpWithCard = Effect.fn("Account.signUpWithCard")(function* (
+  reservation: Access.Reservation,
+  publicComputer: boolean,
+  offer: Offer,
+) {
+  const api = yield* AuthApi.Service;
+  const sessions = yield* DeviceSessions.Service;
+  const forgetting = yield* Forgetting.Service;
+  const { newCard } = yield* Confirmations;
+
+  // In a turn after any sign-out the device left unfinished, which removes a card staged here.
+  const code = yield* forgetting
+    .keep(
+      Effect.gen(function* () {
+        yield* refuseAnyAccount;
+
+        // A retry in either place sends the card this tab or an earlier run took, so it reaches
+        // the account a lost answer made. A public computer then removes a staged copy before
+        // anything goes out, so nothing of it stays once the tab is gone.
+        const staged = yield* sessions.staged;
+        const earlier = Option.orElse(yield* Ref.get(newCard), () => staged);
+        const code = Option.isSome(earlier) ? earlier.value : (yield* RecoveryCode.generate).bytes;
+
+        yield* Ref.set(newCard, Option.some(code));
+
+        if (!publicComputer) yield* sessions.stage(code);
+        else if (Option.isSome(staged)) yield* sessions.unstage;
+
+        return code;
+      }).pipe(Effect.catchTags({ "Keychain.Unavailable": () => cardNotKept })),
+    )
+    .pipe(
+      Effect.catchTags({
+        "Forgetting.Unfinished": () => Effect.fail(new Problem({ reason: "failed" })),
+        "Keychain.Unavailable": () => Effect.fail(new Problem({ reason: "failed" })),
+      }),
+    );
+
+  const signedIn = yield* api
+    .cardSignUp(yield* NotebookKeys.cardLogin(code), reservation.token)
+    .pipe(Effect.mapError(problem));
+
+  // Keeping the session drops the staged card (`DeviceSessions.set`).
+  yield* keepWithCard(
+    signedIn,
+    { accountId: signedIn.accountId, code, endsAtSaved: false, unsaved: true },
+    publicComputer,
+    offer,
+  ).pipe(Effect.onError(() => endUnkept(signedIn)));
+
+  yield* Ref.set(newCard, Option.none());
+});
+
+/** A passkey sign-up's new account and its card, until the device keeps them. */
+export interface PasskeyAccount {
+  readonly signedIn: AuthApi.SignedIn;
+  readonly code: Redacted.Redacted<Uint8Array>;
+  readonly used: PasskeyUsed;
+}
+
+/** The passkey prompt that makes the account, and the account's new card. */
+const passkeyAccount = Effect.fn("Account.passkeyAccount")(function* (
+  reservation: Access.Reservation,
+) {
+  const api = yield* AuthApi.Service;
+  const passkeys = yield* Passkeys.Authenticator;
+
+  yield* refuseAnyAccount;
+
+  const { options, challenge } = yield* api
+    .passkeySignUpOptions(reservation.token)
+    .pipe(Effect.mapError(problem));
+
+  const created = yield* passkeys
+    .create(options)
+    .pipe(Effect.catchTags({ "Passkeys.Failed": (error) => Effect.fail(passkeyProblem(error)) }));
+
+  const signedIn = yield* api
+    .passkeySignUp(reservation.token, challenge, created.credential)
+    .pipe(Effect.mapError(problem));
+
+  const { bytes: code } = yield* RecoveryCode.generate;
+
+  return {
+    signedIn,
+    code,
+    used: {
+      accountId: signedIn.accountId,
+      credentialId: created.credential.id,
+      prf:
+        created.prf._tag === "Output"
+          ? Option.some(Redacted.make(created.prf.output))
+          : Option.none(),
+    },
+  } satisfies PasskeyAccount;
+});
+
+/**
+ * Creates an account without an address with a passkey, in one prompt, and gives it a new
+ * Notfallkarte as its way back. The PRF output waits for the notebook's key, as at sign-in. The
+ * card isn't a way in until its wrapper reaches the server, so it needs no stage before the
+ * request; a retry after the device couldn't hold it keeps the same account.
+ */
+export const signUpWithPasskey = Effect.fn("Account.signUpWithPasskey")(function* (
+  reservation: Access.Reservation,
+  offer: Offer,
+) {
+  const { newPasskeyAccount } = yield* Confirmations;
+  const earlier = yield* Ref.get(newPasskeyAccount);
+  const made = Option.isSome(earlier) ? earlier.value : yield* passkeyAccount(reservation);
+
+  yield* Ref.set(newPasskeyAccount, Option.some(made));
+
+  // A passkey stays on this device, so this is never a public computer (`Account.addPasskey`).
+  yield* keepWithCard(
+    made.signedIn,
+    { accountId: made.signedIn.accountId, code: made.code, endsAtSaved: true, unsaved: true },
+    false,
+    offer,
+  );
+
+  yield* Ref.set(newPasskeyAccount, Option.none());
+
+  return made.used;
+});
+
+/**
+ * "Mit Notfallkarte anmelden", for an account without an address. A typo stops before anything
+ * leaves the device. The card then goes to the account's key state, which opens the notebook with
+ * it, or gives the account's first key its wrapper (`NotebookKeys.settle`). Answers the account.
+ */
+export const signInWithCard = Effect.fn("Account.signInWithCard")(function* (
+  typed: string,
+  publicComputer: boolean,
+  offer: Offer,
+) {
+  const api = yield* AuthApi.Service;
+  const code = yield* NotebookKeys.typedCard(typed);
+
+  const signedIn = yield* api
+    .cardSignIn(yield* NotebookKeys.cardLogin(code))
+    .pipe(Effect.mapError(problem));
+
+  yield* keepWithCard(
+    signedIn,
+    { accountId: signedIn.accountId, code, endsAtSaved: false, unsaved: false },
+    publicComputer,
+    offer,
+  ).pipe(Effect.onError(() => endUnkept(signedIn)));
+
+  return signedIn.accountId;
+});
+
 /** A passkey ceremony's result: the passkey, and its PRF output, which stays on the device. */
 export interface PasskeyUsed {
   readonly accountId: string;
@@ -491,7 +806,7 @@ export const signInWithPasskey = Effect.fn("Account.signInWithPasskey")(function
     .passkeySignIn(challenge, asserted.credential)
     .pipe(Effect.mapError(problem));
 
-  yield* keep(signedIn, publicComputer);
+  yield* keep(signedIn, publicComputer).pipe(Effect.tapError(() => endUnkept(signedIn)));
 
   return {
     accountId: signedIn.accountId,
@@ -544,10 +859,10 @@ export const passkeyOutput = Effect.fn("Account.passkeyOutput")(function* (crede
 });
 
 /**
- * Signs this device out: `leave` deletes the account's database and secrets (`Layers.forget`) and
- * ends with `forgetSession`, which signs the device out; then the server ends the session. Offline
- * the device still forgets everything, and the session runs out on the server. The caller asks
- * first unless nothing would be lost (`signOutWarning`), and `leave` may still refuse or fail.
+ * Signs this device out in place of an attempt under way (`supersede`): `leave` deletes the
+ * account's database and secrets (`Layers.forget`) and ends with `forgetSession`. Then the server
+ * ends the session that erased, or offline lets it run out, while the next sign-in may already run.
+ * The caller asks first unless nothing would be lost (`signOutWarning`); `leave` may refuse or fail.
  */
 export const signOut = Effect.fn("Account.signOut")(function* <E, R>(
   leave: (
@@ -558,16 +873,27 @@ export const signOut = Effect.fn("Account.signOut")(function* <E, R>(
   const store = yield* SessionStore.Service;
   const api = yield* AuthApi.Service;
   const confirmations = yield* Confirmations;
-  const current = yield* store.current;
+  const erased = yield* Ref.make(Option.none<Redacted.Redacted>());
 
-  if (Option.isSome(current)) yield* leave(current.value, store.forget);
+  yield* supersede(
+    Effect.gen(function* () {
+      const current = yield* store.current;
 
-  yield* SubscriptionRef.set(confirmations.current, Option.none());
+      if (Option.isSome(current)) {
+        yield* leave(
+          current.value,
+          Effect.flatMap(store.forget, (token) => Ref.set(erased, token)),
+        );
+      }
+
+      yield* SubscriptionRef.set(confirmations.current, Option.none());
+      yield* Ref.set(confirmations.newCard, Option.none());
+      yield* Ref.set(confirmations.newPasskeyAccount, Option.none());
+    }),
+  );
+
   yield* Effect.ignore(
-    Option.match(
-      Option.flatMap(current, (signed) => signed.token),
-      { onNone: () => Effect.void, onSome: api.signOut },
-    ),
+    Option.match(yield* Ref.get(erased), { onNone: () => Effect.void, onSome: api.signOut }),
   );
 });
 

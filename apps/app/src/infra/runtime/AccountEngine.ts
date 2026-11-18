@@ -334,7 +334,7 @@ export const forgetIfHeld = <E, R>(accountId: string, forgotten: Effect.Effect<v
       const held = Option.filter(yield* store.current, (signed) => signed.accountId === accountId);
 
       if (Option.isNone(held)) return;
-      const signedOut = Effect.andThen(forgotten, store.forget);
+      const signedOut = Effect.andThen(forgotten, Effect.asVoid(store.forget));
 
       // A public computer's account kept everything in its engine, which `forget` stopped.
       if (held.value.publicComputer) return yield* signedOut;

@@ -9,7 +9,7 @@ import { Tokens } from "@stu/ui/Tokens";
 import * as DateTime from "effect/DateTime";
 import * as Exit from "effect/Exit";
 import * as Option from "effect/Option";
-import * as Redacted from "effect/Redacted";
+import type * as Redacted from "effect/Redacted";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import { Redirect, useRouter } from "expo-router";
 import { useState } from "react";
@@ -18,7 +18,14 @@ import { StyleSheet, View } from "react-native";
 import { HeroScreen } from "../../ui/HeroScreen.tsx";
 import { ProblemText, reasonOf, reasonOfExit } from "../account/AccountForm.tsx";
 import { ConfirmSignIn } from "./ConfirmSignIn.tsx";
-import { KeyProblem, keyReasonOf, keyReasonOfExit, MethodRow, type Glyph } from "./KeysUi.tsx";
+import {
+  CardCode,
+  KeyProblem,
+  keyReasonOf,
+  keyReasonOfExit,
+  MethodRow,
+  type Glyph,
+} from "./KeysUi.tsx";
 import { KeysState } from "./KeysState.ts";
 import type { NotebookKeys } from "./NotebookKeys.ts";
 
@@ -81,7 +88,9 @@ function Keys({ accountId }: { readonly accountId: string }) {
   const screen = useKeysScreenState();
 
   return Option.match(screen.card, {
-    onSome: (card) => <NewCard text={card} onDone={() => screen.setCard(Option.none())} />,
+    onSome: (card) => (
+      <NewCard accountId={accountId} text={card} onDone={() => screen.setCard(Option.none())} />
+    ),
     onNone: () => <Overview accountId={accountId} screen={screen} />,
   });
 }
@@ -203,6 +212,12 @@ function Overview({
             busy={created.waiting}
             onPress={() => void newCard()}
           />
+          {AsyncResult.isSuccess(summary) &&
+          summary.value.methods.some((method) => method.kind === "code") ? (
+            <Text variant="subhead" style={{ color: color.inkSoft }}>
+              Deine alte Notfallkarte gilt dann nicht mehr.
+            </Text>
+          ) : null}
           <Button
             label="Passkey hinzufügen"
             kind="quiet"
@@ -235,44 +250,44 @@ function Overview({
   );
 }
 
-/** "Deine Notfallkarte": the new code, shown this once. */
+/**
+ * "Deine Notfallkarte": the new code, until "Fertig". The device keeps it until then, so after a
+ * restart the card step shows it again (`NotebookKeys.replaceCard`).
+ */
 function NewCard({
+  accountId,
   text,
   onDone,
 }: {
+  readonly accountId: string;
   readonly text: Redacted.Redacted;
   readonly onDone: () => void;
 }) {
   const { color } = Theme.useTheme();
-  const groups = Redacted.value(text).split("-");
+  const [released, release] = useAtom(KeysState.cardSaved(accountId), { mode: "promiseExit" });
 
   return (
     <HeroScreen
       title="Deine Notfallkarte"
-      subtitle="Damit öffnest du dein Notizbuch auf einem neuen Gerät."
+      subtitle="Damit öffnest du dein Notizbuch auf einem neuen Gerät. Hast du keine E-Mail-Adresse angegeben, meldest du dich damit auch an."
     >
       <Card padded>
-        <Text variant="footnote" style={{ color: color.accent }}>
-          Studienbuch Notfallkarte
-        </Text>
-        <View accessible accessibilityLabel={`Code: ${groups.join(", ")}`}>
-          <Text variant="title2" selectable style={styles.code}>
-            {groups.slice(0, 4).join("-")}
-          </Text>
-          <Text variant="title2" selectable style={styles.code}>
-            {groups.slice(4).join("-")}
-          </Text>
-        </View>
-        <Text variant="footnote" style={{ color: color.inkSoft }}>
-          Studienbuch fragt nie nach diesem Code. Gib ihn nur in der Studienbuch-App ein.
-        </Text>
+        <CardCode text={text} />
       </Card>
       <Text variant="subhead" style={[styles.note, { color: color.inkSoft }]}>
         Du siehst den Code nur jetzt. Schreib ihn ab und heb ihn bei deinen Zeugnissen auf. Kein
         Screenshot: Fotos sieht jeder, der dein entsperrtes Gerät hat.
       </Text>
       <View style={styles.actions}>
-        <Button label="Fertig" block onPress={onDone} />
+        <KeyProblem reason={keyReasonOf(released)} />
+        <Button
+          label="Fertig"
+          block
+          busy={released.waiting}
+          onPress={() =>
+            void release().then((exit) => (Exit.isSuccess(exit) ? onDone() : undefined))
+          }
+        />
       </View>
     </HeroScreen>
   );
@@ -283,5 +298,4 @@ const styles = StyleSheet.create({
   grow: { flex: 1, gap: Tokens.space.xs },
   actions: { gap: Tokens.space.md },
   note: { paddingHorizontal: Tokens.space.lg },
-  code: { letterSpacing: 2, fontVariant: ["tabular-nums"] },
 });

@@ -18,6 +18,7 @@ import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Option from "effect/Option";
+import type * as Redacted from "effect/Redacted";
 import * as PubSub from "effect/PubSub";
 import * as Queue from "effect/Queue";
 import type * as RpcClient from "effect/rpc/RpcClient";
@@ -187,10 +188,14 @@ export const make = Effect.gen(function* () {
    * Sends a copy of a push on a connection of its own and waits for its answer, which it drops.
    * Going offline or a disconnect drops that connection too.
    */
-  const duplicate = (inner: Ports.Transport["Service"], request: RpcMessage.RequestEncoded) =>
+  const duplicate = (
+    inner: Ports.Transport["Service"],
+    token: Redacted.Redacted,
+    request: RpcMessage.RequestEncoded,
+  ) =>
     Effect.scoped(
       Effect.gen(function* () {
-        const side = yield* inner.connect;
+        const side = yield* inner.connect(token);
         const answered = yield* Deferred.make<void>();
         const drop = Deferred.succeed(answered, undefined).pipe(Effect.asVoid);
 
@@ -208,14 +213,14 @@ export const make = Effect.gen(function* () {
     ).pipe(Effect.ignore, Effect.forkIn(scope));
 
   const transport = (inner: Ports.Transport["Service"]): Ports.Transport["Service"] => ({
-    connect: Effect.gen(function* () {
+    connect: Effect.fnUntraced(function* (token) {
       if ((yield* SubscriptionRef.get(settings)).offline) {
         return yield* new Ports.ConnectFailed({ reason: "unreachable" });
       }
 
       const outer = yield* Effect.scope;
       const own = yield* Scope.fork(outer);
-      const connected = yield* inner.connect.pipe(Scope.provide(own));
+      const connected = yield* inner.connect(token).pipe(Scope.provide(own));
       const closedBy = yield* Deferred.make<number>();
       let isDropped = false;
 
@@ -293,7 +298,7 @@ export const make = Effect.gen(function* () {
 
             if (yield* take("duplicateNextPush")) {
               yield* emit("duplicateNextPush", `request ${outgoing.id}`);
-              yield* duplicate(inner, outgoing);
+              yield* duplicate(inner, token, outgoing);
             }
           }
         }

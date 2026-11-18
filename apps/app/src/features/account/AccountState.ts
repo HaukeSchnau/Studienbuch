@@ -1,6 +1,7 @@
 import { useAtomMount, useAtomSet, useAtomValue } from "@effect/atom-react";
 import type { Access } from "@stu/api/Access";
 import { AccountDeletion } from "@stu/api/AccountDeletion";
+import { CryptoSuite } from "@stu/e2ee";
 import { SyncClient, SyncQuery } from "@stu/sync/client";
 import * as Effect from "effect/Effect";
 import * as Equal from "effect/Equal";
@@ -19,10 +20,11 @@ import { ApiProtocol } from "../../infra/api/ApiProtocol.ts";
 import { SessionStore } from "../../infra/auth/SessionStore.ts";
 import { layer as signUpStore } from "../../infra/auth/signUpStore.ts";
 import { publicComputer } from "../../infra/device/publicComputer.ts";
+import { Passkeys } from "../../infra/passkeys/Passkeys.ts";
 import { layer as authenticator } from "../../infra/passkeys/platform.ts";
 import { AccountEngine } from "../../infra/runtime/AccountEngine.ts";
 import { Layers } from "../../infra/runtime/Layers.ts";
-import { OfferedPrf } from "../keys/OfferedPrf.ts";
+import { Offered } from "../keys/Offered.ts";
 import { Account } from "./Account.ts";
 import { Deletion } from "./Deletion.ts";
 import { DeletionServer } from "./DeletionServer.ts";
@@ -64,6 +66,7 @@ const runtime = Atom.runtime(
   Layer.mergeAll(
     authenticator,
     deletionServer,
+    CryptoSuite.layer,
     Account.confirmations.pipe(Layer.provideMerge(signUpStore)),
   ).pipe(Layer.provideMerge(AccountEngine.device)),
 ).pipe(Atom.keepAlive);
@@ -142,14 +145,52 @@ export const signingUp = runtime
   )
   .pipe(Atom.keepAlive);
 
+const attempting = runtime
+  .atom(
+    Stream.unwrap(
+      Effect.map(SessionStore.Service, ({ attempt }) =>
+        SubscriptionRef.changes(attempt).pipe(
+          Stream.map((now) => now.running),
+          Stream.changes,
+        ),
+      ),
+    ),
+  )
+  .pipe(Atom.keepAlive);
+
+/**
+ * Whether a sign-in, sign-up or sign-out runs on this device (`Account.attempt`): the screens then
+ * start none, and the "Öffentlicher Computer" choice stays as that attempt read it.
+ */
+export const useAttempting = () => AsyncResult.getOrElse(useAtomValue(attempting), () => false);
+
+/**
+ * Whether the sign-in of `result` runs as the device's attempt. One a sign-out took over from may
+ * wait for its server a while yet, but its screen offers a new sign-in at once.
+ */
+export const useSigningIn = (result: AsyncResult.AsyncResult<unknown, unknown>) => {
+  const attempting = useAttempting();
+
+  return result.waiting && attempting;
+};
+
 /**
  * The tab's choice when a sign-in starts. Read without a dependency: a change must not run the
  * sign-in again.
  */
 const chosen = (get: Atom.FnContext) => get.registry.get(publicComputer);
 
+// Each sign-in runs as the device's one attempt (`Account.attempt`). A second call of its atom
+// must meet that refusal rather than interrupt the first, so these atoms run `concurrent`. A run
+// then outlives its atom's context, so what it hands on goes through the registry (`handOver`).
+const oneAttempt = { concurrent: true };
+
+const handOver = <W>(get: Atom.FnContext, atom: Atom.Writable<unknown, W>, value: W) =>
+  Effect.sync(() => get.registry.set(atom, value));
+
 export const signIn = runtime.fn<{ readonly email: string; readonly password: string }>()(
-  ({ email, password }, get) => Account.signIn(email, password, chosen(get)),
+  ({ email, password }, get) => Account.attempt(Account.signIn(email, password, chosen(get))),
+  oneAttempt,
 );
 
 /** `reservation` as `Access.redeem` answered on the code screen. */
@@ -170,7 +211,11 @@ export const resetPassword = runtime.fn<{
   readonly email: string;
   readonly code: string;
   readonly password: string;
-}>()(({ email, code, password }, get) => Account.resetPassword(email, code, password, chosen(get)));
+}>()(
+  ({ email, code, password }, get) =>
+    Account.attempt(Account.resetPassword(email, code, password, chosen(get))),
+  oneAttempt,
+);
 
 /** `password` only when the screen asked for it again, after a restart. */
 export const confirmEmail = runtime.fn<{
@@ -191,11 +236,13 @@ export const cancelSignUp = runtime
 
 /** Signs the device in with the session that confirmed `email`, with a new passkey first. */
 export const finish = runtime
-  .fn<{ readonly email: string; readonly withPasskey: boolean }>()(({ email, withPasskey }, get) =>
-    // The PRF output goes to `OfferedPrf` only: this atom stays alive and keeps what it returns.
-    Effect.flatMap(Account.finish(email, withPasskey, chosen(get)), (used) =>
-      Effect.sync(() => get.set(OfferedPrf.waiting, used)),
-    ),
+  .fn<{ readonly email: string; readonly withPasskey: boolean }>()(
+    ({ email, withPasskey }, get) =>
+      // The PRF output goes to `OfferedPrf` only: this atom stays alive and keeps what it returns.
+      Effect.flatMap(Account.attempt(Account.finish(email, withPasskey, chosen(get))), (used) =>
+        handOver(get, Offered.prf, used),
+      ),
+    oneAttempt,
   )
   .pipe(Atom.keepAlive);
 
@@ -214,10 +261,55 @@ export function useLaterOnLeave(email: string) {
 }
 
 /** Signs in with a passkey, and leaves its PRF output for the notebook's unlock. */
-export const signInWithPasskey = runtime.fn<void>()((_, get) =>
-  Effect.tap(Account.signInWithPasskey(chosen(get)), (used) =>
-    Effect.sync(() => get.set(OfferedPrf.waiting, Option.some(used))),
-  ),
+export const signInWithPasskey = runtime.fn<void>()(
+  (_, get) =>
+    Effect.tap(Account.attempt(Account.signInWithPasskey(chosen(get))), (used) =>
+      handOver(get, Offered.prf, Option.some(used)),
+    ),
+  oneAttempt,
+);
+
+// The sign-ups without an address and the card's sign-in hand their secrets to `Offered` only:
+// these atoms stay alive while their screen goes, and keep what they return.
+
+const offerCard = (get: Atom.FnContext): Account.Offer => ({
+  give: (card) => handOver(get, Offered.card, Option.some(card)),
+  withdraw: (card) => Effect.sync(() => get.registry.update(Offered.card, Offered.withdraw(card))),
+});
+
+/** An account without an address, made with its Notfallkarte (`Account.signUpWithCard`). */
+export const signUpWithCard = runtime
+  .fn<Access.Reservation>()(
+    (reservation, get) =>
+      Account.attempt(Account.signUpWithCard(reservation, chosen(get), offerCard(get))),
+    oneAttempt,
+  )
+  .pipe(Atom.keepAlive);
+
+/** An account without an address, made with a passkey (`Account.signUpWithPasskey`). */
+export const signUpWithPasskey = runtime
+  .fn<Access.Reservation>()(
+    (reservation, get) =>
+      Effect.flatMap(
+        Account.attempt(Account.signUpWithPasskey(reservation, offerCard(get))),
+        (used) => handOver(get, Offered.prf, Option.some(used)),
+      ),
+    oneAttempt,
+  )
+  .pipe(Atom.keepAlive);
+
+/** "Mit Notfallkarte anmelden": the card signs in, then opens the notebook. */
+export const signInWithCard = runtime
+  .fn<string>()(
+    (typed, get) =>
+      Effect.asVoid(Account.attempt(Account.signInWithCard(typed, chosen(get), offerCard(get)))),
+    oneAttempt,
+  )
+  .pipe(Atom.keepAlive);
+
+/** Whether this device can keep a passkey of its own, which decides how a sign-up starts. */
+export const passkeysHere = runtime.atom(
+  Effect.flatMap(Passkeys.Authenticator, (passkeys) => passkeys.available),
 );
 
 /**
@@ -232,6 +324,7 @@ const failed = Effect.fail(new Account.Problem({ reason: "sign-out-failed" }));
  * Signs the device out (`Account.signOut`). `unsent` is what the question before showed
  * (`unsent`), `None` when it couldn't tell. A newer change refuses with `AccountEngine.MoreUnsent`,
  * and the question asks again; any other failure is "sign-out-failed", which the student retries.
+ * It takes over from an attempt under way, which then keeps no session.
  */
 export const signOut = runtime
   .fn<Option.Option<AccountEngine.Unsent>>()((unsent, get) =>
@@ -240,7 +333,8 @@ export const signOut = runtime
       const signedOutHere = Effect.andThen(
         Effect.sync(() => {
           get.set(signedOut, true);
-          get.set(OfferedPrf.waiting, Option.none());
+          get.set(Offered.prf, Option.none());
+          get.set(Offered.card, Option.none());
         }),
         forgetSession,
       );
@@ -272,7 +366,8 @@ export const signOut = runtime
 const leftDeleted = Effect.flatMap(AtomRegistry.AtomRegistry, (registry) =>
   Effect.sync(() => {
     registry.set(signedOut, false);
-    registry.set(OfferedPrf.waiting, Option.none());
+    registry.set(Offered.prf, Option.none());
+    registry.set(Offered.card, Option.none());
   }),
 );
 

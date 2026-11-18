@@ -87,6 +87,33 @@ describe("SessionStore", () => {
     }).pipe(Effect.provide(MemoryKeychain.layer())),
   );
 
+  // A sign-in here, as "Kurz bestätigen" makes one, replaced the token while the server's word
+  // about the old one was on its way.
+  it.effect("ends a session only while the device still holds the token that ended", () =>
+    Effect.gen(function* () {
+      const store = yield* SessionStore.Service;
+
+      yield* store.signedIn(lena, false);
+      yield* store.signedIn({ ...lena, token: Redacted.make("token-2") }, false);
+      yield* store.ended(Redacted.make("token-1"));
+      const kept = tokenOf(yield* store.current);
+      yield* store.ended(Redacted.make("token-2"));
+
+      assert.deepStrictEqual(
+        { kept, afterItsOwnEnd: tokenOf(yield* store.current) },
+        { kept: Option.some("token-2"), afterItsOwnEnd: Option.none() },
+      );
+    }).pipe(
+      Effect.provide(
+        SessionStore.layer.pipe(
+          Layer.provide(DeviceSessions.layer),
+          Layer.provide(device),
+          Layer.provide(MemoryKeychain.layer()),
+        ),
+      ),
+    ),
+  );
+
   it.effect("ends the engine's session when the server forgot it while the app was away", () =>
     Effect.gen(function* () {
       const lifecycle = yield* Queue.unbounded<Ports.LifecycleState>();

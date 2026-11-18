@@ -255,7 +255,7 @@ const session = (account: Account) => {
     accountId: account,
     token: Effect.succeed(token),
     changes: Stream.concat(Stream.make(token), Stream.never),
-    ended: Effect.void,
+    ended: () => Effect.void,
   });
 };
 

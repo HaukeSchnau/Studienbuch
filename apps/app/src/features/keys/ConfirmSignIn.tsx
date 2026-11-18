@@ -9,13 +9,15 @@ import * as AsyncResult from "effect/reactivity/AsyncResult";
 import { Keyboard } from "react-native";
 
 import type { AuthApi } from "../../infra/auth/AuthApi.ts";
-import { ProblemText, reasonOf, useCredentials } from "../account/AccountForm.tsx";
+import { ProblemText, reasonOf, useCredentials, useRunning } from "../account/AccountForm.tsx";
+import { ConfirmByCard } from "./ConfirmByCard.tsx";
 import { KeysState } from "./KeysState.ts";
 
 /**
  * "Kurz bestätigen": a new sign-in before a step that needs a fresh one
  * (`Keys.freshSignInMinutes`). `why` says which step and why it asks. It offers only the ways the
- * account has (`AuthApi.waysIn`).
+ * account has (`AuthApi.waysIn`): an account without a password has no address, and its
+ * Notfallkarte signs it in.
  */
 export function ConfirmSignIn({
   accountId,
@@ -39,7 +41,11 @@ export function ConfirmSignIn({
             {password ? (
               <WithPassword accountId={accountId} quiet={passkey} onConfirmed={onConfirmed} />
             ) : (
-              <WithoutPassword passkey={passkey} />
+              <ConfirmByCard
+                accountId={accountId}
+                kind={passkey ? "quiet" : "filled"}
+                onConfirmed={onConfirmed}
+              />
             )}
           </>
         ),
@@ -100,7 +106,13 @@ function WithPassword({
     mode: "promiseExit",
   });
 
+  const running = useRunning(KeysState.withPassword(accountId));
+
+  // The keyboard's submit isn't disabled with the button, and a second call of the running atom
+  // would answer both with "busy".
   const submit = () => {
+    if (running()) return;
+
     Keyboard.dismiss();
     void withPassword({ email, password }).then(confirmedBy(onConfirmed));
   };
@@ -143,18 +155,5 @@ function WithPassword({
         onPress={submit}
       />
     </>
-  );
-}
-
-/**
- * The account has no address, so no password. Its Notfallkarte signs it in, and confirms here once
- * the app signs in with a card; until then, one without a passkey has no way here.
- */
-function WithoutPassword({ passkey }: { readonly passkey: boolean }) {
-  return passkey ? null : (
-    <Text variant="subhead">
-      Dein Konto hat keinen Passkey und kein Passwort, darum kannst du dich hier noch nicht neu
-      anmelden.
-    </Text>
   );
 }

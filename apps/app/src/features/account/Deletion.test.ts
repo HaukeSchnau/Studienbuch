@@ -130,13 +130,13 @@ describe("Deletion", () => {
 
           // Another device changed the password: this session ended, and the account lives on.
           yield* signIn("lena", "token-revoked");
-          yield* store.ended;
+          yield* store.ended(Redacted.make("token-revoked"));
           const askedFirst = yield* Queue.take(asked);
           const kept = yield* store.current;
 
           // Lena deleted her account on her phone, and this laptop comes back.
           yield* signIn("lena", "token-deleted");
-          yield* store.ended;
+          yield* store.ended(Redacted.make("token-deleted"));
           const askedThen = yield* Queue.take(asked);
           yield* Stream.runHead(Stream.filter(store.changes, Option.isNone));
 
@@ -166,7 +166,7 @@ describe("Deletion", () => {
         const { left, leave } = yield* leaving;
 
         yield* signIn("lena", "token-stored");
-        yield* store.ended;
+        yield* store.ended(Redacted.make("token-stored"));
         // The keychain still refuses the watcher's first read, as before the first unlock.
         yield* Ref.set(yield* Refuse, true);
 
@@ -203,7 +203,7 @@ describe("Deletion", () => {
       yield* Effect.gen(function* () {
         yield* Effect.forkChild(Deletion.forgetWhenDeleted(leave), { startImmediately: true });
         yield* signIn("lena", "token-lena");
-        yield* store.ended;
+        yield* store.ended(Redacted.make("token-lena"));
         yield* Queue.take(asked);
         yield* TestClock.adjust("2 seconds");
         yield* Queue.take(asked);
@@ -241,7 +241,7 @@ describe("Deletion", () => {
       yield* Effect.gen(function* () {
         yield* Effect.forkChild(Deletion.forgetWhenDeleted(leave), { startImmediately: true });
         yield* signIn("lena", "token-lena");
-        yield* store.ended;
+        yield* store.ended(Redacted.make("token-lena"));
         yield* Queue.take(asked);
         yield* TestClock.adjust("2 seconds");
         const second = yield* Ref.get(tries);
@@ -315,7 +315,7 @@ describe("Deletion", () => {
           yield* Deferred.await(deleting);
 
           // Her session ends too, and the watcher's question waits for the same slow server.
-          yield* store.ended;
+          yield* store.ended(Redacted.make("token-lena"));
           yield* Queue.take(asked);
 
           yield* store.forget;
@@ -385,7 +385,7 @@ describe("Deletion", () => {
       const { leave, reported, report } = yield* leaving;
 
       yield* signIn("lena", "token-lena");
-      yield* store.ended;
+      yield* store.ended(Redacted.make("token-lena"));
 
       const refused = yield* Effect.flip(
         Deletion.deleteAccount(leave, report).pipe(Effect.provide(server(new Set(), asked))),
@@ -408,7 +408,9 @@ describe("Deletion", () => {
 
         // As the engine reports a closed connection, while the deletion's answer is on its way. The
         // watcher's question about the ended session stops once Lena no longer holds the device.
-        const deleted = server(new Set(["token-phone"]), asked, { delete: () => store.ended });
+        const deleted = server(new Set(["token-phone"]), asked, {
+          delete: (token) => store.ended(token),
+        });
 
         yield* Effect.gen(function* () {
           yield* Effect.forkChild(Deletion.forgetWhenDeleted(leave), { startImmediately: true });

@@ -1,4 +1,8 @@
-import { startAuthentication, startRegistration } from "@simplewebauthn/browser";
+import {
+  platformAuthenticatorIsAvailable,
+  startAuthentication,
+  startRegistration,
+} from "@simplewebauthn/browser";
 import { CryptoSuite, Wrapper } from "@stu/e2ee";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -66,6 +70,9 @@ export const layer = Layer.effect(Passkeys.Authenticator)(
             prf: bytes(clientExtensionResults.prf?.results?.first),
           })),
         ),
+      available: Effect.tryPromise(platformAuthenticatorIsAvailable).pipe(
+        Effect.orElseSucceed(() => false),
+      ),
     }),
   ),
 ).pipe(Layer.provide(CryptoSuite.layer));

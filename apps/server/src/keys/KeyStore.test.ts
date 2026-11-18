@@ -3,6 +3,7 @@ import { Keys } from "@stu/api/Keys";
 import { AccountKey, SpaceKey, Wrapper } from "@stu/e2ee";
 import { TestCrypto } from "@stu/e2ee/testing";
 import { Postgres18 } from "@stu/sync/testing";
+import * as Cause from "effect/Cause";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
@@ -19,6 +20,7 @@ import * as SqlClient from "effect/sql/SqlClient";
 import { Pool } from "pg";
 import { Deletion } from "../account/Deletion.ts";
 import { CardLogins } from "../auth/CardLogins.ts";
+import { FreshSignIn } from "../auth/FreshSignIn.ts";
 import { DatabaseTesting } from "../infra/database/DatabaseTesting.ts";
 import { SchoolTesting } from "../school/SchoolTesting.ts";
 import { KeyStore } from "./KeyStore.ts";
@@ -266,6 +268,86 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
         }),
     );
 
+    // Device 1 sends card A and loses the answer. Device 2 replaces A with B. Device 1 then sends A
+    // again, still fresh: that must not make the retired card the account's card again.
+    it.effect("a card a newer card retired stays retired when a device resends it", () =>
+      Effect.gen(function* () {
+        const sql = yield* SqlClient.SqlClient;
+
+        const ids = (account: string) =>
+          Effect.map(KeyStore.state(account), (state) =>
+            state.wrappers.map((wrapper) => wrapper.statement.id),
+          );
+
+        const replay = (account: string, address: boolean, fill: number) =>
+          Effect.gen(function* () {
+            if (address) yield* SchoolTesting.account(account);
+            else yield* withoutAddress(account);
+
+            const first = yield* firstDevice(account, fill);
+            const one = yield* signedIn(account, 1);
+            const two = yield* signedIn(account, 2);
+            yield* sql.withTransaction(
+              KeyStore.publishFirst(
+                account,
+                first.record,
+                Option.some({ wrapper: first.device, session: one }),
+              ),
+            );
+
+            const a = yield* cardFrom(`${account}-card-a`, fill + 1, first.keys);
+            const b = yield* cardFrom(`${account}-card-b`, fill + 2, first.keys);
+            const c = yield* cardFrom(`${account}-card-c`, fill + 3, first.keys);
+            const loginA = Option.some(loginOf(fill + 1));
+            const loginB = Option.some(loginOf(fill + 2));
+
+            yield* KeyStore.addWrapper(account, one, a, loginA);
+            yield* KeyStore.addWrapper(account, two, b, loginB);
+
+            // B signed out device 1 of an account without an address; it signs in again, as with
+            // its passkey, and still holds A.
+            const again = yield* signedIn(account, 3);
+            const replayed = yield* Effect.flip(KeyStore.addWrapper(account, again, a, loginA));
+            // Device 2 resends its own card after a lost answer: nothing changes.
+            yield* KeyStore.addWrapper(account, two, b, loginB);
+            const afterReplay = yield* ids(account);
+
+            const logins = [
+              yield* CardLogins.owner(loginOf(fill + 1)),
+              yield* CardLogins.owner(loginOf(fill + 2)),
+            ];
+
+            // A genuinely new card still replaces B.
+            yield* KeyStore.addWrapper(account, two, c, Option.some(loginOf(fill + 3)));
+
+            return {
+              replayed: replayed._tag === "Keys.Invalid" ? replayed.reason : replayed._tag,
+              afterReplay,
+              logins: address ? [] : logins,
+              afterNew: yield* ids(account),
+            };
+          });
+
+        expect({
+          email: yield* replay("rufus", true, 140),
+          withoutAddress: yield* replay("wanda", false, 150),
+        }).toEqual({
+          email: {
+            replayed: "statement",
+            afterReplay: ["rufus-device", "rufus-card-b"],
+            logins: [],
+            afterNew: ["rufus-device", "rufus-card-c"],
+          },
+          withoutAddress: {
+            replayed: "statement",
+            afterReplay: ["wanda-device", "wanda-card-b"],
+            logins: [Option.none(), Option.some("wanda")],
+            afterNew: ["wanda-device", "wanda-card-c"],
+          },
+        });
+      }),
+    );
+
     it.effect(
       "takes a Notfallkarte only from a sign-in in the last ten minutes, a device wrapper from any",
       () =>
@@ -369,7 +451,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
         }),
     );
     it.effect(
-      "signs in with the card of an account without an address, and a new card retires the old one's login and wrappers",
+      "signs in with the card of an account without an address, and a new card retires the old one's login, and for every account its wrappers",
       () =>
         Effect.gen(function* () {
           const sql = yield* SqlClient.SqlClient;
@@ -453,6 +535,14 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
             Option.some(loginOf(3)),
           );
 
+          // An email account's card opens the notebook only, and a new one retires it too.
+          yield* KeyStore.addWrapper(
+            "max",
+            maxSession,
+            yield* cardFrom("max-card-2", 121, max.keys),
+            Option.some(loginOf(4)),
+          );
+
           expect({
             withoutLogin:
               withoutLogin._tag === "Keys.Invalid" ? withoutLogin.reason : withoutLogin._tag,
@@ -465,6 +555,9 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
             seals: (yield* sql`select 1 from key_wrapper_seal where account_id = 'noa'`).length,
             taken: taken._tag === "Keys.Invalid" ? taken.reason : taken._tag,
             email: yield* owner(3),
+            emailWrappers: (yield* KeyStore.state("max")).wrappers.map(
+              (wrapper) => wrapper.statement.id,
+            ),
             ended,
             sessions: yield* sessions,
           }).toEqual({
@@ -480,6 +573,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
             seals: 2,
             taken: "statement",
             email: Option.none(),
+            emailWrappers: ["max-device", "max-card-2"],
             ended: [finder],
             sessions: [session],
           });
@@ -752,6 +846,41 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
           last: Option.isSome(yield* CardLogins.owner(loginOf(64))),
           retired: Option.isNone(yield* CardLogins.owner(loginOf(62))),
         }).toEqual({ a: true, b: true, c: true, last: true, retired: true });
+      }),
+    );
+
+    // Someone signed in with Noor's old card asks to delete her account while she replaces the
+    // card. The deletion waits for the replacement, which ends that session, and then refuses.
+    it.effect("a deletion queued behind a replacement checks its sign-in after it", () =>
+      Effect.gen(function* () {
+        const sql = yield* SqlClient.SqlClient;
+        const pause = yield* Pause;
+        const noor = yield* cardAccount("noor", 180);
+        const finder = yield* signedIn("noor", 1);
+
+        yield* Ref.set(pause.armed, 1);
+        const replacing = yield* Effect.forkChild(noor.replace("noor-card-2", 182, loginOf(82)));
+        yield* Queue.take(pause.held);
+
+        const fresh = Effect.flatMap(FreshSignIn.isFresh("noor", finder), (isFresh) =>
+          isFresh ? Effect.void : Effect.fail("not-fresh" as const),
+        );
+
+        const deleting = yield* Effect.forkChild(
+          Deletion.run("noor", fresh).pipe(Effect.provide(Deletion.ended)),
+        );
+
+        yield* DatabaseTesting.waiting(1);
+        yield* Queue.offer(pause.release, undefined);
+
+        expect({
+          replacing: Exit.isSuccess(yield* Fiber.await(replacing)),
+          deleting: Exit.match(yield* Fiber.await(deleting), {
+            onSuccess: () => "deleted",
+            onFailure: (cause) => Cause.findErrorOption(cause),
+          }),
+          left: (yield* sql`select 1 from auth_user where id = 'noor'`).length,
+        }).toEqual({ replacing: true, deleting: Option.some("not-fresh"), left: 1 });
       }),
     );
 

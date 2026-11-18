@@ -14,28 +14,33 @@ import { useRef, useState } from "react";
 import { Keyboard, StyleSheet, type TextInputSelectionChangeEvent } from "react-native";
 
 import { AccessCode } from "./AccessCode.ts";
-import { Form, Lead, OtherWay, ProblemBox } from "./AccountForm.tsx";
+import { Form, Lead, OtherWay, ProblemBox, useRunning } from "./AccountForm.tsx";
+import { AccountState } from "./AccountState.ts";
+import { useForgetAnswer } from "./CodeField.tsx";
 import { Steps } from "./Steps.ts";
 import { TypedCode } from "./TypedCode.ts";
 
 /**
  * "Willkommen!": the access code from the school, the old web's first step. A whole code earns a
- * tick before the server is asked, and a code the server takes leads to "Konto erstellen" with its
+ * tick before the server is asked, and a code the server takes leads to "Konto anlegen" with its
  * school named. Changing the code clears the last refusal, and the way back finds the code again.
  */
 export function WelcomeScreen() {
   const router = useRouter();
   const [result, redeem] = useAtom(AccessCode.redeem, { mode: "promiseExit" });
-  const forget = useAtomSet(AccessCode.redeem);
+  const forgetResult = useForgetAnswer(AccessCode.redeem);
+  const redeeming = useRunning(AccessCode.redeem);
   const keep = useAtomSet(Steps.reservation);
   const keepCode = useAtomSet(Steps.accessCode);
+  const resetCardSignUp = useAtomSet(AccountState.signUpWithCard);
+  const resetPasskeySignUp = useAtomSet(AccountState.signUpWithPasskey);
   const typed = Option.getOrElse(useAtomValue(Steps.accessCode), () => "");
-  const code = useAccessCode(typed, () => forget(Atom.Reset));
+  const code = useAccessCode(typed, forgetResult);
   const complete = Access.isCode(code.value);
   const reason = reasonOf(result);
 
   const submit = async () => {
-    if (!complete) return;
+    if (!complete || redeeming()) return;
 
     Keyboard.dismiss();
     const exit = await redeem({ payload: { code: code.value } });
@@ -43,7 +48,10 @@ export function WelcomeScreen() {
     if (Exit.isSuccess(exit)) {
       keep(Option.some(exit.value));
       keepCode(Option.some(code.value));
-      router.push("/konto-erstellen");
+      // A new code starts its sign-up afresh, without the last one's answer.
+      resetCardSignUp(Atom.Reset);
+      resetPasskeySignUp(Atom.Reset);
+      router.push("/konto-anlegen");
     }
   };
 

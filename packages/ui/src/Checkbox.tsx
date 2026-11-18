@@ -13,10 +13,11 @@ export interface CheckboxProps {
   readonly description?: string;
   readonly checked: boolean;
   readonly onChange: (checked: boolean) => void;
+  readonly disabled?: boolean;
 }
 
 /** A box to tick before its label, the whole row taking the touch. */
-export function Checkbox({ label, description, checked, onChange }: CheckboxProps) {
+export function Checkbox({ label, description, checked, onChange, disabled }: CheckboxProps) {
   const { color } = Theme.useTheme();
 
   return (
@@ -24,6 +25,7 @@ export function Checkbox({ label, description, checked, onChange }: CheckboxProp
       kind="checkbox"
       checked={checked}
       onPress={() => onChange(!checked)}
+      disabled={disabled}
       style={({ pressed }) => [styles.row, pressed ? styles.pressed : null]}
     >
       <View

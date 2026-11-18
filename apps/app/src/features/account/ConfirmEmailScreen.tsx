@@ -8,7 +8,6 @@ import { Theme } from "@stu/ui/Theme";
 import * as Exit from "effect/Exit";
 import * as Option from "effect/Option";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
-import * as Atom from "effect/reactivity/Atom";
 import { Redirect, useRouter } from "expo-router";
 import { Keyboard, StyleSheet } from "react-native";
 
@@ -23,9 +22,10 @@ import {
   reasonOf,
   Strong,
   useCredentials,
+  useRunning,
 } from "./AccountForm.tsx";
 import { AccountState } from "./AccountState.ts";
-import { CodeField, ResendCode, useCode } from "./CodeField.tsx";
+import { CodeField, ResendCode, useCode, useForgetAnswer } from "./CodeField.tsx";
 import { Steps } from "./Steps.ts";
 
 /**
@@ -51,8 +51,9 @@ function CodeEntry({ waiting }: { readonly waiting: Account.SigningUp }) {
   const router = useRouter();
   const { email } = waiting;
   const [result, confirm] = useAtom(AccountState.confirmEmail, { mode: "promiseExit" });
-  const forget = useAtomSet(AccountState.confirmEmail);
-  const code = useCode(() => forget(Atom.Reset));
+  const confirming = useRunning(AccountState.confirmEmail);
+  const forgetResult = useForgetAnswer(AccountState.confirmEmail);
+  const code = useCode(forgetResult);
   const { password, setPassword } = useCredentials();
   const [resent, sendCode] = useAtom(AccountState.sendCode, { mode: "promiseExit" });
   const cancel = useAtomSet(AccountState.cancelSignUp);
@@ -65,7 +66,7 @@ function CodeEntry({ waiting }: { readonly waiting: Account.SigningUp }) {
   const complete = code.complete && (!asksPassword || password.length > 0);
 
   const submit = async () => {
-    if (!complete) return;
+    if (!complete || confirming()) return;
 
     Keyboard.dismiss();
 
@@ -109,7 +110,7 @@ function CodeEntry({ waiting }: { readonly waiting: Account.SigningUp }) {
             value={password}
             onChangeText={(text) => {
               setPassword(text);
-              forget(Atom.Reset);
+              forgetResult();
             }}
             autoComplete="current-password"
             textContentType="password"
@@ -134,7 +135,7 @@ function CodeEntry({ waiting }: { readonly waiting: Account.SigningUp }) {
           send={() => sendCode(email).then(Exit.isSuccess)}
           onSent={() => {
             code.clear();
-            forget(Atom.Reset);
+            forgetResult();
           }}
         />
         <Button
@@ -174,6 +175,7 @@ function PasskeyOffer({ email }: { readonly email: string }) {
   const { color } = Theme.useTheme();
   const [result, finish] = useAtom(AccountState.finish, { mode: "promiseExit" });
   const offDevice = useAtomValue(publicComputer);
+  const attempting = AccountState.useAttempting();
 
   AccountState.useLaterOnLeave(email);
 
@@ -192,12 +194,14 @@ function PasskeyOffer({ email }: { readonly email: string }) {
           label="Passkey anlegen"
           block
           busy={result.waiting}
+          disabled={attempting}
           onPress={() => void finish({ email, withPasskey: true })}
         />
         <Button
           kind="secondary"
           label="Später"
           block
+          disabled={attempting}
           onPress={() => void finish({ email, withPasskey: false })}
         />
         {/* A public computer starts no notebook key, so there is nothing to secure there yet. */}

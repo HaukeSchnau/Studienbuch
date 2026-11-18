@@ -13,8 +13,8 @@ import { AccountState } from "./AccountState.ts";
 import { Steps } from "./Steps.ts";
 
 /**
- * "Anmelden", in the old web's order: email and password, "Passwort vergessen?", then "oder" and
- * the passkey. A device whose session ended goes back to its tabs from here, and a code can't add
+ * "Anmelden", in the old web's order: email and password, "Passwort vergessen?", then "oder", the
+ * passkey and the Notfallkarte, which signs in to an account without an address. A device whose session ended goes back to its tabs from here, and a code can't add
  * another account to it.
  */
 export function SignInScreen() {
@@ -29,6 +29,9 @@ export function SignInScreen() {
   });
 
   const [withPassword, signIn] = useAtom(AccountState.signIn, { mode: "promiseExit" });
+  const attempting = AccountState.useAttempting();
+  const signingIn = AccountState.useSigningIn(withPassword);
+  const withPasskey = AccountState.useSigningIn(passkey);
 
   // "Passwort vergessen?" starts with the address typed here, from its first step.
   const forgot = () => {
@@ -41,7 +44,7 @@ export function SignInScreen() {
   const complete = email.trim() !== "" && password !== "";
 
   const submit = async () => {
-    if (!complete) return;
+    if (!complete || attempting) return;
 
     Keyboard.dismiss();
     await signIn({ email, password });
@@ -84,10 +87,10 @@ export function SignInScreen() {
         <ProblemText reason={reasonOf(withPassword)} />
         <Button
           kind="action"
-          label={withPassword.waiting ? "Anmeldung läuft …" : "Anmelden"}
+          label={signingIn ? "Anmeldung läuft …" : "Anmelden"}
           block
-          disabled={!complete}
-          busy={withPassword.waiting}
+          disabled={!complete || attempting}
+          busy={signingIn}
           onPress={() => void submit()}
         />
       </Form>
@@ -99,7 +102,8 @@ export function SignInScreen() {
         kind="secondary"
         label="Mit Passkey anmelden"
         block
-        busy={passkey.waiting}
+        busy={withPasskey}
+        disabled={attempting}
         onPress={() => void signInWithPasskey()}
       />
       {Option.match(reasonOf(passkey), {
@@ -110,6 +114,14 @@ export function SignInScreen() {
           </View>
         ),
       })}
+      <View style={styles.card}>
+        <Button
+          kind="secondary"
+          label="Mit Notfallkarte anmelden"
+          block
+          onPress={() => router.push("/mit-notfallkarte")}
+        />
+      </View>
       {access === "ended" ? (
         <OtherWay label="Zurück zur Übersicht" href="/" back />
       ) : (
@@ -127,4 +139,5 @@ const styles = StyleSheet.create({
   // mt-4, centred
   forgot: { alignItems: "center", marginTop: 4 },
   passkeyProblem: { marginTop: 12 },
+  card: { marginTop: 12 },
 });

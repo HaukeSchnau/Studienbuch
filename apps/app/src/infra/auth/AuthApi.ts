@@ -15,6 +15,8 @@ import * as Option from "effect/Option";
 import * as Redacted from "effect/Redacted";
 import * as Schema from "effect/Schema";
 
+import { Deadline } from "../api/Deadline.ts";
+
 // Better Auth's routes at `Accounts.path`, the ones Studienbuch uses, with every response parsed.
 // A device sends its bearer token and keeps no cookies (ADR 0028).
 
@@ -26,7 +28,7 @@ export class Refused extends Schema.TaggedError<Refused, { readonly brand: uniqu
   { status: Schema.Int, code: Schema.String },
 ) {}
 
-/** No answer at all: the device is offline, or the server is down. */
+/** No answer at all: the device is offline, the server is down, or it didn't answer in time. */
 export class Unreachable extends Schema.TaggedError<
   Unreachable,
   { readonly brand: unique symbol }
@@ -205,6 +207,26 @@ export class Service extends Context.Service<
       challenge: string,
       credential: Credential,
     ) => Effect.Effect<void, Failure>;
+    /** Options for the passkey that creates an account without an address with `reservation`. */
+    readonly passkeySignUpOptions: (
+      reservation: string,
+    ) => Effect.Effect<Ceremony<CreationOptions>, Failure>;
+    /** Creates the account without an address with its first passkey, and signs in. */
+    readonly passkeySignUp: (
+      reservation: string,
+      challenge: string,
+      credential: Credential,
+    ) => Effect.Effect<SignedIn, Failure>;
+    /**
+     * Creates an account without an address whose Notfallkarte has `login`, and signs in. The same
+     * login again signs in to the account it made, so a retry after a lost answer is safe.
+     */
+    readonly cardSignUp: (
+      login: Redacted.Redacted,
+      reservation: string,
+    ) => Effect.Effect<SignedIn, Failure>;
+    /** Signs in to the account without an address whose Notfallkarte has `login`. */
+    readonly cardSignIn: (login: Redacted.Redacted) => Effect.Effect<SignedIn, Failure>;
   }
 >()("AuthApi.Service") {}
 
@@ -249,19 +271,27 @@ export const layer = Layer.effect(Service)(
       ),
     );
 
-    const send = (request: HttpClientRequest.HttpClientRequest) =>
+    const exchange = <A>(
+      request: HttpClientRequest.HttpClientRequest,
+      handle: (response: HttpClientResponse.HttpClientResponse) => Effect.Effect<A, Failure>,
+    ) =>
       client.execute(request).pipe(
         Effect.mapError((cause) => new Unreachable({ cause })),
         Effect.flatMap(checked),
+        Effect.flatMap(handle),
+        Deadline.within(() => new Unreachable({ cause: "no answer in time" })),
       );
 
+    const send = (request: HttpClientRequest.HttpClientRequest) =>
+      exchange(request, () => Effect.void);
+
     const read = <A>(request: HttpClientRequest.HttpClientRequest, body: Read<A>) =>
-      Effect.flatMap(send(request), (response) =>
+      exchange(request, (response) =>
         Effect.mapError(body(response), (cause) => new ServerFailed({ cause })),
       );
 
     const ceremony = <A>(request: HttpClientRequest.HttpClientRequest, body: Read<A>) =>
-      Effect.flatMap(send(request), (response) =>
+      exchange(request, (response) =>
         Effect.all({
           options: body(response),
           challenge: Effect.fromOption(Headers.get(response.headers, Accounts.challengeHeader)),
@@ -270,6 +300,9 @@ export const layer = Layer.effect(Service)(
 
     const withChallenge = (request: HttpClientRequest.HttpClientRequest, challenge: string) =>
       HttpClientRequest.setHeader(request, Accounts.challengeHeader, challenge);
+
+    const registration = (challenge: string, credential: Credential) =>
+      withChallenge(post("/passkey/verify-registration", { response: credential }), challenge);
 
     return {
       signUp: (email, password, reservation) =>
@@ -349,16 +382,28 @@ export const layer = Layer.effect(Service)(
         ),
       addPasskey: (token, challenge, credential) =>
         Effect.asVoid(
-          send(
-            HttpClientRequest.bearerToken(
-              withChallenge(
-                post("/passkey/verify-registration", { response: credential }),
-                challenge,
-              ),
-              token,
-            ),
-          ),
+          send(HttpClientRequest.bearerToken(registration(challenge, credential), token)),
         ),
+      passkeySignUpOptions: (reservation) =>
+        ceremony(
+          reserved(
+            HttpClientRequest.get("/passkey/generate-register-options"),
+            Option.some(reservation),
+          ),
+          creationOptions,
+        ),
+      passkeySignUp: (reservation, challenge, credential) =>
+        read(reserved(registration(challenge, credential), Option.some(reservation)), signedIn),
+      cardSignUp: (login, reservation) =>
+        read(
+          reserved(
+            post(Accounts.cardSignUpPath, { login: Redacted.value(login) }),
+            Option.some(reservation),
+          ),
+          signedIn,
+        ),
+      cardSignIn: (login) =>
+        read(post(Accounts.cardSignInPath, { login: Redacted.value(login) }), signedIn),
     };
   }),
 );

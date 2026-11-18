@@ -486,15 +486,16 @@ describe("SyncClient online", () => {
     });
 
     const transport = Ports.Transport.of({
-      connect: Effect.gen(function* () {
-        const link = yield* Link.make(() => Effect.void);
-        yield* Network.serveSocket(Protocol.Rpcs, link.server).pipe(
-          Effect.provide(handlers),
-          Effect.forkScoped,
-        );
+      connect: () =>
+        Effect.gen(function* () {
+          const link = yield* Link.make(() => Effect.void);
+          yield* Network.serveSocket(Protocol.Rpcs, link.server).pipe(
+            Effect.provide(handlers),
+            Effect.forkScoped,
+          );
 
-        return yield* WebSocketTransport.fromSocket(link.device);
-      }),
+          return yield* WebSocketTransport.fromSocket(link.device);
+        }),
     });
 
     return { pushed, pulled, transport };
