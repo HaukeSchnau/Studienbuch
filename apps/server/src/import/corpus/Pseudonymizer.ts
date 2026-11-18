@@ -375,9 +375,18 @@ export const run = Effect.fn("Pseudonymizer.run")(function* <E, R, E2, R2>(input
       .normalize("NFC")
       .split(/([^\p{L}\p{M}\p{N}]+)/u)
       .map((segment, index) => {
-        const teacher = index % 2 === 0 ? teacherOf(year, segment) : undefined;
+        if (index % 2 !== 0) return segment;
 
-        return teacher === undefined ? segment : tokens.token("T", `id:${teacher}`);
+        const teacher = teacherOf(year, segment);
+
+        if (teacher !== undefined) return tokens.token("T", `id:${teacher}`);
+
+        if (names.has(normalized(segment))) return tokens.token("X", normalized(segment));
+
+        // A name glued to digits, as in `Kunz12`, is still a name.
+        return segment.replace(/\p{L}[\p{L}\p{M}]*/gu, (run) =>
+          names.has(normalized(run)) ? tokens.token("X", normalized(run)) : run,
+        );
       })
       .join("");
 

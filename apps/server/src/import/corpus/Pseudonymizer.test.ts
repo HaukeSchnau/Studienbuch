@@ -17,7 +17,7 @@ const key = new Uint8Array(32).fill(7);
 
 const pseudonymized = Pseudonymizer.corpus(key, NamedSchoolTesting.corpus);
 
-const { list, firstEntry, planted } = NamedSchoolTesting;
+const { list, object, firstEntry, planted } = NamedSchoolTesting;
 
 const decodeFilter = Schema.decodeUnknownEffect(TimetableFilterSchema);
 
@@ -53,6 +53,12 @@ describe("Pseudonymizer", () => {
       assert.isTrue(dictionary.names.has("pfauenstein"));
       assert.isFalse(dictionary.names.has("invalid"));
 
+      // The free day's holiday row is written, without the names the app data holds.
+      assert.isTrue(
+        NamedSchoolTesting.appearances(written, "HOLIDAY").some((at) => at.includes("backEntries")),
+      );
+      assert.deepStrictEqual(NamedSchoolTesting.appearances(written, "Ferientag26"), []);
+
       const head = { manifest: corpus.manifest, cases: corpus.cases };
 
       yield* Checks.scan({ dictionary, ...head, reads: streamOf(corpus) });
@@ -86,12 +92,54 @@ describe("Pseudonymizer", () => {
       }),
   );
 
+  it.effect("tokenizes a name word in a code, also where a subject's code spells it", () =>
+    Effect.gen(function* () {
+      const run = Effect.fn("PseudonymizerTest.run")(function* (raw: Corpus.Corpus) {
+        const { corpus, dictionary } = yield* Pseudonymizer.corpus(key, raw);
+        const head = { manifest: corpus.manifest, cases: corpus.cases };
+
+        yield* Checks.scan({ dictionary, ...head, reads: streamOf(corpus) });
+
+        return (corpus.manifest.kept?.vocabulary ?? []).map(({ value }) => value);
+      });
+
+      // A student called Englisch: the subject of that name could be theirs as well.
+      const student = planted(NamedSchoolTesting.corpus, "10/filter-STUDENT", (body) => {
+        object(object(list(body.students)[0]).student).longName = "Englisch, Wiebke";
+      });
+
+      const subject = yield* run(student);
+
+      assert.notInclude(subject, "Englisch");
+      assert.isTrue(subject.some((value) => /^X[A-Z2-7]{8}$/u.test(value)));
+
+      // Courses named after students keep their other words: a name glued to digits, and a short
+      // name that holds digits itself.
+      const shortName = planted(NamedSchoolTesting.corpus, "10/filter-STUDENT", (body) => {
+        object(object(list(body.students)[1]).student).shortName = "WG12";
+      });
+
+      const course = planted(shortName, "10/filter-SUBJECT", (body) => {
+        object(object(list(body.subjects)[0]).subject).longName = "Förder Wiebke23";
+        object(object(list(body.subjects)[1]).subject).longName = "Förder WG12";
+      });
+
+      const vocabulary = yield* run(course);
+
+      assert.isTrue(vocabulary.some((value) => /^Förder X[A-Z2-7]{8}23$/u.test(value)));
+      assert.isTrue(vocabulary.some((value) => /^Förder X[A-Z2-7]{8}$/u.test(value)));
+      assert.isFalse(vocabulary.some((value) => value.includes("Wiebke")));
+    }),
+  );
+
   it.effect("fails on a field without a rule, naming its path and never its value", () =>
     Effect.gen(function* () {
       const broken = planted(NamedSchoolTesting.corpus, "10/entries/TEACHER/201", (body) => {
         firstEntry(body).teacherPhone = "Quendolin 0151";
         firstEntry(body).Quendolin = 1;
         firstEntry(body).quendolin = 2;
+        // Seen only empty so far.
+        firstEntry(body).moved = { from: "Quendolin" };
       });
 
       const error = yield* Effect.flip(Pseudonymizer.corpus(key, broken));
@@ -103,6 +151,12 @@ describe("Pseudonymizer", () => {
         {
           read: "<year>/entries/TEACHER/<id>",
           path: "days[].gridEntries[].<unknown>",
+          problem: "a field without a rule",
+          count: 1,
+        },
+        {
+          read: "<year>/entries/TEACHER/<id>",
+          path: "days[].gridEntries[].moved.from",
           problem: "a field without a rule",
           count: 1,
         },
