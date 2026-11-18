@@ -5,17 +5,19 @@ import { TestCrypto } from "@stu/e2ee/testing";
 import { Postgres18 } from "@stu/sync/testing";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";
-import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Fiber from "effect/Fiber";
 import * as Base64Url from "effect/encoding/Base64Url";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import * as Queue from "effect/Queue";
 import * as Redacted from "effect/Redacted";
 import * as Ref from "effect/Ref";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
+import { Pool } from "pg";
+import { Deletion } from "../account/Deletion.ts";
 import { CardLogins } from "../auth/CardLogins.ts";
 import { SchoolTesting } from "../school/SchoolTesting.ts";
 import { KeyStore } from "./KeyStore.ts";
@@ -108,17 +110,20 @@ const withoutAddress = (id: string) =>
     `,
   );
 
-/** Stops the next ask for random bytes, once `armed`, until `release`. */
+/**
+ * Stops the next `armed` asks for random bytes, each telling `held` and waiting for one `release`.
+ * A card replacement asks after its locks, for its new login's row id.
+ */
 class Pause extends Context.Service<
   Pause,
   {
-    readonly armed: Ref.Ref<boolean>;
-    readonly held: Deferred.Deferred<void>;
-    readonly release: Deferred.Deferred<void>;
+    readonly armed: Ref.Ref<number>;
+    readonly held: Queue.Queue<void>;
+    readonly release: Queue.Queue<void>;
   }
 >()("Test.Pause") {}
 
-/** `SchoolTesting.database` with a `Crypto` that `Pause` stops once. */
+/** `SchoolTesting.database` with a `Crypto` that `Pause` stops. */
 const pausing = Layer.effect(Crypto.Crypto)(
   Effect.gen(function* () {
     const crypto = yield* Crypto.Crypto;
@@ -128,13 +133,12 @@ const pausing = Layer.effect(Crypto.Crypto)(
       ...crypto,
       randomBytes: (size: number) =>
         Effect.andThen(
-          Effect.flatMap(Ref.getAndSet(pause.armed, false), (armed) =>
-            armed
-              ? Effect.andThen(
-                  Deferred.succeed(pause.held, undefined),
-                  Deferred.await(pause.release),
-                )
-              : Effect.void,
+          Effect.flatMap(
+            Ref.modify(pause.armed, (left) => [left > 0, Math.max(0, left - 1)] as const),
+            (stops) =>
+              stops
+                ? Effect.andThen(Queue.offer(pause.held, undefined), Queue.take(pause.release))
+                : Effect.void,
           ),
           crypto.randomBytes(size),
         ),
@@ -144,14 +148,46 @@ const pausing = Layer.effect(Crypto.Crypto)(
   Layer.provideMerge(
     Layer.effect(Pause)(
       Effect.all({
-        armed: Ref.make(false),
-        held: Deferred.make<void>(),
-        release: Deferred.make<void>(),
+        armed: Ref.make(0),
+        held: Queue.unbounded<void>(),
+        release: Queue.unbounded<void>(),
       }),
     ),
   ),
   Layer.provideMerge(SchoolTesting.database),
 );
+
+/**
+ * An account without an address, signed in a moment ago, with its keys and a first card whose
+ * login `fill` makes, and `replace`, which adds a new card with a new login, as a device does.
+ */
+const cardAccount = (account: string, fill: number) =>
+  Effect.gen(function* () {
+    const sql = yield* SqlClient.SqlClient;
+    yield* withoutAddress(account);
+    const first = yield* firstDevice(account, fill);
+    const session = yield* signedIn(account, 0);
+    const device = Option.some({ wrapper: first.device, session });
+    yield* sql.withTransaction(KeyStore.publishFirst(account, first.record, device));
+    const card = yield* cardFrom(`${account}-card-1`, fill + 1, first.keys);
+    yield* KeyStore.addWrapper(account, session, card, Option.some(loginOf(fill + 1)));
+
+    return {
+      replace: (id: string, cardFill: number, login: string) =>
+        Effect.flatMap(cardFrom(id, cardFill, first.keys), (wrapper) =>
+          KeyStore.addWrapper(account, session, wrapper, Option.some(login)),
+        ),
+    };
+  });
+
+/** Waits until `count` transactions of this database wait for a lock. */
+const waiting = (count: number) =>
+  Effect.flatMap(SqlClient.SqlClient, (sql) =>
+    sql<{ readonly waiting: number }>`
+      select count(*)::int as waiting from pg_stat_activity
+      where datname = current_database() and wait_event_type = 'Lock'
+    `.pipe(Effect.repeat({ until: ([row]) => (row?.waiting ?? 0) >= count })),
+  );
 
 /** A card's login as the device sends it: 32 bytes, base64url. */
 const loginOf = (fill: number) => Base64Url.encode(new Uint8Array(32).fill(fill));
@@ -624,7 +660,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
         );
 
         // The next card's replacement stops after its locks, when it asks for its login's row id.
-        yield* Ref.set(pause.armed, true);
+        yield* Ref.set(pause.armed, 1);
 
         const replacing = yield* Effect.forkChild(
           KeyStore.addWrapper(
@@ -635,7 +671,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
           ),
         );
 
-        yield* Deferred.await(pause.held);
+        yield* Queue.take(pause.held);
 
         const laptop = yield* Effect.forkChild(
           KeyStore.addWrapper(
@@ -651,12 +687,9 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
         );
 
         // Both wait for the replacement's locks before it goes on.
-        yield* sql<{ readonly waiting: number }>`
-          select count(*)::int as waiting from pg_stat_activity
-          where datname = current_database() and wait_event_type = 'Lock'
-        `.pipe(Effect.repeat({ until: ([row]) => (row?.waiting ?? 0) >= 2 }));
+        yield* waiting(2);
 
-        yield* Deferred.succeed(pause.release, undefined);
+        yield* Queue.offer(pause.release, undefined);
 
         const exits = {
           replacing: yield* Fiber.await(replacing),
@@ -671,6 +704,135 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
           card: Option.isSome(yield* CardLogins.owner(loginOf(42))),
         }).toEqual({ replacing: true, laptop: true, fetching: true, card: true });
       }),
+    );
+
+    // Rio replaces his card on his phone (a), then again on his laptop (b), which waits for (a).
+    // While (b) replaces, a seal fetch comes in, after (a)'s new login was in place.
+    it.effect("a replacement queued behind another, and a seal fetch after it, all finish", () =>
+      Effect.gen(function* () {
+        const pause = yield* Pause;
+        const rio = yield* cardAccount("rio", 150);
+        yield* Ref.set(pause.armed, 2);
+
+        const a = yield* Effect.forkChild(rio.replace("rio-card-2", 152, loginOf(52)));
+        yield* Queue.take(pause.held);
+        const b = yield* Effect.forkChild(rio.replace("rio-card-3", 153, loginOf(53)));
+        yield* waiting(1);
+        yield* Queue.offer(pause.release, undefined);
+        yield* Queue.take(pause.held);
+
+        const fetching = yield* Effect.forkChild(
+          KeyStore.fetchSeals("rio", Keys.RecoveryCode.make({})),
+        );
+
+        yield* waiting(1);
+        yield* Queue.offer(pause.release, undefined);
+
+        expect({
+          a: Exit.isSuccess(yield* Fiber.await(a)),
+          b: Exit.isSuccess(yield* Fiber.await(b)),
+          fetching: Exit.isSuccess(yield* Fiber.await(fetching)),
+          card: Option.isSome(yield* CardLogins.owner(loginOf(53))),
+        }).toEqual({ a: true, b: true, fetching: true, card: true });
+      }),
+    );
+
+    it.effect("replacements queued one behind the other all finish", () =>
+      Effect.gen(function* () {
+        const pause = yield* Pause;
+        const ria = yield* cardAccount("ria", 160);
+        yield* Ref.set(pause.armed, 2);
+
+        const a = yield* Effect.forkChild(ria.replace("ria-card-2", 162, loginOf(62)));
+        yield* Queue.take(pause.held);
+        const b = yield* Effect.forkChild(ria.replace("ria-card-3", 163, loginOf(63)));
+        yield* waiting(1);
+        yield* Queue.offer(pause.release, undefined);
+        yield* Queue.take(pause.held);
+        const c = yield* Effect.forkChild(ria.replace("ria-card-4", 164, loginOf(64)));
+        yield* waiting(1);
+        yield* Queue.offer(pause.release, undefined);
+
+        expect({
+          a: Exit.isSuccess(yield* Fiber.await(a)),
+          b: Exit.isSuccess(yield* Fiber.await(b)),
+          c: Exit.isSuccess(yield* Fiber.await(c)),
+          last: Option.isSome(yield* CardLogins.owner(loginOf(64))),
+          retired: Option.isNone(yield* CardLogins.owner(loginOf(62))),
+        }).toEqual({ a: true, b: true, c: true, last: true, retired: true });
+      }),
+    );
+
+    // Sia replaces her card, and her deletion queues behind it. Right after, a device signs in with
+    // the new card, through Better Auth's own pool for its session.
+    it.effect(
+      "a deletion queued behind a replacement, and a card sign-in after it, all finish",
+      () =>
+        Effect.gen(function* () {
+          const sql = yield* SqlClient.SqlClient;
+          const pause = yield* Pause;
+          const sia = yield* cardAccount("sia", 170);
+
+          const [database] = yield* sql<{
+            readonly name: string;
+          }>`select current_database() as name`;
+
+          const socket = encodeURIComponent(Postgres18.socket ?? "");
+
+          const pool = yield* Effect.acquireRelease(
+            Effect.sync(
+              () =>
+                new Pool({
+                  connectionString: `postgresql://postgres@localhost/${database?.name}?host=${socket}`,
+                  statement_timeout: 15_000,
+                }),
+            ),
+            (opened) => Effect.promise(() => opened.end()),
+          );
+
+          yield* Ref.set(pause.armed, 1);
+          const replacing = yield* Effect.forkChild(sia.replace("sia-card-2", 172, loginOf(72)));
+          yield* Queue.take(pause.held);
+
+          const deleting = yield* Effect.forkChild(
+            Deletion.run("sia").pipe(Effect.provide(Deletion.ended)),
+          );
+
+          yield* waiting(1);
+          yield* Queue.offer(pause.release, undefined);
+
+          const signingIn = yield* Effect.forkChild(
+            CardLogins.signingIn(loginOf(72), (account) =>
+              Effect.tryPromise(() =>
+                pool.query(
+                  `insert into auth_session (id, "expiresAt", token, "userId")
+                 values ('sia-card-session', now() + interval '1 day', 'token-sia-card', $1)`,
+                  [account],
+                ),
+              ),
+            ),
+          );
+
+          const finished = (fiber: Fiber.Fiber<unknown, unknown>) =>
+            Effect.map(
+              Effect.timeoutOption(Fiber.await(fiber), "10 seconds"),
+              Option.exists(Exit.isSuccess),
+            );
+
+          expect({
+            replacing: yield* finished(replacing),
+            deleting: yield* finished(deleting),
+            signingIn: yield* finished(signingIn),
+            left: Number(
+              (yield* sql<{ readonly count: number }>`
+            select (select count(*) from auth_user where id = 'sia')
+              + (select count(*) from auth_account where "userId" = 'sia')
+              + (select count(*) from auth_session where "userId" = 'sia')
+              + (select count(*) from account_key where account_id = 'sia') as count
+          `)[0]?.count,
+            ),
+          }).toEqual({ replacing: true, deleting: true, signingIn: true, left: 0 });
+        }),
     );
   });
 });

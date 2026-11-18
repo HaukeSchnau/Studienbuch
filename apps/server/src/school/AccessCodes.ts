@@ -15,6 +15,7 @@ import * as Base64Url from "effect/encoding/Base64Url";
 import * as Hex from "effect/encoding/Hex";
 import * as Option from "effect/Option";
 import * as SqlClient from "effect/sql/SqlClient";
+import { AccountLock } from "../account/AccountLock.ts";
 import type * as Statement from "effect/sql/Statement";
 import { Access } from "./Access.ts";
 
@@ -375,6 +376,9 @@ export const admitConfirmed = Effect.fn("AccessCodes.admitConfirmed")(function* 
 
   return yield* sql.withTransaction(
     Effect.gen(function* () {
+      // First, as every write of the account's rows: a deletion under way finishes before, or after.
+      if (!(yield* AccountLock.hold(account, "share"))) return Option.none<Access.Admission>();
+
       const signedUp = yield* sql<{ readonly reservation: string }>`
         delete from access_sign_up where account_id = ${account}
         returning reservation_id as reservation
