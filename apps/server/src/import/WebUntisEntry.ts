@@ -57,6 +57,13 @@ export const timeOfDay = (text: string): Option.Option<number> => {
 export const shown = (day: { readonly status: string }) =>
   day.status === "REGULAR" || day.status === "NO_DATA";
 
+/**
+ * Whether WebUntis hid the day from the account that read it, as it does with a student's days
+ * from some date on. Such a day is no evidence of lessons or of none.
+ */
+export const hidden = (day: { readonly status: string }) =>
+  day.status === "NOT_ALLOWED_FOR_RESOURCE";
+
 /** WebUntis's statuses in our terms. One we don't know reads as a change. */
 export const status = (entry: TimetableEntry): Lesson.Status => {
   switch (entry.status) {

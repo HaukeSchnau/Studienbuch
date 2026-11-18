@@ -1,4 +1,15 @@
-import { Files, Flake, Nix, On, Step, Task, cmd } from "@calder-ci/core";
+import {
+  Action,
+  Files,
+  Flake,
+  Nix,
+  On,
+  PullRequest,
+  Secret,
+  Step,
+  Task,
+  cmd,
+} from "@calder-ci/core";
 import { Environments, Expo, Pnpm, Vitest } from "@calder-ci/std";
 import { Schema } from "effect";
 import { flake } from "./flake.ts";
@@ -172,6 +183,55 @@ const checks = [
   ...flakeChecks,
 ];
 
+/**
+ * The corpus gate (m2-import-corpus.md, section 6, "CI"): the import's numbers on the pinned private
+ * corpus against baseline.json. It needs the corpus's deploy key and age identity, so it runs in
+ * trusted runs only, and again only when the import, the recorded client, the harness or the pin
+ * changes. Its output and its comment hold aggregates, never corpus content.
+ */
+const importEval = Task.make("import-eval", {
+  shell: flake.devShells.corpus,
+  setup: install,
+  inputs: Files.union(
+    Files.imports(
+      "apps/server/src/import/corpus/main.ts",
+      "apps/server/src/import/evaluation/main.ts",
+    ),
+    Files.of(
+      "apps/server/package.json",
+      "apps/server/src/import/corpus/pin.json",
+      "apps/server/src/import/evaluation/baseline.json",
+      ".calder/known_hosts",
+    ),
+  ),
+  secrets: {
+    CORPUS_DEPLOY_KEY: Secret.file("import-corpus-deploy-key"),
+    SOPS_AGE_KEY_FILE: Secret.file("import-corpus-age-identity"),
+  },
+  run: cmd`bash -c ${[
+    "set -euo pipefail",
+    // ssh refuses a key file that others may read, so it gets a private copy, and uses that key
+    // alone, against git.schnau.dev's pinned host key.
+    'key="$(mktemp)"',
+    "trap 'rm -f \"$key\"' EXIT",
+    'cat "$CORPUS_DEPLOY_KEY" > "$key"',
+    'export GIT_SSH_COMMAND="ssh -F /dev/null -o IdentityAgent=none -o IdentitiesOnly=yes -i $key -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$PWD/.calder/known_hosts"',
+    'comment="$PWD/import-eval-comment.json"',
+    "cd apps/server",
+    "vp run corpus:fetch --pinned",
+    'vp run import:eval --corpus pinned --against baseline --comment "$comment"',
+  ].join("\n")}`,
+  value: { path: "import-eval-comment.json", schema: Schema.Struct({ markdown: Schema.String }) },
+}).pipe(Step.timeout("30 minutes"));
+
+const importEvalComment = Action.make(
+  "import-eval-comment",
+  { needs: { result: importEval } },
+  function* ({ result }) {
+    yield* PullRequest.comment(result.markdown);
+  },
+);
+
 // The native app, from the TestFlight and Play internal builds of every push to main that changes it.
 
 /**
@@ -241,5 +301,10 @@ export default Environments.project({
   environments: { beta: { on: { push: "main" }, after: checks, then: storeBuilds } },
   nightly: "0 3 * * *",
   // A pull request shows its fingerprints, so a change to the native layer is visible before merging.
-  rules: [On.pullRequest([pnpmDeps, runtimeIos, runtimeAndroid]), On.push("main", [pnpmDeps])],
+  // The corpus gate runs where secrets reach: same-repo pull requests and pushes to main.
+  rules: [
+    On.pullRequest([pnpmDeps, runtimeIos, runtimeAndroid]),
+    On.preview([importEval, importEvalComment]),
+    On.push("main", [pnpmDeps, importEval]),
+  ],
 });

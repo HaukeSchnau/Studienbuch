@@ -1,4 +1,5 @@
 import type { WebUntisClient } from "@schnau/webuntis-api";
+import { TimetableEntriesSchema, TimetableFilterSchema } from "@schnau/webuntis-api/schemas";
 import { assert, describe, it } from "@effect/vitest";
 import { Course, School } from "@stu/core";
 import * as DateTime from "effect/DateTime";
@@ -19,6 +20,9 @@ const of = (right: number, total: number) => ({ right, of: total });
 
 const encodeJson = Schema.encodeEffect(Schema.fromJsonString(Schema.Json));
 const decodeJson = Schema.decodeEffect(Schema.fromJsonString(Schema.Json));
+const decodeFilter = Schema.decodeUnknownEffect(TimetableFilterSchema);
+const encodeFilter = Schema.encodeEffect(Schema.toCodecJson(TimetableFilterSchema));
+const decodeEntries = Schema.decodeUnknownEffect(Schema.toCodecJson(TimetableEntriesSchema));
 
 const evaluate = (
   importLayer: Layer.Layer<SchoolImport.Service, never, WebUntisClient>,
@@ -86,6 +90,7 @@ const both = {
   examStudents: { recall: of(2, 2), precision: of(2, 4) },
   // ISO parity makes W44 a B-week; the school restarted the count after the autumn break.
   weekLabels: of(0, 2),
+  hiddenDays: 0,
   invariants: {
     failedRuns: 0,
     danglingCourses: 0,
@@ -455,6 +460,128 @@ describe("Evaluator", () => {
 
       assert.deepStrictEqual(lookahead, of(32, 32));
     }),
+  );
+
+  it.effect("scores only the students whose timetables a capture reads", () =>
+    Effect.gen(function* () {
+      const path = RecordedWebUntis.paths.filter(10, "STUDENT");
+      const [version] = TinySchool.corpus.reads.get(path)?.versions ?? [];
+      const body = yield* decodeFilter(version?.body);
+
+      // A grade 10 student, whose timetable the capture never reads.
+      const lowerSchool = {
+        ...TinySchool.corpus,
+        reads: new Map([
+          ...TinySchool.corpus.reads,
+          [
+            path,
+            {
+              versions: [
+                {
+                  observedAt: version?.observedAt ?? DateTime.makeUnsafe(0),
+                  body: yield* encodeFilter({
+                    ...body,
+                    students: [
+                      ...body.students,
+                      {
+                        student: { id: 599, shortName: "S99", longName: "S99", displayName: "S99" },
+                        classes: [
+                          {
+                            class: {
+                              id: 110,
+                              shortName: "10.1",
+                              longName: "10.1",
+                              displayName: "10.1",
+                            },
+                            dateRange: { start: "2026-08-13", end: "2027-07-07" },
+                            department: null,
+                          },
+                        ],
+                        assignmentGroups: [],
+                        imageUrl: null,
+                      },
+                    ],
+                  }),
+                },
+              ],
+            },
+          ],
+        ]),
+      };
+
+      const { worst: _, ...whole } = yield* evaluate(NaiveImport.layer);
+
+      const { worst: __, ...withLowerSchool } = yield* evaluate(
+        NaiveImport.layer,
+        false,
+        lowerSchool,
+      );
+
+      assert.deepStrictEqual(withLowerSchool, whole);
+    }),
+  );
+
+  // WebUntis hides a student's days from the capture's account from some date on. W46 is the one
+  // week students are scored in. On its Wednesday S1 has two entries, and naive shows S1 three
+  // lessons: both, and the joint INF lesson a second time, S1's only error that week.
+  it.effect.each([
+    {
+      name: "a day",
+      days: ["2026-11-11"],
+      // Neither the entries nor the extra lesson count, so S1's week is now exactly right.
+      student: {
+        weeks: of(4, 8),
+        recall: of(26, 26),
+        precision: of(26, 31),
+        attributes: of(26, 26),
+      },
+    },
+    {
+      name: "the whole week",
+      days: ["2026-11-09", "2026-11-10", "2026-11-11", "2026-11-12", "2026-11-13"],
+      student: {
+        weeks: of(3, 7),
+        recall: of(23, 23),
+        precision: of(23, 28),
+        attributes: of(23, 23),
+      },
+    },
+  ])(
+    "measures nothing on $name a student's timetable hides, and doesn't fail",
+    ({ days, student }) =>
+      Effect.gen(function* () {
+        const path = RecordedWebUntis.paths.entries(10, "STUDENT", 501);
+        const hidden = new Set(days);
+
+        const versions = yield* Effect.forEach(
+          TinySchool.corpus.reads.get(path)?.versions ?? [],
+          (version) =>
+            Effect.map(decodeEntries(version.body), (body) => ({
+              ...version,
+              body: {
+                ...body,
+                days: body.days.map((day) =>
+                  hidden.has(day.date.slice(0, 10))
+                    ? { ...day, status: "NOT_ALLOWED_FOR_RESOURCE", gridEntries: [] }
+                    : day,
+                ),
+              },
+            })),
+        );
+
+        const { worst: _, ...whole } = yield* evaluate(NaiveImport.layer);
+
+        const { worst: __, ...report } = yield* evaluate(NaiveImport.layer, false, {
+          ...TinySchool.corpus,
+          reads: new Map([...TinySchool.corpus.reads, [path, { versions }]]),
+        });
+
+        assert.deepStrictEqual(report, {
+          ...whole,
+          views: { ...whole.views, student },
+          hiddenDays: days.length,
+        });
+      }),
   );
 
   it.effect("refuses weeks that hold none the corpus captured", () =>
