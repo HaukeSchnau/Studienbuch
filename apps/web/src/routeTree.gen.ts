@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from "./routes/index";
 import { Route as ConsoleRouteImport } from "./routes/console";
 import { Route as DatenschutzRouteImport } from "./routes/datenschutz";
 import { Route as ImpressumRouteImport } from "./routes/impressum";
+import { Route as DatenschutzIgsLilienthalAppRouteImport } from "./routes/datenschutz_.igs-lilienthal-app";
 
 const IndexRoute = IndexRouteImport.update({
   id: "/",
@@ -34,18 +35,25 @@ const ImpressumRoute = ImpressumRouteImport.update({
   path: "/impressum",
   getParentRoute: () => rootRouteImport,
 } as any);
+const DatenschutzIgsLilienthalAppRoute = DatenschutzIgsLilienthalAppRouteImport.update({
+  id: "/datenschutz_/igs-lilienthal-app",
+  path: "/datenschutz/igs-lilienthal-app",
+  getParentRoute: () => rootRouteImport,
+} as any);
 
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute;
   "/console": typeof ConsoleRoute;
   "/datenschutz": typeof DatenschutzRoute;
   "/impressum": typeof ImpressumRoute;
+  "/datenschutz/igs-lilienthal-app": typeof DatenschutzIgsLilienthalAppRoute;
 }
 export interface FileRoutesByTo {
   "/": typeof IndexRoute;
   "/console": typeof ConsoleRoute;
   "/datenschutz": typeof DatenschutzRoute;
   "/impressum": typeof ImpressumRoute;
+  "/datenschutz/igs-lilienthal-app": typeof DatenschutzIgsLilienthalAppRoute;
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport;
@@ -53,13 +61,20 @@ export interface FileRoutesById {
   "/console": typeof ConsoleRoute;
   "/datenschutz": typeof DatenschutzRoute;
   "/impressum": typeof ImpressumRoute;
+  "/datenschutz_/igs-lilienthal-app": typeof DatenschutzIgsLilienthalAppRoute;
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: "/" | "/console" | "/datenschutz" | "/impressum";
+  fullPaths: "/" | "/console" | "/datenschutz" | "/impressum" | "/datenschutz/igs-lilienthal-app";
   fileRoutesByTo: FileRoutesByTo;
-  to: "/" | "/console" | "/datenschutz" | "/impressum";
-  id: "__root__" | "/" | "/console" | "/datenschutz" | "/impressum";
+  to: "/" | "/console" | "/datenschutz" | "/impressum" | "/datenschutz/igs-lilienthal-app";
+  id:
+    | "__root__"
+    | "/"
+    | "/console"
+    | "/datenschutz"
+    | "/impressum"
+    | "/datenschutz_/igs-lilienthal-app";
   fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
@@ -67,6 +82,7 @@ export interface RootRouteChildren {
   ConsoleRoute: typeof ConsoleRoute;
   DatenschutzRoute: typeof DatenschutzRoute;
   ImpressumRoute: typeof ImpressumRoute;
+  DatenschutzIgsLilienthalAppRoute: typeof DatenschutzIgsLilienthalAppRoute;
 }
 
 declare module "@tanstack/react-router" {
@@ -99,6 +115,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof ImpressumRouteImport;
       parentRoute: typeof rootRouteImport;
     };
+    "/datenschutz_/igs-lilienthal-app": {
+      id: "/datenschutz_/igs-lilienthal-app";
+      path: "/datenschutz/igs-lilienthal-app";
+      fullPath: "/datenschutz/igs-lilienthal-app";
+      preLoaderRoute: typeof DatenschutzIgsLilienthalAppRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
   }
 }
 
@@ -107,6 +130,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConsoleRoute: ConsoleRoute,
   DatenschutzRoute: DatenschutzRoute,
   ImpressumRoute: ImpressumRoute,
+  DatenschutzIgsLilienthalAppRoute: DatenschutzIgsLilienthalAppRoute,
 };
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
