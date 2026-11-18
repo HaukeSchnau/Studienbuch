@@ -3,7 +3,6 @@ import { Accounts } from "@stu/api/Accounts";
 import { Ports } from "@stu/sync/client";
 import type * as Cause from "effect/Cause";
 import * as Context from "effect/Context";
-import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Headers from "effect/http/Headers";
 import * as HttpClient from "effect/http/HttpClient";
@@ -16,6 +15,8 @@ import * as Option from "effect/Option";
 import * as Redacted from "effect/Redacted";
 import * as Schema from "effect/Schema";
 
+import { Deadline } from "../api/Deadline.ts";
+
 // Better Auth's routes at `Accounts.path`, the ones Studienbuch uses, with every response parsed.
 // A device sends its bearer token and keeps no cookies (ADR 0028).
 
@@ -26,12 +27,6 @@ export class Refused extends Schema.TaggedError<Refused, { readonly brand: uniqu
   "AuthApi.Refused",
   { status: Schema.Int, code: Schema.String },
 ) {}
-
-/**
- * How long a request may wait for its whole answer. The slowest ones wait while the server hands
- * the code's mail to the mail server, which takes seconds.
- */
-export const answerWithin = Duration.seconds(30);
 
 /** No answer at all: the device is offline, the server is down, or it didn't answer in time. */
 export class Unreachable extends Schema.TaggedError<
@@ -259,8 +254,6 @@ export const layer = Layer.effect(Service)(
       ),
     );
 
-    // A server that takes the request and never answers, or stops in the middle of the body,
-    // counts as no answer once `answerWithin` passed, so no sign-in waits forever.
     const exchange = <A>(
       request: HttpClientRequest.HttpClientRequest,
       handle: (response: HttpClientResponse.HttpClientResponse) => Effect.Effect<A, Failure>,
@@ -269,10 +262,7 @@ export const layer = Layer.effect(Service)(
         Effect.mapError((cause) => new Unreachable({ cause })),
         Effect.flatMap(checked),
         Effect.flatMap(handle),
-        Effect.timeoutOrElse({
-          duration: answerWithin,
-          orElse: () => Effect.fail(new Unreachable({ cause: "no answer in time" })),
-        }),
+        Deadline.within(() => new Unreachable({ cause: "no answer in time" })),
       );
 
     const send = (request: HttpClientRequest.HttpClientRequest) =>

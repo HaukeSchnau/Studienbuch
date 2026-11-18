@@ -1,6 +1,4 @@
 import { useAtomValue } from "@effect/atom-react";
-import { Demo } from "@stu/api/Demo";
-import { Keys } from "@stu/api/Keys";
 import { Ports, SyncClient } from "@stu/sync/client";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -8,7 +6,6 @@ import * as Option from "effect/Option";
 import * as Redacted from "effect/Redacted";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Atom from "effect/reactivity/Atom";
-import * as RpcClient from "effect/rpc/RpcClient";
 import * as Stream from "effect/Stream";
 
 import { ApiProtocol } from "../../infra/api/ApiProtocol.ts";
@@ -27,35 +24,8 @@ import { Offered } from "./Offered.ts";
 
 export * as KeysState from "./KeysState.ts";
 
-const unreachable = { RpcClientError: () => Effect.fail(new KeyServer.Unreachable()) };
-
 /** `KeyServer` over HTTP, with the token of the engine's session at each call. */
-const keyServer = Layer.effect(KeyServer.Service)(
-  Effect.gen(function* () {
-    const client = yield* RpcClient.make(Keys.Rpcs.merge(Demo.Rpcs));
-
-    return KeyServer.Service.of({
-      state: client["Keys.state"]().pipe(Effect.catchTags({ ...unreachable })),
-      init: (record, wrapper) =>
-        client["Keys.init"]({ record, wrapper }).pipe(Effect.catchTags({ ...unreachable })),
-      addWrapper: (wrapper, login) =>
-        client["Keys.addWrapper"]({
-          wrapper,
-          login: Option.getOrUndefined(Option.map(login, Redacted.value)),
-        }).pipe(Effect.catchTags({ ...unreachable })),
-      fetchSeals: (method) =>
-        client["Keys.fetchSeals"]({ method }).pipe(Effect.catchTags({ ...unreachable })),
-      demoRootKey: client["Demo.rootKey"]().pipe(
-        Effect.map(({ rootKey }) => Option.some(Redacted.make(rootKey))),
-        Effect.catchTags({
-          ...unreachable,
-          "Demo.NotDemo": () => Effect.succeedNone,
-          "Demo.SignedOut": () => Effect.fail(new Keys.SignedOut()),
-        }),
-      ),
-    });
-  }),
-).pipe(
+const keyServer = KeyServer.layer.pipe(
   Layer.provide(
     Layer.unwrap(Effect.map(Ports.Session, (session) => ApiProtocol.authenticated(session.token))),
   ),

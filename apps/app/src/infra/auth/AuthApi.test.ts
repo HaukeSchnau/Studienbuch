@@ -8,6 +8,7 @@ import * as HttpClientResponse from "effect/http/HttpClientResponse";
 import * as Layer from "effect/Layer";
 import * as TestClock from "effect/testing/TestClock";
 
+import { Deadline } from "../api/Deadline.ts";
 import { AuthApi } from "./AuthApi.ts";
 
 type Answer = Response | "no answer" | "silence";
@@ -68,7 +69,7 @@ it.effect("gives up on an answer that doesn't come in time", () =>
       signInAgainst(new Response(new ReadableStream(), { status: 200 })),
     );
 
-    yield* TestClock.adjust(AuthApi.answerWithin);
+    yield* TestClock.adjust(Deadline.answerWithin);
 
     assert.deepStrictEqual(
       [yield* Fiber.join(silent), yield* Fiber.join(stalled)],
