@@ -4,5 +4,5 @@ import { Flake } from "@calder-ci/core";
 export const flake = Flake.make({
   packages: ["node"],
   checks: ["closureGuard", "serverSmoke"],
-  devShells: ["ci"],
+  devShells: ["ci", "corpus"],
 });

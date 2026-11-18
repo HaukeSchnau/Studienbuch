@@ -1,0 +1,341 @@
+{
+  "corpus": "capture-20261118-1946",
+  "weekly": {
+    "corpus": "capture-20261118-1946",
+    "import": "naive",
+    "mode": "weekly",
+    "weeks": [
+      "2025-W41",
+      "2025-W45",
+      "2025-W50",
+      "2026-W04",
+      "2026-W05",
+      "2026-W06",
+      "2026-W07",
+      "2026-W20",
+      "2026-W21",
+      "2026-W22",
+      "2026-W33",
+      "2026-W34",
+      "2026-W35",
+      "2026-W36",
+      "2026-W37",
+      "2026-W38",
+      "2026-W39",
+      "2026-W40",
+      "2026-W41",
+      "2026-W42",
+      "2026-W43",
+      "2026-W44",
+      "2026-W45",
+      "2026-W46",
+      "2026-W47",
+      "2026-W48",
+      "2026-W49",
+      "2026-W50",
+      "2026-W51",
+      "2026-W52",
+      "2026-W53",
+      "2027-W01",
+      "2027-W02"
+    ],
+    "views": {
+      "student": {
+        "weeks": {
+          "right": 2101,
+          "of": 4196
+        },
+        "recall": {
+          "right": 52193,
+          "of": 55890
+        },
+        "precision": {
+          "right": 51999,
+          "of": 65235
+        },
+        "attributes": {
+          "right": 50097,
+          "of": 52193
+        }
+      },
+      "teacher": {
+        "weeks": {
+          "right": 1183,
+          "of": 4125
+        },
+        "recall": {
+          "right": 4763,
+          "of": 35471
+        },
+        "precision": {
+          "right": 4758,
+          "of": 5600
+        },
+        "attributes": {
+          "right": 119,
+          "of": 4763
+        }
+      },
+      "room": {
+        "weeks": {
+          "right": 2344,
+          "of": 4983
+        },
+        "recall": {
+          "right": 4536,
+          "of": 28714
+        },
+        "precision": {
+          "right": 4528,
+          "of": 5340
+        },
+        "attributes": {
+          "right": 30,
+          "of": 4536
+        }
+      }
+    },
+    "kurswahl": {
+      "right": 166,
+      "of": 493
+    },
+    "ghostCourses": 39,
+    "changes": {
+      "right": 938,
+      "of": 7064
+    },
+    "courses": {
+      "right": 0,
+      "of": 0
+    },
+    "closures": {
+      "recall": {
+        "right": 28,
+        "of": 28
+      },
+      "precision": {
+        "right": 28,
+        "of": 28
+      }
+    },
+    "links": {
+      "right": 5610,
+      "of": 5610
+    },
+    "exams": {
+      "right": 32,
+      "of": 274
+    },
+    "examStudents": {
+      "recall": {
+        "right": 804,
+        "of": 5611
+      },
+      "precision": {
+        "right": 804,
+        "of": 869
+      }
+    },
+    "weekLabels": {
+      "right": 0,
+      "of": 0
+    },
+    "courseIdsKept": {
+      "right": 91993,
+      "of": 91993
+    },
+    "lookahead": {
+      "right": 4727,
+      "of": 34837
+    },
+    "runs": {
+      "total": 33,
+      "failed": 0
+    },
+    "hiddenDays": 1970,
+    "invariants": {
+      "failedRuns": 0,
+      "danglingCourses": 324,
+      "unpublishedLessons": 0,
+      "secondRunChanges": 0,
+      "reversedReadChanges": 14,
+      "failedReadChanges": 0,
+      "injectedFailures": 1
+    },
+    "reads": {
+      "requests": 901,
+      "outOfRange": 195,
+      "decodeFailures": 0
+    },
+    "passingCases": []
+  },
+  "timeline": {
+    "corpus": "capture-20261118-1946",
+    "import": "naive",
+    "mode": "timeline",
+    "weeks": [
+      "2025-W41",
+      "2025-W45",
+      "2025-W50",
+      "2026-W04",
+      "2026-W05",
+      "2026-W06",
+      "2026-W07",
+      "2026-W20",
+      "2026-W21",
+      "2026-W22",
+      "2026-W33",
+      "2026-W34",
+      "2026-W35",
+      "2026-W36",
+      "2026-W37",
+      "2026-W38",
+      "2026-W39",
+      "2026-W40",
+      "2026-W41",
+      "2026-W42",
+      "2026-W43",
+      "2026-W44",
+      "2026-W45",
+      "2026-W46",
+      "2026-W47",
+      "2026-W48",
+      "2026-W49",
+      "2026-W50",
+      "2026-W51",
+      "2026-W52",
+      "2026-W53",
+      "2027-W01",
+      "2027-W02"
+    ],
+    "views": {
+      "student": {
+        "weeks": {
+          "right": 2192,
+          "of": 4196
+        },
+        "recall": {
+          "right": 54075,
+          "of": 55890
+        },
+        "precision": {
+          "right": 53881,
+          "of": 67426
+        },
+        "attributes": {
+          "right": 51979,
+          "of": 54075
+        }
+      },
+      "teacher": {
+        "weeks": {
+          "right": 1183,
+          "of": 4125
+        },
+        "recall": {
+          "right": 4892,
+          "of": 35471
+        },
+        "precision": {
+          "right": 4887,
+          "of": 5743
+        },
+        "attributes": {
+          "right": 119,
+          "of": 4892
+        }
+      },
+      "room": {
+        "weeks": {
+          "right": 2344,
+          "of": 4983
+        },
+        "recall": {
+          "right": 4659,
+          "of": 28714
+        },
+        "precision": {
+          "right": 4651,
+          "of": 5477
+        },
+        "attributes": {
+          "right": 30,
+          "of": 4659
+        }
+      }
+    },
+    "kurswahl": {
+      "right": 166,
+      "of": 493
+    },
+    "ghostCourses": 39,
+    "changes": {
+      "right": 938,
+      "of": 7064
+    },
+    "courses": {
+      "right": 0,
+      "of": 0
+    },
+    "closures": {
+      "recall": {
+        "right": 28,
+        "of": 28
+      },
+      "precision": {
+        "right": 28,
+        "of": 28
+      }
+    },
+    "links": {
+      "right": 5753,
+      "of": 5753
+    },
+    "exams": {
+      "right": 32,
+      "of": 274
+    },
+    "examStudents": {
+      "recall": {
+        "right": 804,
+        "of": 5611
+      },
+      "precision": {
+        "right": 804,
+        "of": 869
+      }
+    },
+    "weekLabels": {
+      "right": 0,
+      "of": 0
+    },
+    "courseIdsKept": {
+      "right": 933688,
+      "of": 933688
+    },
+    "lookahead": {
+      "right": 42692,
+      "of": 308684
+    },
+    "runs": {
+      "total": 310,
+      "failed": 0
+    },
+    "hiddenDays": 1970,
+    "invariants": {
+      "failedRuns": 0,
+      "danglingCourses": 342,
+      "unpublishedLessons": 0,
+      "secondRunChanges": 0,
+      "reversedReadChanges": 14,
+      "failedReadChanges": 0,
+      "injectedFailures": 1
+    },
+    "reads": {
+      "requests": 9610,
+      "outOfRange": 2110,
+      "decodeFailures": 0
+    },
+    "passingCases": []
+  }
+}

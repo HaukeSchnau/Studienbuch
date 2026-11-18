@@ -4,7 +4,6 @@
 import * as NodeRuntime from "@effect/platform-node/NodeRuntime";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { WebUntisClient, WebUntisConnection, webUntisLayer } from "@schnau/webuntis-api";
-import * as Cause from "effect/Cause";
 import * as Command from "effect/cli/Command";
 import * as Flag from "effect/cli/Flag";
 import * as Config from "effect/Config";
@@ -17,7 +16,6 @@ import * as FileSystem from "effect/FileSystem";
 import * as FetchHttpClient from "effect/http/FetchHttpClient";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
-import * as Predicate from "effect/Predicate";
 import * as Path from "effect/Path";
 import * as ChildProcess from "effect/process/ChildProcess";
 import * as ChildProcessSpawner from "effect/process/ChildProcessSpawner";
@@ -33,48 +31,29 @@ import { CapturePlan } from "./CapturePlan.ts";
 import { CaptureReport } from "./CaptureReport.ts";
 import { Checks } from "./Checks.ts";
 import { Corpus } from "./Corpus.ts";
+import { Pin } from "./Pin.ts";
 import { Pseudonymizer } from "./Pseudonymizer.ts";
+import { Sanitized } from "./Sanitized.ts";
 
 class Refused extends Schema.TaggedError<Refused, { readonly brand: unique symbol }>()(
   "Corpus.Refused",
   { reason: Schema.String },
 ) {}
 
-/** A failure whose details may hold a raw value, reduced to its kind. */
-class Failed extends Schema.TaggedError<Failed, { readonly brand: unique symbol }>()(
-  "Corpus.Failed",
-  { kind: Schema.String },
-) {}
-
 /** Errors whose fields name paths, kinds and counts only, so they print as they are. */
-const safe = new Set([
-  "Corpus.Refused",
-  "Pseudonymizer.PolicyFailed",
-  "Pseudonymizer.NotRaw",
-  "Checks.LeakFound",
-  "Checks.GrammarFailed",
-  "Capture.ReadsFailed",
-  "CapturePlan.NoCurrentYear",
-  "Archive.ArchiveFailed",
-]);
-
-/**
- * Reports any other failure by its tag alone: a schema error or a WebUntis error can quote the
- * body it failed on, and a raw body names students.
- */
-const sanitized = <A, E, R>(effect: Effect.Effect<A, E, R>): Effect.Effect<A, E | Failed, R> =>
-  Effect.catchCause(effect, (cause) => {
-    const error = Cause.squash(cause);
-
-    const tag =
-      Predicate.hasProperty(error, "_tag") && Predicate.isString(error._tag)
-        ? error._tag
-        : "a defect";
-
-    return safe.has(tag)
-      ? Effect.failCause<E | Failed>(cause)
-      : Effect.fail<E | Failed>(new Failed({ kind: tag }));
-  });
+const sanitized = Sanitized.only(
+  new Set([
+    "Corpus.Refused",
+    "Pseudonymizer.PolicyFailed",
+    "Pseudonymizer.NotRaw",
+    "Checks.LeakFound",
+    "Checks.GrammarFailed",
+    "Capture.ReadsFailed",
+    "CapturePlan.NoCurrentYear",
+    "Archive.ArchiveFailed",
+    "Pin.NotFetched",
+  ]),
+);
 
 const pseudonymKey = Effect.gen(function* () {
   const text = Redacted.value(yield* Config.Redacted("CORPUS_PSEUDONYM_KEY"));
@@ -89,11 +68,6 @@ const home = Config.String("HOME");
 
 const identityFile = Config.String("SOPS_AGE_KEY_FILE").pipe(
   Config.orElse(() => Config.map(home, (dir) => `${dir}/.config/sops/age/keys.txt`)),
-);
-
-const cacheRoot = Config.String("XDG_CACHE_HOME").pipe(
-  Config.orElse(() => Config.map(home, (dir) => `${dir}/.cache`)),
-  Config.map((dir) => `${dir}/studienbuch/import-corpus`),
 );
 
 const identities = Effect.fn("Corpus.identities")(function* (file: Option.Option<string>) {
@@ -302,11 +276,20 @@ const check = Command.make(
 const fetch = Command.make(
   "fetch",
   {
+    pinned: Flag.Boolean("pinned").pipe(
+      Flag.withDescription("Fetch the archive pin.json names, from its repository and commit"),
+      Flag.withDefault(false),
+    ),
     archive: Flag.String("archive").pipe(
       Flag.withDescription("The corpus archive, a path, or a file name in --repository"),
+      Flag.optional,
     ),
     repository: Flag.String("repository").pipe(
       Flag.withDescription("A git repository holding the archive, cloned or pulled into the cache"),
+      Flag.optional,
+    ),
+    commit: Flag.String("commit").pipe(
+      Flag.withDescription("The repository's commit to take the archive from (default: its HEAD)"),
       Flag.optional,
     ),
     sha256: Flag.String("sha256").pipe(
@@ -322,21 +305,47 @@ const fetch = Command.make(
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
     const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
-    const root = yield* cacheRoot;
+    const root = yield* Pin.cacheRoot;
+
+    const named = [flags.archive, flags.repository, flags.commit, flags.sha256].filter(
+      Option.isSome,
+    );
+
+    if (flags.pinned && named.length > 0) {
+      return yield* new Refused({ reason: "--pinned takes everything from pin.json" });
+    }
+
+    const pin = flags.pinned ? Option.some(yield* Pin.pinned) : Option.none();
+
+    const source = Option.match(pin, {
+      onNone: () => flags,
+      onSome: (each) => ({
+        archive: Option.some(each.archive),
+        repository: Option.some(each.repository),
+        commit: Option.some(each.commit),
+        sha256: Option.some(each.sha256),
+      }),
+    });
+
+    if (Option.isNone(source.archive)) return yield* new Refused({ reason: "name --archive" });
+
+    if (Option.isSome(source.commit) && Option.isNone(source.repository)) {
+      return yield* new Refused({ reason: "--commit needs --repository" });
+    }
 
     yield* fs.makeDirectory(root, { recursive: true });
 
-    let archive = flags.archive;
+    let archive = source.archive.value;
 
-    if (Option.isSome(flags.repository)) {
+    if (Option.isSome(source.repository)) {
       // One clone per repository, so a different URL never pulls the wrong one.
       const crypto = yield* Crypto.Crypto;
 
-      const source = (yield* fs.exists(flags.repository.value))
-        ? yield* fs.realPath(flags.repository.value)
-        : flags.repository.value;
+      const repository = (yield* fs.exists(source.repository.value))
+        ? yield* fs.realPath(source.repository.value)
+        : source.repository.value;
 
-      const url = new TextEncoder().encode(source);
+      const url = new TextEncoder().encode(repository);
 
       const clone = path.join(
         root,
@@ -346,21 +355,35 @@ const fetch = Command.make(
       const git = (args: ReadonlyArray<string>) =>
         spawner.exitCode(ChildProcess.make("git", args, { stdout: "inherit", stderr: "inherit" }));
 
-      const code = (yield* fs.exists(path.join(clone, ".git")))
-        ? yield* git(["-C", clone, "pull", "--ff-only"])
-        : yield* git(["clone", source, clone]);
+      const steps: ReadonlyArray<ReadonlyArray<string>> = [
+        ...((yield* fs.exists(path.join(clone, ".git")))
+          ? [["-C", clone, "fetch", "--quiet", "origin"]]
+          : [["clone", "--quiet", repository, clone]]),
+        // The cache's clone is ours, so whatever it holds gives way to the commit asked for.
+        [
+          "-C",
+          clone,
+          "checkout",
+          "--quiet",
+          "--force",
+          "--detach",
+          Option.getOrElse(source.commit, () => "origin/HEAD"),
+        ],
+      ];
 
-      if (code !== 0) return yield* new Refused({ reason: `git ended with code ${code}` });
+      for (const args of steps) {
+        const code = yield* git(args);
 
-      archive = path.join(clone, flags.archive);
+        if (code !== 0) return yield* new Refused({ reason: `git ended with code ${code}` });
+      }
+
+      archive = path.join(clone, source.archive.value);
     }
 
-    if (Option.isSome(flags.sha256)) {
-      const actual = yield* Archive.sha256(archive);
+    const actual = yield* Archive.sha256(archive);
 
-      if (actual !== flags.sha256.value.toLowerCase()) {
-        return yield* new Refused({ reason: "the archive's SHA-256 differs from the pin" });
-      }
+    if (Option.isSome(source.sha256) && actual !== source.sha256.value.toLowerCase()) {
+      return yield* new Refused({ reason: "the archive's SHA-256 differs from the pin" });
     }
 
     const unpacked = yield* fs.makeTempDirectory({ directory: root, prefix: "unpack-" });
@@ -376,8 +399,10 @@ const fetch = Command.make(
 
       const target = path.join(root, manifest.id);
 
+      yield* fs.remove(Pin.marker(root, manifest.id), { force: true });
       yield* fs.remove(target, { recursive: true, force: true });
       yield* fs.rename(unpacked, target);
+      yield* fs.writeFileString(Pin.marker(root, manifest.id), `${actual}\n`);
 
       return target;
     }).pipe(
