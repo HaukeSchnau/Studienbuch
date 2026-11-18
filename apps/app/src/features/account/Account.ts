@@ -54,6 +54,7 @@ export const Reason = Schema.Literals([
   "unknown-card",
   "card-not-kept",
   "busy",
+  "signed-out",
   "sign-out-failed",
   "failed",
 ]);
@@ -99,6 +100,7 @@ export const sentence: Record<Reason, string> = {
   "card-not-kept":
     "Dieses Gerät konnte deine Notfallkarte gerade nicht speichern. Ohne sie geht es nicht weiter. Versuch es noch einmal.",
   busy: "Auf diesem Gerät läuft schon eine Anmeldung. Warte, bis sie fertig ist.",
+  "signed-out": "Du hast dich abgemeldet, bevor die Anmeldung fertig war. Melde dich neu an.",
   "sign-out-failed": "Abmelden hat nicht geklappt. Versuch es noch einmal.",
   failed: "Das hat nicht geklappt. Versuch es noch einmal.",
 };
@@ -180,10 +182,15 @@ const refuseAnyAccount = Effect.flatMap(SessionStore.Service, (store) =>
   ),
 );
 
+/** The generation an attempt began in (`attempt`), which `keep` checks. */
+const Began = Context.Reference<Option.Option<number>>("Account.Began", {
+  defaultValue: () => Option.none(),
+});
+
 /**
  * Keeps a new session in the turn that installs sessions (`Forgetting.Service`), after any sign-out
- * under way or left unfinished. That turn refuses another account and fixes where the session goes
- * (`SessionStore.publicComputerFor`); `first` stores what it needs there, before it. It ends no
+ * under way or left unfinished. That turn refuses another account, and an attempt a sign-out
+ * superseded; it fixes where the session goes (`SessionStore.publicComputerFor`). It ends no
  * session: a caller that holds none for a retry ends it when this fails (`endUnkept`).
  */
 const keep = Effect.fn("Account.keep")(function* <R = never>(
@@ -197,6 +204,12 @@ const keep = Effect.fn("Account.keep")(function* <R = never>(
   const failed = () => Effect.fail(new Problem({ reason: "failed" }));
 
   const install = Effect.gen(function* () {
+    const { generation } = yield* SubscriptionRef.get(store.attempt);
+
+    if (Option.exists(yield* Began, (began) => began !== generation)) {
+      return yield* new Problem({ reason: "signed-out" });
+    }
+
     const held = yield* store.current;
     const publicComputer = SessionStore.publicComputerFor(held, signedIn.accountId, chosen);
 
@@ -322,18 +335,50 @@ export class Confirmations extends Context.Service<
 >()("Account.Confirmations") {}
 
 /**
- * Runs a sign-in, a sign-up, an account's confirmation or a sign-out as the device's one attempt
- * (`SessionStore.attempting`). Another one meanwhile is refused, never queued, and the screens
- * offer none, nor the "Öffentlicher Computer" choice, which the attempt read when it started.
+ * Runs a sign-in, a sign-up or an account's confirmation as the device's one attempt
+ * (`SessionStore.attempt`). Another one meanwhile is refused, never queued, and the screens offer
+ * none, nor the "Öffentlicher Computer" choice, which the attempt read when it started.
  */
 export const attempt = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
-  Effect.flatMap(SessionStore.Service, ({ attempting }) =>
+  Effect.flatMap(SessionStore.Service, (store) =>
     Effect.acquireUseRelease(
-      SubscriptionRef.modify(attempting, (running) => [!running, true] as const),
-      (mine): Effect.Effect<A, E | Problem, R> =>
-        mine ? effect : Effect.fail(new Problem({ reason: "busy" })),
-      (mine) => (mine ? SubscriptionRef.set(attempting, false) : Effect.void),
+      SubscriptionRef.modify(store.attempt, (now) =>
+        now.running
+          ? [Option.none<number>(), now]
+          : [Option.some(now.generation), { ...now, running: true }],
+      ),
+      (began): Effect.Effect<A, E | Problem, R> =>
+        Option.isSome(began)
+          ? Effect.provideService(effect, Began, began)
+          : Effect.fail(new Problem({ reason: "busy" })),
+      Option.match({
+        onNone: () => Effect.void,
+        onSome: (generation) => endAttempt(store, generation),
+      }),
     ),
+  );
+
+/**
+ * Runs a sign-out as the device's attempt in place of one under way, which may wait on a server
+ * that never answers. That one runs on, and its sign-in keeps no session (`keep`).
+ */
+export const supersede = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+  Effect.flatMap(SessionStore.Service, (store) =>
+    Effect.acquireUseRelease(
+      SubscriptionRef.modify(store.attempt, (now) => {
+        const generation = now.generation + 1;
+
+        return [generation, { running: true, generation }] as const;
+      }),
+      () => effect,
+      (generation) => endAttempt(store, generation),
+    ),
+  );
+
+/** Ends the attempt of `generation`, unless a sign-out took over from it. */
+const endAttempt = (store: SessionStore.Service["Service"], generation: number) =>
+  SubscriptionRef.update(store.attempt, (now) =>
+    now.generation === generation ? { ...now, running: false } : now,
   );
 
 /**

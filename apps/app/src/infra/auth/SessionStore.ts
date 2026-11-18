@@ -18,6 +18,14 @@ import { AuthApi } from "./AuthApi.ts";
 
 export * as SessionStore from "./SessionStore.ts";
 
+/** The device's one attempt (`Account.attempt`). */
+export interface Attempt {
+  /** Whether a sign-in, sign-up or sign-out that may change the account runs. */
+  readonly running: boolean;
+  /** Grows at each sign-out, which supersedes an attempt that began before it (`Account.keep`). */
+  readonly generation: number;
+}
+
 /**
  * The signed-in account. `token` is `None` once the server ended the session: the account and its
  * data stay on the device until it signs in again or signs out.
@@ -54,11 +62,10 @@ export class Service extends Context.Service<
     /** Forgets the account, at sign-out. */
     readonly forget: Effect.Effect<void, Keychain.Unavailable>;
     /**
-     * Whether a sign-in, sign-up or sign-out that may change the account runs (`Account.attempt`).
-     * It sits here, in the device's layers, so the sign-in screens and an account's own steps share
-     * it.
+     * The device's one attempt. It sits here, in the device's layers, so the sign-in screens and
+     * an account's own steps share it.
      */
-    readonly attempting: SubscriptionRef.SubscriptionRef<boolean>;
+    readonly attempt: SubscriptionRef.SubscriptionRef<Attempt>;
   }
 >()("SessionStore.Service") {}
 
@@ -91,10 +98,10 @@ export const layer = Layer.effect(Service)(
     );
 
     const ref = yield* SubscriptionRef.make(stored);
-    const attempting = yield* SubscriptionRef.make(false);
+    const attempt = yield* SubscriptionRef.make<Attempt>({ running: false, generation: 0 });
 
     return {
-      attempting,
+      attempt,
       current: SubscriptionRef.get(ref),
       changes: SubscriptionRef.changes(ref),
       signedIn: Effect.fn("SessionStore.signedIn")(function* (

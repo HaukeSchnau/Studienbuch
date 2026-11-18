@@ -113,14 +113,19 @@ export const signingUp = runtime
 const attempting = runtime
   .atom(
     Stream.unwrap(
-      Effect.map(SessionStore.Service, ({ attempting }) => SubscriptionRef.changes(attempting)),
+      Effect.map(SessionStore.Service, ({ attempt }) =>
+        SubscriptionRef.changes(attempt).pipe(
+          Stream.map((now) => now.running),
+          Stream.changes,
+        ),
+      ),
     ),
   )
   .pipe(Atom.keepAlive);
 
 /**
- * Whether a sign-in or sign-up runs on this device (`Account.attempt`): the screens then start
- * none, and the "Öffentlicher Computer" choice stays as that attempt read it.
+ * Whether a sign-in, sign-up or sign-out runs on this device (`Account.attempt`): the screens then
+ * start none, and the "Öffentlicher Computer" choice stays as that attempt read it.
  */
 export const useAttempting = () => AsyncResult.getOrElse(useAtomValue(attempting), () => false);
 
@@ -274,7 +279,7 @@ const failed = Effect.fail(new Account.Problem({ reason: "sign-out-failed" }));
  * Signs the device out (`Account.signOut`). `unsent` is what the question before showed
  * (`unsent`), `None` when it couldn't tell. A newer change refuses with `AccountEngine.MoreUnsent`,
  * and the question asks again; any other failure is "sign-out-failed", which the student retries.
- * It runs as the device's one attempt, so a sign-in under way can't keep its session after it.
+ * It takes over from an attempt under way (`Account.supersede`), which then keeps no session.
  */
 export const signOut = runtime
   .fn<Option.Option<AccountEngine.Unsent>>()((unsent, get) =>
@@ -305,7 +310,7 @@ export const signOut = runtime
         "Keychain.Unavailable": () => failed,
         SqlError: () => failed,
       }),
-      Account.attempt,
+      Account.supersede,
     ),
   )
   .pipe(Atom.keepAlive);

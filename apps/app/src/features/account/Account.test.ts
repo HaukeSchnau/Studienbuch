@@ -472,17 +472,17 @@ describe("Account", () => {
       const signIn = Account.attempt(Account.signIn("lena@example.org", "geheim-genug", false));
 
       const result = yield* Effect.gen(function* () {
-        const { attempting } = yield* SessionStore.Service;
+        const { attempt } = yield* SessionStore.Service;
         const first = yield* Effect.forkChild(signIn, { startImmediately: true });
         yield* Queue.take(asked);
 
-        const during = yield* SubscriptionRef.get(attempting);
+        const during = (yield* SubscriptionRef.get(attempt)).running;
         const second = yield* reason(signIn);
 
         yield* Deferred.succeed(answer, undefined);
         yield* Fiber.join(first);
 
-        const after = yield* SubscriptionRef.get(attempting);
+        const after = (yield* SubscriptionRef.get(attempt)).running;
         yield* signIn;
 
         return { during, second, after, asked: yield* Queue.size(asked) };

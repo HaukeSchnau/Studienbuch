@@ -11,6 +11,7 @@ import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Queue from "effect/Queue";
 import * as Redacted from "effect/Redacted";
+import * as Ref from "effect/Ref";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Atom from "effect/reactivity/Atom";
 import * as AtomRegistry from "effect/reactivity/AtomRegistry";
@@ -414,50 +415,83 @@ it.effect("an account's confirmation is refused while a sign-in from the screens
   }).pipe(Effect.scoped),
 );
 
-// "Abmelden" while a confirmation's sign-in waits for the server. Let through, the sign-out would
-// finish first, and the late answer would then sign the student in again on a device they left.
-it.effect(
-  "sign-out is refused while a sign-in runs, so its answer can't sign anyone in after",
-  () =>
-    Effect.gen(function* () {
-      const registry = AtomRegistry.make();
-      yield* Effect.addFinalizer(() => Effect.sync(() => registry.dispose()));
-      const { asked, answer, signIn } = yield* answeredSignIn;
-      yield* serverAnswers(registry, { signIn });
-      registry.mount(AccountState.current);
-      yield* signOut(registry);
+// "Abmelden" while a confirmation's sign-in hangs on the server. The sign-out wins at once. The
+// answer that comes after it keeps no session, so it can't sign the student in again, and the
+// session it brought ends on the server.
+it.effect("sign-out wins over a sign-in that hangs, and the late answer keeps nothing", () =>
+  Effect.gen(function* () {
+    const registry = AtomRegistry.make();
+    yield* Effect.addFinalizer(() => Effect.sync(() => registry.dispose()));
+    const ended = yield* Ref.make<ReadonlyArray<string>>([]);
+    const { asked, answer, signIn } = yield* answeredSignIn;
 
-      const credentials = { email: "late-lia@example.org", password: "geheim-genug" };
-      const accountId = "late-lia";
-      const device = Atom.runtime(AccountEngine.device);
+    yield* serverAnswers(registry, {
+      signIn,
+      signOut: (token) => Ref.update(ended, (all) => [...all, Redacted.value(token)]),
+    });
 
-      yield* AtomRegistry.getResult(
+    registry.mount(AccountState.current);
+    yield* signOut(registry);
+    yield* Ref.set(ended, []);
+
+    const credentials = { email: "late-lia@example.org", password: "geheim-genug" };
+    const accountId = "late-lia";
+    const device = Atom.runtime(AccountEngine.device);
+
+    const held = () =>
+      AtomRegistry.getResult(
         registry,
         device.atom(
-          Effect.flatMap(SessionStore.Service, (store) =>
-            store.signedIn({ accountId, token: Redacted.make("old"), demo: false }, false),
+          Effect.map(
+            Effect.flatMap(SessionStore.Service, (store) => store.current),
+            Option.map((signed) => signed.accountId),
           ),
         ),
         { suspendOnWaiting: true },
       );
 
-      const confirm = KeysState.withPassword(accountId);
-      const unmountConfirm = registry.mount(confirm);
-      registry.set(confirm, credentials);
-      yield* Queue.take(asked);
+    yield* AtomRegistry.getResult(
+      registry,
+      device.atom(
+        Effect.flatMap(SessionStore.Service, (store) =>
+          store.signedIn({ accountId, token: Redacted.make("old"), demo: false }, false),
+        ),
+      ),
+      { suspendOnWaiting: true },
+    );
 
-      registry.set(AccountState.signOut, Option.none());
-      yield* Effect.exit(
-        AtomRegistry.getResult(registry, AccountState.signOut, { suspendOnWaiting: true }),
-      );
-      const refused = reasonOf(registry, AccountState.signOut);
+    const confirm = KeysState.withPassword(accountId);
+    const unmountConfirm = registry.mount(confirm);
+    registry.set(confirm, credentials);
+    yield* Queue.take(asked);
 
-      yield* Deferred.succeed(answer, undefined);
-      yield* tokenNow(registry, credentials.email);
+    registry.set(AccountState.signOut, Option.none());
 
-      unmountConfirm();
-      yield* signOut(registry);
+    const signedOut = yield* Effect.exit(
+      AtomRegistry.getResult(registry, AccountState.signOut, { suspendOnWaiting: true }),
+    );
 
-      assert.deepStrictEqual(refused, Option.some("busy"));
-    }).pipe(Effect.scoped),
+    const afterSignOut = yield* held();
+
+    yield* Deferred.succeed(answer, undefined);
+    yield* Effect.exit(AtomRegistry.getResult(registry, confirm, { suspendOnWaiting: true }));
+
+    const result = {
+      signedOut: signedOut._tag,
+      afterSignOut,
+      confirmation: reasonOf(registry, confirm),
+      afterAnswer: yield* held(),
+      ended: yield* Ref.get(ended),
+    };
+
+    unmountConfirm();
+
+    assert.deepStrictEqual(result, {
+      signedOut: "Success",
+      afterSignOut: Option.none<string>(),
+      confirmation: Option.some<Account.Reason>("signed-out"),
+      afterAnswer: Option.none<string>(),
+      ended: ["old", credentials.email],
+    });
+  }).pipe(Effect.scoped),
 );
