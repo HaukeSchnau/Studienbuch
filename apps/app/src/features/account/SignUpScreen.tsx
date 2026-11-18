@@ -57,6 +57,7 @@ function SignUpForm({ reservation }: { readonly reservation: Access.Reservation 
         <Field
           pill
           label="E-Mail-Adresse"
+          hint="Freiwillig. Ohne E-Mail-Adresse geht es auch."
           value={email}
           onChangeText={setEmail}
           invalid={Option.contains(reasonOf(result), "invalid-email")}

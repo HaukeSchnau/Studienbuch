@@ -188,6 +188,26 @@ export class Service extends Context.Service<
       challenge: string,
       credential: Credential,
     ) => Effect.Effect<void, Failure>;
+    /** Options for the passkey that creates an account without an address with `reservation`. */
+    readonly passkeySignUpOptions: (
+      reservation: string,
+    ) => Effect.Effect<Ceremony<CreationOptions>, Failure>;
+    /** Creates the account without an address with its first passkey, and signs in. */
+    readonly passkeySignUp: (
+      reservation: string,
+      challenge: string,
+      credential: Credential,
+    ) => Effect.Effect<SignedIn, Failure>;
+    /**
+     * Creates an account without an address whose Notfallkarte has `login`, and signs in. The same
+     * login again signs in to the account it made, so a retry after a lost answer is safe.
+     */
+    readonly cardSignUp: (
+      login: Redacted.Redacted,
+      reservation: string,
+    ) => Effect.Effect<SignedIn, Failure>;
+    /** Signs in to the account without an address whose Notfallkarte has `login`. */
+    readonly cardSignIn: (login: Redacted.Redacted) => Effect.Effect<SignedIn, Failure>;
   }
 >()("AuthApi.Service") {}
 
@@ -254,6 +274,9 @@ export const layer = Layer.effect(Service)(
     const withChallenge = (request: HttpClientRequest.HttpClientRequest, challenge: string) =>
       HttpClientRequest.setHeader(request, Accounts.challengeHeader, challenge);
 
+    const registration = (challenge: string, credential: Credential) =>
+      withChallenge(post("/passkey/verify-registration", { response: credential }), challenge);
+
     return {
       signUp: (email, password, reservation) =>
         Effect.asVoid(
@@ -312,16 +335,28 @@ export const layer = Layer.effect(Service)(
         ),
       addPasskey: (token, challenge, credential) =>
         Effect.asVoid(
-          send(
-            HttpClientRequest.bearerToken(
-              withChallenge(
-                post("/passkey/verify-registration", { response: credential }),
-                challenge,
-              ),
-              token,
-            ),
-          ),
+          send(HttpClientRequest.bearerToken(registration(challenge, credential), token)),
         ),
+      passkeySignUpOptions: (reservation) =>
+        ceremony(
+          reserved(
+            HttpClientRequest.get("/passkey/generate-register-options"),
+            Option.some(reservation),
+          ),
+          creationOptions,
+        ),
+      passkeySignUp: (reservation, challenge, credential) =>
+        read(reserved(registration(challenge, credential), Option.some(reservation)), signedIn),
+      cardSignUp: (login, reservation) =>
+        read(
+          reserved(
+            post(Accounts.cardSignUpPath, { login: Redacted.value(login) }),
+            Option.some(reservation),
+          ),
+          signedIn,
+        ),
+      cardSignIn: (login) =>
+        read(post(Accounts.cardSignInPath, { login: Redacted.value(login) }), signedIn),
     };
   }),
 );

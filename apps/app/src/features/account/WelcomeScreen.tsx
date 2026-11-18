@@ -15,12 +15,13 @@ import { Keyboard, StyleSheet, type TextInputSelectionChangeEvent } from "react-
 
 import { AccessCode } from "./AccessCode.ts";
 import { Form, Lead, OtherWay, ProblemBox } from "./AccountForm.tsx";
+import { AccountState } from "./AccountState.ts";
 import { Steps } from "./Steps.ts";
 import { TypedCode } from "./TypedCode.ts";
 
 /**
  * "Willkommen!": the access code from the school, the old web's first step. A whole code earns a
- * tick before the server is asked, and a code the server takes leads to "Konto erstellen" with its
+ * tick before the server is asked, and a code the server takes leads to "Konto anlegen" with its
  * school named. Changing the code clears the last refusal, and the way back finds the code again.
  */
 export function WelcomeScreen() {
@@ -29,6 +30,8 @@ export function WelcomeScreen() {
   const forget = useAtomSet(AccessCode.redeem);
   const keep = useAtomSet(Steps.reservation);
   const keepCode = useAtomSet(Steps.accessCode);
+  const resetCardSignUp = useAtomSet(AccountState.signUpWithCard);
+  const resetPasskeySignUp = useAtomSet(AccountState.signUpWithPasskey);
   const typed = Option.getOrElse(useAtomValue(Steps.accessCode), () => "");
   const code = useAccessCode(typed, () => forget(Atom.Reset));
   const complete = Access.isCode(code.value);
@@ -43,7 +46,10 @@ export function WelcomeScreen() {
     if (Exit.isSuccess(exit)) {
       keep(Option.some(exit.value));
       keepCode(Option.some(code.value));
-      router.push("/konto-erstellen");
+      // A new code starts its sign-up afresh, without the last one's answer.
+      resetCardSignUp(Atom.Reset);
+      resetPasskeySignUp(Atom.Reset);
+      router.push("/konto-anlegen");
     }
   };
 

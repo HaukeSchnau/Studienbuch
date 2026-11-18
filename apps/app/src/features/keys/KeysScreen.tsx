@@ -10,7 +10,7 @@ import { Tokens } from "@stu/ui/Tokens";
 import * as DateTime from "effect/DateTime";
 import * as Exit from "effect/Exit";
 import * as Option from "effect/Option";
-import * as Redacted from "effect/Redacted";
+import type * as Redacted from "effect/Redacted";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import { Redirect, useRouter } from "expo-router";
 import { useState } from "react";
@@ -18,7 +18,15 @@ import { Keyboard, StyleSheet, View } from "react-native";
 
 import { HeroScreen } from "../../ui/HeroScreen.tsx";
 import { ProblemText, reasonOf, reasonOfExit, useCredentials } from "../account/AccountForm.tsx";
-import { KeyProblem, keyReasonOf, keyReasonOfExit, MethodRow, type Glyph } from "./KeysUi.tsx";
+import { ConfirmByCard } from "./ConfirmByCard.tsx";
+import {
+  CardCode,
+  KeyProblem,
+  keyReasonOf,
+  keyReasonOfExit,
+  MethodRow,
+  type Glyph,
+} from "./KeysUi.tsx";
 import { KeysState } from "./KeysState.ts";
 import type { NotebookKeys } from "./NotebookKeys.ts";
 
@@ -199,6 +207,12 @@ function Overview({
             busy={created.waiting}
             onPress={() => void newCard()}
           />
+          {AsyncResult.isSuccess(summary) &&
+          summary.value.methods.some((method) => method.kind === "code") ? (
+            <Text variant="subhead" style={{ color: color.inkSoft }}>
+              Deine alte Notfallkarte gilt dann nicht mehr.
+            </Text>
+          ) : null}
           <Button
             label="Passkey hinzufügen"
             kind="quiet"
@@ -231,7 +245,10 @@ function Overview({
   );
 }
 
-/** "Kurz bestätigen": a new sign-in, by passkey or password, before a new method. */
+/**
+ * "Kurz bestätigen": a new sign-in, by passkey, password or, for an account without an address,
+ * the Notfallkarte, before a new method.
+ */
 function Confirm({
   accountId,
   onConfirmed,
@@ -304,6 +321,8 @@ function Confirm({
           void withPassword({ email, password }).then(confirmed);
         }}
       />
+      <Text variant="subhead">Ohne E-Mail-Adresse bestätigst du mit deiner Notfallkarte.</Text>
+      <ConfirmByCard accountId={accountId} kind="quiet" onConfirmed={onConfirmed} />
     </Card>
   );
 }
@@ -317,29 +336,13 @@ function NewCard({
   readonly onDone: () => void;
 }) {
   const { color } = Theme.useTheme();
-  const groups = Redacted.value(text).split("-");
 
   return (
     <HeroScreen
       title="Deine Notfallkarte"
-      subtitle="Damit öffnest du dein Notizbuch auf einem neuen Gerät."
+      subtitle="Damit öffnest du dein Notizbuch auf einem neuen Gerät. Hast du keine E-Mail-Adresse angegeben, meldest du dich damit auch an."
     >
-      <Card padded>
-        <Text variant="footnote" style={{ color: color.accent }}>
-          Studienbuch Notfallkarte
-        </Text>
-        <View accessible accessibilityLabel={`Code: ${groups.join(", ")}`}>
-          <Text variant="title2" selectable style={styles.code}>
-            {groups.slice(0, 4).join("-")}
-          </Text>
-          <Text variant="title2" selectable style={styles.code}>
-            {groups.slice(4).join("-")}
-          </Text>
-        </View>
-        <Text variant="footnote" style={{ color: color.inkSoft }}>
-          Studienbuch fragt nie nach diesem Code. Gib ihn nur in der Studienbuch-App ein.
-        </Text>
-      </Card>
+      <CardCode text={text} />
       <Text variant="subhead" style={[styles.note, { color: color.inkSoft }]}>
         Du siehst den Code nur jetzt. Schreib ihn ab und heb ihn bei deinen Zeugnissen auf. Kein
         Screenshot: Fotos sieht jeder, der dein entsperrtes Gerät hat.
@@ -356,5 +359,4 @@ const styles = StyleSheet.create({
   grow: { flex: 1, gap: Tokens.space.xs },
   actions: { gap: Tokens.space.md },
   note: { paddingHorizontal: Tokens.space.lg },
-  code: { letterSpacing: 2, fontVariant: ["tabular-nums"] },
 });

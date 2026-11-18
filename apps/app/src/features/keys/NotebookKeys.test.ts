@@ -3,7 +3,6 @@ import { Keys } from "@stu/api/Keys";
 import { AccountKey, type CryptoSuite, RecoveryCode, Wrapper } from "@stu/e2ee";
 import { TestCrypto } from "@stu/e2ee/testing";
 import { Ports } from "@stu/sync/client";
-import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
@@ -18,135 +17,14 @@ import { DeviceSessions } from "../../infra/keychain/DeviceSessions.ts";
 import { Keychain } from "../../infra/keychain/Keychain.ts";
 import { MemoryKeychain } from "../../infra/keychain/MemoryKeychain.ts";
 import { KeyServer } from "./KeyServer.ts";
+import { KeyServerTesting } from "./KeyServerTesting.ts";
 import { NotebookKeys } from "./NotebookKeys.ts";
 
 const account = "lena";
 
-interface Stored {
-  readonly records: ReadonlyArray<AccountKey.Record>;
-  readonly wrappers: ReadonlyArray<Keys.Sealed>;
-}
+type FakeServer = KeyServerTesting.Fake;
 
-const samePublicKeys = (a: AccountKey.Record, b: AccountKey.Record) =>
-  a.signingKey.every((byte, index) => byte === b.signingKey[index]) &&
-  a.sealingKey.every((byte, index) => byte === b.sealingKey[index]);
-
-const since = DateTime.makeUnsafe("2026-10-29T12:00:00Z");
-
-/**
- * The server's keys in memory, answering as `KeyStore` does for one account. `seals` replaces what
- * a fetch answers, the way a server that plants a key would.
- */
-const fakeServer = Effect.gen(function* () {
-  const stored = yield* Ref.make<Stored>({ records: [], wrappers: [] });
-  const seals = yield* Ref.make(Option.none<ReadonlyArray<Keys.Sealed>>());
-  // A stale read: `state` answers no records while `init` still sees them.
-  const hideRecords = yield* Ref.make(false);
-  // The next `init` or `addWrapper` takes effect, and its answer is lost on the way back.
-  const loseAnswer = yield* Ref.make(false);
-  // The key the account's notebook was sealed with, which the server knows by its key boxes.
-  const sealedWith = yield* Ref.make(Option.none<AccountKey.Record>());
-  // The root key the server derives for a demo account, and how often a device asked for it.
-  const demoKey = yield* Ref.make(Option.none<Redacted.Redacted<Uint8Array>>());
-  const demoAsked = yield* Ref.make(0);
-  // `state` doesn't answer, as without a network.
-  const offline = yield* Ref.make(false);
-
-  const answer = <A, E>(effect: Effect.Effect<A, E>) =>
-    Effect.flatMap(effect, (value) =>
-      Effect.flatMap(Ref.getAndSet(loseAnswer, false), (lost) =>
-        lost ? Effect.fail(new KeyServer.Unreachable()) : Effect.succeed(value),
-      ),
-    );
-
-  // As `KeyStore` keeps them: one wrapper per id, so sending one again changes nothing.
-  const withWrapper = (wrappers: ReadonlyArray<Keys.Sealed>, wrapper: Keys.Sealed) =>
-    wrappers.some(({ statement }) => statement.id === wrapper.statement.id)
-      ? wrappers
-      : [...wrappers, wrapper];
-
-  const server = KeyServer.Service.of({
-    state: Effect.flatMap(
-      Effect.all([Ref.get(stored), Ref.get(hideRecords), Ref.get(offline)]),
-      ([{ records, wrappers }, hidden, away]) =>
-        away
-          ? Effect.fail(new KeyServer.Unreachable())
-          : Effect.succeed(
-              new Keys.State({
-                records: hidden ? [] : records,
-                wrappers: wrappers.map(
-                  ({ statement }) => new Keys.Listed({ statement, createdAt: since }),
-                ),
-              }),
-            ),
-    ),
-    init: (record, wrapper) =>
-      Effect.flatMap(
-        Effect.all([Ref.get(stored), Ref.get(sealedWith)]),
-        ([{ records, wrappers }, sealer]): ReturnType<KeyServer.Service["Service"]["init"]> => {
-          const [zero] = records;
-
-          if (zero !== undefined && !samePublicKeys(zero, record)) {
-            return Effect.fail(new Keys.ChainExists());
-          }
-
-          if (
-            zero === undefined &&
-            Option.exists(sealer, (sealed) => !samePublicKeys(sealed, record))
-          ) {
-            return Effect.fail(new Keys.KeysLost());
-          }
-
-          return answer(
-            Ref.set(stored, {
-              records: zero === undefined ? [record] : records,
-              wrappers: withWrapper(wrappers, wrapper),
-            }),
-          );
-        },
-      ),
-    addWrapper: (wrapper) =>
-      answer(
-        Ref.update(stored, ({ records, wrappers }) => ({
-          records,
-          wrappers: withWrapper(wrappers, wrapper),
-        })),
-      ),
-    fetchSeals: (method) =>
-      Effect.gen(function* () {
-        const { records, wrappers } = yield* Ref.get(stored);
-        const kind = method._tag === "Passkey" ? Wrapper.kindByte.prf : Wrapper.kindByte.code;
-
-        const found = wrappers.filter(
-          ({ statement }) =>
-            statement.kind === kind &&
-            (method._tag !== "Passkey" || statement.credentialId === method.credentialId),
-        );
-
-        const answered = Option.getOrElse(yield* Ref.get(seals), () => found);
-
-        return new Keys.Seals({ records, wrappers: answered });
-      }),
-    demoRootKey: Effect.andThen(
-      Ref.update(demoAsked, (count) => count + 1),
-      Ref.get(demoKey),
-    ),
-  });
-
-  return {
-    server,
-    stored,
-    seals,
-    hideRecords,
-    loseAnswer,
-    sealedWith,
-    demoKey,
-    demoAsked,
-    offline,
-  };
-});
-
-type FakeServer = Effect.Success<typeof fakeServer>;
+const fakeServer = KeyServerTesting.make;
 
 /** "Notfallkarte erstellen" with an answer that arrives. */
 const createCard = Effect.flatMap(NotebookKeys.newRecoveryCode, NotebookKeys.sendRecoveryCode);
@@ -301,6 +179,46 @@ describe("NotebookKeys", () => {
         );
         assert.isTrue(
           opened !== undefined && record !== undefined && AccountKey.matches(opened, record),
+        );
+      }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
+  );
+
+  // An account without an address that signed up on a public computer has a card that signs in
+  // and no notebook yet. Its first own device starts the key, and the card must open it too.
+  it.effect(
+    "a card that signed in gets its wrapper and login on the first device, then opens the next one",
+    () =>
+      Effect.gen(function* () {
+        const server = yield* fakeServer;
+        const phone = yield* device(server);
+        const laptop = yield* device(server);
+        const { bytes: code } = yield* RecoveryCode.generate;
+
+        yield* phone.run(NotebookKeys.status);
+        yield* phone.run(NotebookKeys.useCard(code));
+        // A second sign-in with the same card sends nothing new.
+        yield* phone.run(NotebookKeys.useCard(code));
+
+        const locked = yield* laptop.run(NotebookKeys.status);
+        yield* laptop.run(NotebookKeys.useCard(code));
+
+        const { wrappers } = yield* Ref.get(server.stored);
+
+        assert.deepStrictEqual(
+          {
+            logins: yield* Ref.get(server.logins),
+            kinds: wrappers.map(({ statement }) => statement.kind),
+            locked: locked._tag,
+            laptop: (yield* laptop.run(NotebookKeys.status))._tag,
+            sameKey: Option.getOrUndefined(yield* laptop.rootKey),
+          },
+          {
+            logins: [Option.some(Redacted.value(yield* NotebookKeys.cardLogin(code)))],
+            kinds: [Wrapper.kindByte.device, Wrapper.kindByte.code],
+            locked: "Locked",
+            laptop: "Unlocked",
+            sameKey: Option.getOrUndefined(yield* phone.rootKey),
+          },
         );
       }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
   );
@@ -496,7 +414,9 @@ describe("NotebookKeys", () => {
         yield* Ref.set(server.hideRecords, false);
 
         assert.isTrue(
-          record !== undefined && republished !== undefined && samePublicKeys(record, republished),
+          record !== undefined &&
+            republished !== undefined &&
+            KeyServerTesting.samePublicKeys(record, republished),
         );
         assert.deepStrictEqual(
           {
@@ -819,7 +739,10 @@ describe("NotebookKeys", () => {
             recordsAfterLaptop,
             laptopKey: Option.isNone(yield* laptop.rootKey),
             phoneMatches,
-            back: back !== undefined && record !== undefined && samePublicKeys(back, record),
+            back:
+              back !== undefined &&
+              record !== undefined &&
+              KeyServerTesting.samePublicKeys(back, record),
           },
           {
             laptopStatus: "Locked",

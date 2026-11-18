@@ -5,13 +5,15 @@ import type { ReactNode } from "react";
 
 import { KeysState } from "../keys/KeysState.ts";
 import { NotebookKeys } from "../keys/NotebookKeys.ts";
+import { SaveCardScreen } from "../keys/SaveCardScreen.tsx";
 import { Onboarding } from "./Onboarding.ts";
 import { OnboardingScreen } from "./OnboardingScreen.tsx";
 import { OnboardingState } from "./OnboardingState.ts";
 
 /**
  * The tabs, unless the student hasn't finished the first start (`Onboarding.next`): then the first
- * start in their place. Only an unlocked device can read the encrypted name, so a locked one shows
+ * start in their place. A new account without an address saves its Notfallkarte before anything
+ * else, locked or not. Only an unlocked device can read the encrypted name, so a locked one shows
  * the tabs with AccountNotice's way to unlock, and an account without a school shows them too.
  */
 export function OnboardingGate({ children }: { readonly children: ReactNode }) {
@@ -32,9 +34,17 @@ function Gate({
 }) {
   const status = useAtomValue(KeysState.status(accountId));
   const reading = useAtomValue(OnboardingState.reading(accountId));
+  const unsaved = useAtomValue(KeysState.unsavedCard(accountId));
 
   // The first start's last step outlives its screen here, and goes with the account at sign-out.
   useAtomMount(OnboardingState.finish(accountId));
+
+  if (AsyncResult.isInitial(unsaved)) return null;
+
+  // A device that can't read its secrets has no card to show either.
+  const card = Option.flatten(AsyncResult.value(unsaved));
+
+  if (Option.isSome(card)) return <SaveCardScreen accountId={accountId} card={card.value} />;
 
   const unlocked = NotebookKeys.unlocked(status);
 

@@ -1,3 +1,4 @@
+import { Field, type FieldProps } from "@stu/ui/Field";
 import { Icon } from "@stu/ui/Icon";
 import { Text } from "@stu/ui/Text";
 import { Theme } from "@stu/ui/Theme";
@@ -6,15 +7,17 @@ import { Vector } from "@stu/ui/Vector";
 import * as Cause from "effect/Cause";
 import * as Exit from "effect/Exit";
 import * as Option from "effect/Option";
+import * as Redacted from "effect/Redacted";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Schema from "effect/Schema";
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
+import { ProblemBox } from "../account/AccountForm.tsx";
 import { NotebookKeys } from "./NotebookKeys.ts";
 
-// What the key screens share: a method's icon in its tile, a row that names a method, and the
-// sentence for a refused key operation.
+// What the key screens share: a method's icon in its tile, a row that names a method, a
+// Notfallkarte's code as it shows once, and the sentence for a refused key operation.
 
 export type Glyph = "passkey" | "code" | "device";
 
@@ -125,7 +128,72 @@ export function KeyProblem({ reason }: { readonly reason: Option.Option<Notebook
   });
 }
 
+/** The sentence for a refused key operation in the sign-in card's error box. */
+export function KeyProblemBox({ reason }: { readonly reason: Option.Option<NotebookKeys.Reason> }) {
+  return Option.match(reason, {
+    onNone: () => null,
+    onSome: (found) => <ProblemBox>{NotebookKeys.sentence[found]}</ProblemBox>,
+  });
+}
+
+/**
+ * Where the student types a Notfallkarte's code: 28 characters in a type small enough to show
+ * whole at 390 px. Case, spaces and dashes don't matter (`RecoveryCode.parse`).
+ */
+export function CardCodeField(
+  props: Omit<FieldProps, "label" | "placeholder" | "inputStyle"> & { readonly label?: string },
+) {
+  return (
+    <Field
+      label="Code von deiner Notfallkarte"
+      placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX"
+      autoCapitalize="characters"
+      autoCorrect={false}
+      autoComplete="off"
+      spellCheck={false}
+      returnKeyType="go"
+      {...props}
+      inputStyle={styles.typed}
+    />
+  );
+}
+
+/**
+ * A Notfallkarte's code in two lines of four groups and three, as the card prints it. Screen
+ * readers read the groups one by one.
+ */
+export function CardCode({ text }: { readonly text: Redacted.Redacted }) {
+  const { color } = Theme.useTheme();
+  const groups = Redacted.value(text).split("-");
+
+  return (
+    <View style={[styles.card, { backgroundColor: color.accentTint }]}>
+      <Text variant="footnote" style={{ color: color.accent }}>
+        Studienbuch Notfallkarte
+      </Text>
+      <View accessible accessibilityLabel={`Code: ${groups.join(", ")}`}>
+        <Text variant="title2" selectable style={styles.code}>
+          {groups.slice(0, 4).join("-")}
+        </Text>
+        <Text variant="title2" selectable style={styles.code}>
+          {groups.slice(4).join("-")}
+        </Text>
+      </View>
+      <Text variant="footnote" style={{ color: color.inkSoft }}>
+        Studienbuch fragt nie nach diesem Code. Gib ihn nur in der Studienbuch-App ein.
+      </Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  card: {
+    gap: Tokens.space.sm,
+    borderRadius: Tokens.radius.field,
+    padding: Tokens.space.lg,
+  },
+  code: { letterSpacing: 2, fontVariant: ["tabular-nums"], fontFamily: Theme.codeFontFamily },
+  typed: { fontFamily: Theme.codeFontFamily, fontSize: 15, letterSpacing: 0 },
   tile: {
     width: 40,
     height: 40,

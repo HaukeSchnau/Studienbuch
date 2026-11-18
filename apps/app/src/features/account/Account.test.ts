@@ -1,5 +1,8 @@
 import { assert, describe, it } from "@effect/vitest";
 import { Access } from "@stu/api/Access";
+import { Accounts } from "@stu/api/Accounts";
+import { RecoveryCode } from "@stu/e2ee";
+import { TestCrypto } from "@stu/e2ee/testing";
 import { Ports } from "@stu/sync/client";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
@@ -25,6 +28,7 @@ import { Keychain } from "../../infra/keychain/Keychain.ts";
 import { MemoryKeychain } from "../../infra/keychain/MemoryKeychain.ts";
 import { Passkeys } from "../../infra/passkeys/Passkeys.ts";
 import { Forgetting } from "../../infra/runtime/Forgetting.ts";
+import { NotebookKeys } from "../keys/NotebookKeys.ts";
 import { Account } from "./Account.ts";
 
 const signedIn = (accountId: string, token: string): AuthApi.SignedIn => ({
@@ -141,6 +145,7 @@ const withPasskeyDialog = Layer.mergeAll(
           signOut: (token) => Ref.update(revoked, (tokens) => [...tokens, Redacted.value(token)]),
         }),
         Layer.succeed(Passkeys.Authenticator)({
+          available: Effect.succeed(true),
           create: () =>
             Effect.flatMap(Deferred.await(dialog), (answer) =>
               answer === "created"
@@ -360,6 +365,103 @@ describe("Account", () => {
     }),
   );
 
+  // The card of an account without an address is its login: what the device derives at sign-up
+  // and from the typed code must be the one login, as @stu/e2ee's vector fixes it.
+  it.effect(
+    "signs up and in with one card's login, the same again after a lost answer, never after a typo",
+    () =>
+      Effect.gen(function* () {
+        const phoneRun = yield* restarts;
+        const laptopRun = yield* restarts;
+        const sent = yield* Ref.make<ReadonlyArray<string>>([]);
+        const answerLost = yield* Ref.make(true);
+        const offered = yield* Ref.make<ReadonlyArray<Account.NewCard>>([]);
+
+        // @stu/e2ee's vector: this card's login, as base64url.
+        const vector = "J28S-54WM-JPB9-F64S-KADS-S7CY-KYH1";
+        const vectorLogin = "rmMlHESFSnLQ6y0e56cl3gZWyYyFnnHJUv2o-wd_U5I";
+        const unknown = RecoveryCode.text(Redacted.make(new Uint8Array(16).fill(7)));
+
+        const api = AuthApiTesting.layer({
+          cardSignUp: (login) =>
+            Effect.andThen(
+              Ref.update(sent, (all) => [...all, `sign-up ${Redacted.value(login)}`]),
+              Effect.flatMap(Ref.getAndSet(answerLost, false), (lost) =>
+                lost
+                  ? Effect.fail(new AuthApi.Unreachable({ cause: "answer lost" }))
+                  : Effect.succeed(signedIn(`noa-${Redacted.value(login)}`, "noa-1")),
+              ),
+            ),
+          cardSignIn: (login) =>
+            Effect.andThen(
+              Ref.update(sent, (all) => [...all, `sign-in ${Redacted.value(login)}`]),
+              Redacted.value(login) === vectorLogin
+                ? Effect.succeed(signedIn("mia", "mia-1"))
+                : Effect.fail(new AuthApi.Refused({ status: 401, code: Accounts.unknownCard })),
+            ),
+        });
+
+        const offer = (card: Option.Option<Account.NewCard>) =>
+          Option.match(card, {
+            onNone: () => Effect.void,
+            onSome: (each) => Ref.update(offered, (all) => [...all, each]),
+          });
+
+        const reason = <A, R>(
+          effect: Effect.Effect<A, Account.Problem | NotebookKeys.Problem, R>,
+        ) => Effect.map(Effect.flip(effect), (problem) => problem.reason);
+
+        const signUp = Account.signUpWithCard(soon, false, offer);
+
+        // The answer is lost, and the student presses "Notfallkarte erstellen" again.
+        const [lost, holder] = yield* phoneRun(
+          Effect.all([
+            Effect.tap(reason(signUp), () => signUp),
+            SessionStore.Service.use((each) => each.current),
+          ]),
+          api,
+        );
+
+        const cards = yield* Ref.get(offered);
+
+        const laptop = yield* laptopRun(
+          Effect.all({
+            typo: reason(Account.signInWithCard(`${vector.slice(0, -1)}2`, false)),
+            short: reason(Account.signInWithCard(vector.slice(0, 20), false)),
+            unknown: reason(Account.signInWithCard(Redacted.value(unknown), false)),
+            typed: Effect.map(
+              Account.signInWithCard(vector.toLowerCase().replaceAll("-", " "), false),
+              (signed) => signed.accountId,
+            ),
+          }),
+          api,
+        );
+
+        const [first, retry] = yield* Ref.get(sent);
+        const cardLogin = Effect.forEach(cards, (card) => NotebookKeys.cardLogin(card.code));
+
+        assert.deepStrictEqual(
+          {
+            lost,
+            retriedWithSameLogin: first !== undefined && first === retry,
+            offered: cards.map((card) => card.withPasskey),
+            holder: Option.map(holder, (signed) => signed.accountId),
+            laptop,
+            signIns: (yield* Ref.get(sent)).filter((each) => each.startsWith("sign-in")).length,
+          },
+          {
+            lost: "offline",
+            retriedWithSameLogin: true,
+            offered: [false],
+            holder: Option.some(`noa-${(yield* cardLogin).map(Redacted.value).join("")}`),
+            laptop: { typo: "typo", short: "length", unknown: "unknown-card", typed: "mia" },
+            // The typo and the short code never left the device.
+            signIns: 2,
+          },
+        );
+      }).pipe(Effect.provide(TestCrypto.layer("Account.test card"))),
+  );
+
   it.effect("forgets a kept sign-up when its reservation expires, and when it's cancelled", () =>
     Effect.gen(function* () {
       const run = yield* restarts;
@@ -447,6 +549,7 @@ describe("Account", () => {
           confirmations(),
           AuthApiTesting.layer({}),
           Layer.succeed(Passkeys.Authenticator)({
+            available: Effect.succeed(true),
             create: () => Effect.die("no passkey was asked for"),
             get: () => Effect.die("no passkey was asked for"),
           }),
@@ -541,6 +644,7 @@ describe("Account", () => {
       });
 
       const authenticator = Layer.succeed(Passkeys.Authenticator)({
+        available: Effect.succeed(true),
         create: () => Effect.die("no passkey was created"),
         get: () => Effect.succeed({ credential, prf: Option.none() }),
       });
@@ -604,6 +708,7 @@ describe("Account", () => {
           const created = yield* Ref.make(Option.none<AuthApi.CreationOptions>());
 
           const authenticator = Layer.succeed(Passkeys.Authenticator)({
+            available: Effect.succeed(true),
             create: (options) =>
               Effect.as(Ref.set(created, Option.some(options)), {
                 credential,
@@ -714,6 +819,7 @@ describe("Account", () => {
               passkeySignIn: () => Effect.succeed(signedIn("demo-lena", "token-passkey")),
             }),
             Layer.succeed(Passkeys.Authenticator)({
+              available: Effect.succeed(true),
               create: () => Effect.die("no passkey was created"),
               get: () => Effect.succeed({ credential, prf: Option.none() }),
             }),

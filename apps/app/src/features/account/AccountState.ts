@@ -1,5 +1,6 @@
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import type { Access } from "@stu/api/Access";
+import { CryptoSuite } from "@stu/e2ee";
 import { SyncClient, SyncQuery } from "@stu/sync/client";
 import * as Effect from "effect/Effect";
 import * as Equal from "effect/Equal";
@@ -14,10 +15,11 @@ import { useEffect } from "react";
 import { SessionStore } from "../../infra/auth/SessionStore.ts";
 import { layer as signUpStore } from "../../infra/auth/signUpStore.ts";
 import { publicComputer } from "../../infra/device/publicComputer.ts";
+import { Passkeys } from "../../infra/passkeys/Passkeys.ts";
 import { layer as authenticator } from "../../infra/passkeys/platform.ts";
 import { AccountEngine } from "../../infra/runtime/AccountEngine.ts";
 import { Layers } from "../../infra/runtime/Layers.ts";
-import { OfferedPrf } from "../keys/OfferedPrf.ts";
+import { Offered } from "../keys/Offered.ts";
 import { Account } from "./Account.ts";
 import { PasskeyCheck } from "./PasskeyCheck.ts";
 
@@ -27,9 +29,11 @@ import { PasskeyCheck } from "./PasskeyCheck.ts";
 export * as AccountState from "./AccountState.ts";
 
 const runtime = Atom.runtime(
-  Layer.mergeAll(authenticator, Account.confirmations.pipe(Layer.provideMerge(signUpStore))).pipe(
-    Layer.provideMerge(AccountEngine.device),
-  ),
+  Layer.mergeAll(
+    authenticator,
+    CryptoSuite.layer,
+    Account.confirmations.pipe(Layer.provideMerge(signUpStore)),
+  ).pipe(Layer.provideMerge(AccountEngine.device)),
 ).pipe(Atom.keepAlive);
 
 /** The account this device is signed in as, then every change. */
@@ -158,7 +162,7 @@ export const finish = runtime
   .fn<{ readonly email: string; readonly withPasskey: boolean }>()(({ email, withPasskey }, get) =>
     // The PRF output goes to `OfferedPrf` only: this atom stays alive and keeps what it returns.
     Effect.flatMap(Account.finish(email, withPasskey, chosen(get)), (used) =>
-      Effect.sync(() => get.set(OfferedPrf.waiting, used)),
+      Effect.sync(() => get.set(Offered.prf, used)),
     ),
   )
   .pipe(Atom.keepAlive);
@@ -180,8 +184,44 @@ export function useLaterOnLeave(email: string) {
 /** Signs in with a passkey, and leaves its PRF output for the notebook's unlock. */
 export const signInWithPasskey = runtime.fn<void>()((_, get) =>
   Effect.tap(Account.signInWithPasskey(chosen(get)), (used) =>
-    Effect.sync(() => get.set(OfferedPrf.waiting, Option.some(used))),
+    Effect.sync(() => get.set(Offered.prf, Option.some(used))),
   ),
+);
+
+// The sign-ups without an address and the card's sign-in hand their secrets to `Offered` only:
+// these atoms stay alive while their screen goes, and keep what they return.
+
+const offerNewCard = (get: Atom.FnContext) => (card: Option.Option<Account.NewCard>) =>
+  Effect.sync(() => get.set(Offered.newCard, card));
+
+/** An account without an address, made with its Notfallkarte (`Account.signUpWithCard`). */
+export const signUpWithCard = runtime
+  .fn<Access.Reservation>()((reservation, get) =>
+    Account.signUpWithCard(reservation, chosen(get), offerNewCard(get)),
+  )
+  .pipe(Atom.keepAlive);
+
+/** An account without an address, made with a passkey (`Account.signUpWithPasskey`). */
+export const signUpWithPasskey = runtime
+  .fn<Access.Reservation>()((reservation, get) =>
+    Effect.flatMap(Account.signUpWithPasskey(reservation, offerNewCard(get)), (used) =>
+      Effect.sync(() => get.set(Offered.prf, Option.some(used))),
+    ),
+  )
+  .pipe(Atom.keepAlive);
+
+/** "Mit Notfallkarte anmelden": the card signs in, then opens the notebook. */
+export const signInWithCard = runtime
+  .fn<string>()((typed, get) =>
+    Effect.flatMap(Account.signInWithCard(typed, chosen(get)), (signed) =>
+      Effect.sync(() => get.set(Offered.typedCard, Option.some(signed))),
+    ),
+  )
+  .pipe(Atom.keepAlive);
+
+/** Whether this device can keep a passkey of its own, which decides how a sign-up starts. */
+export const passkeysHere = runtime.atom(
+  Effect.flatMap(Passkeys.Authenticator, (passkeys) => passkeys.available),
 );
 
 /**
@@ -204,7 +244,9 @@ export const signOut = runtime
       const signedOutHere = Effect.andThen(
         Effect.sync(() => {
           get.set(signedOut, true);
-          get.set(OfferedPrf.waiting, Option.none());
+          get.set(Offered.prf, Option.none());
+          get.set(Offered.typedCard, Option.none());
+          get.set(Offered.newCard, Option.none());
         }),
         forgetSession,
       );

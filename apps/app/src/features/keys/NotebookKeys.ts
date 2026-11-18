@@ -6,6 +6,7 @@ import * as Context from "effect/Context";
 import * as Data from "effect/Data";
 import type * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
+import * as Base64Url from "effect/encoding/Base64Url";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
@@ -74,6 +75,7 @@ export const Reason = Schema.Literals([
   "stale",
   "locked",
   "signed-out",
+  "not-this-card",
 ]);
 
 export type Reason = typeof Reason.Type;
@@ -100,6 +102,8 @@ export const sentence: Record<Reason, string> = {
   stale: "Der Schlüssel auf diesem Gerät ist nicht mehr aktuell.",
   locked: "Entsperre zuerst dein Notizbuch.",
   "signed-out": "Deine Anmeldung ist abgelaufen. Melde dich neu an.",
+  "not-this-card":
+    "Das ist nicht der Code von dieser Karte. Vergleich ihn noch einmal mit deiner Notfallkarte.",
 };
 
 const problem = (reason: Reason) => new Problem({ reason });
@@ -227,7 +231,7 @@ export const reconcile = Effect.gen(function* () {
 
   if (listed) return true;
 
-  yield* server.addWrapper(yield* wrap("device", seed.value, keys.value)).pipe(
+  yield* server.addWrapper(yield* wrap("device", seed.value, keys.value), Option.none()).pipe(
     Effect.catchTags({
       ...fromServer,
       // This session added its device's wrapper already, under another seed.
@@ -446,19 +450,30 @@ const recoverWith = Effect.fn("NotebookKeys.recoverWith")(function* (
   return yield* problem(reasonFor(kind, worst));
 });
 
-/** "Mit der Notfallkarte": the code as typed. A typo stops before anything leaves the device. */
-export const unlockWithCode = Effect.fn("NotebookKeys.unlockWithCode")(function* (typed: string) {
-  const parsed = RecoveryCode.parse(typed);
+/** A card's code as typed, checked on the device, so a typo never reaches the server. */
+export const typedCard = (typed: string) =>
+  Result.match(RecoveryCode.parse(typed), {
+    onSuccess: Effect.succeed,
+    onFailure: ({ reason }) => Effect.fail(problem(reason === "length" ? "length" : "typo")),
+  });
 
-  if (Result.isFailure(parsed)) {
-    return yield* problem(parsed.failure.reason === "length" ? "length" : "typo");
-  }
+/** What the card signs in with (`RecoveryCode.login`), as `Accounts.Login` sends it. */
+export const cardLogin = Effect.fn("NotebookKeys.cardLogin")(function* (
+  code: Redacted.Redacted<Uint8Array>,
+) {
+  const login = yield* RecoveryCode.login(code);
 
-  yield* recoverWith("code", parsed.success, Keys.RecoveryCode.make({}));
+  return Redacted.make(Base64Url.encode(Redacted.value(login)));
 });
 
-const add = (wrapper: Keys.Sealed) =>
-  Effect.flatMap(KeyServer.Service, (server) => server.addWrapper(wrapper)).pipe(
+/** "Mit der Notfallkarte": the code as typed. A typo stops before anything leaves the device. */
+export const unlockWithCode = Effect.fn("NotebookKeys.unlockWithCode")(function* (typed: string) {
+  yield* recoverWith("code", yield* typedCard(typed), Keys.RecoveryCode.make({}));
+});
+
+/** Sends a wrapper. A card's goes with its login, which signs in to an account without an address. */
+const add = (wrapper: Keys.Sealed, login = Option.none<Redacted.Redacted>()) =>
+  Effect.flatMap(KeyServer.Service, (server) => server.addWrapper(wrapper, login)).pipe(
     Effect.catchTags({
       ...fromServer,
       "Keys.NotFresh": () => Effect.fail(problem("not-fresh")),
@@ -514,10 +529,11 @@ export const usePasskey = Effect.fn("NotebookKeys.usePasskey")(function* (
   );
 });
 
-/** A new Notfallkarte: its code's text, shown once, and its wrapper for the server. */
+/** A new Notfallkarte: its code's text, shown once, its wrapper for the server and its login. */
 export interface Card {
   readonly text: Redacted.Redacted;
   readonly wrapper: Keys.Sealed;
+  readonly login: Redacted.Redacted;
 }
 
 const UnseenCards = Schema.fromJsonString(Schema.Array(Schema.String));
@@ -554,7 +570,7 @@ export const newRecoveryCode = Effect.gen(function* () {
 
   yield* keepUnseen([...(yield* unseenCards), wrapper.statement.id]);
 
-  return { text: code.text, wrapper } satisfies Card;
+  return { text: code.text, wrapper, login: yield* cardLogin(code.bytes) } satisfies Card;
 });
 
 /**
@@ -562,13 +578,96 @@ export const newRecoveryCode = Effect.gen(function* () {
  * the same card goes out again, so the code shown is the one the server holds.
  */
 export const sendRecoveryCode = Effect.fn("NotebookKeys.sendRecoveryCode")(function* (card: Card) {
-  yield* add(card.wrapper);
+  yield* add(card.wrapper, Option.some(card.login));
 
   const id = card.wrapper.statement.id;
   yield* keepUnseen((yield* unseenCards).filter((each) => each !== id));
 
   return card.text;
 });
+
+/**
+ * Makes sure the card opens the notebook and, for an account without an address, signs in: its
+ * wrapper goes out with its login unless the server holds it already. The server then retires
+ * the account's other cards (`KeyStore.addWrapper`).
+ */
+export const addCardWrapper = Effect.fn("NotebookKeys.addCardWrapper")(function* (
+  code: Redacted.Redacted<Uint8Array>,
+) {
+  const { keys, state } = yield* current;
+  const derived = yield* Effect.orDie(Wrapper.derive("code", code, keys.accountId));
+
+  const known = state.wrappers.some(
+    ({ statement }) =>
+      statement.kind === Wrapper.kindByte.code && sameBytes(statement.publicKey, derived.publicKey),
+  );
+
+  if (known) return;
+
+  yield* add(
+    yield* wrap("code", code, keys, { place: "card" }),
+    Option.some(yield* cardLogin(code)),
+  );
+});
+
+/**
+ * A card that signed this device in: a locked device unlocks with it. An unlocked one, as the
+ * account's first device is when it signed up on a public computer, makes the card open the
+ * notebook too.
+ */
+export const useCard = Effect.fn("NotebookKeys.useCard")(function* (
+  code: Redacted.Redacted<Uint8Array>,
+) {
+  if (Option.isNone(yield* heldRootKey)) {
+    return yield* recoverWith("code", code, Keys.RecoveryCode.make({}));
+  }
+
+  yield* addCardWrapper(code);
+});
+
+/** The card of a sign-up without an address, kept on the device until the student saved it. */
+export interface UnsavedCard {
+  readonly code: Redacted.Redacted<Uint8Array>;
+  readonly text: Redacted.Redacted;
+  /** The account signed up with a passkey, so the card step offers none and asks no read-back. */
+  readonly withPasskey: boolean;
+}
+
+const codeLength = 16;
+
+// `unsaved-card` holds the card's 16 bytes and 1 if the account has a passkey, else 0.
+export const holdCard = Effect.fn("NotebookKeys.holdCard")(function* (
+  code: Redacted.Redacted<Uint8Array>,
+  withPasskey: boolean,
+) {
+  yield* (yield* Ports.DeviceSecrets).set(
+    "unsaved-card",
+    new Uint8Array([...Redacted.value(code), withPasskey ? 1 : 0]),
+  );
+});
+
+export const heldCard = Effect.map(
+  Effect.flatMap(Ports.DeviceSecrets, (secrets) => secrets.get("unsaved-card")),
+  Option.flatMap((bytes) => {
+    if (bytes.length !== codeLength + 1) return Option.none();
+    const code = Redacted.make(bytes.slice(0, codeLength));
+
+    return Option.some<UnsavedCard>({
+      code,
+      text: RecoveryCode.text(code),
+      withPasskey: bytes[codeLength] === 1,
+    });
+  }),
+);
+
+/** Whether two codes are the same card. */
+export const sameCard = (a: Redacted.Redacted<Uint8Array>, b: Redacted.Redacted<Uint8Array>) =>
+  sameBytes(Redacted.value(a), Redacted.value(b));
+
+/** The student saved the card, or signed out: the device forgets it. */
+export const releaseCard = Effect.flatMap(Ports.DeviceSecrets, (secrets) =>
+  secrets.remove("unsaved-card"),
+);
 
 /** One way back into the notebook, as "Notizbuch-Schlüssel" lists it. */
 export interface Method {

@@ -21,7 +21,7 @@ import { Account } from "../account/Account.ts";
 import { AccountState } from "../account/AccountState.ts";
 import { KeyServer } from "./KeyServer.ts";
 import { NotebookKeys } from "./NotebookKeys.ts";
-import { OfferedPrf } from "./OfferedPrf.ts";
+import { Offered } from "./Offered.ts";
 
 // The notebook's key on this device as atoms for the screens, on the account's engine.
 
@@ -38,8 +38,11 @@ const keyServer = Layer.effect(KeyServer.Service)(
       state: client["Keys.state"]().pipe(Effect.catchTags({ ...unreachable })),
       init: (record, wrapper) =>
         client["Keys.init"]({ record, wrapper }).pipe(Effect.catchTags({ ...unreachable })),
-      addWrapper: (wrapper) =>
-        client["Keys.addWrapper"]({ wrapper }).pipe(Effect.catchTags({ ...unreachable })),
+      addWrapper: (wrapper, login) =>
+        client["Keys.addWrapper"]({
+          wrapper,
+          login: Option.getOrUndefined(Option.map(login, Redacted.value)),
+        }).pipe(Effect.catchTags({ ...unreachable })),
       fetchSeals: (method) =>
         client["Keys.fetchSeals"]({ method }).pipe(Effect.catchTags({ ...unreachable })),
       demoRootKey: client["Demo.rootKey"]().pipe(
@@ -79,43 +82,57 @@ export const useAccountId = (): Option.Option<string> =>
  */
 export const mismatch = AccountState.memory(false);
 
-/** Why the passkey of the last sign-in couldn't open the notebook, for "Notizbuch entsperren". */
-export const prfProblem = AccountState.memory(Option.none<NotebookKeys.Reason>());
+/**
+ * Why the passkey or the card of the last sign-in couldn't open the notebook, for "Notizbuch
+ * entsperren".
+ */
+export const signInProblem = AccountState.memory(Option.none<NotebookKeys.Reason>());
+
+const ofAccount =
+  (accountId: string) =>
+  <A extends { readonly accountId: string }>(offered: Option.Option<A>) =>
+    Option.filter(offered, (each) => each.accountId === accountId);
 
 /**
  * Where this device stands with the notebook's key. Reading it starts a new account's key. A PRF
  * output that a passkey sign-in or registration left then unlocks a locked device, or adds the
- * passkey's wrapper on an unlocked one.
+ * passkey's wrapper on an unlocked one; the card a sign-in left does the same for the card.
  */
 export const status = Atom.family((accountId: string) =>
   runtime(accountId).atom((get) =>
     Effect.gen(function* () {
       const before = yield* NotebookKeys.status;
+      const mine = ofAccount(accountId);
+      const passkey = mine(get(Offered.prf));
+      const card = mine(get(Offered.typedCard));
 
-      const offered = Option.filter(
-        get(OfferedPrf.waiting),
-        (used) => used.accountId === accountId,
-      );
+      // A device that can't reach the server, or a public computer, has nothing to open yet.
+      const usable = before._tag === "Locked" || before._tag === "Unlocked";
 
-      if (Option.isSome(offered)) {
-        const used = yield* Effect.result(
-          NotebookKeys.usePasskey(offered.value.credentialId, offered.value.prf),
-        );
+      const use = Option.isSome(passkey)
+        ? Option.some(NotebookKeys.usePasskey(passkey.value.credentialId, passkey.value.prf))
+        : Option.isSome(card) && usable
+          ? Option.some(NotebookKeys.useCard(card.value.code))
+          : Option.none();
+
+      if (Option.isSome(use)) {
+        const used = yield* Effect.result(use.value);
 
         get.set(
-          prfProblem,
+          signInProblem,
           before._tag === "Locked" &&
             used._tag === "Failure" &&
             used.failure._tag === "NotebookKeys.Problem"
             ? Option.some(used.failure.reason)
             : Option.none(),
         );
-
-        // Cleared last: clearing it reads this atom again, which would interrupt the unlock.
-        get.set(OfferedPrf.waiting, Option.none());
       }
 
-      const now = Option.isSome(offered) ? yield* NotebookKeys.status : before;
+      // Cleared last: clearing it reads this atom again, which would interrupt the unlock.
+      if (Option.isSome(passkey)) get.set(Offered.prf, Option.none());
+      else if (Option.isSome(card)) get.set(Offered.typedCard, Option.none());
+
+      const now = Option.isSome(use) ? yield* NotebookKeys.status : before;
 
       // The device's own wrapper and generation 0 reach the server after the screen moved on,
       // in the engine's scope, so sign-out stops it.
@@ -251,6 +268,105 @@ export const createRecoveryCode = Atom.family((accountId: string) =>
       get.set(unsentCard, Option.none());
 
       return text;
+    }),
+  ),
+);
+
+/**
+ * The new account's Notfallkarte until the student saved it. A sign-up's card (`Offered.newCard`)
+ * goes into the device's secrets first, so a restart shows the same card again: one the server
+ * knows, which a new card wouldn't be once the sign-in is no longer fresh.
+ */
+export const unsavedCard = Atom.family((accountId: string) =>
+  runtime(accountId).atom((get) =>
+    Effect.gen(function* () {
+      const offered = ofAccount(accountId)(get(Offered.newCard));
+
+      if (Option.isSome(offered)) {
+        yield* NotebookKeys.holdCard(offered.value.code, offered.value.withPasskey);
+        // Reads this atom again, which then finds the card in the secrets.
+        get.set(Offered.newCard, Option.none());
+      }
+
+      return yield* NotebookKeys.heldCard;
+    }),
+  ),
+);
+
+/**
+ * "Ich habe ihn aufgeschrieben": the unsaved card's wrapper goes to the server, with the login that
+ * signs in to an account without an address. A public computer starts no notebook, so there the
+ * card's first sign-in on the student's own device adds it (`NotebookKeys.useCard`).
+ */
+export const sendUnsavedCard = Atom.family((accountId: string) =>
+  runtime(accountId).fn<void>()((_, get) =>
+    Effect.gen(function* () {
+      const now = yield* get.result(status(accountId));
+      const held = yield* NotebookKeys.heldCard;
+
+      if (Option.isNone(held) || now._tag === "NotHere") return;
+      const { code, text, withPasskey } = held.value;
+      const publicComputer = yield* Device.PublicComputer;
+
+      // A card-only account's card signs in since its sign-up, so the device makes the sign-in
+      // fresh with it. Anyone holding this device could type the code shown anyway.
+      const signInAgain = Effect.andThen(
+        Account.signInWithCard(Redacted.value(text), publicComputer),
+        NotebookKeys.addCardWrapper(code),
+      );
+
+      yield* NotebookKeys.addCardWrapper(code).pipe(
+        Effect.catchTags({
+          "NotebookKeys.Problem": (refused) =>
+            refused.reason === "not-fresh" && !withPasskey ? signInAgain : Effect.fail(refused),
+        }),
+      );
+    }),
+  ),
+);
+
+/** The student has the card: the device forgets it, and the first start goes on. */
+export const releaseUnsavedCard = Atom.family((accountId: string) =>
+  runtime(accountId).fn<void>()((_, get) =>
+    Effect.andThen(
+      NotebookKeys.releaseCard,
+      Effect.sync(() => get.refresh(unsavedCard(accountId))),
+    ),
+  ),
+);
+
+/**
+ * A new sign-in with the typed card: "Kurz bestätigen" by Notfallkarte, which also opens a locked
+ * notebook.
+ */
+export const withCard = Atom.family((accountId: string) =>
+  runtime(accountId).fn<string>()((typed, get) =>
+    Effect.gen(function* () {
+      const { code } = yield* Account.signInWithCard(typed, yield* Device.PublicComputer);
+
+      yield* NotebookKeys.useCard(code);
+      yield* refresh(accountId, get);
+    }),
+  ),
+);
+
+/**
+ * The read-back that ends the card step when the account has no passkey (D97 Q7): the code typed
+ * once more must be the unsaved card's, and it signs in, which proves the server knows it.
+ */
+export const readBack = Atom.family((accountId: string) =>
+  runtime(accountId).fn<string>()((typed, get) =>
+    Effect.gen(function* () {
+      const held = yield* NotebookKeys.heldCard;
+      const code = yield* NotebookKeys.typedCard(typed);
+
+      if (Option.isSome(held) && !NotebookKeys.sameCard(held.value.code, code)) {
+        return yield* new NotebookKeys.Problem({ reason: "not-this-card" });
+      }
+
+      yield* Account.signInWithCard(typed, yield* Device.PublicComputer);
+      yield* NotebookKeys.releaseCard;
+      yield* Effect.sync(() => get.refresh(unsavedCard(accountId)));
     }),
   ),
 );

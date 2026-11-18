@@ -28,8 +28,10 @@ export class Service extends Context.Service<
       void,
       Unreachable | Keys.SignedOut | Keys.ChainExists | Keys.KeysLost | Keys.Invalid
     >;
+    /** `login` goes with a card's wrapper (`NotebookKeys.cardLogin`). */
     readonly addWrapper: (
       wrapper: Keys.Sealed,
+      login: Option.Option<Redacted.Redacted>,
     ) => Effect.Effect<
       void,
       Unreachable | Keys.SignedOut | Keys.Invalid | Keys.Stale | Keys.NotFresh

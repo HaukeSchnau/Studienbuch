@@ -12,7 +12,7 @@ Screens read local SQLite and never wait for the network. A write lands in the l
 
 ### 2. Students' privacy
 
-Most users are minors. Grades, absences, homework, signatures, photos and the display name are end-to-end encrypted: they leave the device as an envelope plus ciphertext, and the server enforces membership, roles, key epochs and signatures without reading them. School data stays readable, because the server imports it. Our privacy claim names what the server still sees: email, course choices, who is in which space, activity times, padded sizes and school data.
+Most users are minors. Grades, absences, homework, signatures, photos and the display name are end-to-end encrypted: they leave the device as an envelope plus ciphertext, and the server enforces membership, roles, key epochs and signatures without reading them. School data stays readable, because the server imports it. Our privacy claim names what the server still sees: the email address of accounts that use one, course choices, who is in which space, activity times, padded sizes and school data.
 
 ### 3. Three platforms
 
