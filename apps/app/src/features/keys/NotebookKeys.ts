@@ -903,24 +903,27 @@ type CardSettled = Omit<Settled, "passkey">;
 const settleCard = Effect.fn("NotebookKeys.settleCard")(function* (now: Status, card: PendingCard) {
   const done = card.unsaved ? Effect.void : dropCard(card.code);
 
-  // A new card waits for "Notfallkarte erstellen" to send it. The server holding it means its
-  // answer was lost: then the card step shows it.
-  if (card.replacing) {
-    if (now._tag !== "Unlocked") return { status: now, card: Option.none() } satisfies CardSettled;
-    const { keys, state } = yield* current;
-
-    if (yield* listed(card.code, keys, state))
-      yield* replaced(card, yield* cardId(card.code, keys));
-
-    return { status: now, card: Option.none() } satisfies CardSettled;
-  }
-
   const settled = (status: Status, reason = Option.none<Reason>()): CardSettled => ({
     status,
     card: reason,
   });
 
   const refusal = (refused: Problem) => Effect.succeedSome(refused.reason);
+
+  // A new card waits for "Notfallkarte erstellen" to send it. The server holding it means its
+  // answer was lost: then the card step shows it. Offline the notebook stays open, and the check
+  // runs again once the device is back.
+  if (card.replacing) {
+    if (now._tag !== "Unlocked") return settled(now);
+
+    const checked = yield* Effect.flatMap(current, ({ keys, state }) =>
+      Effect.flatMap(listed(card.code, keys, state), (held) =>
+        held ? Effect.flatMap(cardId(card.code, keys), (id) => replaced(card, id)) : Effect.void,
+      ),
+    ).pipe(Effect.as(Option.none<Reason>()), Effect.catchTags({ "NotebookKeys.Problem": refusal }));
+
+    return settled(now, checked);
+  }
 
   switch (now._tag) {
     case "Unlocked": {

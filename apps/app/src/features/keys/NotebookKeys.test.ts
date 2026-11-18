@@ -1034,6 +1034,13 @@ describe("NotebookKeys", () => {
         // the server holds it, and the card step shows it.
         yield* Ref.set(server.loseAnswer, true);
         const lost = yield* reasonOf(phone.run(NotebookKeys.replaceCard));
+
+        // Offline the notebook stays open, and the card stays hidden until the server lists it.
+        yield* Ref.set(server.offline, true);
+        const offline = yield* phone.run(NotebookKeys.settle);
+        const hiddenOffline = yield* pending;
+        yield* Ref.set(server.offline, false);
+
         yield* phone.run(NotebookKeys.settle);
         const shown = yield* pending;
 
@@ -1064,6 +1071,8 @@ describe("NotebookKeys", () => {
             refused,
             waiting: flags(waiting),
             lost,
+            offline: [offline.status._tag, offline.card],
+            hiddenOffline: flags(hiddenOffline),
             shown: flags(shown),
             sameCard,
             afterSaved: Option.isNone(yield* pending),
@@ -1074,6 +1083,8 @@ describe("NotebookKeys", () => {
             refused: "not-fresh",
             waiting: Option.some({ unsaved: true, replacing: true, endsAtSaved: true }),
             lost: "offline",
+            offline: ["Unlocked", Option.some("offline")],
+            hiddenOffline: Option.some({ unsaved: true, replacing: true, endsAtSaved: true }),
             shown: Option.some({ unsaved: true, replacing: false, endsAtSaved: true }),
             sameCard: true,
             afterSaved: true,
