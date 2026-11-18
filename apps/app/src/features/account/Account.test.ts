@@ -1512,7 +1512,7 @@ describe("Account", () => {
     );
   });
 
-  // Storage outside an account, such as "Dieses Gerät"'s, reads this. A held account's choice
+  // Storage outside an account, such as "Diagnose"'s, reads this. A held account's choice
   // wins over the tab's, and a device that can't hold an account still shows its diagnostics.
   it("keeps nothing as the held account chose, else as the tab chose", () => {
     const held = (publicComputer: boolean) =>

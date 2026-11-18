@@ -208,8 +208,7 @@ function PasskeyOffer({ email }: { readonly email: string }) {
         {offDevice ? null : (
           <Text variant="subhead" style={[styles.later, { color: color.inkSoft }]}>
             Ohne Passkey ist dein Notizbuch noch nicht abgesichert und hängt nur an diesem Gerät.
-            Eine Notfallkarte erstellst du später unter „Dieses Gerät“, oben rechts auf der
-            Übersicht.
+            Eine Notfallkarte erstellst du später im Profil unter „Notizbuch-Schlüssel“.
           </Text>
         )}
       </Form>

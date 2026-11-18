@@ -21,7 +21,7 @@ const deviceFiles = Effect.promise(async () => {
   return names;
 });
 
-// "Dieses Gerät" on a public computer: the start counter lives in the tab's memory, and the browser
+// "Diagnose" on a public computer: the start counter lives in the tab's memory, and the browser
 // isn't asked to keep the site's storage, so the screen leaves nothing behind either.
 it.effect("counts a public computer's starts in memory and asks the browser to keep nothing", () =>
   Effect.gen(function* () {

@@ -3,7 +3,7 @@ import { Icon } from "@stu/ui/Icon";
 import { Pill } from "@stu/ui/Pill";
 import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
-import { type Href, Stack, useRouter } from "expo-router";
+import { type Href, Stack, useNavigation, useRoute, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState, type ReactNode } from "react";
 import {
@@ -22,11 +22,13 @@ export interface HeroScreenProps {
   readonly title: string;
   /** Draws the hand-drawn line under the title, as under "Moin, Lena!". */
   readonly underline?: boolean;
-  readonly subtitle: string;
+  readonly subtitle?: string | undefined;
   /** Under the subtitle, such as the sync status. */
   readonly status?: ReactNode;
   /** Art at the right of the title, such as the app icon on the sign-in screens. */
   readonly aside?: ReactNode;
+  /** Art at the left of the title, such as the student's initials on Profil. */
+  readonly leading?: ReactNode;
   /**
    * Pull to refresh on the phones. The web has none and no button for it either, because the sync
    * engine pulls on its own.
@@ -40,7 +42,7 @@ export interface HeroScreenProps {
   /**
    * A screen above the tabs gets "Zurück" in the hero's toolbar row on the web and Android, and
    * iOS its native header. Without a screen before it, as after a reload or a deep link, back
-   * leads here, on iOS through a header button of its own.
+   * leads here.
    */
   readonly back?: Href;
   readonly children?: ReactNode;
@@ -56,6 +58,7 @@ export function HeroScreen({
   subtitle,
   status,
   aside,
+  leading,
   refresh,
   footer,
   back,
@@ -63,8 +66,12 @@ export function HeroScreen({
 }: HeroScreenProps) {
   const { color } = Theme.useTheme();
   const router = useRouter();
+  const navigation = useNavigation();
+  const route = useRoute();
   const insets = useSafeAreaInsets();
   const { overCanvas, onHeroEnd, onScroll } = useHeroCover(insets.top);
+
+  const firstInStack = navigation.getState()?.routes[0]?.key === route.key;
 
   const goBack = (fallback: Href) => {
     if (router.canGoBack()) router.back();
@@ -73,7 +80,9 @@ export function HeroScreen({
 
   return (
     <View style={[styles.screen, { backgroundColor: color.canvas }]}>
-      {back !== undefined && Platform.OS === "ios" && !router.canGoBack() ? (
+      {/* iOS's header has a back button only above another screen of the same stack, so the
+          first screen of a group, as Notizbuch-Schlüssel above the tabs, brings its own. */}
+      {back !== undefined && Platform.OS === "ios" && firstInStack ? (
         <Stack.Screen
           options={{
             headerLeft: () => (
@@ -81,7 +90,7 @@ export function HeroScreen({
                 accessibilityRole="button"
                 accessibilityLabel="Zurück"
                 hitSlop={12}
-                onPress={() => router.replace(back)}
+                onPress={() => goBack(back)}
               >
                 <Icon name="back" color="#FFFFFF" size={28} />
               </Pressable>
@@ -122,6 +131,7 @@ export function HeroScreen({
           subtitle={subtitle}
           status={status}
           aside={aside}
+          leading={leading}
           toolbar={
             back === undefined || Platform.OS === "ios"
               ? undefined

@@ -116,7 +116,7 @@ it.effect("signing out leaves the student's name nowhere, so signing in again st
 
     assert.deepStrictEqual(greeting(), Option.some(Option.some(lena)), "before signing out");
 
-    // "Abmelden" on "Dieses Gerät": the screens go with the session.
+    // "Abmelden" on Profil: the screens go with the session.
     unmountScreen();
     unmountGate();
     unmountEngine();

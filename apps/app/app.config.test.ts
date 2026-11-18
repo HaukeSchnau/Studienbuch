@@ -65,7 +65,7 @@ const opened = (path: string) => {
 };
 
 it("a wrong address, /_sitemap too, opens our not-found screen inside the root layout", () => {
-  for (const path of ["/profil", "/diagnose/alt", "/_sitemap"]) {
+  for (const path of ["/profile", "/diagnose/alt", "/_sitemap"]) {
     assert.deepStrictEqual(opened(path), ["__root", "+not-found"], path);
   }
 });

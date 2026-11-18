@@ -38,6 +38,12 @@ const glyphs = {
   retry: stroked("M19.5 12a7.5 7.5 0 1 1-2.2-5.3M19.5 4.5V9H15"),
   /** Someone's account. */
   person: stroked("M8 8a4 4 0 1 0 8 0a4 4 0 1 0-8 0M4.5 20c.8-3.6 3.7-6 7.5-6s6.7 2.4 7.5 6"),
+  /** The notebook's key. */
+  key: stroked(
+    "M4.5 15.5a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0-7 0M10.5 13 19 4.5M16 7.5l2.5 2.5M18.5 5l2 2",
+  ),
+  /** A pulse line, for how this device runs. */
+  pulse: stroked("M3 12h4l2.5-6 5 12 2.5-6h4"),
 };
 
 export type IconName = keyof typeof glyphs;
