@@ -154,26 +154,24 @@ function appRow(serverRevision: Option.Option<string>): Row {
     };
   }
 
-  const sameAsServer =
+  const versusServer =
     Option.isSome(BuildInfo.revision) && Option.isSome(serverRevision)
       ? BuildInfo.revision.value === serverRevision.value
+        ? "wie der Server"
+        : "anders als der Server"
       : undefined;
 
   return {
     label: "App",
     title: Option.match(BuildInfo.revision, { onNone: () => "Arbeitskopie", onSome: short }),
     detail: Option.match(BuildInfo.update, {
-      onNone: () => "Entwicklungsbuild, ohne Updates",
+      onNone: () => joined("ohne Updates", versusServer),
       onSome: (update) =>
         joined(
           `Update ${short(update.id)}${update.embedded ? " (eingebaut)" : ""}`,
           Option.getOrUndefined(Option.map(update.runtimeVersion, (v) => `Laufzeit ${short(v)}`)),
           Option.getOrUndefined(update.channel),
-          sameAsServer === undefined
-            ? undefined
-            : sameAsServer
-              ? "wie der Server"
-              : "anders als der Server",
+          versusServer,
         ),
     }),
     status: "ok",

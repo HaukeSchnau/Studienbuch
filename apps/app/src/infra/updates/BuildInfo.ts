@@ -2,9 +2,9 @@ import * as Option from "effect/Option";
 import * as Updates from "expo-updates";
 import { Platform } from "react-native";
 
-// Which JavaScript this app runs. Release steps set EXPO_PUBLIC_REVISION for store builds and
-// updates. The web export stays without one, because one bundle serves every deployment and its
-// server reports the revision (ADR 0005).
+// Which JavaScript this app runs. Store builds get EXPO_PUBLIC_REVISION from Calder's commit
+// (metro.config.js). The web export stays without one, because one bundle serves every deployment
+// and its server reports the revision (ADR 0005).
 
 export * as BuildInfo from "./BuildInfo.ts";
 
@@ -23,13 +23,14 @@ export const revision: Option.Option<string> = servedByServer
 
 export interface Update {
   readonly id: string;
-  /** The update that shipped inside the binary, not one EAS Update delivered. */
+  /** The update that shipped inside the binary, not one an update server delivered. */
   readonly embedded: boolean;
   readonly runtimeVersion: Option.Option<string>;
   readonly channel: Option.Option<string>;
 }
 
-/** The running update. None on the web and in development builds, where expo-updates is off. */
+/** The running update. None wherever expo-updates is off: on the web, in development and, until
+ * our update server runs, in store builds too (app.config.ts). */
 export const update: Option.Option<Update> = Option.map(
   Option.fromNullishOr(Updates.isEnabled ? Updates.updateId : null),
   (id) => ({

@@ -6,7 +6,7 @@ import * as Schema from "effect/Schema";
 import { Platform } from "react-native";
 
 // Where the server is. The web app calls its own origin, so one build serves every deployment.
-// Native builds name their server in EXPO_PUBLIC_API_URL, set per EAS environment (AGENTS.md,
+// Native builds name their server in EXPO_PUBLIC_API_URL, set per store build (AGENTS.md,
 // "Baking in an origin").
 
 export * as ServerOrigin from "./ServerOrigin.ts";

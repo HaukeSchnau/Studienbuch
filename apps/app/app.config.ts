@@ -8,10 +8,9 @@ const projectId = "76a4b2c7-e6dc-40fa-808e-27c1b574d342";
 
 const identity = "dev.schnau.studienbuch";
 
-// Release steps (`@calder-ci/std/Expo`) stamp a build number into every store build and choose the
-// EAS Update channel: `beta` for TestFlight and Play internal, `production` for store releases. The
+// The store builds (`@calder-ci/std/Expo` in .calder/ci.ts) stamp a build number into each one. The
 // version comes from package.json, which fingerprint.config.js hashes as well.
-const { IOS_BUILD_NUMBER, ANDROID_VERSION_CODE, STUDIENBUCH_CHANNEL } = process.env;
+const { IOS_BUILD_NUMBER, ANDROID_VERSION_CODE } = process.env;
 
 const nunito = (weight: number, name: string) => ({
   weight,
@@ -38,15 +37,18 @@ export default ({ config }: ConfigContext): ExpoConfig =>
       userInterfaceStyle: "automatic",
       icon: "./assets/icon.png",
       runtimeVersion: { policy: "fingerprint" },
-      updates: {
-        url: `https://u.expo.dev/${projectId}`,
-        requestHeaders: { "expo-channel-name": STUDIENBUCH_CHANNEL ?? "beta" },
-      },
+      // No over-the-air updates until our own update server runs (D94, M5.16), so no build that
+      // reaches pupils asks Expo's servers for one. The fingerprint above still keys the store builds.
+      updates: { enabled: false },
       ios: {
         bundleIdentifier: identity,
         // Urbs UG, which owns the App Store account.
         appleTeamId: "2243J9RD68",
         buildNumber: IOS_BUILD_NUMBER ?? "1",
+        // Our end-to-end encryption uses only standard algorithms, which Apple counts as exempt. That
+        // holds only while the app isn't on the App Store in France, where ANSSI wants a declaration:
+        // https://files.schnau.dev/html/studienbuch-roadmap/doc.html?f=design/export-compliance.md
+        config: { usesNonExemptEncryption: false },
       },
       android: {
         package: identity,

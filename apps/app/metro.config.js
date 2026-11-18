@@ -4,6 +4,12 @@ const { getDefaultConfig } = require("expo/metro-config");
 
 const config = getDefaultConfig(__dirname);
 
+// Store builds name the commit they bundle (BuildInfo.revision). Calder gives every step its commit
+// without keying the step on it, so a store build is reused until the app's files change.
+if (process.env.CALDER_REVISION !== undefined) {
+  process.env.EXPO_PUBLIC_REVISION ??= process.env.CALDER_REVISION;
+}
+
 // babel-preset-expo inlines the public app config into transformed modules (expo-router reads its
 // plugin options from it), but Metro's cache key leaves the config out. Keyed on it, as the preset
 // reads it, a config change needs no `--clear`, and worktrees share the default /tmp/metro-cache:
