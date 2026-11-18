@@ -22,7 +22,7 @@ import type { Tokens } from "./Tokens.ts";
 export * as Policy from "./Policy.ts";
 
 /** Bumped whenever a rule changes what a corpus may hold. */
-export const version = 1;
+export const version = 2;
 
 export type Json = Schema.Json;
 
@@ -43,7 +43,10 @@ export type Leaf = Data.TaggedEnum<{
   Text: {};
   /** A room name: kept if it looks like a room number, else a token. */
   Room: {};
-  /** A class or course code, kept, with any segment that is a teacher's short name tokenized. */
+  /**
+   * A class or course code, kept, with any segment that is a teacher's short name or another
+   * person's name word tokenized, even where a subject's code spells a student's name.
+   */
   Code: {};
   /** A person's numeric id. */
   PersonId: { readonly kind: Tokens.Person };
@@ -259,7 +262,11 @@ const resource = (names: Leaf, id: Leaf = keep, more: Readonly<Record<string, No
 const person = (kind: Tokens.Person, more: Readonly<Record<string, Node>> = {}) =>
   resource(Leaf.PersonName({ kind, by: "id" }), Leaf.PersonId({ kind }), more);
 
-const plain = resource(keep);
+/**
+ * A class, department or other resource without a person. Schools name some after their teachers,
+ * such as a class long-named `ABC/DEF`, so its names are codes.
+ */
+const plain = resource(code);
 const range = object({ start: keep, end: keep });
 
 /** The rules for a resource of each of WebUntis's timetable resource types. */
@@ -277,6 +284,9 @@ const byType = (type: Json | undefined): Node | undefined =>
 /** A field that names an unknown kind gets no rules, so each of its fields is a problem. */
 const unknownKind: Node = object({});
 
+/** A field seen only as `null` so far: any field inside it is a problem until it has a rule. */
+const unseen: Node = object({});
+
 const schoolYear = object({
   id: keep,
   name: keep,
@@ -289,7 +299,8 @@ const schoolYear = object({
 
 const user = object({
   id: Leaf.PersonId({ kind: "P" }),
-  locale: keep,
+  // A code, as the school's name is: a student can be named like either.
+  locale: code,
   name: Leaf.PersonName({ kind: "P", by: "id" }),
   email: Leaf.Constant({ value: null, names: true }),
   permissions: object({ views: array(keep) }),
@@ -302,10 +313,11 @@ const user = object({
 const appData = object({
   departments: drop,
   currentSchoolYear: schoolYear,
-  tenant: object({ displayName: keep, id: keep, name: keep, wuHostName: keep }),
+  tenant: object({ displayName: code, id: keep, name: code, wuHostName: keep }),
   user,
   permissions: array(keep),
-  settings: array(keep),
+  // `key:value` texts, which can hold an email address.
+  settings: constant([]),
   holidays: array(object({ id: keep, name: keep, start: keep, end: keep, bookable: keep })),
   isPlayground: keep,
   oneDriveData: drop,
@@ -360,7 +372,10 @@ const filter = object({
   ),
 });
 
-/** A resource in one of an entry's positions. Only a teacher's has no id, so its short name finds it. */
+/**
+ * A resource in one of an entry's positions. Only a teacher's has no id, so its short name finds
+ * it. An `INFO` position holds the school's free text.
+ */
 const positionResource = new Fields({
   fields: (value) => {
     const names: Leaf | undefined =
@@ -371,8 +386,10 @@ const positionResource = new Fields({
           : value.type === "ROOM"
             ? room
             : value.type === "CLASS"
-              ? keep
-              : undefined;
+              ? code
+              : value.type === "INFO"
+                ? text
+                : undefined;
 
     const rules: Readonly<Record<string, Node>> =
       names === undefined
@@ -392,9 +409,10 @@ const positionResource = new Fields({
 
 const positions = array(object({ current: positionResource, removed: positionResource }));
 
-const entry = object({
+const entryFields = {
   ids: array(keep),
   duration: range,
+  durationTotal: range,
   type: keep,
   status: keep,
   statusDetail: text,
@@ -409,10 +427,29 @@ const entry = object({
   position2: positions,
   position3: positions,
   position4: positions,
+  position5: unseen,
+  position6: unseen,
+  position7: unseen,
   texts: array(object({ type: keep, text })),
   lessonText: text,
   lessonInfo: text,
   substitutionText: text,
+  moved: unseen,
+  // A name without an id beside it, and a link; nothing reads them.
+  userName: drop,
+  link: drop,
+};
+
+const entry = object(entryFields);
+
+/** A row behind the day's lessons, such as a holiday, whose names the app data holds. */
+const backEntry = object({
+  ...entryFields,
+  id: keep,
+  resource: unseen,
+  isFullDay: keep,
+  shortName: drop,
+  longName: drop,
 });
 
 const day = new Fields({
@@ -423,7 +460,7 @@ const day = new Fields({
     status: keep,
     dayEntries: array(entry),
     gridEntries: array(entry),
-    backEntries: array(entry),
+    backEntries: array(backEntry),
   }),
 });
 

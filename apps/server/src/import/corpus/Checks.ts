@@ -52,7 +52,11 @@ const encodeCases = Schema.encodeEffect(Schema.toCodecJson(Corpus.Cases));
 
 type Reads<E, R> = Stream.Stream<readonly [string, RecordedWebUntis.Read], E, R>;
 
-/** Every string and key below `value`, with its path. */
+/**
+ * Every string below `value`, with its path. Keys are left out: the pseudonymizer writes only keys
+ * its policy names, and the manifest and cases decode against their schemas, so a key is a field
+ * name, which a teacher's short name such as `END` can equal.
+ */
 const strings = function* (
   value: Policy.Json,
   path = "",
@@ -72,10 +76,7 @@ const strings = function* (
   if (!Policy.isObject(value)) return;
 
   for (const [key, inner] of Object.entries(value)) {
-    const at = path === "" ? key : `${path}.${key}`;
-
-    yield { path: at, value: key };
-    yield* strings(inner, at);
+    yield* strings(inner, path === "" ? key : `${path}.${key}`);
   }
 };
 
@@ -91,7 +92,7 @@ const nameIn = (dictionary: Pseudonymizer.Dictionary, value: string) => {
 };
 
 /**
- * Fails when any string of the corpus, its manifest, labelled cases and read paths included,
+ * Fails when any string value of the corpus, its manifest, labelled cases and read paths included,
  * contains a name of the dictionary as a whole word in any case, or when a real person id could
  * pass for a pseudonymized one.
  */

@@ -1,7 +1,8 @@
 /**
  * The invented school as a raw capture would hold it: an invented name in every personal field,
- * in free text, in an email address, an image URL, a room and a course code. Every name is listed
- * in `names`, so a test can look for each in what the pseudonymizer writes.
+ * in free text, in an email address, an image URL, a link, the settings, a room, a class's and a
+ * course's code. Every name is listed in `names`, so a test can look for each in what the
+ * pseudonymizer writes.
  */
 import { assert } from "@effect/vitest";
 import * as Effect from "effect/Effect";
@@ -79,10 +80,55 @@ const texts = (id: number): Policy.JsonObject => ({
   ],
 });
 
+/** Fields beside a lesson that IGS's capture showed: names nothing reads, and fields only empty. */
+const lessonExtras: Policy.JsonObject = {
+  userName: `${teachers[4][4]}, ${teachers[4][3]}`,
+  link: `https://example.invalid/meet/${teachers[5][4]}`,
+  durationTotal: null,
+  moved: null,
+  position5: null,
+  position6: null,
+  position7: null,
+};
+
+/** A position of free text, as IGS's lessons carry beside their subject. */
+const info: Policy.JsonObject = {
+  current: {
+    type: "INFO",
+    status: "REGULAR",
+    shortName: students[2][1],
+    longName: `Gespräch mit ${students[2][0]} ${students[2][1]}`,
+    displayName: `Gespräch mit ${students[2][0]}`,
+    displayNameLabel: null,
+  },
+  removed: null,
+};
+
+/** The row WebUntis puts behind a holiday's lessons, with names the app data holds too. */
+const holidayRow = (date: string): Policy.JsonObject => ({
+  id: 2,
+  type: "HOLIDAY",
+  status: "REGULAR",
+  statusDetail: "NOT_BOOKABLE",
+  shortName: "Ferientag",
+  longName: "Ferientag26",
+  duration: { start: `${date}T00:00`, end: `${date}T23:59` },
+  durationTotal: { start: `${date}T00:00`, end: `${date}T23:59` },
+  isFullDay: true,
+  resource: null,
+  notesAll: null,
+  layoutStartPosition: 0,
+  layoutWidth: 1000,
+  color: "f0e68c",
+});
+
 const imageOf = (name: string) => `https://example.invalid/images/${name}.png`;
 
 /** The JSON with every name replaced, and personal fields filled that the invented school leaves empty. */
 const render = (value: Policy.Json, key = ""): Policy.Json => {
+  // A class long-named after its two teachers, as IGS names its classes.
+  if (key === "longName" && value === "11.1") return `${teachers[0][2]}/${teachers[1][2]}`;
+
   if (Predicate.isString(value)) return renamed.get(value) ?? value;
 
   if (Array.isArray(value)) return value.map((item) => render(item, key));
@@ -95,7 +141,19 @@ const render = (value: Policy.Json, key = ""): Policy.Json => {
 
   const firstId = Array.isArray(value.ids) ? value.ids[0] : undefined;
 
-  if (Predicate.isNumber(firstId) && "duration" in value) Object.assign(out, texts(firstId));
+  if (Predicate.isNumber(firstId) && "duration" in value) {
+    Object.assign(out, texts(firstId), lessonExtras);
+    out.position2 = [...(Array.isArray(out.position2) ? out.position2 : []), info];
+  }
+
+  if (key === "days" && value.date === "2026-10-30") out.backEntries = [holidayRow(value.date)];
+
+  if ("settings" in value && "tenant" in value) {
+    out.settings = [
+      `mail.sender:${account[0].toLowerCase()}.${account[1].toLowerCase()}@example.invalid`,
+      "ui.language:de",
+    ];
+  }
 
   if ((key === "teachers" || key === "students") && "imageUrl" in value) {
     const person = out.teacher ?? out.student ?? out;

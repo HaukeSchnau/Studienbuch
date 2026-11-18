@@ -152,6 +152,11 @@ layer(NodeServices.layer)("Checks", (it) => {
 
       yield* Checks.scan({ dictionary, ...inputOf(corpus) });
 
+      // A key is a field name, which a short name such as `END` can spell.
+      const keyed = new Map([...dictionary.names, ["end", "teacher shortName"]]);
+
+      yield* Checks.scan({ dictionary: { ...dictionary, names: keyed }, ...inputOf(corpus) });
+
       const broken = planted(corpus, classView, (body) => {
         firstEntry(body).color = "Grüße an qam";
       });
