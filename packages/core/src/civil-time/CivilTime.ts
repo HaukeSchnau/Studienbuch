@@ -3,7 +3,9 @@
  * such as `"2026-10-29"` in rows and arguments, which sort as dates in a device view. Core reads no
  * clock, so the caller reads the instant and `School.today` turns it into the school's date.
  */
+import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
+import * as Option from "effect/Option";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 import * as SchemaIssue from "effect/SchemaIssue";
@@ -68,6 +70,46 @@ export const IsoWeek = Schema.String.check(
     { expected: "an ISO week its year has, such as 2026-W53" },
   ),
 );
+
+/** A time of day as milliseconds since midnight, such as `28_800_000` for 08:00. */
+export const TimeOfDay = Schema.Int.check(Schema.isBetween({ minimum: 0, maximum: 86_400_000 }));
+
+/**
+ * An instant as a UTC timestamp, written as `2026-11-18T06:30:00.000Z`. It is for when something
+ * happened, such as the import's last read, never for when school happens.
+ */
+export const Instant = Schema.String.check(
+  Schema.isPattern(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u, {
+    expected: "an instant as YYYY-MM-DDTHH:mm:ss.sssZ",
+  }),
+).pipe(
+  Schema.decodeTo(
+    Schema.DateTimeUtc,
+    SchemaTransformation.transformEffect<DateTime.Utc, string>({
+      // `Date` reads 30 February as 2 March, so the instant has to write back as it was read.
+      decode: (text, options) =>
+        Option.match(Option.map(DateTime.make(text), DateTime.toUtc), {
+          onSome: (utc) =>
+            DateTime.formatIso(utc) === text
+              ? Effect.succeed(utc)
+              : Effect.fail(
+                  new SchemaIssue.InvalidValue(
+                    { expected: "an instant that exists" },
+                    text,
+                    options,
+                  ),
+                ),
+          onNone: () =>
+            Effect.fail(
+              new SchemaIssue.InvalidValue({ expected: "an instant that exists" }, text, options),
+            ),
+        }),
+      encode: (utc) => Effect.succeed(DateTime.formatIso(utc)),
+    }),
+  ),
+);
+
+export type Instant = typeof Instant.Type;
 
 /** A closed range: `start` and `end` both belong to it. */
 export const DateRange = Schema.Struct({ start: PlainDate, end: PlainDate }).check(

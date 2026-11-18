@@ -35,6 +35,16 @@ export class Service extends Context.Service<
       options?: Placement,
     ) => Effect.Effect<void, SqlError.SqlError>;
     /**
+     * Creates keyed spaces under one parent as `create` does, such as a school's new courses, and
+     * applies the membership rules of the parent's children once, after the last, locking them in
+     * id order.
+     */
+    readonly createMany: (
+      kind: Sync.SpaceKind,
+      parent: string,
+      spaces: ReadonlyArray<{ readonly id: string; readonly key: string }>,
+    ) => Effect.Effect<void, SqlError.SqlError>;
+    /**
      * Adds the account with `role`, or changes its role. The space must exist. The membership
      * rules of its child spaces the account reads apply again.
      */
@@ -115,42 +125,71 @@ export const make = Effect.gen(function* () {
     return yield* SyncSchema.kindOf(definition, row.kind);
   });
 
+  /** Inserts the space unless it exists alike, and answers whether it was new. */
+  const insert = Effect.fnUntraced(function* (
+    id: string,
+    kind: Sync.SpaceKind,
+    parent: string | null,
+    key: string | null,
+  ) {
+    if (!isId(id)) return yield* Effect.die(`The space id ${id} is outside Ids.Id`);
+
+    if (definition.byName.spaceKinds.get(kind.name) !== kind) {
+      return yield* Effect.die(`The space kind ${kind.name} isn't the definition's`);
+    }
+
+    if (key !== null && parent === null) {
+      return yield* Effect.die(`The space ${id} has a key but no parent`);
+    }
+
+    const created = yield* sql`
+      insert into space (id, kind, parent_id, key) values (${id}, ${kind.name}, ${parent}, ${key})
+      on conflict (id) do nothing
+      returning 1
+    `;
+
+    const [row] = yield* sql<{
+      readonly kind: string;
+      readonly parent: string | null;
+      readonly key: string | null;
+    }>`select kind, parent_id as parent, key from space where id = ${id}`;
+
+    if (row?.kind !== kind.name || row.parent !== parent || row.key !== key) {
+      return yield* Effect.die(`The space ${id} exists with another kind or place`);
+    }
+
+    return created.length > 0;
+  });
+
   return Service.of({
     create: Effect.fn("Spaces.create")(
       function* (id: string, kind: Sync.SpaceKind, options?: Placement) {
         const parent = options?.parent ?? null;
         const key = options?.key ?? null;
-
-        if (!isId(id)) return yield* Effect.die(`The space id ${id} is outside Ids.Id`);
-
-        if (definition.byName.spaceKinds.get(kind.name) !== kind) {
-          return yield* Effect.die(`The space kind ${kind.name} isn't the definition's`);
-        }
-
-        if (key !== null && parent === null) {
-          return yield* Effect.die(`The space ${id} has a key but no parent`);
-        }
-
-        const created = yield* sql`
-        insert into space (id, kind, parent_id, key) values (${id}, ${kind.name}, ${parent}, ${key})
-        on conflict (id) do nothing
-        returning 1
-      `;
-
-        const [row] = yield* sql<{
-          readonly kind: string;
-          readonly parent: string | null;
-          readonly key: string | null;
-        }>`select kind, parent_id as parent, key from space where id = ${id}`;
-
-        if (row?.kind !== kind.name || row.parent !== parent || row.key !== key) {
-          return yield* Effect.die(`The space ${id} exists with another kind or place`);
-        }
+        const created = yield* insert(id, kind, parent, key);
 
         // Notebooks that chose a course before its space existed read it from now on.
-        if (created.length > 0 && parent !== null && key !== null) {
+        if (created && parent !== null && key !== null) {
           yield* regrant(yield* children(parent));
         }
+      },
+      sql.withTransaction,
+      withSql,
+    ),
+
+    createMany: Effect.fn("Spaces.createMany")(
+      function* (
+        kind: Sync.SpaceKind,
+        parent: string,
+        spaces: ReadonlyArray<{ readonly id: string; readonly key: string }>,
+      ) {
+        let created = false;
+
+        for (const space of spaces) {
+          if (yield* insert(space.id, kind, parent, space.key)) created = true;
+        }
+
+        if (created) yield* regrant(yield* children(parent));
       },
       sql.withTransaction,
       withSql,

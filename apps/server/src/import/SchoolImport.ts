@@ -4,7 +4,7 @@
  * a recorded client and measures any algorithm behind this seam the same way.
  */
 import type { School } from "@stu/core";
-import { CivilTime, Course } from "@stu/core";
+import { CivilTime, Course, Lesson } from "@stu/core";
 import { Ids } from "@stu/sync";
 import * as Arr from "effect/Array";
 import * as Context from "effect/Context";
@@ -19,26 +19,6 @@ export * as SchoolImport from "./SchoolImport.ts";
 /** A date as WebUntis and stored rows write it, such as `2026-11-09`. */
 export const Day = Schema.toEncoded(CivilTime.PlainDate);
 
-/** Milliseconds since midnight (ADR 0001). */
-export const TimeOfDay = Schema.Int.check(Schema.isBetween({ minimum: 0, maximum: 86_400_000 }));
-
-export const LessonStatus = Schema.Literals(["Regular", "Changed", "Cancelled", "Added"]);
-
-export type LessonStatus = typeof LessonStatus.Type;
-
-/** What changed about a lesson (domain.md, section 2.2). `Other` shows the provider's text. */
-export const ChangeKind = Schema.Literals([
-  "Cancelled",
-  "Substitution",
-  "Released",
-  "Supervised",
-  "RoomChange",
-  "Moved",
-  "Other",
-]);
-
-export type ChangeKind = typeof ChangeKind.Type;
-
 export const ImportedCourse = Schema.Struct({
   id: Course.Id,
   name: Schema.String,
@@ -52,14 +32,14 @@ export const ImportedLesson = Schema.Struct({
   id: Ids.Id,
   courseId: Course.Id,
   date: Day,
-  start: TimeOfDay,
-  end: TimeOfDay,
+  start: CivilTime.TimeOfDay,
+  end: CivilTime.TimeOfDay,
   teacherIds: Schema.Array(Ids.Id),
   roomIds: Schema.Array(Ids.Id),
-  status: LessonStatus,
+  status: Lesson.Status,
   change: Schema.optional(
     Schema.Struct({
-      kind: ChangeKind,
+      kind: Lesson.ChangeKind,
       previousTeacherIds: Schema.Array(Ids.Id),
       previousRoomIds: Schema.Array(Ids.Id),
       text: Schema.optional(Schema.String),
@@ -80,8 +60,8 @@ export const ImportedExam = Schema.Struct({
   id: Ids.Id,
   courseId: Course.Id,
   date: Day,
-  start: TimeOfDay,
-  end: TimeOfDay,
+  start: CivilTime.TimeOfDay,
+  end: CivilTime.TimeOfDay,
 });
 
 export const ImportedTeacher = Schema.Struct({ id: Ids.Id, shortName: Schema.String });

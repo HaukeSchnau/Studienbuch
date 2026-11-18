@@ -32,6 +32,11 @@ const data: Schools.Data = {
   classes: {},
   courses: { "ma-1": { name: "MA-1" }, "ku-1": { name: "KU-1" } },
   offerings: { "ma-1@2026-1": { courseId: "ma-1", ...offered } },
+  teachers: {},
+  rooms: {},
+  closures: {},
+  weekLabels: {},
+  lessons: {},
 };
 
 const choose = (course: string) =>
@@ -61,7 +66,7 @@ describe.skipIf(Postgres18.socket === null)("Access on PostgreSQL 18", () => {
     it.effect("two admissions of one account at once give it one notebook, with its courses", () =>
       Effect.gen(function* () {
         const sql = yield* SqlClient.SqlClient;
-        yield* Schools.publish(data);
+        yield* Schools.publish(data, SchoolTesting.replacing);
         yield* SchoolTesting.account("lena");
         const firstAdmitted = yield* Deferred.make<void>();
         const commitFirst = yield* Deferred.make<void>();
@@ -99,7 +104,7 @@ describe.skipIf(Postgres18.socket === null)("Access on PostgreSQL 18", () => {
     it.effect("admitting an account that left the school gives it its memberships back", () =>
       Effect.gen(function* () {
         const spaces = yield* Spaces.Service;
-        yield* Schools.publish(data);
+        yield* Schools.publish(data, SchoolTesting.replacing);
         yield* SchoolTesting.account("mia");
         const first = yield* Access.admit("mia", school, choose("ma-1"));
         const admitted = yield* SchoolTesting.memberships("mia");
@@ -119,7 +124,7 @@ describe.skipIf(Postgres18.socket === null)("Access on PostgreSQL 18", () => {
     it.effect("a demo account gets into no school but the demo school", () =>
       Effect.gen(function* () {
         const sql = yield* SqlClient.SqlClient;
-        yield* Schools.publish(data);
+        yield* Schools.publish(data, SchoolTesting.replacing);
         yield* SchoolTesting.account("demo-lena");
         yield* sql`insert into demo_account (account_id, persona) values ('demo-lena', 'lena')`;
         const refusal = yield* Effect.flip(Access.admit("demo-lena", school, choose("ma-1")));
@@ -133,7 +138,7 @@ describe.skipIf(Postgres18.socket === null)("Access on PostgreSQL 18", () => {
 
     it.effect("a first choice that enrollment.set refuses admits nothing", () =>
       Effect.gen(function* () {
-        yield* Schools.publish(data);
+        yield* Schools.publish(data, SchoolTesting.replacing);
         yield* SchoolTesting.account("tom");
         const before = yield* notebooks;
         const refusal = yield* Effect.flip(Access.admit("tom", school, choose("ku-1")));

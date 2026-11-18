@@ -9,11 +9,12 @@ import {
   School,
   SchoolYear,
   Studienbuch,
+  Subject,
   Term,
 } from "@stu/core";
 import { CryptoSuite } from "@stu/e2ee";
-import { Command } from "@stu/sync";
-import { Listener, Ports, Push, Spaces, SyncServer, SyncWriter } from "@stu/sync/server";
+import { Command, Sync as SyncDefinition } from "@stu/sync";
+import { Listener, Ports, Pull, Push, Spaces, SyncServer, SyncWriter } from "@stu/sync/server";
 import { Postgres18 } from "@stu/sync/testing";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
@@ -28,6 +29,7 @@ import * as Stream from "effect/Stream";
 import { Deletion } from "../account/Deletion.ts";
 import { DatabaseTesting } from "../infra/database/DatabaseTesting.ts";
 import { SchoolTesting } from "../school/SchoolTesting.ts";
+import { Schools } from "../school/Schools.ts";
 import { Sync } from "./Sync.ts";
 
 /** No sessions: these tests write and push rows, and open no connection. */
@@ -195,6 +197,17 @@ const pushAs = (account: string, client: string, commands: ReadonlyArray<Command
 const push = (client: string, commands: ReadonlyArray<Command.Any>) =>
   pushAs("lena", client, commands);
 
+/** The app one release back: schema 3, before the lessons, teachers, rooms and closures. */
+const schema3 = { ...Studienbuch.schema.contract, schema: 3 };
+
+/** `Course` as schema 3 knew it, without `level`. */
+const decodeCourse3 = Schema.decodeUnknownEffect(
+  SyncDefinition.table("Course", {
+    class: "readable",
+    fields: { name: Schema.String, subjectId: Schema.optional(Subject.Id) },
+  }).codec,
+);
+
 const courses = Effect.flatMap(SqlClient.SqlClient, (sql) =>
   sql<{ readonly space: string }>`
     select m.space_id as space from space_member m join space s on s.id = m.space_id
@@ -239,6 +252,130 @@ describe.skipIf(Postgres18.socket === null)("Sync with Studienbuch's definition"
             after: [],
           });
         }),
+    );
+
+    it.effect("the app one release back chooses its courses and pulls the new rows unharmed", () =>
+      Effect.gen(function* () {
+        yield* SchoolTesting.account("old");
+        const id = School.Id.make("old-school");
+
+        yield* Schools.publish(
+          {
+            id,
+            school: { name: "Alte Schule", timeZone: "Europe/Berlin" },
+            schoolYears: {
+              2026: { name: "2026/27", dates: { start: "2026-08-01", end: "2027-07-31" } },
+            },
+            terms: {
+              "2026-1": {
+                schoolYearId: "2026",
+                name: "1. Halbjahr",
+                dates: { start: "2026-08-01", end: "2027-01-31" },
+              },
+            },
+            subjects: {},
+            classes: {},
+            courses: { "ma-e": { name: "MA-E", level: "E" } },
+            offerings: {
+              "ma-e@2026-1": {
+                courseId: "ma-e",
+                termId: "2026-1",
+                gradeLevels: [11],
+                classIds: [],
+              },
+            },
+            teachers: { bra: { shortName: "BRA" } },
+            rooms: { a101: { name: "A101" } },
+            closures: {
+              herbst: { name: "Herbstferien", dates: [{ start: "2026-10-12", end: "2026-10-24" }] },
+            },
+            weekLabels: { "2026-W47": { label: "A" } },
+            importStatus: { observedAt: "2026-11-18T06:30:00.000Z", coveredUntil: "2026-12-15" },
+            lessons: {
+              "ma-e": {
+                "ma-e-1": {
+                  courseId: "ma-e",
+                  date: "2026-11-18",
+                  start: 28_800_000,
+                  end: 34_200_000,
+                  teacherIds: ["bra"],
+                  roomIds: ["a101"],
+                  status: "Changed",
+                  change: { kind: "RoomChange", previousTeacherIds: [], previousRoomIds: [] },
+                },
+              },
+            },
+          },
+          SchoolTesting.replacing,
+        );
+
+        yield* admit("old", id, "old-notebook");
+
+        const answers = yield* Effect.flatMap(Push.Service, (service) =>
+          service.push("old", {
+            clientId: "old-phone",
+            syncEpoch: null,
+            contract: schema3,
+            commands: [enroll(1, "old-notebook", "2026-1", ["ma-e"])],
+          }),
+        );
+
+        const pulled = yield* Effect.flatMap(Pull.Service, (service) =>
+          service.pull("old", {
+            clientId: "old-phone",
+            syncEpoch: null,
+            contract: schema3,
+            cursors: [],
+            settledMutationId: 0,
+            limit: 1000,
+          }),
+        );
+
+        const ops = pulled.patches.flatMap((patch) => patch.ops);
+        const lesson = ops.find((op) => op.tbl === "Lesson" && op.id === "ma-e-1")?.row;
+
+        const courses = yield* Effect.forEach(
+          ops.filter((op) => op.tbl === "Course"),
+          (op) => decodeCourse3(op.row._tag === "Readable" ? op.row.data : null),
+        );
+
+        expect({
+          answers: answers.outcomes.map((outcome) => outcome._tag),
+          tables: [...new Set(ops.map((op) => op.tbl))].sort(),
+          courses,
+          // A deleted lesson would answer its tag instead.
+          lesson: lesson?._tag === "Readable" ? lesson.data : lesson?._tag,
+        }).toEqual({
+          answers: ["Applied"],
+          // It stores the tables it doesn't know as JSON and builds no view for them.
+          tables: [
+            "Closure",
+            "Course",
+            "CourseOffering",
+            "Enrollment",
+            "ImportStatus",
+            "Lesson",
+            "Notebook",
+            "Room",
+            "School",
+            "SchoolYear",
+            "Teacher",
+            "Term",
+            "WeekLabel",
+          ],
+          courses: [{ name: "MA-E" }],
+          lesson: {
+            courseId: "ma-e",
+            date: "2026-11-18",
+            start: 28_800_000,
+            end: 34_200_000,
+            teacherIds: ["bra"],
+            roomIds: ["a101"],
+            status: "Changed",
+            change: { kind: "RoomChange", previousTeacherIds: [], previousRoomIds: [] },
+          },
+        });
+      }),
     );
 
     // Mia's phone pushes over a connection still open while she deletes her account. Her deletion

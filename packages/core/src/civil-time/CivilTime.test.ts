@@ -83,3 +83,29 @@ describe("CivilTime.dateIn", () => {
     ]);
   });
 });
+
+describe("CivilTime.Instant", () => {
+  const decodeInstant = Schema.decodeUnknownEffect(CivilTime.Instant);
+  const encodeInstant = Schema.encodeEffect(CivilTime.Instant);
+
+  it.effect("reads and writes an instant in UTC with milliseconds", () =>
+    Effect.gen(function* () {
+      const text = "2026-11-18T06:30:00.000Z";
+
+      expect(yield* encodeInstant(yield* decodeInstant(text))).toBe(text);
+    }),
+  );
+
+  // A stored instant has one spelling, so the same instant compares equal as text.
+  it.effect.each([
+    { name: "an offset", text: "2026-11-18T07:30:00.000+01:00" },
+    { name: "no milliseconds", text: "2026-11-18T06:30:00Z" },
+    { name: "a date only", text: "2026-11-18" },
+    { name: "a time that doesn't exist", text: "2026-11-18T25:30:00.000Z" },
+    { name: "a day that doesn't exist", text: "2026-02-30T06:30:00.000Z" },
+  ])("refuses $name", ({ text }) =>
+    Effect.gen(function* () {
+      expect(Exit.isFailure(yield* Effect.exit(decodeInstant(text)))).toBe(true);
+    }),
+  );
+});

@@ -9,7 +9,10 @@ import { CivilTime } from "../civil-time/CivilTime.ts";
 
 export * as School from "./School.ts";
 
-/** The space of one school's shared data: its row, years, terms, subjects, classes and courses. */
+/**
+ * The space of one school's shared data: its row, years, terms, subjects, classes, courses,
+ * teachers, rooms, closures, week labels and import status. Lessons live in their courses' spaces.
+ */
 export const Space = Sync.spaceKind("school", {
   encryption: "none",
   roles: ["reader"],
