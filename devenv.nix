@@ -56,7 +56,7 @@ in
     exec ${config.services.garage.package}/bin/garage -c ${garageConfig} server
   '';
 
-  env = {
+  env = import ./nix/shell-env.nix { inherit pkgs; } // {
     STUDIENBUCH_ENVIRONMENT = "development";
     PUBLIC_URL = "http://localhost:${port "server"}";
     PASSKEY_RP_ID = "localhost";

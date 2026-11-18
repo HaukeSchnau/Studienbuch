@@ -239,6 +239,59 @@ for (const dir of affected) {
   steps.push({ name: `typecheck ${dir}`, args: ["exec", "tsc", "--noEmit", "-p", dir] });
 }
 
+// apps/app's "browser" project runs `*.browser.test.ts(x)` once in each of these Playwright browsers
+// (apps/app/vite.config.ts). CI's shell has them all; another shell or machine may lack one.
+const APP = "apps/app";
+const APP_BROWSERS = { chromium: "Chromium", firefox: "Firefox" };
+const BROWSER_TEST = /\.browser\.test\.[cm]?[jt]sx?$/u;
+
+/**
+ * The first line of Playwright's error when it can't start the browser headless here, or null when
+ * it starts. It launches through apps/app's Playwright, as the app's tests do.
+ */
+function cannotStart(browser: string): Promise<string | null> {
+  const probe = `
+    try {
+      const { ${browser} } = await import("playwright");
+      await (await ${browser}.launch()).close();
+    } catch (error) {
+      console.error(String(error?.message ?? error).split("\\n")[0]);
+      process.exitCode = 1;
+    }`;
+
+  const child = NodeChildProcess.spawn(process.execPath, ["--input-type=module", "--eval", probe], {
+    cwd: NodePath.join(root, APP),
+    stdio: ["ignore", "ignore", "pipe"],
+  });
+
+  const output: Array<Buffer> = [];
+
+  child.stderr.on("data", (chunk: Buffer) => output.push(chunk));
+  child.on("error", (error) => output.push(Buffer.from(error.message)));
+
+  return new Promise((resolve) => {
+    child.on("close", (status, signal) =>
+      resolve(
+        status === 0 ? null : Buffer.concat(output).toString().trim() || `exit ${status ?? signal}`,
+      ),
+    );
+  });
+}
+
+// A browser that can't start is left out of the app's tests, and the summary says so. A test that
+// fails in a browser that starts still fails the run.
+const unstartable = testsByConfig.get(APP)?.some((file) => BROWSER_TEST.test(file))
+  ? (
+      await Promise.all(
+        Object.entries(APP_BROWSERS).map(async ([browser, name]) => {
+          const reason = await cannotStart(browser);
+
+          return reason === null ? [] : [{ browser, name, reason }];
+        }),
+      )
+    ).flat()
+  : [];
+
 // Directories with an install of their own whose install is missing, so their tests didn't run.
 const uninstalled: Array<string> = [];
 
@@ -258,6 +311,7 @@ for (const [dir, group] of testsByConfig) {
       ...(own ? [] : ["test"]),
       "run",
       "--passWithNoTests",
+      ...(dir === APP ? unstartable.map(({ browser }) => `--project=!browser (${browser})`) : []),
       ...group.map((file) => NodePath.relative(dir, file)),
     ],
     cwd: dir,
@@ -319,6 +373,10 @@ summary.push(`  CI also runs: ${ciTasks.join(", ")} on every file (\`calder chec
 if (!runKnip) summary.push("  knip skipped: no code or manifest changed");
 
 if (tests.size === 0) summary.push("  tests skipped: no test file beside a changed file");
+
+for (const { name, reason } of unstartable) {
+  summary.push(`  browser tests in ${name} skipped: ${reason}`);
+}
 
 for (const dir of uninstalled) {
   summary.push(
