@@ -269,8 +269,12 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
   >();
 
   const openingStore = (term: string | undefined) => {
+    const cached = openings.get(term);
+
+    if (cached !== undefined) return cached;
+
     const lessons = Metrics.lessonsOf(openingStates.get(term) ?? SchoolImport.empty);
-    const store = openings.get(term) ?? { lessons, index: Metrics.byEntry(lessons) };
+    const store = { lessons, index: Metrics.byEntry(lessons) };
 
     openings.set(term, store);
 
@@ -449,11 +453,15 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
     ]),
   );
 
-  // An exam counts for the students the truth has, on a day WebUntis showed them: its roster is
+  // An exam counts for the students the truth has, on a day their timetable shows: its roster is
   // cut to them, and an exam with none of them left isn't measured.
-  const hiddenFrom = new Map(students.map((student) => [student.id, student.hidden]));
+  const studentViews = new Map(students.map((student) => [student.id, student]));
 
-  const sees = (student: number, date: string) => !(hiddenFrom.get(student)?.has(date) ?? true);
+  const sees = (student: number, date: string) => {
+    const view = studentViews.get(student);
+
+    return view !== undefined && view.weeks.has(weekOf(date)) && !view.hidden.has(date);
+  };
 
   const examsByTerm = [...new Set(days.map(termOf))].map((term) =>
     Metrics.scoreExams(
