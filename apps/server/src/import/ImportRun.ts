@@ -409,13 +409,37 @@ export const coveredFrom = (
   return covered;
 };
 
-/** The import's identity state for the next run: everything but lessons before today. */
-const identity = (state: SchoolImport.ImportResult, today: string): SchoolImport.ImportResult => {
-  const lessons = state.lessons.filter(({ date }) => today <= date);
-  const kept = new Set(lessons.map(({ id }) => id));
-  const gone = new Set(state.lessons.flatMap(({ id }) => (kept.has(id) ? [] : [id])));
+/** The state without the lessons `drop` names, and without their links. */
+const without = (
+  state: SchoolImport.ImportResult,
+  drop: (lesson: SchoolImport.ImportedLesson) => boolean,
+): SchoolImport.ImportResult => {
+  const gone = new Set(state.lessons.flatMap((lesson) => (drop(lesson) ? [lesson.id] : [])));
 
-  return { ...state, lessons, links: state.links.filter(({ id }) => !gone.has(id)) };
+  return {
+    ...state,
+    lessons: state.lessons.filter(({ id }) => !gone.has(id)),
+    links: state.links.filter(({ id }) => !gone.has(id)),
+  };
+};
+
+/**
+ * What the next run builds on: nothing before today, which never changes, a lesson's text only as
+ * a stock phrase, as it is published, and no diagnostics.
+ */
+const checkpointOf = (
+  profile: SchoolProfile.SchoolProfile,
+  state: SchoolImport.ImportResult,
+  today: string,
+): SchoolImport.ImportResult => {
+  const kept = without(state, ({ date }) => date < today);
+
+  return {
+    ...kept,
+    lessons: kept.lessons.map((lesson) => Projection.withStockPhrase(profile, lesson)),
+    exams: kept.exams.filter(({ date }) => today <= date),
+    diagnostics: [],
+  };
 };
 
 /**
@@ -504,9 +528,9 @@ const leased = Effect.fn("ImportRun.leased")(function* (
   const today = CivilTime.format(window.start);
   // Lessons before today never change, so neither the import nor the publish sees them.
 
-  const known = identity(
+  const known = without(
     Option.getOrElse(previous, () => SchoolImport.empty),
-    today,
+    ({ date }) => date < today,
   );
 
   const snapshot = yield* WebUntisClient.use((client) =>
@@ -586,15 +610,19 @@ const leased = Effect.fn("ImportRun.leased")(function* (
     ),
   );
 
+  // A school's first publish shows its own snapshot: lessons only dark runs saw never were rows,
+  // and nothing published says they are there. A first publish writes a Stand, so later ones see it.
+  const first = profile.publish && Option.isNone(yield* Schools.importStatus(school));
+
   const projection = Projection.project({
     profile,
-    previous: known,
+    previous: first ? without(known, () => true) : known,
     result,
     pending,
     today: window.start,
   });
 
-  const next = { ...projection.state, diagnostics: [] };
+  const next = checkpointOf(profile, projection.state, today);
   const log = yield* recorded.log;
 
   yield* Ref.update(report, (current) => ({
@@ -664,13 +692,19 @@ export const run = Effect.fn("ImportRun.run")(function* (options: Options) {
   return yield* Effect.gen(function* () {
     const startedAt = yield* DateTime.now;
 
-    const reservation = yield* reserve({
+    const reserved = yield* reserve({
       school,
       date: School.today(options.profile.school, DateTime.toEpochMillis(startedAt)),
       nightly: options.nightly,
       maximum: options.maximum,
       startedAt,
-    });
+    }).pipe(Effect.timeoutOption(DateTime.distance(startedAt, lease.until)));
+
+    if (Option.isNone(reserved)) {
+      return { outcome: "TimedOut", run: Option.none(), report: emptyReport } satisfies Ran;
+    }
+
+    const reservation = reserved.value;
 
     if (!reservation.fits) {
       return {
