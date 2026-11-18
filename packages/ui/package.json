@@ -23,6 +23,7 @@
     "./Hero": "./src/Hero.tsx",
     "./Icon": "./src/Icon.tsx",
     "./Link": "./src/Link.tsx",
+    "./PanelWave": "./src/PanelWave.tsx",
     "./Pill": "./src/Pill.tsx",
     "./PillChoice": "./src/PillChoice.tsx",
     "./RevisionCard": "./src/RevisionCard.tsx",
@@ -48,6 +49,10 @@
     },
     "./useLayout": "./src/useLayout.ts",
     "./useLingeringOrder": "./src/useLingeringOrder.ts",
+    "./useRefocus": {
+      "react-native": "./src/useRefocus.ts",
+      "default": "./src/useRefocus.web.ts"
+    },
     "./useStableCallback": "./src/useStableCallback.ts",
     "./Vector": {
       "react-native": "./src/Vector.tsx",

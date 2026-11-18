@@ -208,32 +208,30 @@ export interface Answers {
 /**
  * Writes the course choice, then the profile, on this device first; the engine sends both when it
  * can. The profile goes last, so a refused choice leaves the student in the first start. The draft
- * goes once the gate reads both, so the first step never shows again in between. It runs on while
- * the screen gives way to the tabs.
+ * goes once the gate reads both, so the first step never shows again in between. The gate mounts
+ * it, so it runs on while the screen gives way to the tabs and goes with the account.
  */
 export const finish = Atom.family((accountId: string) =>
-  runtime(accountId)
-    .fn<Answers>()((answers, get) =>
-      Effect.gen(function* () {
-        const sync = yield* SyncClient.Service;
+  runtime(accountId).fn<Answers>()((answers, get) =>
+    Effect.gen(function* () {
+      const sync = yield* SyncClient.Service;
 
-        if (Option.isSome(answers.refused)) yield* sync.dismiss(answers.refused.value);
+      if (Option.isSome(answers.refused)) yield* sync.dismiss(answers.refused.value);
 
-        if (Option.isSome(answers.choice)) yield* sync.mutate(Enrollment.set, answers.choice.value);
+      if (Option.isSome(answers.choice)) yield* sync.mutate(Enrollment.set, answers.choice.value);
 
-        yield* sync.mutate(NotebookProfile.set, {
-          notebook: answers.notebook,
-          displayName: answers.displayName,
-          adult: answers.adult,
-        });
+      yield* sync.mutate(NotebookProfile.set, {
+        notebook: answers.notebook,
+        displayName: answers.displayName,
+        adult: answers.adult,
+      });
 
-        yield* get.streamResult(reading(accountId)).pipe(
-          Stream.filter((now) => Onboarding.next(now) === "done"),
-          Stream.runHead,
-        );
+      yield* get.streamResult(reading(accountId)).pipe(
+        Stream.filter((now) => Onboarding.next(now) === "done"),
+        Stream.runHead,
+      );
 
-        get.set(draft(accountId), emptyDraft);
-      }),
-    )
-    .pipe(Atom.keepAlive),
+      get.set(draft(accountId), emptyDraft);
+    }),
+  ),
 );

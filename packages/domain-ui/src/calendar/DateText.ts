@@ -31,6 +31,13 @@ export const weekday = (date: CivilTime.PlainDate) =>
 export const shortWeekday = (date: CivilTime.PlainDate) =>
   shortWeekdays[PlainDateFns.dayOfWeek(date) - 1] ?? "";
 
+/** "November" */
+export const month = (date: CivilTime.PlainDate) => months[date.month - 1] ?? "";
+
 /** "Mittwoch, 11. November", as the Übersicht's hero names today. */
 export const long = (date: CivilTime.PlainDate) =>
-  `${weekday(date)}, ${String(date.day)}. ${months[date.month - 1] ?? ""}`;
+  `${weekday(date)}, ${String(date.day)}. ${month(date)}`;
+
+/** `long`, with the year when it isn't `today`'s: "Mittwoch, 27. Oktober 2027". */
+export const full = (date: CivilTime.PlainDate, today: CivilTime.PlainDate) =>
+  date.year === today.year ? long(date) : `${long(date)} ${String(date.year)}`;

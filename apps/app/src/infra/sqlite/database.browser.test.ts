@@ -43,7 +43,7 @@ it.effect(
 
       assert.deepStrictEqual([first, second], [0, 0]);
 
-      yield* Layers.forget("lena");
+      yield* Layers.forget("lena", Effect.void);
 
       assert.strictEqual(yield* StoragePersistence.current(false), "memory only");
     }).pipe(Effect.provide(Layers.device({ name: "private-window" }))),

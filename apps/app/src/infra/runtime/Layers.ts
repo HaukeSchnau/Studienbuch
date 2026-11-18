@@ -74,6 +74,15 @@ export const account = (accountId: string, publicComputer: boolean) => {
 
 /**
  * Deletes what an account left on this device at sign-out: its database, its secrets and its
- * session, and only its own. Close its `account` layer first.
+ * session, and only its own, then runs `signedOut` (`Forgetting.forget`). Close its `account`
+ * layer first.
  */
-export const forget = (accountId: string) => Forgetting.forget(accountId, AccountDatabase.remove);
+export const forget = <E, R>(accountId: string, signedOut: Effect.Effect<void, E, R>) =>
+  Forgetting.forget(accountId, AccountDatabase.remove, signedOut);
+
+/** The rest of a sign-out that `AccountEngine.Engines.forget` began (`Forgetting.end`). */
+export const endSignOut = <E, R>(accountId: string, signedOut: Effect.Effect<void, E, R>) =>
+  Forgetting.end(accountId, AccountDatabase.remove, signedOut);
+
+/** Finishes the sign-outs this device began and didn't finish (`Forgetting.finish`). */
+export const finishSignOuts = Forgetting.finish(AccountDatabase.remove);

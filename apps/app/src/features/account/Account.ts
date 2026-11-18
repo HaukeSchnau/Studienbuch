@@ -16,7 +16,9 @@ import * as SubscriptionRef from "effect/SubscriptionRef";
 import { AuthApi } from "../../infra/auth/AuthApi.ts";
 import { PendingSignUp } from "../../infra/auth/PendingSignUp.ts";
 import { SessionStore } from "../../infra/auth/SessionStore.ts";
+import type { Keychain } from "../../infra/keychain/Keychain.ts";
 import { Passkeys } from "../../infra/passkeys/Passkeys.ts";
+import { Forgetting } from "../../infra/runtime/Forgetting.ts";
 import type { NotebookKeys } from "../keys/NotebookKeys.ts";
 
 // Signing up, in and out on this device. Signing in needs the network once; after that the device
@@ -46,6 +48,7 @@ export const Reason = Schema.Literals([
   "passkey-no-biometrics",
   "passkey-failed",
   "not-fresh",
+  "sign-out-failed",
   "failed",
 ]);
 
@@ -85,6 +88,7 @@ export const sentence: Record<Reason, string> = {
     "Für einen Passkey braucht dein Gerät Face ID oder Touch ID. Richte es in den Einstellungen ein.",
   "passkey-failed": "Mit dem Passkey hat es nicht geklappt. Versuch es noch einmal.",
   "not-fresh": "Melde dich kurz neu an, dann geht es weiter.",
+  "sign-out-failed": "Abmelden hat nicht geklappt. Versuch es noch einmal.",
   failed: "Das hat nicht geklappt. Versuch es noch einmal.",
 };
 
@@ -152,7 +156,8 @@ const refuseOtherAccount = Effect.fn("Account.refuseOtherAccount")(function* (
 /**
  * Keeps a new session, so the device is signed in, unless another account holds the device. On a
  * public computer the device keeps it in memory only (`SessionStore.signedIn`). `demo` marks a
- * demo account's password sign-in (`Demo.isDemoSignIn`).
+ * demo account's password sign-in (`Demo.isDemoSignIn`). It waits for a sign-out under way, and
+ * a sign-out the device left unfinished finishes first (`Forgetting.Service`).
  */
 export const keep = Effect.fn("Account.keep")(function* (
   signedIn: AuthApi.SignedIn,
@@ -160,10 +165,11 @@ export const keep = Effect.fn("Account.keep")(function* (
   demo = false,
 ) {
   const store = yield* SessionStore.Service;
+  const forgetting = yield* Forgetting.Service;
 
   yield* refuseOtherAccount(signedIn);
-  yield* store
-    .signedIn({ ...signedIn, demo }, publicComputer)
+  yield* forgetting
+    .keep(store.signedIn({ ...signedIn, demo }, publicComputer))
     .pipe(Effect.mapError(() => new Problem({ reason: "failed" })));
 });
 
@@ -253,8 +259,8 @@ export interface Confirmed {
 
 /**
  * The sign-up waiting for its code and the confirmed session waiting for its passkey offer.
- * `finish`, `leave` and `signOut` take turns through `guard`, so a back press during the offer
- * never ends a session the device is keeping, and two sign-outs never forget at once.
+ * `finish` and `leave` take turns through `guard`, so a back press during the offer never ends a
+ * session the device is keeping.
  */
 export class Confirmations extends Context.Service<
   Confirmations,
@@ -538,33 +544,31 @@ export const passkeyOutput = Effect.fn("Account.passkeyOutput")(function* (crede
 });
 
 /**
- * Signs this device out: `forget` deletes the account's database, secrets and session
- * (`Layers.forget`), then the server ends the session. Offline the device still forgets
- * everything, and the session runs out on the server. The caller asks first unless nothing would be
- * lost (`signOutWarning`).
+ * Signs this device out: `leave` deletes the account's database and secrets (`Layers.forget`) and
+ * ends with `forgetSession`, which signs the device out; then the server ends the session. Offline
+ * the device still forgets everything, and the session runs out on the server. The caller asks
+ * first unless nothing would be lost (`signOutWarning`), and `leave` may still refuse or fail.
  */
 export const signOut = Effect.fn("Account.signOut")(function* <E, R>(
-  forget: (signed: SessionStore.Signed) => Effect.Effect<void, E, R>,
+  leave: (
+    signed: SessionStore.Signed,
+    forgetSession: Effect.Effect<void, Keychain.Unavailable>,
+  ) => Effect.Effect<void, E, R>,
 ) {
   const store = yield* SessionStore.Service;
   const api = yield* AuthApi.Service;
   const confirmations = yield* Confirmations;
+  const current = yield* store.current;
 
-  // A deletion signs out from its screen and again when the server ends the session; the second
-  // finds nothing left to forget.
-  yield* Effect.gen(function* () {
-    const current = yield* store.current;
+  if (Option.isSome(current)) yield* leave(current.value, store.forget);
 
-    yield* SubscriptionRef.set(confirmations.current, Option.none());
-
-    if (Option.isNone(current)) return;
-
-    yield* forget(current.value).pipe(Effect.orDie);
-    yield* store.forget.pipe(Effect.orDie);
-    yield* Effect.ignore(
-      Option.match(current.value.token, { onNone: () => Effect.void, onSome: api.signOut }),
-    );
-  }).pipe(Semaphore.withPermit(confirmations.guard));
+  yield* SubscriptionRef.set(confirmations.current, Option.none());
+  yield* Effect.ignore(
+    Option.match(
+      Option.flatMap(current, (signed) => signed.token),
+      { onNone: () => Effect.void, onSome: api.signOut },
+    ),
+  );
 });
 
 /** What signing out would lose, a paragraph each, for the one dialog before "Abmelden". */

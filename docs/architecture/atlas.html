@@ -667,7 +667,7 @@ svg .st { font-size: 12.5px; font-weight: 700; fill: var(--ink); }
     <div class="lane"><h4>M0</h4><p class="goal">Clean slate, verification loop, deployed by CI</p><ul>
       <li class="done">Server, landing, console, one origin</li><li class="done">Calder CI, previews on srv-2</li><li class="done">Lint plugin and toolchain</li><li class="doing">Deploys: PRs to previews, main to beta</li><li class="doing">Cutover to PostgreSQL 18</li><li>Mobile release: TestFlight, Play, OTA</li></ul></div>
     <div class="lane"><h4>M1</h4><p class="goal">Sync engine, homework as its first passenger</p><ul>
-      <li class="done">Definition API, protocol, ADRs</li><li class="done">e2ee formats with vectors</li><li class="done">Sync server: push, pull, pokes</li><li class="done">Encrypted notebook, unlock</li><li class="done">Access codes, demo school</li><li class="doing">Sync client, simulation, Lab</li><li class="doing">Accounts and sign-in screens</li><li class="done">Homework on the home</li><li>Homework screens</li><li>E2E: Playwright on web</li></ul></div>
+      <li class="done">Definition API, protocol, ADRs</li><li class="done">e2ee formats with vectors</li><li class="done">Sync server: push, pull, pokes</li><li class="done">Encrypted notebook, unlock</li><li class="done">Access codes, demo school</li><li class="doing">Sync client, simulation, Lab</li><li class="doing">Accounts and sign-in screens</li><li class="done">Homework on the home</li><li class="done">Homework screens</li><li>E2E: Playwright on web</li></ul></div>
     <div class="lane"><h4>M2</h4><p class="goal">School data flows down, correctly</p><ul>
       <li>Anonymized corpus and harness</li><li>WebUntis import job</li><li>IGS school profile</li><li>Lessons in course spaces</li><li>Übersicht, Meine Woche</li></ul></div>
     <div class="lane"><h4>M3</h4><p class="goal">Onboarding and profile</p><ul>
@@ -954,27 +954,28 @@ DIAGRAMS.app = {
     { id: "r-nf", x: 40, y: 42, w: 110, h: 70, t: "+not-found", s: "any other\naddress" },
     { id: "r-auth", x: 165, y: 42, w: 255, h: 70, t: "(auth)", s: "anmelden, konto-erstellen, aktivieren\ne-mail-bestaetigen, passwort-vergessen\ngeschafft" },
     { id: "r-keys", x: 435, y: 42, w: 195, h: 70, t: "(keys)", s: "notfallkarte\nnotizbuch-entsperren\nnotizbuch-schluessel" },
-    { id: "r-tabs", x: 645, y: 42, w: 175, h: 70, t: "(tabs)/(uebersicht)", s: "index, diagnose\nselbsttest" },
+    { id: "r-tabs", x: 645, y: 42, w: 175, h: 70, t: "(tabs)/(uebersicht)", s: "index, diagnose\nselbsttest, hausaufgaben\n[id], neu, bearbeiten" },
     { id: "r-check", x: 835, y: 42, w: 120, h: 70, t: "(check)", s: "passkey-test" },
     { id: "r-lab", x: 970, y: 42, w: 150, h: 70, t: "dev/sync-lab", s: "web, dev and\npreview only" },
 
-    { id: "f-account", x: 40, y: 184, w: 170, h: 72, t: "account", s: "gates, sign-in, sign-up\nsign-out" },
-    { id: "f-keys", x: 225, y: 184, w: 170, h: 72, t: "keys", s: "NotebookKeys, unlock\nNotfallkarte" },
-    { id: "f-onb", x: 410, y: 184, w: 160, h: 72, t: "onboarding", s: "first start: name\nJahrgang, Kurse" },
-    { id: "f-over", x: 585, y: 184, w: 140, h: 72, t: "overview", s: "Übersicht and\nits homework" },
-    { id: "f-diag", x: 740, y: 184, w: 140, h: 72, t: "diagnostics", s: "self tests" },
-    { id: "f-lab", x: 895, y: 184, w: 115, h: 72, t: "sync-lab", s: "3 virtual\ndevices" },
-    { id: "f-hw", x: 1025, y: 184, w: 100, h: 72, t: "homework", s: "rows for\nthe home" },
+    { id: "f-account", x: 40, y: 184, w: 150, h: 72, t: "account", s: "gates, sign-in, sign-up\nsign-out" },
+    { id: "f-keys", x: 205, y: 184, w: 150, h: 72, t: "keys", s: "NotebookKeys, unlock\nNotfallkarte" },
+    { id: "f-onb", x: 370, y: 184, w: 145, h: 72, t: "onboarding", s: "first start: name\nJahrgang, Kurse" },
+    { id: "f-over", x: 530, y: 184, w: 130, h: 72, t: "overview", s: "Übersicht and\nits panel" },
+    { id: "f-diag", x: 675, y: 184, w: 120, h: 72, t: "diagnostics", s: "self tests" },
+    { id: "f-dev", x: 810, y: 184, w: 110, h: 72, t: "device-status", s: "today, key\nand connection" },
+    { id: "f-lab", x: 935, y: 184, w: 90, h: 72, t: "sync-lab", s: "3 virtual\ndevices" },
+    { id: "f-hw", x: 1040, y: 184, w: 85, h: 72, t: "homework", s: "list, page\nand sheet" },
 
     { id: "a-devlayers", x: 40, y: 330, w: 280, h: 74, t: "Layers.device", s: "one per device: lifecycle, HTTP, WebSocket,\nsessions, server origin, keychain", k: "wire" },
-    { id: "a-engines", x: 340, y: 330, w: 280, h: 74, t: "AccountEngine.Engines", s: "an engine per account, started on first\nuse, closed before sign-out deletes", k: "wire" },
+    { id: "a-engines", x: 340, y: 330, w: 280, h: 74, t: "AccountEngine.Engines", s: "an engine per signed-in account; sign-out\nstops and deletes it in one turn", k: "wire" },
     { id: "a-acct", x: 52, y: 456, w: 170, h: 80, t: "Layers.account", s: "the account's secrets\nand its database" },
     { id: "a-sync", x: 238, y: 456, w: 180, h: 80, t: "SyncClient", s: "mutate, live queries\noutbox, refusals", k: "wire" },
     { id: "a-transport", x: 434, y: 456, w: 180, h: 80, t: "WebSocketTransport", s: "ticket, then socket\nto /api/sync", k: "wire" },
 
-    { id: "a-atoms", x: 670, y: 312, w: 220, h: 96, t: "Atoms", s: "AccountState, KeysState,\nOnboarding-, HomeworkState,\nOverviewState for screens", k: "wire" },
-    { id: "a-ui", x: 910, y: 312, w: 220, h: 96, t: "packages/ui, src/ui", s: "tokens, AppTabs, useConfirm,\nWebStyles, RouteLink;\n.web.tsx twins" },
-    { id: "a-dui", x: 670, y: 440, w: 220, h: 70, t: "packages/domain-ui", s: "HomeworkPanel, SubjectMark,\nstickers, RefusalCard, Due" },
+    { id: "a-atoms", x: 670, y: 312, w: 220, h: 96, t: "Atoms", s: "AccountState, KeysState,\nDeviceStatus, HomeworkState,\nOnboarding-, OverviewState", k: "wire" },
+    { id: "a-ui", x: 910, y: 312, w: 220, h: 96, t: "packages/ui, src/ui", s: "tokens, PanelScreen, RouteLink;\nAppTabs, useConfirm, Sheet\nwith .web.tsx twins" },
+    { id: "a-dui", x: 670, y: 440, w: 220, h: 70, t: "packages/domain-ui", s: "HomeworkPanel, -List, -Detail,\n-Form, stickers, RefusalCard, Due" },
     { id: "a-core", x: 910, y: 440, w: 220, h: 70, t: "packages/core", s: "Studienbuch.schema, mutators", k: "read" },
 
     { id: "i-sqlite", x: 40, y: 624, w: 205, h: 70, t: "SQLite", s: "native: SQLCipher, key in keychain\nweb: wa-sqlite worker in OPFS", k: "infra" },
@@ -994,25 +995,27 @@ DIAGRAMS.app = {
     { a: "r-keys", b: "f-keys" },
     { a: "r-tabs", b: "f-over", ao: 0 },
     { a: "r-tabs", b: "f-diag", as: "b", bs: "t", ao: 60, bo: -20 },
+    { a: "r-tabs", b: "f-hw", as: "b", bs: "t", ao: 70, via: [[802, 146], [1082, 146]], bo: 0 },
     { a: "r-check", b: "f-account", as: "b", bs: "t", ao: -40, bo: 45, via: [[855, 138], [170, 138]] },
     { a: "r-lab", b: "f-lab" },
-    { a: "f-account", b: "a-atoms", as: "b", bs: "t", ao: 40, via: [[125, 284], [720, 284]], bo: -60 },
-    { a: "f-keys", b: "a-atoms", as: "b", bs: "t", via: [[310, 280], [760, 280]], bo: -20 },
-    { a: "f-onb", b: "a-atoms", as: "b", bs: "t", via: [[490, 276], [800, 276]], bo: 20 },
+    { a: "f-account", b: "a-atoms", as: "b", bs: "t", via: [[115, 284], [720, 284]], bo: -60 },
+    { a: "f-keys", b: "a-atoms", as: "b", bs: "t", via: [[280, 280], [760, 280]], bo: -20 },
+    { a: "f-onb", b: "a-atoms", as: "b", bs: "t", via: [[442, 276], [800, 276]], bo: 20 },
     { a: "f-over", b: "a-atoms", as: "b", bs: "t", ao: 45, bo: -80 },
-    { a: "f-hw", b: "a-atoms", as: "b", bs: "t", via: [[1075, 294], [870, 294]], bo: 90 },
+    { a: "f-dev", b: "a-atoms", as: "b", bs: "t", ao: -10, bo: 75 },
+    { a: "f-hw", b: "a-atoms", as: "b", bs: "t", via: [[1082, 294], [870, 294]], bo: 90 },
     { a: "a-atoms", b: "a-engines" },
     { a: "a-engines", b: "a-devlayers" },
     { a: "a-engines", b: "a-sync", l: "builds", as: "b", bs: "t", ao: -60, bo: 30 },
     { a: "a-sync", b: "a-acct" },
     { a: "a-sync", b: "a-transport" },
     { a: "a-sync", b: "a-core", l: "Studienbuch.schema", as: "b", bs: "b", ey: 580, la: [700, 576] },
-    { a: "f-lab", b: "a-engines", as: "b", bs: "r", ao: 0, via: [[952, 290], [650, 290], [650, 350]] },
+    { a: "f-lab", b: "a-engines", as: "b", bs: "r", ao: 0, via: [[980, 290], [650, 290], [650, 350]] },
     { a: "a-acct", b: "i-sqlite", as: "b", bs: "t", ao: -40, bo: 0 },
     { a: "a-acct", b: "i-keychain", as: "b", bs: "t", ao: 40, bo: -40 },
     { a: "a-devlayers", b: "i-keychain", as: "l", bs: "t", via: [[28, 367], [28, 606], [380, 606]] },
-    { a: "f-keys", b: "i-passkeys", as: "b", bs: "t", ao: 60, via: [[345, 292], [656, 292], [656, 600], [580, 600]] },
-    { a: "a-ui", b: "f-over", as: "t", bs: "b", ao: 0, via: [[1020, 280], [655, 280]], k: "dash" },
+    { a: "f-keys", b: "i-passkeys", as: "b", bs: "t", ao: 60, via: [[340, 292], [656, 292], [656, 600], [580, 600]] },
+    { a: "a-ui", b: "f-over", as: "t", bs: "b", ao: 0, via: [[1020, 280], [620, 280]], k: "dash" },
     { a: "a-dui", b: "a-ui", k: "dash" },
   ],
 };
@@ -1452,7 +1455,7 @@ const INFO = {
 
   "p-server": { t: "apps/server", d: ["The one server process: HTTP routes, RPC handlers, Better Auth, Drizzle schema and migrations, jobs and the CLI commands. No Expo or React Native package may load here."], f: ["apps/server/src/main.ts", "apps/server/package.json"], a: [3, 4, 11, 12] },
 
-  "p-domainui": { t: "packages/domain-ui", d: ["Dumb components and helpers shared by the app and the landing page: rows and callbacks in. Today that is the home's homework panel and its cards, the refusal card, subject colors, the stickers for subjects, grade kinds and states, refusal sentences and date text. The landing page takes its stickers from here. It may not read SQLite or the sync engine."], f: ["packages/domain-ui/src/homework/HomeworkPanel.tsx", "packages/domain-ui/src/homework/HomeworkItem.ts", "packages/domain-ui/src/subject/SubjectMark.ts", "packages/domain-ui/src/subject/SubjectArt.ts", "packages/domain-ui/src/refusal/RefusalText.ts", "packages/domain-ui/src/homework/Due.ts"] },
+  "p-domainui": { t: "packages/domain-ui", d: ["Dumb components and helpers shared by the app and the landing page: rows and callbacks in. Today that is the home's homework panel and its cards, the full list's rows, a homework's page, the add sheet's form with its month picker, the refusal card, subject colors, the stickers for subjects, grade kinds and states, refusal sentences and date text. The landing page takes its stickers from here. It may not read SQLite or the sync engine."], f: ["packages/domain-ui/src/homework/HomeworkPanel.tsx", "packages/domain-ui/src/homework/HomeworkList.tsx", "packages/domain-ui/src/homework/HomeworkForm.tsx", "packages/domain-ui/src/homework/HomeworkItem.ts", "packages/domain-ui/src/subject/SubjectMark.ts", "packages/domain-ui/src/subject/SubjectArt.ts", "packages/domain-ui/src/refusal/RefusalText.ts", "packages/domain-ui/src/homework/Due.ts"] },
 
   "p-ui": { t: "packages/ui", d: ["The design system: tokens in light and dark, Nunito, line icons for actions, the sticker style (<code>Sticker.ts</code>: palette, white die-cut edge, shadow) and domain-free components, several with a <code>.web.tsx</code> twin. It knows no domain type, so it may import none of core, sync, e2ee, api or domain-ui.", "Its hooks keep lists usable while rows change: <code>useLingeringOrder</code> leaves a ticked item in place for a moment, and <code>useKeptFocus</code> gives the keyboard's focus back to a box that moved (web only; the native file does nothing).", "Every checkbox and choice is built on <code>Checkable</code>, which answers Space on the web as react-native-web doesn't for these roles; <code>studienbuch/no-raw-checkable</code> keeps the roles there."], f: ["packages/ui/src/Tokens.ts", "packages/ui/src/Theme.ts", "packages/ui/src/Sticker.ts", "packages/ui/src/useLingeringOrder.ts", "packages/ui/src/useKeptFocus.web.ts", "packages/ui/src/Checkable.tsx"], a: [15] },
 
@@ -1483,7 +1486,7 @@ const INFO = {
 
   "r-keys": { t: "Routes (keys)", d: ["Notfallkarte, Notizbuch entsperren and Notizbuch-Schlüssel: the screens for the notebook's root key."], f: ["apps/app/src/app/(keys)/notizbuch-entsperren.tsx", "apps/app/src/features/keys/KeysScreen.tsx"], a: [25] },
 
-  "r-tabs": { t: "Routes (tabs)", d: ["The signed-in app: Übersicht, and the device's diagnostics and self test. Only one tab exists so far."], f: ["apps/app/src/app/(tabs)/_layout.tsx", "apps/app/src/ui/navigation/AppTabs.tsx"] },
+  "r-tabs": { t: "Routes (tabs)", d: ["The signed-in app: Übersicht with homework's list (<code>hausaufgaben</code>), a homework's page and the add and edit sheet, and the device's diagnostics and self test. Only one tab exists so far."], f: ["apps/app/src/app/(tabs)/_layout.tsx", "apps/app/src/ui/navigation/AppTabs.tsx"] },
 
   "r-check": { t: "Route (check)", d: ["A passkey test that checks whether this device's authenticator gives a PRF output, the thing the passkey unlock depends on."], f: ["apps/app/src/app/(check)/passkey-test.tsx", "apps/app/src/features/account/PasskeyCheck.ts"] },
 
@@ -1495,17 +1498,19 @@ const INFO = {
 
   "f-onb": { t: "features/onboarding", d: ["The first start, in the Flutter app's order: name and volljährig go to the encrypted profile, Jahrgang, Klasse and Kurse to the readable course choice that the server checks again. The course step builds and checks that choice with core's <code>Enrollment</code> rules: a group such as Kunst and Musik shows as one choice, a required one holds Fertig back until it is answered, and a class answered for another Jahrgang drops out, so it sends only a choice the server accepts. Drafts live in the account's own database."], f: ["apps/app/src/features/onboarding/Onboarding.ts", "apps/app/src/features/onboarding/OnboardingState.ts"] },
 
-  "f-over": { t: "features/overview", d: ["Übersicht, with \"Moin, Lena!\" in the hero and the homework panel below it: what is due, ticked in place, refusals with their reason, and an offline chip while changes wait.", "<code>OverviewState</code> puts it together from the account, keys, onboarding and homework atoms, so the screen only draws. A device without the notebook key says so with a banner instead of claiming there is no homework; <code>NotebookKeys.unlocked</code> is the one rule for that, shared with the banner and the onboarding gate."], f: ["apps/app/src/features/overview/OverviewScreen.tsx", "apps/app/src/features/overview/OverviewState.ts", "apps/app/src/features/overview/Offline.ts", "apps/app/src/features/overview/OfflineChip.tsx"] },
+  "f-over": { t: "features/overview", d: ["Übersicht, with \"Moin, Lena!\" in the hero and the homework panel below it: what is due, ticked in place, \"Alle\" for the full list and \"+\" for a new one, refusals with their reason, and an offline chip while changes wait.", "<code>OverviewState</code> adds the greeting and the panel's cards to homework's <code>HomeworkState.screen</code>, so the screen only draws. It depends on homework and device-status, never the other way."], f: ["apps/app/src/features/overview/OverviewScreen.tsx", "apps/app/src/features/overview/OverviewState.ts"] },
 
   "f-diag": { t: "features/diagnostics", d: ["Dieses Gerät and Selbsttest: the crypto test vectors on this platform's WebCrypto with timings, the conformance replay on its SQLite, storage persistence and the server's revision. The start counter and the self-test open where <code>AccountState.keepsNothing</code> says, so a public computer keeps nothing of them."], f: ["apps/app/src/features/diagnostics/CryptoSelfTest.ts", "apps/app/src/features/diagnostics/SqliteSelfTest.ts"] },
 
   "f-lab": { t: "features/sync-lab", d: ["Three virtual devices in one tab, A and B for Lena and C for Tom, each with its own engine, storage and faults, beside a server pane that shows spaces, the command log and ciphertext sizes. A green bar shows when every device agrees with the server."], f: ["apps/app/src/features/sync-lab/Lab.ts", "apps/app/src/features/sync-lab/LabDevice.ts", "apps/app/src/features/sync-lab/Agreement.ts"] },
 
-  "f-hw": { t: "features/homework", d: ["The homework rows the home reads: <code>HomeworkState</code> reads homework with its course and subject, ticks it and retries or dismisses a refusal, and <code>Refused</code> turns a refused change into one line for its card. The homework screens themselves come later in M1."], f: ["apps/app/src/features/homework/HomeworkState.ts", "apps/app/src/features/homework/Refused.ts", "packages/core/src/homework/Homework.ts"] },
+  "f-hw": { t: "features/homework", d: ["Homework's screens on Flutter's design: the full list (\"Offen\" and \"Erledigt\"), a homework's page, and the add and edit sheet, which the phones present as the system's sheet and the web draws itself.", "<code>HomeworkState</code> reads homework with its course and subject and the courses to choose from, and <code>screen</code> puts it together with device-status's today, key and connection. It ticks, saves and deletes, keeps what the student touched in the sheet as a draft in the account's database, and retries or dismisses a refusal. <code>HomeworkInput</code> decodes the sheet before Save, so an invalid value never reaches the outbox, and an edit sends only the fields the student touched. <code>Refused</code> turns a refused change into one line for its card."], f: ["apps/app/src/features/homework/HomeworkState.ts", "apps/app/src/features/homework/HomeworkInput.ts", "apps/app/src/features/homework/HomeworkSheetScreen.tsx", "apps/app/src/features/homework/Refused.ts", "packages/core/src/homework/Homework.ts"] },
+
+  "f-dev": { t: "features/device-status", d: ["What every screen of the account shows around its content: today at the school, read again every minute, whether the device holds the notebook's key (<code>NotebookKeys.unlocked</code>), and whether it is offline with changes waiting. <code>Offline.shown</code> shows going offline after two seconds and coming back at once, and <code>OfflineChip</code> says it under a page's title. Homework and the Übersicht depend on it; it depends on neither."], f: ["apps/app/src/features/device-status/DeviceStatus.ts", "apps/app/src/features/device-status/Offline.ts", "apps/app/src/features/device-status/OfflineChip.tsx"] },
 
   "a-devlayers": { t: "Layers.device", k: "wire", d: ["Everything a device has before anyone signs in: the server origin, the sessions signed in here, the app lifecycle, HTTP and WebSocket, and the keychain (memory only on a public computer). One build of it per device, so its secrets have a single writer.", "At start it finishes any sign-out that an earlier run left half done."], f: ["apps/app/src/infra/runtime/Layers.ts"] },
 
-  "a-engines": { t: "AccountEngine.Engines", k: "wire", d: ["The device's running sync engines, keyed by account. An engine starts at first use and runs until sign-out closes it, because its database may be open only once and only a closed one can be deleted. It opens an account's storage on disk only for a session the device keeps, and in memory for a public computer's account or one without a session. The Sync Lab runs one per virtual device."], f: ["apps/app/src/infra/runtime/AccountEngine.ts"] },
+  "a-engines": { t: "AccountEngine.Engines", k: "wire", d: ["The device's running sync engines, keyed by account. An engine starts at first use and runs until sign-out stops it, because its database may be open only once and only a closed one can be deleted. It opens an account's storage on disk only for a session the device keeps, and in memory for a public computer's account. An account the device holds no session of gets no engine.", "Sign-out (<code>forget</code>) stops the engine and deletes the account in one turn, so a screen on its way out can't open the database again in between. It holds the engine's writes while it reads the outbox, and refuses when a command waits that the question didn't show: a newer one under the same client id, or any after a renumber gave the outbox a new one. It reads the outbox and its client id in one transaction. A failure before the note leaves the engine running and the account signed in. Once its note is written, the account gets no engine until the sign-out finishes, and every write of the account's rows or secrets, unlocking included, fails. A new session is kept in a turn of its own (<code>keep</code>), after any sign-out under way or left unfinished. The Sync Lab runs one per virtual device."], f: ["apps/app/src/infra/runtime/AccountEngine.ts"] },
 
   "a-acct": { t: "Layers.account", d: ["What a signed-in account adds: its secrets in its own keychain namespace and its own database, per server origin, device and account. Signing in as someone else never opens another account's rows."], f: ["apps/app/src/infra/runtime/Layers.ts", "apps/app/src/infra/sqlite/AccountDatabase.ts"] },
 
@@ -1515,7 +1520,7 @@ const INFO = {
 
   "a-atoms": { t: "Atoms", k: "wire", d: ["Data and subscriptions for screens live in effect-atom atoms, each on an atom runtime built from the device's or the account's layers. React's own state and effect hooks are allowed only inside a documented <code>use…</code> hook; a lint rule checks it."], f: ["apps/app/src/features/account/AccountState.ts", "apps/app/src/features/keys/KeysState.ts", "apps/app/src/features/onboarding/OnboardingState.ts", "apps/app/src/features/overview/OverviewState.ts", "tools/oxlint/studienbuch/rules/no-ad-hoc-state-or-effects.ts"] },
 
-  "a-ui": { t: "UI pieces", d: ["The design system from packages/ui, plus app-only pieces in <code>src/ui</code>: AppTabs, the question before a destructive step (<code>useConfirm</code>, the system alert on the phones and our dialog on the web) and WebStyles, each with a <code>.web.tsx</code> or <code>.web.ts</code> twin where the browser needs something else, and RouteLink, the one way to link to a screen, which the browser follows without loading the page. A twin shares its file's extension, because Metro tries every platform for one extension before the next; a lint rule checks it."], f: ["apps/app/src/ui/navigation/AppTabs.web.tsx", "apps/app/src/ui/useConfirm.web.tsx", "apps/app/src/ui/navigation/RouteLink.tsx", "packages/ui/src/Tokens.ts", "tools/oxlint/studienbuch/rules/platform-twin-extension.ts"], a: [15] },
+  "a-ui": { t: "UI pieces", d: ["The design system from packages/ui, plus app-only pieces in <code>src/ui</code>: AppTabs, the question before a destructive step (<code>useConfirm</code>, the system alert on the phones and our dialog on the web), Sheet and WebStyles, each with a <code>.web.tsx</code> or <code>.web.ts</code> twin where the browser needs something else, PanelScreen, homework's blue page, and RouteLink, the one way to link to a screen, which the browser follows without loading the page. A twin shares its file's extension, because Metro tries every platform for one extension before the next; a lint rule checks it."], f: ["apps/app/src/ui/navigation/AppTabs.web.tsx", "apps/app/src/ui/useConfirm.web.tsx", "apps/app/src/ui/navigation/RouteLink.tsx", "packages/ui/src/Tokens.ts", "tools/oxlint/studienbuch/rules/platform-twin-extension.ts"], a: [15] },
 
   "a-dui": { i: "p-domainui" },
 
@@ -1759,7 +1764,7 @@ const INFO = {
 
   "l-update": { t: "Update required", k: "stop", d: ["Close code 4426: the client's contract is below the server's minimum. The device waits for a newer app. The server deploys first and sends each message tag only to clients that know it, so this should be rare."], f: ["packages/sync/src/server/Contract.ts"] },
 
-  "l-signout": { t: "Abmelden", k: "stop", d: ["Asks first when the engine counted changes the server hasn't received (PR 99), or when no passkey, Notfallkarte or other device opens the notebook without this one. Then it closes the engine, deletes the account's database, secrets and session, and revokes the session on the server. Konto löschen ends the same way once the server deleted the account, and so does any device of the account when its session ends and the server says the account was deleted."], f: ["apps/app/src/features/account/SignOutButton.tsx", "apps/app/src/infra/runtime/Forgetting.ts", "apps/app/src/features/account/Deletion.ts"] },
+  "l-signout": { t: "Abmelden", k: "stop", d: ["Asks first when the engine counted changes the server hasn't received (PR 99), or when no passkey, Notfallkarte or other device opens the notebook without this one. Then, in one turn of the engines, it stops the engine and deletes the account's database, secrets and session, and revokes the session on the server. A change saved after the question makes it ask again. The note it writes first is the point of no return: from there it retries what fails, says \"Abmelden hat nicht geklappt\" when it still fails, and finishes before the next session or at the next start. Konto löschen leaves the same way, without the question, since the account and its unsent changes are gone on the server; so does any device of the account whose session ends when the server says the account was deleted.", "Nothing of the account stays in the app's memory: its atoms go with its screens, and what outlives a screen sits in <code>AccountState.memory</code>, which forgets it when another account or none holds the device (<code>studienbuch/no-kept-account-atom</code>)."], f: ["apps/app/src/features/account/SignOutButton.tsx", "apps/app/src/features/account/AccountState.ts", "apps/app/src/infra/runtime/AccountEngine.ts", "apps/app/src/infra/runtime/Forgetting.ts", "apps/app/src/features/account/Deletion.ts"] },
 
   "l-revoked": { t: "Removed by another device", k: "stop", ms: "M3", d: ["The client already handles <code>Sync.DeviceRevoked</code> and close code 4403 by wiping itself after one more pull, but the server never sends either: device removal is M3."], f: ["packages/sync/src/client/SyncClient.ts", "packages/sync/src/protocol/Connection.ts"] },
 
@@ -1836,8 +1841,8 @@ const WALK = {
     {
       at: "a-screen", form: "plain", token: "Arbeitsblatt S. 42",
       title: "Lena saves a homework item",
-      text: ["She types the task for Mathe, due Thursday, and saves. The app's homework screens arrive with M1-WP13; today the Sync Lab's form calls exactly the same function."],
-      where: ["apps/app/src/features/sync-lab/LabDevice.ts", "packages/core/src/homework/Homework.ts"],
+      text: ["She taps \"+\" on the homework panel, picks Mathe, types the task, picks Thursday and saves. The sheet decodes what she typed first (<code>HomeworkInput.decode</code>), so \"Speichern\" stays disabled until it would pass; the Sync Lab's form calls the same function."],
+      where: ["apps/app/src/features/homework/HomeworkSheetScreen.tsx", "apps/app/src/features/homework/HomeworkState.ts", "packages/core/src/homework/Homework.ts"],
       data: 'Homework.create {\n  notebook: "nb-7f3c…",\n  id: "c1a9…" (random UUIDv4),\n  courseId: "ma-23",\n  title: "Arbeitsblatt S. 42",\n  dueOn: "2026-11-12"\n}',
     },
     {

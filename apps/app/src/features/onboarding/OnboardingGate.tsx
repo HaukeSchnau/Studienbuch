@@ -1,4 +1,4 @@
-import { useAtomValue } from "@effect/atom-react";
+import { useAtomMount, useAtomValue } from "@effect/atom-react";
 import * as Option from "effect/Option";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import type { ReactNode } from "react";
@@ -32,6 +32,9 @@ function Gate({
 }) {
   const status = useAtomValue(KeysState.status(accountId));
   const reading = useAtomValue(OnboardingState.reading(accountId));
+
+  // The first start's last step outlives its screen here, and goes with the account at sign-out.
+  useAtomMount(OnboardingState.finish(accountId));
 
   const unlocked = NotebookKeys.unlocked(status);
 
