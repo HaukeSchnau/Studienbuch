@@ -518,7 +518,15 @@ export const layer = Layer.effect(SchoolImport.Service)(
         lessons,
         closures,
         exams,
-        teachers: teachers.map(({ id, shortName }) => ({ id: teacherId(id), shortName })),
+        teachers: teachers.map(({ id, shortName, longName }) => {
+          const teacher = { id: teacherId(id), shortName };
+          const displayName = longName.trim();
+
+          // A long name that repeats the short one says nothing more.
+          return displayName === "" || displayName === shortName
+            ? teacher
+            : { ...teacher, displayName };
+        }),
         rooms: rooms.map(({ id, shortName }) => ({ id: roomId(id), name: shortName })),
         weeks: weeks.map(({ week }) => ({
           week,

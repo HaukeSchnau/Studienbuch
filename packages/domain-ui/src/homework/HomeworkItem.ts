@@ -5,7 +5,7 @@
  */
 import { CivilTime, HomeworkDates, type Subject } from "@stu/core";
 import * as Arr from "effect/Array";
-import * as Option from "effect/Option";
+import type * as Option from "effect/Option";
 import * as Order from "effect/Order";
 
 import { DateText } from "../calendar/DateText.ts";
@@ -44,24 +44,9 @@ export interface Source extends HomeworkDates.Listed {
   readonly waiting: boolean;
 }
 
-/**
- * How a course shows on homework: by its subject's name and mark, or by its own name where the
- * school named no subject.
- */
-export const named = (
-  course: string,
-  subject: Source["subject"],
-): Pick<Item, "subject" | "mark"> => ({
-  subject: Option.match(subject, { onNone: () => course, onSome: (s) => s.name }),
-  mark: Option.match(subject, {
-    onNone: () => SubjectMark.ofCourse(course),
-    onSome: SubjectMark.ofSubject,
-  }),
-});
-
 export const make = (source: Source, today: CivilTime.PlainDate): Item => ({
   id: source.id,
-  ...named(source.course, source.subject),
+  ...SubjectMark.named(source.course, source.subject),
   title: source.title,
   due: Due.label(source, today),
   overdue: HomeworkDates.isOverdue(source, today),
