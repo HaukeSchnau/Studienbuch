@@ -297,7 +297,7 @@ export const retryCard = Atom.family((accountId: string) =>
 );
 
 // The account's runtime settles cards itself, so its sign-ins hand none to `Offered`.
-const kept = () => Effect.void;
+const kept: Account.Offer = { give: () => Effect.void, withdraw: () => Effect.void };
 
 /**
  * "Ich habe ihn aufgeschrieben": the key status sent the card as soon as the key existed, so this

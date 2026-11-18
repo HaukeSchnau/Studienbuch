@@ -101,9 +101,10 @@ function NewPassword({ email }: { readonly email: string }) {
   const [resent, request] = useAtom(AccountState.requestPasswordReset, { mode: "promiseExit" });
   const short = password.length < Accounts.minPasswordLength;
   const complete = code.complete && !short;
+  const attempting = AccountState.useAttempting();
 
   const submit = async () => {
-    if (!complete) return;
+    if (!complete || attempting) return;
 
     Keyboard.dismiss();
 
@@ -154,7 +155,7 @@ function NewPassword({ email }: { readonly email: string }) {
           kind="action"
           label="Passwort speichern"
           block
-          disabled={!complete}
+          disabled={!complete || attempting}
           busy={result.waiting}
           onPress={() => void submit()}
         />

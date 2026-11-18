@@ -13,7 +13,9 @@ import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Redacted from "effect/Redacted";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
+import * as Queue from "effect/Queue";
 import * as Ref from "effect/Ref";
+import * as Semaphore from "effect/Semaphore";
 import * as SubscriptionRef from "effect/SubscriptionRef";
 import * as TestClock from "effect/testing/TestClock";
 
@@ -31,6 +33,7 @@ import { MemoryKeychain } from "../../infra/keychain/MemoryKeychain.ts";
 import { Passkeys } from "../../infra/passkeys/Passkeys.ts";
 import { Forgetting } from "../../infra/runtime/Forgetting.ts";
 import { NotebookKeys } from "../keys/NotebookKeys.ts";
+import { Offered } from "../keys/Offered.ts";
 import { Account } from "./Account.ts";
 
 const signedIn = (accountId: string, token: string): AuthApi.SignedIn => ({
@@ -45,14 +48,21 @@ const phone = Device.layer({ name: "phone" });
 const nothingUnfinished = Layer.succeed(Forgetting.Service)({ keep: (session) => session });
 
 /** The device's sessions on `keychain`, where a sign-up also stages its card. */
-const storeOn = (keychain: Layer.Layer<Keychain.Store>) =>
-  Layer.merge(
-    SessionStore.layer.pipe(
-      Layer.provideMerge(DeviceSessions.layer),
-      Layer.provide(Layer.mergeAll(keychain, phone, server)),
-    ),
-    nothingUnfinished,
+const sessionsOn = (keychain: Layer.Layer<Keychain.Store>) =>
+  SessionStore.layer.pipe(
+    Layer.provideMerge(DeviceSessions.layer),
+    Layer.provide(Layer.mergeAll(keychain, phone, server)),
   );
+
+const storeOn = (keychain: Layer.Layer<Keychain.Store>) =>
+  Layer.merge(sessionsOn(keychain), nothingUnfinished);
+
+/** As `Engines.keep` runs them: one turn at a time, which reads the keychain first. */
+const oneTurnAtATime = Layer.effect(Forgetting.Service)(
+  Effect.map(Semaphore.make(1), (turns) => ({
+    keep: (session) => turns.withPermit(Effect.andThen(Effect.yieldNow, session)),
+  })),
+);
 
 const store = storeOn(MemoryKeychain.layer());
 
@@ -127,7 +137,16 @@ const signOut = Account.signOut((signed, forgetSession) =>
   Forgetting.forget(signed.accountId, () => Effect.void, forgetSession),
 );
 
-const noOffer = () => Effect.void;
+const noOffer: Account.Offer = { give: () => Effect.void, withdraw: () => Effect.void };
+
+/** `Offered.card` as the app holds it. */
+const offerInto = (offered: Ref.Ref<Option.Option<Account.OfferedCard>>): Account.Offer => ({
+  give: (card) => Ref.set(offered, Option.some(card)),
+  withdraw: (card) => Ref.update(offered, Offered.withdraw(card)),
+});
+
+const accountOf = (offered: Option.Option<Account.OfferedCard>) =>
+  Option.map(offered, (card) => card.accountId);
 
 /** Lena's code was confirmed; her session waits for the passkey offer. */
 const confirmed = (email: string, accountId: string, token: string) =>
@@ -237,6 +256,229 @@ describe("Account", () => {
           ),
         ),
       );
+    }),
+  );
+
+  // Both sign-ins asked the server while the device held no account. Only the turn that keeps a
+  // session can tell, so the second one there finds the first and ends its own session.
+  it.effect("keeps one of two sign-ins that both started while the device held no account", () =>
+    Effect.gen(function* () {
+      const asked = yield* Queue.unbounded<string>();
+      const answer = yield* Deferred.make<void>();
+      const ended = yield* Ref.make<ReadonlyArray<string>>([]);
+
+      const api = AuthApiTesting.layer({
+        signIn: (email) =>
+          Effect.andThen(
+            Effect.andThen(Queue.offer(asked, email), Deferred.await(answer)),
+            Effect.succeed(signedIn(email.slice(0, 4), `token-${email.slice(0, 4)}`)),
+          ),
+        signOut: (token) => Ref.update(ended, (all) => [...all, Redacted.value(token)]),
+      });
+
+      const [lena, tom, kept] = yield* Effect.gen(function* () {
+        const lena = yield* Effect.forkChild(
+          Effect.result(Account.signIn("lena@example.org", "geheim-genug", false)),
+          { startImmediately: true },
+        );
+
+        const tom = yield* Effect.forkChild(
+          Effect.result(Account.signIn("tom@example.org", "geheim-genug", false)),
+          { startImmediately: true },
+        );
+
+        yield* Queue.take(asked);
+        yield* Queue.take(asked);
+        yield* Deferred.succeed(answer, undefined);
+
+        return [
+          yield* Fiber.join(lena),
+          yield* Fiber.join(tom),
+          yield* DeviceSessions.Service.use((each) => each.all),
+        ] as const;
+      }).pipe(
+        Effect.provide(Layer.mergeAll(sessionsOn(MemoryKeychain.layer()), oneTurnAtATime, api)),
+      );
+
+      const refused = [lena, tom].filter((each) => each._tag === "Failure");
+
+      assert.deepStrictEqual(
+        { refused: refused.length, kept: kept.length, ended: (yield* Ref.get(ended)).length },
+        { refused: 1, kept: 1, ended: 1 },
+      );
+
+      assert.deepStrictEqual(
+        refused.map((each) => (each._tag === "Failure" ? each.failure.reason : "")),
+        ["other-account"],
+      );
+    }),
+  );
+
+  // The tab's choice changed while the account was signed in on this public computer. Signing in
+  // again keeps its card where its session already is: in memory, never in the keychain.
+  it.effect("keeps a card where its account's session is, whatever the tab chose since", () =>
+    Effect.gen(function* () {
+      const offered = yield* Ref.make(Option.none<Account.OfferedCard>());
+      const typed = RecoveryCode.text(Redacted.make(new Uint8Array(16).fill(4)));
+
+      const api = AuthApiTesting.layer({
+        cardSignIn: () => Effect.succeed(signedIn("mia", "mia-2")),
+      });
+
+      const kiosk = yield* device;
+
+      const after = yield* kiosk.run(
+        Effect.gen(function* () {
+          const sessions = yield* SessionStore.Service;
+
+          yield* sessions.signedIn({ ...signedIn("mia", "mia-1"), demo: false }, true);
+          yield* sessions.ended(Redacted.make("mia-1"));
+
+          yield* Account.signInWithCard(Redacted.value(typed), false, offerInto(offered));
+
+          return {
+            ...(yield* held),
+            publicComputer: Option.map(yield* sessions.current, (each) => each.publicComputer),
+            kept: (yield* DeviceSessions.Service.use((each) => each.all)).length,
+          };
+        }),
+        api,
+      );
+
+      assert.deepStrictEqual(
+        { ...after, offered: accountOf(yield* Ref.get(offered)) },
+        {
+          account: Option.some("mia"),
+          card: false,
+          publicComputer: Option.some(true),
+          kept: 0,
+          offered: Option.some("mia"),
+        },
+      );
+    }).pipe(Effect.provide(TestCrypto.layer("Account.test card"))),
+  );
+
+  // A public sign-up's card is the only copy until the key status takes it. A later sign-in that
+  // isn't kept takes back only the card it offered itself.
+  it.effect("takes back only its own card when its session isn't kept", () =>
+    Effect.gen(function* () {
+      const phone = yield* device;
+      const offered = yield* Ref.make(Option.none<Account.OfferedCard>());
+      const typed = RecoveryCode.text(Redacted.make(new Uint8Array(16).fill(3)));
+
+      const api = AuthApiTesting.layer({
+        cardSignUp: () => Effect.succeed(signedIn("noa", "noa-1")),
+        cardSignIn: () => Effect.succeed(signedIn("mia", "mia-1")),
+        signOut: () => Effect.void,
+      });
+
+      const [publicSignUp, refused, stays] = yield* phone.run(
+        Effect.gen(function* () {
+          yield* Account.signUpWithCard(later, true, offerInto(offered));
+          const publicSignUp = accountOf(yield* Ref.get(offered));
+
+          const refused = yield* reason(
+            Account.signInWithCard(Redacted.value(typed), false, offerInto(offered)),
+          );
+
+          return [publicSignUp, refused, accountOf(yield* Ref.get(offered))] as const;
+        }),
+        api,
+      );
+
+      // On another device, the sign-in's own session can't be stored: its card goes again.
+      const laptop = yield* device;
+      const mine = yield* Ref.make(Option.none<Account.OfferedCard>());
+      yield* laptop.refuse({ operation: "set", name: "sessions." });
+
+      const unkept = yield* laptop.run(
+        reason(Account.signInWithCard(Redacted.value(typed), false, offerInto(mine))),
+        api,
+      );
+
+      assert.deepStrictEqual(
+        { publicSignUp, refused, stays, unkept, mine: accountOf(yield* Ref.get(mine)) },
+        {
+          publicSignUp: Option.some("noa"),
+          refused: "other-account",
+          stays: Option.some("noa"),
+          unkept: "failed",
+          mine: Option.none(),
+        },
+      );
+    }).pipe(Effect.provide(TestCrypto.layer("Account.test card"))),
+  );
+
+  // A sign-up lost its answer on a public computer, which took its card out of the keychain. The
+  // retry after the tab's choice changed sends that same card, and stages it before it goes out.
+  it.effect("sends the same card again after the tab's choice changed between retries", () =>
+    Effect.gen(function* () {
+      const tab = yield* device;
+      const sent = yield* Ref.make<ReadonlyArray<string>>([]);
+
+      const api = AuthApiTesting.layer({
+        cardSignUp: (login) =>
+          Effect.andThen(
+            Ref.update(sent, (all) => [...all, Redacted.value(login)]),
+            Effect.fail(new AuthApi.Unreachable({ cause: "answer lost" })),
+          ),
+      });
+
+      // One run of the tab: the public sign-up, then the retry after the box was cleared.
+      const stagedAfter = yield* tab.run(
+        Effect.gen(function* () {
+          yield* Effect.flip(Account.signUpWithCard(later, true, noOffer));
+          const publicTab = yield* staged;
+          yield* Effect.flip(Account.signUpWithCard(later, false, noOffer));
+
+          return [publicTab, yield* staged];
+        }),
+        api,
+      );
+
+      const [first, retry] = yield* Ref.get(sent);
+
+      assert.deepStrictEqual(
+        { sameCard: first !== undefined && first === retry, stagedAfter },
+        { sameCard: true, stagedAfter: [false, true] },
+      );
+    }).pipe(Effect.provide(TestCrypto.layer("Account.test card"))),
+  );
+
+  // Two sign-ins at once would each read the tab's choice and the device's account by itself.
+  it.effect("refuses a second sign-in while one runs, and takes the next once it ended", () =>
+    Effect.gen(function* () {
+      const answer = yield* Deferred.make<void>();
+      const asked = yield* Queue.unbounded<string>();
+
+      const api = AuthApiTesting.layer({
+        signIn: (email) =>
+          Effect.andThen(
+            Effect.andThen(Queue.offer(asked, email), Deferred.await(answer)),
+            Effect.succeed(signedIn("lena", "token-lena")),
+          ),
+      });
+
+      const signIn = Account.attempt(Account.signIn("lena@example.org", "geheim-genug", false));
+
+      const result = yield* Effect.gen(function* () {
+        const { attempting } = yield* Account.Confirmations;
+        const first = yield* Effect.forkChild(signIn, { startImmediately: true });
+        yield* Queue.take(asked);
+
+        const during = yield* SubscriptionRef.get(attempting);
+        const second = yield* reason(signIn);
+
+        yield* Deferred.succeed(answer, undefined);
+        yield* Fiber.join(first);
+
+        const after = yield* SubscriptionRef.get(attempting);
+        yield* signIn;
+
+        return { during, second, after, asked: yield* Queue.size(asked) };
+      }).pipe(Effect.provide(Layer.mergeAll(store, confirmations(), api)));
+
+      assert.deepStrictEqual(result, { during: true, second: "busy", after: false, asked: 1 });
     }),
   );
 
@@ -435,11 +677,10 @@ describe("Account", () => {
             ),
         });
 
-        const offer = (card: Option.Option<Account.OfferedCard>) =>
-          Option.match(card, {
-            onNone: () => Effect.void,
-            onSome: (each) => Ref.update(offered, (all) => [...all, each]),
-          });
+        const offer: Account.Offer = {
+          give: (card) => Ref.update(offered, (all) => [...all, card]),
+          withdraw: () => Effect.void,
+        };
 
         const signUp = Account.signUpWithCard(soon, false, offer);
 
@@ -680,9 +921,10 @@ describe("Account", () => {
 
       const refused = yield* laptop.run(
         reason(
-          Account.signInWithCard(Redacted.value(typed), false, (card) =>
-            Option.isSome(card) ? Ref.update(offered, (count) => count + 1) : Effect.void,
-          ),
+          Account.signInWithCard(Redacted.value(typed), false, {
+            give: () => Ref.update(offered, (count) => count + 1),
+            withdraw: () => Effect.void,
+          }),
         ),
         api,
       );

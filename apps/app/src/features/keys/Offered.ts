@@ -20,3 +20,9 @@ export const prf = once<Account.PasskeyUsed>();
  * the only copy until the key status takes it.
  */
 export const card = once<Account.OfferedCard>();
+
+/** `card` taken back by the sign-in that offered it, so another sign-in's card stays. */
+export const withdraw =
+  (mine: Account.OfferedCard) =>
+  (offered: Option.Option<Account.OfferedCard>): Option.Option<Account.OfferedCard> =>
+    Option.filter(offered, (each) => each !== mine);

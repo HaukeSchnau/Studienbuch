@@ -21,6 +21,8 @@ export interface CheckableProps {
   /** `useKeptFocus` of the control's item, when a list may move it, such as a homework card. */
   readonly kept?: KeptFocus["control"];
   readonly style?: (state: PressableStateCallbackType) => StyleProp<ViewStyle>;
+  /** Shown, and said, but not pressable, such as a choice a running step has read. */
+  readonly disabled?: boolean;
   readonly children: ReactNode;
 }
 
@@ -36,6 +38,7 @@ export function Checkable({
   label,
   kept,
   style,
+  disabled = false,
   children,
 }: CheckableProps) {
   const press = () => {
@@ -49,10 +52,12 @@ export function Checkable({
       onFocus={kept?.onFocus}
       accessibilityRole={kind}
       aria-checked={checked}
+      aria-disabled={disabled}
       accessibilityLabel={label}
+      disabled={disabled}
       onPress={press}
-      {...spaceKey(press)}
-      style={(state) => [styles.target, style?.(state)]}
+      {...(disabled ? {} : spaceKey(press))}
+      style={(state) => [styles.target, disabled ? styles.disabled : null, style?.(state)]}
     >
       {children}
     </Pressable>
@@ -65,4 +70,5 @@ const styles = StyleSheet.create({
     minHeight: Tokens.layout.minTarget,
     cursor: "pointer",
   },
+  disabled: { opacity: 0.5, cursor: "auto" },
 });

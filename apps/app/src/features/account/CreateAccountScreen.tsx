@@ -45,7 +45,7 @@ function Choose({ reservation }: { readonly reservation: Access.Reservation }) {
   // A passkey that didn't work, or one the student closed, leaves the card as the way in.
   const passkeyFailed = AsyncResult.isFailure(passkey);
   const reason = Option.orElse(reasonOf(card), () => reasonOf(passkey));
-  const busy = passkey.waiting || card.waiting;
+  const busy = AccountState.useAttempting();
 
   return (
     <>

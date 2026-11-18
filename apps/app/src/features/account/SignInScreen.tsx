@@ -29,6 +29,7 @@ export function SignInScreen() {
   });
 
   const [withPassword, signIn] = useAtom(AccountState.signIn, { mode: "promiseExit" });
+  const attempting = AccountState.useAttempting();
 
   // "Passwort vergessen?" starts with the address typed here, from its first step.
   const forgot = () => {
@@ -41,7 +42,7 @@ export function SignInScreen() {
   const complete = email.trim() !== "" && password !== "";
 
   const submit = async () => {
-    if (!complete) return;
+    if (!complete || attempting) return;
 
     Keyboard.dismiss();
     await signIn({ email, password });
@@ -86,7 +87,7 @@ export function SignInScreen() {
           kind="action"
           label={withPassword.waiting ? "Anmeldung läuft …" : "Anmelden"}
           block
-          disabled={!complete}
+          disabled={!complete || attempting}
           busy={withPassword.waiting}
           onPress={() => void submit()}
         />
@@ -100,6 +101,7 @@ export function SignInScreen() {
         label="Mit Passkey anmelden"
         block
         busy={passkey.waiting}
+        disabled={attempting}
         onPress={() => void signInWithPasskey()}
       />
       {Option.match(reasonOf(passkey), {

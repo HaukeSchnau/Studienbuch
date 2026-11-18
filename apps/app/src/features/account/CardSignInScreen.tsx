@@ -20,9 +20,10 @@ export function CardSignInScreen() {
   const [result, signIn] = useAtom(AccountState.signInWithCard, { mode: "promiseExit" });
   const keyReason = keyReasonOf(result);
   const reason = reasonOf(result);
+  const attempting = AccountState.useAttempting();
 
   const submit = () => {
-    if (code.trim() === "") return;
+    if (code.trim() === "" || attempting) return;
 
     Keyboard.dismiss();
     void signIn(code);
@@ -50,7 +51,7 @@ export function CardSignInScreen() {
           kind="action"
           label={result.waiting ? "Anmeldung läuft …" : "Anmelden"}
           block
-          disabled={code.trim() === ""}
+          disabled={code.trim() === "" || attempting}
           busy={result.waiting}
           onPress={submit}
         />

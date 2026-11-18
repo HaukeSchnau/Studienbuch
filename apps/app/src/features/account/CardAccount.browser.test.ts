@@ -52,6 +52,11 @@ it.effect("signs up without an address, signs out, and signs in by card to the s
     const signedUp = yield* Ref.make<ReadonlyArray<string>>([]);
     const offered = yield* Ref.make(Option.none<Account.OfferedCard>());
 
+    const offer: Account.Offer = {
+      give: (card) => Ref.set(offered, Option.some(card)),
+      withdraw: () => Ref.set(offered, Option.none()),
+    };
+
     // As `CardLogins` answers: a login the sign-up or a card's wrapper brought signs in.
     const auth = AuthApiTesting.layer({
       cardSignUp: (login) =>
@@ -128,7 +133,7 @@ it.effect("signs up without an address, signs out, and signs in by card to the s
 
     // "Konto anlegen" on a computer without passkeys, then "Deine Notfallkarte". The device holds
     // the card in the account's secrets before it keeps the session.
-    yield* onDevice(Account.signUpWithCard(reservation, false, (card) => Ref.set(offered, card)));
+    yield* onDevice(Account.signUpWithCard(reservation, false, offer));
 
     const first = engine();
 
@@ -161,9 +166,7 @@ it.effect("signs up without an address, signs out, and signs in by card to the s
     );
 
     // "Mit Notfallkarte anmelden", the code typed as it reads on paper.
-    const signedIn = yield* onDevice(
-      Account.signInWithCard(text.toLowerCase(), false, (card) => Ref.set(offered, card)),
-    );
+    const signedIn = yield* onDevice(Account.signInWithCard(text.toLowerCase(), false, offer));
 
     const second = engine();
 

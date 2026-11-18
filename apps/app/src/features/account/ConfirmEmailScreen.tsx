@@ -174,6 +174,7 @@ function PasskeyOffer({ email }: { readonly email: string }) {
   const { color } = Theme.useTheme();
   const [result, finish] = useAtom(AccountState.finish, { mode: "promiseExit" });
   const offDevice = useAtomValue(publicComputer);
+  const attempting = AccountState.useAttempting();
 
   AccountState.useLaterOnLeave(email);
 
@@ -192,12 +193,14 @@ function PasskeyOffer({ email }: { readonly email: string }) {
           label="Passkey anlegen"
           block
           busy={result.waiting}
+          disabled={attempting}
           onPress={() => void finish({ email, withPasskey: true })}
         />
         <Button
           kind="secondary"
           label="Später"
           block
+          disabled={attempting}
           onPress={() => void finish({ email, withPasskey: false })}
         />
         {/* A public computer starts no notebook key, so there is nothing to secure there yet. */}

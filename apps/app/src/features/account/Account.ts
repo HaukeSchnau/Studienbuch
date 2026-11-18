@@ -53,6 +53,7 @@ export const Reason = Schema.Literals([
   "not-fresh",
   "unknown-card",
   "card-not-kept",
+  "busy",
   "sign-out-failed",
   "failed",
 ]);
@@ -97,6 +98,7 @@ export const sentence: Record<Reason, string> = {
     "Diese Notfallkarte gehört zu keinem Konto. Vielleicht hast du sie durch eine neue ersetzt.",
   "card-not-kept":
     "Dieses Gerät konnte deine Notfallkarte gerade nicht speichern. Ohne sie geht es nicht weiter. Versuch es noch einmal.",
+  busy: "Auf diesem Gerät läuft schon eine Anmeldung. Warte, bis sie fertig ist.",
   "sign-out-failed": "Abmelden hat nicht geklappt. Versuch es noch einmal.",
   failed: "Das hat nicht geklappt. Versuch es noch einmal.",
 };
@@ -146,21 +148,29 @@ const passkeyProblem = (error: Passkeys.Failed) =>
 
 /**
  * Refuses a new session while the device still holds another account whose session ended: its
- * database may hold changes that never reached the server, so that account signs out first. The
- * refused session ends on the server.
+ * database may hold changes that never reached the server, so that account signs out first.
  */
+const refuseOther = (
+  held: Option.Option<SessionStore.Signed>,
+  signedIn: AuthApi.SignedIn,
+): Effect.Effect<void, Problem> =>
+  Option.exists(held, (signed) => signed.accountId !== signedIn.accountId)
+    ? Effect.fail(new Problem({ reason: "other-account" }))
+    : Effect.void;
+
+/** Ends a session the device didn't keep, so it doesn't wait on the server for 90 days. */
+const endUnkept = (signedIn: AuthApi.SignedIn) =>
+  Effect.flatMap(AuthApi.Service, (api) => Effect.ignore(api.signOut(signedIn.token)));
+
+/** `refuseOther` before the session is kept, so a screen can say it early. */
 const refuseOtherAccount = Effect.fn("Account.refuseOtherAccount")(function* (
   signedIn: AuthApi.SignedIn,
 ) {
   const store = yield* SessionStore.Service;
-  const api = yield* AuthApi.Service;
-  const current = yield* store.current;
 
-  if (Option.exists(current, (signed) => signed.accountId !== signedIn.accountId)) {
-    yield* Effect.ignore(api.signOut(signedIn.token));
-
-    return yield* new Problem({ reason: "other-account" });
-  }
+  yield* refuseOther(yield* store.current, signedIn).pipe(
+    Effect.tapError(() => endUnkept(signedIn)),
+  );
 });
 
 /** Refuses a sign-up while the device holds an account, before anything leaves the device. */
@@ -171,25 +181,36 @@ const refuseAnyAccount = Effect.flatMap(SessionStore.Service, (store) =>
 );
 
 /**
- * Keeps a new session unless another account holds the device, in memory on a public computer.
- * `demo` marks a persona's password sign-in (`Demo.isDemoSignIn`). A sign-out under way or left
- * unfinished ends first (`Forgetting.Service`), and `first` stores what the session needs after
- * it, in the same turn, since that sign-out would delete it.
+ * Keeps a new session in the turn that installs sessions (`Forgetting.Service`), after any
+ * sign-out under way or left unfinished. That turn refuses another account, so two sign-ins never
+ * both keep one, and fixes where the session goes (`SessionStore.publicComputerFor`). `first`
+ * stores what the session needs there, before it. `demo` marks a persona (`Demo.isDemoSignIn`).
  */
 export const keep = Effect.fn("Account.keep")(function* <R = never>(
   signedIn: AuthApi.SignedIn,
-  publicComputer: boolean,
+  chosen: boolean,
   demo = false,
-  first: Effect.Effect<void, Problem, R> = Effect.void,
+  first: (publicComputer: boolean) => Effect.Effect<void, Problem, R> = () => Effect.void,
 ) {
   const store = yield* SessionStore.Service;
   const forgetting = yield* Forgetting.Service;
   const failed = () => Effect.fail(new Problem({ reason: "failed" }));
 
-  yield* refuseOtherAccount(signedIn);
-  yield* forgetting
-    .keep(Effect.andThen(first, store.signedIn({ ...signedIn, demo }, publicComputer)))
-    .pipe(Effect.catchTags({ "Forgetting.Unfinished": failed, "Keychain.Unavailable": failed }));
+  const install = Effect.gen(function* () {
+    const held = yield* store.current;
+    const publicComputer = SessionStore.publicComputerFor(held, signedIn.accountId, chosen);
+
+    yield* refuseOther(held, signedIn);
+    yield* first(publicComputer);
+    yield* store.signedIn({ ...signedIn, demo }, publicComputer);
+  });
+
+  yield* forgetting.keep(install).pipe(
+    Effect.catchTags({ "Forgetting.Unfinished": failed, "Keychain.Unavailable": failed }),
+    Effect.tapError((problem) =>
+      problem.reason === "other-account" ? endUnkept(signedIn) : Effect.void,
+    ),
+  );
 });
 
 export const signIn = Effect.fn("Account.signIn")(function* (
@@ -289,8 +310,8 @@ export class Confirmations extends Context.Service<
     /** Changed only through `waitForCode`, which keeps it on the device. */
     readonly signingUp: SubscriptionRef.SubscriptionRef<Option.Option<SigningUp>>;
     /**
-     * A public computer's card-first sign-up card, until its session is kept. Other devices
-     * stage it in their keychain instead (`DeviceSessions.stage`).
+     * A card-first sign-up's card, until its session is kept, so a retry sends it in either
+     * place. A device that keeps its session stages it too (`DeviceSessions.stage`).
      */
     readonly newCard: Ref.Ref<Option.Option<Redacted.Redacted<Uint8Array>>>;
     /**
@@ -298,8 +319,25 @@ export class Confirmations extends Context.Service<
      * than making another. It lives in this run only: after a restart the passkey signs in.
      */
     readonly newPasskeyAccount: Ref.Ref<Option.Option<PasskeyAccount>>;
+    /** Whether a sign-in or sign-up runs on this device (`attempt`). */
+    readonly attempting: SubscriptionRef.SubscriptionRef<boolean>;
   }
 >()("Account.Confirmations") {}
+
+/**
+ * Runs a sign-in or sign-up as the device's one attempt. Another one meanwhile is refused, never
+ * queued, and the screens offer none, nor the "Öffentlicher Computer" choice: the place an attempt
+ * read when it started holds for its card and its session.
+ */
+export const attempt = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+  Effect.flatMap(Confirmations, ({ attempting }) =>
+    Effect.acquireUseRelease(
+      SubscriptionRef.modify(attempting, (running) => [!running, true] as const),
+      (mine): Effect.Effect<A, E | Problem, R> =>
+        mine ? effect : Effect.fail(new Problem({ reason: "busy" })),
+      (mine) => (mine ? SubscriptionRef.set(attempting, false) : Effect.void),
+    ),
+  );
 
 /**
  * A sign-up waiting for its address's code. The device keeps address and reservation, so a
@@ -350,6 +388,7 @@ export const confirmations = Layer.effect(Confirmations)(
     signingUp: Effect.flatMap(restore, SubscriptionRef.make),
     newCard: Ref.make(Option.none<Redacted.Redacted<Uint8Array>>()),
     newPasskeyAccount: Ref.make(Option.none<PasskeyAccount>()),
+    attempting: SubscriptionRef.make(false),
   }),
 );
 
@@ -503,38 +542,42 @@ export interface OfferedCard extends NotebookKeys.CardIn {
   readonly accountId: string;
 }
 
-/** Tells the account's key status about a card in memory (`Offered.card`), or takes it back. */
-type Offer = (card: Option.Option<OfferedCard>) => Effect.Effect<void>;
+/**
+ * Hands a card in memory to the account's key status (`Offered.card`). A sign-in whose session
+ * isn't kept takes back the card it handed, and only that one.
+ */
+export interface Offer {
+  readonly give: (card: OfferedCard) => Effect.Effect<void>;
+  readonly withdraw: (card: OfferedCard) => Effect.Effect<void>;
+}
 
 /**
- * Keeps a session that came with a card. A device that keeps its session first holds the card in
- * the account's secrets, so no restart finds the account without it, and keeps nothing if it
- * can't (`card-not-kept`). `offer` tells the account's key status, and is the only copy on a
- * public computer.
+ * Keeps a session that came with a card, which goes where the session goes. A device that keeps
+ * its session first holds the card in the account's secrets, so no restart finds the account
+ * without it, and keeps nothing if it can't (`card-not-kept`). `offer` tells the account's key
+ * status, and is the only copy on a public computer.
  */
 const keepWithCard = Effect.fn("Account.keepWithCard")(function* (
   signedIn: AuthApi.SignedIn,
   card: OfferedCard,
-  publicComputer: boolean,
+  chosen: boolean,
   offer: Offer,
 ) {
-  const hold = publicComputer
-    ? Effect.void
-    : NotebookKeys.holdCard(card).pipe(
-        Effect.provide(Keychain.accountSecrets(card.accountId)),
-        Effect.catchTags({ "DeviceSecrets.SecretsUnavailable": () => cardNotKept }),
-      );
+  const hold = (publicComputer: boolean) =>
+    Effect.andThen(
+      publicComputer
+        ? Effect.void
+        : NotebookKeys.holdCard(card).pipe(
+            Effect.provide(Keychain.accountSecrets(card.accountId)),
+            Effect.catchTags({ "DeviceSecrets.SecretsUnavailable": () => cardNotKept }),
+          ),
+      offer.give(card),
+    );
 
-  yield* keep(signedIn, publicComputer, false, Effect.andThen(hold, offer(Option.some(card)))).pipe(
-    Effect.onError(() => offer(Option.none())),
-  );
+  yield* keep(signedIn, chosen, false, hold).pipe(Effect.onError(() => offer.withdraw(card)));
 });
 
 const cardNotKept = Effect.fail(new Problem({ reason: "card-not-kept" }));
-
-/** Ends a session the device didn't keep, so it doesn't wait on the server for 90 days. */
-const endUnkept = (signedIn: AuthApi.SignedIn) =>
-  Effect.flatMap(AuthApi.Service, (api) => Effect.ignore(api.signOut(signedIn.token)));
 
 /**
  * Creates an account without an address whose Notfallkarte signs up, on a device without
@@ -558,23 +601,17 @@ export const signUpWithCard = Effect.fn("Account.signUpWithCard")(function* (
       Effect.gen(function* () {
         yield* refuseAnyAccount;
 
-        // A public computer keeps its card in the tab's memory. It takes up a card an earlier
-        // sign-up in this browser staged, so a retry reaches the account a lost answer made, and
-        // removes it before anything goes out, so nothing of it stays once the tab is gone.
+        // A retry in either place sends the card this tab or an earlier run took, so it reaches
+        // the account a lost answer made. A public computer then removes a staged copy before
+        // anything goes out, so nothing of it stays once the tab is gone.
         const staged = yield* sessions.staged;
-        const held = publicComputer ? yield* Ref.get(newCard) : Option.none();
-        const earlier = Option.orElse(held, () => staged);
+        const earlier = Option.orElse(yield* Ref.get(newCard), () => staged);
         const code = Option.isSome(earlier) ? earlier.value : (yield* RecoveryCode.generate).bytes;
-
-        if (!publicComputer) {
-          yield* sessions.stage(code);
-
-          return code;
-        }
 
         yield* Ref.set(newCard, Option.some(code));
 
-        if (Option.isSome(staged)) yield* sessions.unstage;
+        if (!publicComputer) yield* sessions.stage(code);
+        else if (Option.isSome(staged)) yield* sessions.unstage;
 
         return code;
       }).pipe(Effect.catchTags({ "Keychain.Unavailable": () => cardNotKept })),

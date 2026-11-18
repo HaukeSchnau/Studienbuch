@@ -56,6 +56,20 @@ export class Service extends Context.Service<
   }
 >()("SessionStore.Service") {}
 
+/**
+ * Whether `accountId` keeps its session and secrets in memory only: as the device holds it
+ * already, else as `chosen` for an account it doesn't hold yet.
+ */
+export const publicComputerFor = (
+  held: Option.Option<Signed>,
+  accountId: string,
+  chosen: boolean,
+) =>
+  Option.match(
+    Option.filter(held, (signed) => signed.accountId === accountId),
+    { onNone: () => chosen, onSome: (signed) => signed.publicComputer },
+  );
+
 export const layer = Layer.effect(Service)(
   Effect.gen(function* () {
     const sessions = yield* DeviceSessions.Service;
@@ -79,15 +93,11 @@ export const layer = Layer.effect(Service)(
         { accountId, token, demo }: DeviceSessions.Session,
         chosen: boolean,
       ) {
-        const held = Option.filter(
+        const publicComputer = publicComputerFor(
           yield* SubscriptionRef.get(ref),
-          (signed) => signed.accountId === accountId,
+          accountId,
+          chosen,
         );
-
-        const publicComputer = Option.match(held, {
-          onNone: () => chosen,
-          onSome: (signed) => signed.publicComputer,
-        });
 
         if (!publicComputer) yield* sessions.set({ accountId, token, demo });
 
