@@ -38,16 +38,19 @@ export const ids = (entry: TimetableEntry): ReadonlyArray<number> =>
 
 const clock = /(?:^|T)(?<hours>\d{2}):(?<minutes>\d{2})(?::(?<seconds>\d{2}))?$/u;
 
-/** `08:00`, `2026-11-09T08:00` or `2026-11-09T08:00:30` as milliseconds since midnight. */
+/**
+ * `08:00`, `2026-11-09T08:00` or `2026-11-09T08:00:30` as milliseconds since midnight, and none
+ * for a time no clock shows, such as `99:99`.
+ */
 export const timeOfDay = (text: string): Option.Option<number> => {
   const groups = clock.exec(text)?.groups;
+  const hours = Number(groups?.hours);
+  const minutes = Number(groups?.minutes);
+  const seconds = Number(groups?.seconds ?? 0);
 
-  return groups === undefined
+  return groups === undefined || hours > 23 || minutes > 59 || seconds > 59
     ? Option.none()
-    : Option.some(
-        ((Number(groups.hours) * 60 + Number(groups.minutes)) * 60 + Number(groups.seconds ?? 0)) *
-          1000,
-      );
+    : Option.some(((hours * 60 + minutes) * 60 + seconds) * 1000);
 };
 
 /** Whether WebUntis showed the day, so an empty one is evidence of no lessons. */

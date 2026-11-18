@@ -3,8 +3,16 @@
  * webuntis-api's `WebUntisClient` and returns an `ImportResult`, so the evaluation harness swaps in
  * a recorded client and measures any algorithm behind this seam the same way.
  */
-import type { School } from "@stu/core";
-import { CivilTime, Course, Lesson } from "@stu/core";
+import {
+  CivilTime,
+  Course,
+  Lesson,
+  School,
+  SchoolClass,
+  SchoolYear,
+  Subject,
+  Term,
+} from "@stu/core";
 import { Ids } from "@stu/sync";
 import * as Arr from "effect/Array";
 import * as Context from "effect/Context";
@@ -13,20 +21,63 @@ import type * as Effect from "effect/Effect";
 import type * as Option from "effect/Option";
 import * as Order from "effect/Order";
 import * as Schema from "effect/Schema";
+import type { SchoolProfile } from "./profiles/SchoolProfile.ts";
 
 export * as SchoolImport from "./SchoolImport.ts";
 
 /** A date as WebUntis and stored rows write it, such as `2026-11-09`. */
 export const Day = Schema.toEncoded(CivilTime.PlainDate);
 
+export const ImportedSchoolYear = Schema.Struct({
+  id: SchoolYear.Id,
+  name: Schema.String,
+  start: Day,
+  end: Day,
+});
+
+export const ImportedTerm = Schema.Struct({
+  id: Term.Id,
+  schoolYearId: SchoolYear.Id,
+  name: Schema.String,
+  start: Day,
+  end: Day,
+});
+
+export const ImportedSubject = Schema.Struct({
+  id: Subject.Id,
+  name: Schema.String,
+  shortName: Schema.String,
+});
+
+/** A lasting class such as `11.2`. A grade level whose courses span it has none. */
+export const ImportedClass = Schema.Struct({
+  id: SchoolClass.Id,
+  schoolYearId: SchoolYear.Id,
+  name: Schema.String,
+  gradeLevel: School.GradeLevel,
+});
+
 export const ImportedCourse = Schema.Struct({
   id: Course.Id,
   name: Schema.String,
-  /** The subject code, such as `MA`, when the import knows it. */
-  subject: Schema.optional(Schema.String),
+  subjectId: Schema.optional(Subject.Id),
   /** A level label such as `E` or `G`. */
   level: Schema.optional(Schema.String),
 });
+
+/** Who may choose a course in one term, under `CourseOffering.idFor`. */
+export const ImportedOffering = Schema.Struct({
+  id: Ids.Id,
+  courseId: Course.Id,
+  termId: Term.Id,
+  gradeLevels: Schema.Array(School.GradeLevel),
+  /** Empty for every class of those grade levels. */
+  classIds: Schema.Array(SchoolClass.Id),
+  /** A student takes at most one course of an elective group. Absent for a required course. */
+  groupKey: Schema.optional(Schema.String),
+});
+
+export type ImportedOffering = typeof ImportedOffering.Type;
 
 export const ImportedLesson = Schema.Struct({
   id: Ids.Id,
@@ -42,6 +93,7 @@ export const ImportedLesson = Schema.Struct({
       kind: Lesson.ChangeKind,
       previousTeacherIds: Schema.Array(Ids.Id),
       previousRoomIds: Schema.Array(Ids.Id),
+      /** WebUntis's text as it was. The projection keeps only a stock phrase. */
       text: Schema.optional(Schema.String),
     }),
   ),
@@ -89,8 +141,9 @@ export type ProviderRef = typeof ProviderRef.Type;
 export const ProviderLink = Schema.Struct({ id: Ids.Id, refs: Schema.Array(ProviderRef) });
 
 /**
- * Rows of one kind that a run read completely between two dates. Only rows inside a coverage may
- * be deleted, so a read that failed deletes nothing.
+ * Rows of one kind that a run read completely between two dates: every view answered for every
+ * day, named the resource asked for, and gave no error. Only rows inside a coverage may be
+ * deleted, so a read that failed deletes nothing.
  */
 export const Coverage = Schema.Struct({
   rows: Schema.Literals(["lessons", "closures", "exams"]),
@@ -100,12 +153,23 @@ export const Coverage = Schema.Struct({
 
 export type Coverage = typeof Coverage.Type;
 
+/**
+ * An entry of a complete read that the import gave no course, such as one of a course a daytime
+ * run doesn't know. A lesson it lacks may be this entry, so its day deletes no lesson.
+ */
+export const Unattributed = Schema.Struct({ date: Day, ids: Schema.Array(Schema.Int) });
+
 /** Something the import noticed, such as a read that failed. Ids and codes only, never content. */
 export const Diagnostic = Schema.Struct({ code: Schema.String, detail: Schema.String });
 
-/** Rows in all but name: M2.4 maps them onto the School and Course spaces. */
+/** Rows in all but name, which the projection maps onto the School and Course spaces. */
 export const ImportResult = Schema.Struct({
+  schoolYears: Schema.Array(ImportedSchoolYear),
+  terms: Schema.Array(ImportedTerm),
+  subjects: Schema.Array(ImportedSubject),
+  classes: Schema.Array(ImportedClass),
   courses: Schema.Array(ImportedCourse),
+  offerings: Schema.Array(ImportedOffering),
   lessons: Schema.Array(ImportedLesson),
   closures: Schema.Array(ImportedClosure),
   exams: Schema.Array(ImportedExam),
@@ -113,14 +177,22 @@ export const ImportResult = Schema.Struct({
   rooms: Schema.Array(ImportedRoom),
   weeks: Schema.Array(ImportedWeek),
   links: Schema.Array(ProviderLink),
+  /** This run's own, never carried into the next. */
   covers: Schema.Array(Coverage),
+  /** This run's own, never carried into the next. */
+  unattributed: Schema.Array(Unattributed),
   diagnostics: Schema.Array(Diagnostic),
 });
 
 export type ImportResult = typeof ImportResult.Type;
 
 export const empty: ImportResult = {
+  schoolYears: [],
+  terms: [],
+  subjects: [],
+  classes: [],
   courses: [],
+  offerings: [],
   lessons: [],
   closures: [],
   exams: [],
@@ -129,15 +201,24 @@ export const empty: ImportResult = {
   weeks: [],
   links: [],
   covers: [],
+  unattributed: [],
   diagnostics: [],
 };
 
 export interface ImportInput {
-  readonly school: School.Id;
-  /** The import's clock. It chooses its windows from it. */
+  /** The school, and what the import needs to know about it beyond WebUntis. */
+  readonly profile: SchoolProfile.SchoolProfile;
+  /** When the snapshot's first read was sent. */
   readonly now: DateTime.Utc;
-  /** What the store holds after the last run, so ids stay stable. */
+  /** The days the run reads: today to four weeks ahead at the school. Nothing before is changed. */
+  readonly window: CivilTime.DateRange;
+  /** What the last run left, so ids stay stable. Covers and unattributed entries are empty. */
   readonly previous: Option.Option<ImportResult>;
+  /**
+   * Whether this is the nightly run, which alone creates courses and offerings. A daytime run
+   * updates the lessons of courses `previous` knows and leaves any other entry unattributed.
+   */
+  readonly nightly: boolean;
 }
 
 /** The run read nothing it could use, so the store stays as it was. */
@@ -162,61 +243,104 @@ const byId = <A extends { readonly id: string }>(
   Arr.sort([...new Map([...kept, ...incoming].map((row) => [row.id, row])).values()], idOrder);
 
 /**
- * What the store holds once `result` lands on `state`. Rows of a kind that touch one of the
- * result's coverages are replaced, every other row of the result is added or updated by id, and
- * nothing else is deleted. Rows come out sorted by id, so the order of reads can't show.
+ * Whether `result` is evidence that a row of `rows` from `start` to `end` is gone when it lacks
+ * the row: one of its covers holds the whole range, and for lessons no entry of those days went
+ * unattributed.
+ */
+export const deletes = (
+  result: Pick<ImportResult, "covers" | "unattributed">,
+  rows: Coverage["rows"],
+  start: string,
+  end = start,
+) =>
+  result.covers.some((cover) => cover.rows === rows && cover.start <= start && end <= cover.end) &&
+  (rows !== "lessons" || !result.unattributed.some(({ date }) => start <= date && date <= end));
+
+const union =
+  <A>(order: Order.Order<A>) =>
+  (a: ReadonlyArray<A>, b: ReadonlyArray<A>) =>
+    Arr.sort(Arr.dedupe([...a, ...b]), order);
+
+/**
+ * An offering as it stands once `incoming` lands on what was published. Grade levels and classes
+ * only grow, no classes stays every class, and the elective group stays the one it had, so a
+ * choice `enrollment.set` accepted stays one it accepts for the whole term.
+ */
+export const widen = (
+  kept: ImportedOffering | undefined,
+  incoming: ImportedOffering,
+): ImportedOffering => {
+  if (kept === undefined) return incoming;
+
+  const { groupKey: _, ...rest } = incoming;
+
+  const widened = {
+    ...rest,
+    gradeLevels: union<School.GradeLevel>(Order.Number)(kept.gradeLevels, incoming.gradeLevels),
+    classIds:
+      kept.classIds.length === 0 || incoming.classIds.length === 0
+        ? []
+        : union<SchoolClass.Id>(Order.String)(kept.classIds, incoming.classIds),
+  };
+
+  return kept.groupKey === undefined ? widened : { ...widened, groupKey: kept.groupKey };
+};
+
+/**
+ * What the store holds once `result` lands on `state`. A row of `state` that `result` lacks goes
+ * only where {@link deletes} says so, every row of the result is added or updated by id, and
+ * offerings only {@link widen}. Rows come out sorted by id, so the order of reads can't show.
  */
 export const apply = (state: ImportResult, result: ImportResult): ImportResult => {
-  const covered = (rows: Coverage["rows"], start: string, end = start) =>
-    result.covers.some((cover) => cover.rows === rows && cover.start <= end && start <= cover.end);
-
   const lessons = byId(
-    state.lessons.filter((lesson) => !covered("lessons", lesson.date)),
+    state.lessons.filter((lesson) => !deletes(result, "lessons", lesson.date)),
     result.lessons,
   );
 
   const closures = byId(
-    state.closures.filter((closure) => !covered("closures", closure.start, closure.end)),
+    state.closures.filter((closure) => !deletes(result, "closures", closure.start, closure.end)),
     result.closures,
   );
 
   const exams = byId(
-    state.exams.filter((exam) => !covered("exams", exam.date)),
+    state.exams.filter((exam) => !deletes(result, "exams", exam.date)),
     result.exams,
   );
 
-  const courses = byId(state.courses, result.courses);
-  const teachers = byId(state.teachers, result.teachers);
-  const rooms = byId(state.rooms, result.rooms);
+  const published = new Map(state.offerings.map((offering) => [offering.id, offering]));
 
-  const rowIds = new Set(
-    [lessons, closures, exams, courses, teachers, rooms].flatMap((rows) => rows.map((r) => r.id)),
+  const offerings = byId(
+    state.offerings,
+    result.offerings.map((offering) => widen(published.get(offering.id), offering)),
   );
+
+  const kept = {
+    schoolYears: byId(state.schoolYears, result.schoolYears),
+    terms: byId(state.terms, result.terms),
+    subjects: byId(state.subjects, result.subjects),
+    classes: byId(state.classes, result.classes),
+    courses: byId(state.courses, result.courses),
+    offerings,
+    lessons,
+    closures,
+    exams,
+    teachers: byId(state.teachers, result.teachers),
+    rooms: byId(state.rooms, result.rooms),
+  };
+
+  const rowIds = new Set(Object.values(kept).flatMap((rows) => rows.map((row) => row.id)));
 
   const weeks = Arr.sort(
     [...new Map([...state.weeks, ...result.weeks].map((week) => [week.week, week])).values()],
     Order.mapInput(Order.String, (week: typeof ImportedWeek.Type) => week.week),
   );
 
-  const covers = [
-    ...new Map(
-      [...state.covers, ...result.covers].map((cover) => [
-        `${cover.rows} ${cover.start} ${cover.end}`,
-        cover,
-      ]),
-    ).values(),
-  ];
-
   return {
-    courses,
-    lessons,
-    closures,
-    exams,
-    teachers,
-    rooms,
+    ...kept,
     weeks,
     links: byId(state.links, result.links).filter((link) => rowIds.has(link.id)),
-    covers,
+    covers: [],
+    unattributed: [],
     diagnostics: result.diagnostics,
   };
 };

@@ -1,0 +1,58 @@
+import { assert, describe, it } from "@effect/vitest";
+import * as Option from "effect/Option";
+import { IgsLilienthal } from "./IgsLilienthal.ts";
+import { SchoolProfile } from "./SchoolProfile.ts";
+
+const { Lasting, CohortWide, Collection } = SchoolProfile.Classification;
+
+describe("IgsLilienthal", () => {
+  it.each([
+    { name: "11.2", is: Lasting({ gradeLevel: 11 }) },
+    { name: "8.1", is: Lasting({ gradeLevel: 8 }) },
+    { name: "12", is: CohortWide({ gradeLevel: 12 }) },
+    { name: "13", is: CohortWide({ gradeLevel: 13 }) },
+    { name: "12.1", is: CohortWide({ gradeLevel: 12 }) },
+    // A grade below the upper school gathers its classes.
+    { name: "8", is: Collection() },
+    { name: "11", is: Collection() },
+    { name: "14", is: Collection() },
+    { name: "14.1", is: Collection() },
+    { name: "0.1", is: Collection() },
+    { name: "11.2 ", is: Collection() },
+    { name: " 12", is: Collection() },
+    { name: "١١.٢", is: Collection() },
+    { name: "１２", is: Collection() },
+    { name: "11/2", is: Collection() },
+    { name: "Q1", is: Collection() },
+    { name: "", is: Collection() },
+  ])("classifies '$name'", ({ name, is }) => {
+    assert.deepStrictEqual(IgsLilienthal.classify(name), is);
+  });
+
+  it.each([
+    { classification: Lasting({ gradeLevel: 11 }), read: Option.some(11) },
+    { classification: CohortWide({ gradeLevel: 13 }), read: Option.some(13) },
+    { classification: Lasting({ gradeLevel: 10 }), read: Option.none() },
+    { classification: Collection(), read: Option.none() },
+  ])("reads $classification._tag classes of the upper school only", ({ classification, read }) => {
+    assert.deepStrictEqual(
+      SchoolProfile.gradeLevelRead(IgsLilienthal.profile, classification),
+      read,
+    );
+  });
+
+  // The phrase comes out in the profile's spelling, so the row never holds what WebUntis sent.
+  it.each([
+    { text: "Vertretung", phrase: Option.some("Vertretung") },
+    { text: "  VERTRETUNG ", phrase: Option.some("Vertretung") },
+    { text: "Raumänderung".normalize("NFD"), phrase: Option.some("Raumänderung") },
+    { text: "Ｖｅｒｔｒｅｔｕｎｇ", phrase: Option.some("Vertretung") },
+    { text: "eva", phrase: Option.some("EVA") },
+    { text: "Vertretung für Wiebke", phrase: Option.none() },
+    { text: "Vertretung: Raum 101", phrase: Option.none() },
+    { text: "Vertretungs", phrase: Option.none() },
+    { text: "", phrase: Option.none() },
+  ])("reads '$text' as a stock phrase: $phrase", ({ text, phrase }) => {
+    assert.deepStrictEqual(SchoolProfile.stockPhrase(IgsLilienthal.profile, text), phrase);
+  });
+});

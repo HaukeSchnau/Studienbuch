@@ -12,6 +12,7 @@ import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import { Corpus } from "../corpus/Corpus.ts";
 import { NaiveImport } from "../NaiveImport.ts";
+import { IgsLilienthal } from "../profiles/IgsLilienthal.ts";
 import { Evaluator } from "./Evaluator.ts";
 import { TinySchool } from "./TinySchool.ts";
 import { Report } from "./Report.ts";
@@ -60,11 +61,14 @@ const evaluate = Effect.fn("ImportEval.evaluate")(function* (flags: {
   }
 
   const weeks = yield* Effect.transposeOption(Option.map(flags.weeks, parseWeeks));
-  const corpus = flags.corpus === "tiny" ? TinySchool.corpus : yield* Corpus.read(flags.corpus);
+  const tiny = flags.corpus === "tiny";
+  const corpus = tiny ? TinySchool.corpus : yield* Corpus.read(flags.corpus);
 
   const report = yield* Evaluator.evaluate({
     corpus,
     corpusName: corpus.manifest.id,
+    // Every captured corpus is of the one school so far.
+    profile: tiny ? TinySchool.profile : IgsLilienthal.profile,
     importName: flags.import,
     importLayer,
     timeline: flags.timeline,
@@ -96,7 +100,9 @@ const command = Command.make(
       Flag.optional,
     ),
     timeline: Flag.Boolean("timeline").pipe(
-      Flag.withDescription("Run the import every school day instead of every Monday"),
+      Flag.withDescription(
+        "Run the import at 06:00 and at noon every school day, not every Monday",
+      ),
       Flag.withDefault(false),
     ),
     json: Flag.String("json").pipe(

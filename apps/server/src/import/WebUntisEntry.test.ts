@@ -81,6 +81,10 @@ describe("WebUntisEntry", () => {
     { text: "2026-11-09T13:50", millis: Option.some(49_800_000) },
     { text: "2026-11-09T13:50:30", millis: Option.some(49_830_000) },
     { text: "1350", millis: Option.none() },
+    { text: "2026-11-09T99:99", millis: Option.none() },
+    { text: "2026-11-09T24:00", millis: Option.none() },
+    { text: "2026-11-09T13:50:60", millis: Option.none() },
+    { text: "2026-11-09T١٣:٥٠", millis: Option.none() },
   ])("reads $text as a time of day", ({ text, millis }) => {
     assert.deepStrictEqual(WebUntisEntry.timeOfDay(text), millis);
   });

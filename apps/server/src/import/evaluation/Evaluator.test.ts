@@ -9,6 +9,7 @@ import * as Schema from "effect/Schema";
 import * as Tuple from "effect/Tuple";
 import { RecordedWebUntis } from "../../infra/webuntis/RecordedWebUntis.ts";
 import type { Corpus } from "../corpus/Corpus.ts";
+import { ImportIds } from "../ImportIds.ts";
 import { NaiveImport } from "../NaiveImport.ts";
 import { SchoolImport } from "../SchoolImport.ts";
 import { Evaluator } from "./Evaluator.ts";
@@ -27,6 +28,7 @@ const evaluate = (
   Evaluator.evaluate({
     corpus,
     corpusName: corpus.manifest.id,
+    profile: TinySchool.profile,
     importName: "naive",
     importLayer,
     weeks: Option.none(),
@@ -87,11 +89,16 @@ const both = {
   invariants: {
     failedRuns: 0,
     danglingCourses: 0,
+    unpublishedLessons: 0,
     secondRunChanges: 0,
     reversedReadChanges: 0,
     failedReadChanges: 0,
-    injectedFailures: 4,
+    injectedFailures: 6,
   },
+  // Students of `11.1` who skip `INF`, and `13`. `MA-E` shows each group the other's lessons, and
+  // the joint `INF` lesson is two courses, so its students take both.
+  kurswahl: of(3, 8),
+  ghostCourses: 0,
 };
 
 describe("Evaluator", () => {
@@ -125,10 +132,10 @@ describe("Evaluator", () => {
         },
         // "Betreuung" reads as a substitution, and Monday's run never sees Wednesday's version.
         changes: of(3, 5),
-        courseIdsKept: of(58, 58),
+        courseIdsKept: of(70, 70),
         lookahead: of(32, 32),
         runs: { total: 3, failed: 0 },
-        reads: { requests: 36, outOfRange: 3, decodeFailures: 0 },
+        reads: { requests: 57, outOfRange: 18, decodeFailures: 0 },
         passingCases: [
           "cancellation",
           "free-day",
@@ -164,10 +171,10 @@ describe("Evaluator", () => {
           },
         },
         changes: of(4, 5),
-        courseIdsKept: of(430, 430),
-        lookahead: of(136, 136),
-        runs: { total: 15, failed: 0 },
-        reads: { requests: 180, outOfRange: 15, decodeFailures: 0 },
+        courseIdsKept: of(1015, 1015),
+        lookahead: of(272, 272),
+        runs: { total: 30, failed: 0 },
+        reads: { requests: 642, outOfRange: 252, decodeFailures: 0 },
         passingCases: [
           "cancellation",
           "free-day",
@@ -218,9 +225,41 @@ describe("Evaluator", () => {
       measure: (report: Effect.Success<ReturnType<typeof evaluate>>) => ({
         studentWeeks: report.views.student.weeks,
         kept: report.courseIdsKept,
+        ghosts: report.ghostCourses,
       }),
-      // Lessons the later runs didn't touch keep their ids; the rest change.
-      expected: { studentWeeks: of(0, 8), kept: of(34, 58) },
+      // Lessons the later runs didn't touch keep their ids; the rest change. Nobody chose the
+      // last run's courses.
+      expected: { studentWeeks: of(0, 8), kept: of(34, 70), ghosts: 11 },
+    },
+    {
+      name: "makes one course of each subject",
+      importLayer: variant((result, input) => {
+        const codes = new Map(result.subjects.map(({ id, shortName }) => [id, shortName]));
+
+        const merged = new Map(
+          result.courses.map(({ id, subjectId }) => [
+            id,
+            ImportIds.course(
+              input.profile.id,
+              (subjectId === undefined ? undefined : codes.get(subjectId)) ?? id,
+            ),
+          ]),
+        );
+
+        const lessons = result.lessons.map((lesson) => ({
+          ...lesson,
+          courseId: merged.get(lesson.courseId) ?? lesson.courseId,
+        }));
+
+        return Effect.succeed({
+          ...result,
+          lessons,
+          courses: lessons.map(({ courseId }) => ({ id: courseId, name: courseId })),
+        });
+      }),
+      measure: (report: Effect.Success<ReturnType<typeof evaluate>>) => report.kurswahl,
+      // `11.1` sees grade 12's `EN` and grade 13's `DE`, and `13` sees `11.1`'s `DE`.
+      expected: of(0, 8),
     },
     {
       name: "links lessons to entries WebUntis doesn't have",
@@ -288,16 +327,23 @@ describe("Evaluator", () => {
           ],
         });
       }),
-      measure: (report: Effect.Success<ReturnType<typeof evaluate>>) => report.lookahead,
-      // Only the entries at the time of the one lesson kept count.
-      expected: of(16, 32),
+      measure: (report: Effect.Success<ReturnType<typeof evaluate>>) => ({
+        lookahead: report.lookahead,
+        kurswahl: report.kurswahl,
+      }),
+      // Only the entries at the time of the one lesson kept count, and a lesson that claims
+      // entries at other times gives no student their week.
+      expected: { lookahead: of(16, 32), kurswahl: of(2, 8) },
     },
     {
       name: "puts the exam in a course of another subject with its teacher and students",
       importLayer: variant((result) =>
         Effect.succeed({
           ...result,
-          exams: result.exams.map((exam) => ({ ...exam, courseId: Course.Id.make("PH/12") })),
+          exams: result.exams.map((exam) => ({
+            ...exam,
+            courseId: ImportIds.course(TinySchool.profile.id, "PH/12"),
+          })),
         }),
       ),
       measure: (report: Effect.Success<ReturnType<typeof evaluate>>) => ({
@@ -306,6 +352,13 @@ describe("Evaluator", () => {
       }),
       // Shown to exactly its students, unlike naive's exam, and still in the wrong course.
       expected: { exams: of(0, 1), examStudents: { recall: of(2, 2), precision: of(2, 2) } },
+    },
+    {
+      name: "offers its courses to nobody",
+      importLayer: variant((result) => Effect.succeed({ ...result, offerings: [] })),
+      measure: (report: Effect.Success<ReturnType<typeof evaluate>>) =>
+        report.invariants.unpublishedLessons,
+      expected: 38,
     },
     {
       name: "drops its course rows",
@@ -409,6 +462,7 @@ describe("Evaluator", () => {
       const error = yield* Evaluator.evaluate({
         corpus: TinySchool.corpus,
         corpusName: TinySchool.corpus.manifest.id,
+        profile: TinySchool.profile,
         importName: "naive",
         importLayer: NaiveImport.layer,
         weeks: Option.some({ from: "2026-W50", to: "2026-W51" }),
