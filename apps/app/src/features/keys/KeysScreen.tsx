@@ -342,7 +342,9 @@ function NewCard({
       title="Deine Notfallkarte"
       subtitle="Damit öffnest du dein Notizbuch auf einem neuen Gerät. Hast du keine E-Mail-Adresse angegeben, meldest du dich damit auch an."
     >
-      <CardCode text={text} />
+      <Card padded>
+        <CardCode text={text} />
+      </Card>
       <Text variant="subhead" style={[styles.note, { color: color.inkSoft }]}>
         Du siehst den Code nur jetzt. Schreib ihn ab und heb ihn bei deinen Zeugnissen auf. Kein
         Screenshot: Fotos sieht jeder, der dein entsperrtes Gerät hat.
