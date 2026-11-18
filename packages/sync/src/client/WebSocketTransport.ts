@@ -8,7 +8,7 @@ import * as Effect from "effect/Effect";
 import * as HttpClient from "effect/http/HttpClient";
 import * as HttpClientRequest from "effect/http/HttpClientRequest";
 import * as Layer from "effect/Layer";
-import * as Option from "effect/Option";
+import type * as Redacted from "effect/Redacted";
 import * as RpcClient from "effect/rpc/RpcClient";
 import * as Schedule from "effect/Schedule";
 import * as Schema from "effect/Schema";
@@ -76,22 +76,17 @@ export const layer = Layer.effect(
   Ports.Transport,
   Effect.gen(function* () {
     const server = yield* Ports.Server;
-    const session = yield* Ports.Session;
     const http = yield* HttpClient.HttpClient;
     const webSocket = yield* Socket.WebSocketConstructor;
 
     const unreachable = () => new Ports.ConnectFailed({ reason: "unreachable" });
     const sessionEnded = () => new Ports.ConnectFailed({ reason: "session-ended" });
 
-    const ticket = Effect.gen(function* () {
-      const token = yield* session.token;
-
-      if (Option.isNone(token)) return yield* sessionEnded();
-
+    const ticket = Effect.fnUntraced(function* (token: Redacted.Redacted) {
       const response = yield* http
         .execute(
           HttpClientRequest.post(new URL(Connection.ticketPath, server.origin)).pipe(
-            HttpClientRequest.bearerToken(token.value),
+            HttpClientRequest.bearerToken(token),
           ),
         )
         .pipe(Effect.catchTags({ HttpClientError: () => Effect.fail(unreachable()) }));
@@ -111,14 +106,15 @@ export const layer = Layer.effect(
     });
 
     // A ticket route that never answers would hold the supervisor's attempt forever.
-    const timelyTicket = Effect.timeoutOption(ticket, ticketTimeout).pipe(
-      Effect.flatMap(Effect.fromOption),
-      Effect.catchTags({ NoSuchElementError: () => Effect.fail(unreachable()) }),
-    );
+    const timelyTicket = (token: Redacted.Redacted) =>
+      Effect.timeoutOption(ticket(token), ticketTimeout).pipe(
+        Effect.flatMap(Effect.fromOption),
+        Effect.catchTags({ NoSuchElementError: () => Effect.fail(unreachable()) }),
+      );
 
     return Ports.Transport.of({
-      connect: Effect.gen(function* () {
-        const url = Connection.socketUrl(server.origin, yield* timelyTicket);
+      connect: Effect.fnUntraced(function* (token) {
+        const url = Connection.socketUrl(server.origin, yield* timelyTicket(token));
 
         const socket = yield* Socket.makeWebSocket(url.href, { openTimeout: "15 seconds" }).pipe(
           Effect.provideService(Socket.WebSocketConstructor, webSocket),

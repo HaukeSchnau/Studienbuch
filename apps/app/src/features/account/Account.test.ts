@@ -168,7 +168,7 @@ describe("Account", () => {
         const sessions = yield* SessionStore.Service;
 
         yield* sessions.signedIn({ ...signedIn("lena", "token-lena"), demo: false }, false);
-        yield* sessions.ended;
+        yield* sessions.ended(Redacted.make("token-lena"));
 
         const refused = yield* Effect.flip(
           Account.signIn("tom@example.org", "geheim-genug", false),

@@ -162,7 +162,7 @@ it.effect("an account's memory lasts through a new token and the session's end, 
     const held = () => registry.getNodes().get(card)?.valueOption();
 
     yield* session(
-      (store) => store.ended,
+      (store) => store.ended(Redacted.make("first")),
       (signed) => Option.isSome(signed) && Option.isNone(token(signed)),
     );
 

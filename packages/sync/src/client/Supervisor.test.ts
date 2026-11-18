@@ -74,14 +74,17 @@ const harnessWith = Effect.fnUntraced(function* (
   const token = yield* SubscriptionRef.make(Option.some(Redacted.make("token-1")));
   const offline = yield* SubscriptionRef.make(false);
   const writes = yield* PubSub.unbounded<void>();
-  let ended = 0;
+  /** The tokens the attempts connected with, and those the supervisor said ended. */
+  const used: Array<string> = [];
+  const ended: Array<string> = [];
   const reports: Array<Supervisor.Connection> = [];
   let outdated = 0;
 
   const remaining = [...script];
 
-  const connect = Effect.gen(function* () {
+  const connect = Effect.fnUntraced(function* (bearer: Redacted.Redacted) {
     attempts.push(yield* Clock.currentTimeMillis);
+    used.push(Redacted.value(bearer));
     log.push("connect");
     const next = remaining.shift() ?? "unreachable";
 
@@ -105,9 +108,16 @@ const harnessWith = Effect.fnUntraced(function* (
       accountId: "account-lena",
       token: SubscriptionRef.get(token),
       changes: SubscriptionRef.changes(token),
-      ended: Effect.sync(() => {
-        ended += 1;
-      }),
+      // As the app's session store: only the token that ended goes.
+      ended: (gone) =>
+        Effect.andThen(
+          Effect.sync(() => void ended.push(Redacted.value(gone))),
+          SubscriptionRef.update(token, (current) =>
+            Option.exists(current, (each) => Redacted.value(each) === Redacted.value(gone))
+              ? Option.none()
+              : current,
+          ),
+        ),
     },
     lifecycle: { changes: SubscriptionRef.changes(lifecycle) },
     writes: Stream.fromPubSub(writes),
@@ -130,7 +140,9 @@ const harnessWith = Effect.fnUntraced(function* (
     token,
     offline,
     write: PubSub.publish(writes, undefined),
-    ended: () => ended,
+    ended: () => ended.length,
+    endedWith: ended,
+    used,
     reports,
     outdated: () => outdated,
   };
@@ -297,9 +309,40 @@ describe("Supervisor", () => {
       yield* device.links[0]?.close(Connection.CloseCode.sessionEnded) ?? Effect.void;
       yield* TestClock.adjust(Supervisor.debounce);
 
-      expect({ ended: device.ended(), attempts: device.attempts.length }).toEqual({
-        ended: 0,
-        attempts: 2,
+      expect({
+        endedWith: device.endedWith,
+        used: device.used,
+        token: Option.map(yield* SubscriptionRef.get(device.token), Redacted.value),
+      }).toEqual({
+        endedWith: ["token-1"],
+        used: ["token-1", "token-2"],
+        token: Option.some("token-2"),
+      });
+    }).pipe(Effect.scoped),
+  );
+
+  // The supervisor hears of a new sign-in a step after the session holds it. A 4401 for the old
+  // token that it handles in between ends the old token only.
+  it.effect("a close with 4401 in the same step as a new sign-in keeps the new token", () =>
+    Effect.gen(function* () {
+      const device = yield* harness(["link", "link"]);
+      yield* TestClock.adjust(Supervisor.debounce);
+
+      yield* Effect.all([
+        device.links[0]?.close(Connection.CloseCode.sessionEnded) ?? Effect.void,
+        SubscriptionRef.set(device.token, Option.some(Redacted.make("token-2"))),
+      ]);
+
+      yield* TestClock.adjust(Supervisor.debounce);
+
+      expect({
+        endedWith: device.endedWith,
+        used: device.used,
+        token: Option.map(yield* SubscriptionRef.get(device.token), Redacted.value),
+      }).toEqual({
+        endedWith: ["token-1"],
+        used: ["token-1", "token-2"],
+        token: Option.some("token-2"),
       });
     }).pipe(Effect.scoped),
   );

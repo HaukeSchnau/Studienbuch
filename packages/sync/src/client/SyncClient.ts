@@ -748,9 +748,10 @@ export const make = Effect.fnUntraced(function* (
     );
 
   yield* Supervisor.run({
-    connect: Effect.flatMap(transport.connect, (connected) =>
-      Supervisor.overRpc(connected, definition.contract),
-    ),
+    connect: (token) =>
+      Effect.flatMap(transport.connect(token), (connected) =>
+        Supervisor.overRpc(connected, definition.contract),
+      ),
     replicate,
     session,
     lifecycle,

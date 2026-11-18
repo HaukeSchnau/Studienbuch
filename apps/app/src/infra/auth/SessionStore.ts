@@ -46,10 +46,11 @@ export class Service extends Context.Service<
       publicComputer: boolean,
     ) => Effect.Effect<void, Keychain.Unavailable>;
     /**
-     * The server ended the session. The device stops using the token until the account signs in
-     * again. The stored token stays, so after a restart the server says so once more.
+     * The server ended the session of `token`. The device stops using it until the account signs
+     * in again; a newer token from a sign-in since stays. The stored token stays, so after a
+     * restart the server says so once more.
      */
-    readonly ended: Effect.Effect<void>;
+    readonly ended: (token: Redacted.Redacted) => Effect.Effect<void>;
     /** Forgets the account, at sign-out. */
     readonly forget: Effect.Effect<void, Keychain.Unavailable>;
   }
@@ -95,10 +96,15 @@ export const layer = Layer.effect(Service)(
           Option.some({ accountId, token: Option.some(token), demo, publicComputer }),
         );
       }),
-      ended: SubscriptionRef.update(
-        ref,
-        Option.map((signed) => ({ ...signed, token: Option.none() })),
-      ),
+      ended: (gone) =>
+        SubscriptionRef.update(
+          ref,
+          Option.map((signed) =>
+            sameToken(signed.token, Option.some(gone))
+              ? { ...signed, token: Option.none() }
+              : signed,
+          ),
+        ),
       forget: Effect.flatMap(SubscriptionRef.get(ref), (current) =>
         Option.match(current, {
           onNone: () => Effect.void,
@@ -144,7 +150,7 @@ export const session = (accountId: string) =>
               onSome: (bearer) =>
                 api.session(bearer).pipe(
                   Effect.flatMap(
-                    Option.match({ onNone: () => store.ended, onSome: () => Effect.void }),
+                    Option.match({ onNone: () => store.ended(bearer), onSome: () => Effect.void }),
                   ),
                   // Offline or a server hiccup proves nothing about the session.
                   Effect.catchTags({

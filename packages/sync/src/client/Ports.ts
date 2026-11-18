@@ -64,10 +64,11 @@ export class Session extends Context.Service<
     /** The token now, then each change, so the engine resumes when the account signs in again. */
     readonly changes: Stream.Stream<Option.Option<Redacted.Redacted>>;
     /**
-     * The engine calls this when the server says the session is gone: the ticket route answered
-     * 401, or the socket closed with `CloseCode.sessionEnded`. Local data and the outbox stay.
+     * The engine calls this when the server says the session of `token` is gone: the ticket route
+     * answered 401, or the socket closed with `CloseCode.sessionEnded`. A newer token the device
+     * holds by then stays. Local data and the outbox stay.
      */
-    readonly ended: Effect.Effect<void>;
+    readonly ended: (token: Redacted.Redacted) => Effect.Effect<void>;
   }
 >()("@stu/sync/client/Session") {}
 
@@ -102,7 +103,12 @@ export interface Connected {
  */
 export class Transport extends Context.Service<
   Transport,
-  { readonly connect: Effect.Effect<Connected, ConnectFailed, Scope.Scope> }
+  {
+    /** Connects as the session of `token`. */
+    readonly connect: (
+      token: Redacted.Redacted,
+    ) => Effect.Effect<Connected, ConnectFailed, Scope.Scope>;
+  }
 >()("@stu/sync/client/Transport") {}
 
 /** Where the server is: `EXPO_PUBLIC_API_URL` on native, the page's own origin on the web. */

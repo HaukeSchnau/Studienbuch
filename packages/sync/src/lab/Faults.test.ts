@@ -8,6 +8,7 @@ import * as Fiber from "effect/Fiber";
 import * as Predicate from "effect/Predicate";
 import * as PubSub from "effect/PubSub";
 import * as Queue from "effect/Queue";
+import * as Redacted from "effect/Redacted";
 import * as RpcClient from "effect/rpc/RpcClient";
 import * as RpcMessage from "effect/rpc/RpcMessage";
 import * as Schema from "effect/Schema";
@@ -98,7 +99,7 @@ const harness = Effect.gen(function* () {
   );
 
   const transport = faults.transport(network.transport({ id: "a", session }));
-  const connection = yield* transport.connect;
+  const connection = yield* transport.connect(Redacted.make("token-a"));
 
   // Request ids count per client, so a run and its replay send the same frames.
   let requests = 0;
@@ -334,11 +335,14 @@ describe("Faults on the simulated network", () => {
       yield* faults.setOffline(true);
       expect(yield* connection.closed).toBe(Faults.droppedCode);
 
-      const refused = yield* Effect.flip(Effect.scoped(transport.connect));
+      const refused = yield* Effect.flip(
+        Effect.scoped(transport.connect(Redacted.make("token-a"))),
+      );
+
       expect(refused).toStrictEqual(new Ports.ConnectFailed({ reason: "unreachable" }));
 
       yield* faults.setOffline(false);
-      yield* Effect.scoped(transport.connect);
+      yield* Effect.scoped(transport.connect(Redacted.make("token-a")));
     }),
   );
 

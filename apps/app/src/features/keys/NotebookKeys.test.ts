@@ -80,7 +80,7 @@ const device = (
       accountId: account,
       token: Effect.succeedNone,
       changes: Stream.empty,
-      ended: Effect.void,
+      ended: () => Effect.void,
     });
 
     const signedIn = SessionStore.layer.pipe(
