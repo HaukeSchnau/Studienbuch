@@ -278,6 +278,84 @@ describe("NotebookKeys", () => {
       }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
   );
 
+  // The server took a new account's first key, and its answer was lost, so the key status says
+  // Offline. "Ich habe ihn aufgeschrieben" after the network is back must not need a restart.
+  it.effect(
+    "saving the held card settles a first key whose answer was lost, then sends the card",
+    () =>
+      Effect.gen(function* () {
+        const server = yield* fakeServer;
+        const phone = yield* device(server);
+        const { bytes: code } = yield* RecoveryCode.generate;
+        yield* phone.run(NotebookKeys.holdCard(code, false));
+        yield* Ref.set(server.loseAnswer, true);
+        const lost = yield* phone.run(NotebookKeys.status);
+
+        yield* phone.run(NotebookKeys.saveHeldCard);
+        const { wrappers } = yield* Ref.get(server.stored);
+
+        assert.deepStrictEqual(
+          {
+            lost: lost._tag,
+            now: (yield* phone.run(NotebookKeys.status))._tag,
+            cards: wrappers.filter(({ statement }) => statement.kind === Wrapper.kindByte.code)
+              .length,
+          },
+          { lost: "Offline", now: "Unlocked", cards: 1 },
+        );
+      }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
+  );
+
+  // A public computer starts no notebook key. A passkey made there would let the student's own
+  // device start the notebook without the card, which could then never open it (Sol N1).
+  it.effect(
+    "a card from a public computer gives the own device's new key its wrapper, and opens a third",
+    () =>
+      Effect.gen(function* () {
+        const server = yield* fakeServer;
+        const kiosk = yield* device(server, { publicComputer: true });
+        const own = yield* device(server);
+        const third = yield* device(server);
+        const { bytes: code, text } = yield* RecoveryCode.generate;
+        yield* kiosk.run(NotebookKeys.holdCard(code, false));
+        const atKiosk = yield* kiosk.run(NotebookKeys.status);
+        yield* kiosk.run(NotebookKeys.reconcile);
+
+        // The own device signs in with the typed card, and the key status uses it once.
+        const typed = yield* NotebookKeys.typedCard(Redacted.value(text));
+        const started = yield* own.run(NotebookKeys.status);
+        yield* own.run(NotebookKeys.useCard(typed));
+
+        const locked = yield* third.run(NotebookKeys.status);
+        yield* third.run(NotebookKeys.useCard(typed));
+
+        const unsaved = { code, text, withPasskey: false };
+
+        assert.deepStrictEqual(
+          {
+            next: [
+              NotebookKeys.afterSaved(unsaved, true),
+              NotebookKeys.afterSaved(unsaved, false),
+              NotebookKeys.afterSaved({ ...unsaved, withPasskey: true }, false),
+            ],
+            atKiosk: atKiosk._tag,
+            started: started._tag,
+            locked: locked._tag,
+            third: (yield* third.run(NotebookKeys.status))._tag,
+            sameKey: Option.getOrUndefined(yield* third.rootKey),
+          },
+          {
+            next: ["read-back", "passkey", "done"],
+            atKiosk: "NotHere",
+            started: "Unlocked",
+            locked: "Locked",
+            third: "Unlocked",
+            sameKey: Option.getOrUndefined(yield* own.rootKey),
+          },
+        );
+      }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
+  );
+
   it.effect(
     "a demo account's devices unlock with the key the server derives for it, and publish no wrapper",
     () =>

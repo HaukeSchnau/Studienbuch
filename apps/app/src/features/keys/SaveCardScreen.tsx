@@ -6,15 +6,16 @@ import { Text } from "@stu/ui/Text";
 import { Theme } from "@stu/ui/Theme";
 import * as Exit from "effect/Exit";
 import * as Option from "effect/Option";
+import * as AsyncResult from "effect/reactivity/AsyncResult";
 import { useState } from "react";
 import { Keyboard, StyleSheet, View } from "react-native";
 
-import { publicComputer } from "../../infra/device/publicComputer.ts";
 import { AuthShell } from "../../ui/AuthShell.tsx";
 import { Form, Lead, PasskeyLead, ProblemText, reasonOf } from "../account/AccountForm.tsx";
+import { AccountState } from "../account/AccountState.ts";
 import { CardCode, CardCodeField, KeyProblemBox, keyReasonOf } from "./KeysUi.tsx";
 import { KeysState } from "./KeysState.ts";
-import type { NotebookKeys } from "./NotebookKeys.ts";
+import { NotebookKeys } from "./NotebookKeys.ts";
 import { useTypedCode } from "./RecoveryCodeScreen.tsx";
 
 type Step = "card" | "passkey" | "read-back";
@@ -29,8 +30,8 @@ export function useCardStep() {
 
 /**
  * "Deine Notfallkarte" after a sign-up without an address. The card is the account's way back, so
- * nothing skips this step. An account without a passkey is offered one next, and without it the
- * student types the code back once (D97 Q7), which also signs in with it.
+ * nothing skips this step. What follows is `NotebookKeys.afterSaved`: a passkey offer, then
+ * typing the code back once (D97 Q7), which also signs in with it.
  */
 export function SaveCardScreen({
   accountId,
@@ -44,7 +45,7 @@ export function SaveCardScreen({
   return (
     <AuthShell>
       {step === "card" ? (
-        <ShowCard accountId={accountId} card={card} onSaved={() => setStep("passkey")} />
+        <ShowCard accountId={accountId} card={card} onSaved={setStep} />
       ) : step === "passkey" ? (
         <OfferPasskey accountId={accountId} onLater={() => setStep("read-back")} />
       ) : (
@@ -61,9 +62,10 @@ function ShowCard({
 }: {
   readonly accountId: string;
   readonly card: NotebookKeys.UnsavedCard;
-  readonly onSaved: () => void;
+  readonly onSaved: (next: "passkey" | "read-back") => void;
 }) {
   const { color } = Theme.useTheme();
+  const keepsNothing = AsyncResult.getOrElse(useAtomValue(AccountState.keepsNothing), () => false);
   const [sent, send] = useAtom(KeysState.sendUnsavedCard(accountId), { mode: "promiseExit" });
 
   const [released, release] = useAtom(KeysState.releaseUnsavedCard(accountId), {
@@ -78,9 +80,10 @@ function ShowCard({
 
     if (Exit.isFailure(exit)) return;
 
-    // With a passkey, the card was the last step; without, the passkey offer follows.
-    if (card.withPasskey) await release();
-    else onSaved();
+    const next = NotebookKeys.afterSaved(card, keepsNothing);
+
+    if (next === "done") await release();
+    else onSaved(next);
   };
 
   return (
@@ -138,7 +141,6 @@ function OfferPasskey({
   readonly accountId: string;
   readonly onLater: () => void;
 }) {
-  const offDevice = useAtomValue(publicComputer);
   const [added, addPasskey] = useAtom(KeysState.addPasskey(accountId), { mode: "promiseExit" });
 
   const [released, release] = useAtom(KeysState.releaseUnsavedCard(accountId), {
@@ -154,9 +156,8 @@ function OfferPasskey({
       <AuthHeading>Schneller anmelden</AuthHeading>
       <Form>
         <PasskeyLead>
-          {offDevice
-            ? "Mit einem Passkey auf deinem Handy oder einem Sicherheitsschlüssel meldest du dich schneller an. Dieser Computer speichert ihn nicht. Die Notfallkarte brauchst du dann nur noch im Notfall."
-            : "Mit einem Passkey meldest du dich mit Face ID, deinem Fingerabdruck oder deinem Handy an. Die Notfallkarte brauchst du dann nur noch im Notfall."}
+          Mit einem Passkey meldest du dich mit Face ID, deinem Fingerabdruck oder deinem Handy an.
+          Die Notfallkarte brauchst du dann nur noch im Notfall.
         </PasskeyLead>
         <ProblemText reason={reasonOf(added)} />
         <KeyProblemBox reason={Option.orElse(keyReasonOf(added), () => keyReasonOf(released))} />

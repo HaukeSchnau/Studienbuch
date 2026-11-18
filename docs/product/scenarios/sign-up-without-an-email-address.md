@@ -12,7 +12,8 @@ Notfallkarte does. Either way the account's Notfallkarte shows next, before anyt
 nothing skips it: it is the account's way back. Until the student says it is saved, the device
 keeps the card, so a reload or a restart shows the same card again. Without a passkey the step
 offers one, and if the student says "Später", it ends with typing the code back once, which also
-signs in with it. "Lieber mit E-Mail-Adresse" keeps the email sign-up.
+signs in with it. A public computer offers no passkey and goes straight to the typing: the card
+then gives the notebook's key its way back on the student's own device. "Lieber mit E-Mail-Adresse" keeps the email sign-up.
 
 ## Example
 

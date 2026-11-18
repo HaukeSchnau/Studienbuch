@@ -294,33 +294,30 @@ export const unsavedCard = Atom.family((accountId: string) =>
 );
 
 /**
- * "Ich habe ihn aufgeschrieben": makes sure the server holds the unsaved card's wrapper and login.
- * The key status sent them as soon as the key existed (`NotebookKeys.reconcile`), so this only
- * retries a send that failed. A public computer starts no notebook, so there the card's first
- * sign-in on the student's own device adds it (`NotebookKeys.useCard`).
+ * "Ich habe ihn aufgeschrieben" (`NotebookKeys.saveHeldCard`). The key status sent the card as soon
+ * as the key existed, so this retries only a send that failed, and refreshes the status it may
+ * have settled.
  */
 export const sendUnsavedCard = Atom.family((accountId: string) =>
   runtime(accountId).fn<void>()((_, get) =>
     Effect.gen(function* () {
-      const now = yield* get.result(status(accountId));
       const held = yield* NotebookKeys.heldCard;
-
-      if (Option.isNone(held) || now._tag === "NotHere") return;
-      const { code, text, withPasskey } = held.value;
       const publicComputer = yield* Device.PublicComputer;
+      const cardOnly = Option.filter(held, (card) => !card.withPasskey);
 
       // A card-only account's card signs in since its sign-up, so the device makes the sign-in
       // fresh with it. Anyone holding this device could type the code shown anyway.
-      const signInAgain = Effect.andThen(
-        Account.signInWithCard(Redacted.value(text), publicComputer),
-        NotebookKeys.addCardWrapper(code),
-      );
-
-      yield* NotebookKeys.addCardWrapper(code).pipe(
+      yield* NotebookKeys.saveHeldCard.pipe(
         Effect.catchTags({
           "NotebookKeys.Problem": (refused) =>
-            refused.reason === "not-fresh" && !withPasskey ? signInAgain : Effect.fail(refused),
+            refused.reason !== "not-fresh" || Option.isNone(cardOnly)
+              ? Effect.fail(refused)
+              : Effect.andThen(
+                  Account.signInWithCard(Redacted.value(cardOnly.value.text), publicComputer),
+                  NotebookKeys.saveHeldCard,
+                ),
         }),
+        Effect.ensuring(refresh(accountId, get)),
       );
     }),
   ),

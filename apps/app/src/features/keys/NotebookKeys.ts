@@ -654,6 +654,34 @@ export const useCard = Effect.fn("NotebookKeys.useCard")(function* (
   yield* addCardWrapper(code);
 });
 
+/**
+ * "Ich habe ihn aufgeschrieben": makes sure the server holds the held card's wrapper and login. It
+ * asks for the key status afresh, which resends a first key whose answer was lost, instead of
+ * trusting one that said Offline. A public computer starts no notebook, so there the card's first
+ * sign-in on the student's own device adds the wrapper (`useCard`).
+ */
+export const saveHeldCard = Effect.gen(function* () {
+  const now = yield* status;
+  const held = yield* heldCard;
+
+  if (Option.isNone(held) || now._tag === "NotHere") return;
+
+  yield* addCardWrapper(held.value.code);
+});
+
+/**
+ * What follows "Ich habe ihn aufgeschrieben". An account with a passkey is done; one without is
+ * offered a passkey, then types the code back once (D97 Q7). A public computer skips the offer:
+ * no notebook key starts there, so a passkey made there would let the student's own device start
+ * the notebook without the card, which could then never open it.
+ */
+export const afterSaved = (card: UnsavedCard, publicComputer: boolean) =>
+  card.withPasskey
+    ? ("done" as const)
+    : publicComputer
+      ? ("read-back" as const)
+      : ("passkey" as const);
+
 /** The card of a sign-up without an address, kept on the device until the student saved it. */
 export interface UnsavedCard {
   readonly code: Redacted.Redacted<Uint8Array>;
