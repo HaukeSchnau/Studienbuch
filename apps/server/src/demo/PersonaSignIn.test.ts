@@ -318,6 +318,11 @@ describe.skipIf(Postgres18.socket === null)("Demo sign-in over the router", () =
             "Keys.fetchSeals": Effect.exit(
               client["Keys.fetchSeals"]({ method: Keys.RecoveryCode.make({}) }, bearer(mia)),
             ),
+            "AccountDeletion.deleted": Effect.exit(
+              client["AccountDeletion.deleted"](undefined, bearer(mia)),
+            ),
+            // Without a session, so Mia stays for the calls below.
+            "AccountDeletion.delete": Effect.exit(client["AccountDeletion.delete"](undefined)),
           });
 
           const lena = calls["Demo.signIn"];
@@ -379,6 +384,8 @@ describe.skipIf(Postgres18.socket === null)("Demo sign-in over the router", () =
               "Keys.init": "Success",
               "Keys.addWrapper": "Success",
               "Keys.fetchSeals": "Success",
+              "AccountDeletion.deleted": "Success",
+              "AccountDeletion.delete": "Failure",
             },
             miasKey: "Demo.NotDemo",
             lenasKey: handedOver,

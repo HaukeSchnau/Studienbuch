@@ -1,8 +1,8 @@
 /**
  * The sync engine in the server process: Studienbuch's definition over the server's Postgres,
  * pokes through a `LISTEN` connection of their own, and the routes at `/api/sync`. Its sessions
- * come from `Auth.layer`, the `Ports.SessionResolver` over Better Auth, and its key records from
- * the key store.
+ * come from `Auth.layer`, the `Ports.SessionResolver` over Better Auth, its key records from the
+ * key store, and its hold on an account from the account's deletion.
  */
 import * as PgClient from "@effect/sql-pg/PgClient";
 import { Studienbuch } from "@stu/core";
@@ -11,6 +11,7 @@ import { Listener, Ports, SyncServer } from "@stu/sync/server";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as SqlClient from "effect/sql/SqlClient";
+import { Deletion } from "../account/Deletion.ts";
 import { Deployment } from "../infra/config/Deployment.ts";
 import { KeyStore } from "../keys/KeyStore.ts";
 
@@ -40,6 +41,7 @@ export const layer = Layer.merge(SyncServer.routes, inspection).pipe(
     Layer.mergeAll(
       Listener.layer(PgClient.PgClient, (notification) => notification.payload),
       accountKeys,
+      Deletion.accounts,
       CryptoSuite.layer,
     ),
   ),

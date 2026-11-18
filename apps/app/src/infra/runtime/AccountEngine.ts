@@ -318,3 +318,27 @@ export const forget = <E, R>(
   unsent: Option.Option<Unsent>,
   erase: Effect.Effect<void, E, R>,
 ) => Effect.flatMap(Engines, (each) => each.forget(accountId, unsent, erase));
+
+/**
+ * Forgets `accountId` without asking about its unsent commands, but only if the device still holds
+ * it when the turn comes (`Engines.forget`): a late answer about an account never touches the one
+ * that holds the device by then, and one the device no longer holds left with everything it had.
+ * `forgotten` runs before the session goes.
+ */
+export const forgetIfHeld = <E, R>(accountId: string, forgotten: Effect.Effect<void, E, R>) =>
+  forget(
+    accountId,
+    Option.none(),
+    Effect.gen(function* () {
+      const store = yield* SessionStore.Service;
+      const held = Option.filter(yield* store.current, (signed) => signed.accountId === accountId);
+
+      if (Option.isNone(held)) return;
+      const signedOut = Effect.andThen(forgotten, Effect.asVoid(store.forget));
+
+      // A public computer's account kept everything in its engine, which `forget` stopped.
+      if (held.value.publicComputer) return yield* signedOut;
+
+      yield* Layers.endSignOut(accountId, signedOut);
+    }),
+  );

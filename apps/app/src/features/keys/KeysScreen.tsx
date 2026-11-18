@@ -2,7 +2,6 @@ import { useAtom, useAtomValue } from "@effect/atom-react";
 import { StatusSticker } from "@stu/domain-ui/status/StatusSticker";
 import { Button } from "@stu/ui/Button";
 import { Card } from "@stu/ui/Card";
-import { Field } from "@stu/ui/Field";
 import { Link } from "@stu/ui/Link";
 import { Text } from "@stu/ui/Text";
 import { Theme } from "@stu/ui/Theme";
@@ -14,11 +13,11 @@ import type * as Redacted from "effect/Redacted";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import { Redirect, useRouter } from "expo-router";
 import { useState } from "react";
-import { Keyboard, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 import { HeroScreen } from "../../ui/HeroScreen.tsx";
-import { ProblemText, reasonOf, reasonOfExit, useCredentials } from "../account/AccountForm.tsx";
-import { ConfirmByCard } from "./ConfirmByCard.tsx";
+import { ProblemText, reasonOf, reasonOfExit } from "../account/AccountForm.tsx";
+import { ConfirmSignIn } from "./ConfirmSignIn.tsx";
 import {
   CardCode,
   KeyProblem,
@@ -200,7 +199,11 @@ function Overview({
       })}
       {/* The actions need the device's key, which the summary waits for. */}
       {!AsyncResult.isSuccess(summary) ? null : Option.isSome(screen.waiting) ? (
-        <Confirm accountId={accountId} onConfirmed={retry} />
+        <ConfirmSignIn
+          accountId={accountId}
+          why="Für eine neue Notfallkarte oder einen neuen Passkey meldest du dich einmal neu an. So kann niemand mit deinem entsperrten Gerät heimlich einen Weg in dein Notizbuch anlegen."
+          onConfirmed={retry}
+        />
       ) : (
         <View style={styles.actions}>
           <Button
@@ -244,91 +247,6 @@ function Overview({
         </View>
       )}
     </HeroScreen>
-  );
-}
-
-/**
- * "Kurz bestätigen": a new sign-in, by passkey, password or, for an account without an address,
- * the Notfallkarte, before a new method.
- */
-function Confirm({
-  accountId,
-  onConfirmed,
-}: {
-  readonly accountId: string;
-  readonly onConfirmed: () => void;
-}) {
-  const { email, setEmail, password, setPassword, passwordField, toPassword } = useCredentials();
-  const [passkey, withPasskey] = useAtom(KeysState.withPasskey(accountId), { mode: "promiseExit" });
-
-  const [withPasswordResult, withPassword] = useAtom(KeysState.withPassword(accountId), {
-    mode: "promiseExit",
-  });
-
-  const confirmed = (exit: Exit.Exit<unknown, unknown>) => {
-    if (Exit.isSuccess(exit)) onConfirmed();
-  };
-
-  // The keyboard's submit isn't disabled with the button, and a second call of the running atom
-  // would answer both with "busy".
-  const submitPassword = () => {
-    if (withPasswordResult.waiting) return;
-
-    Keyboard.dismiss();
-    void withPassword({ email, password }).then(confirmed);
-  };
-
-  return (
-    <Card padded title="Kurz bestätigen">
-      <Text variant="subhead">
-        Für eine neue Notfallkarte oder einen neuen Passkey meldest du dich einmal neu an. So kann
-        niemand mit deinem entsperrten Gerät heimlich einen Weg in dein Notizbuch anlegen.
-      </Text>
-      <Button
-        label="Mit Passkey bestätigen"
-        block
-        busy={passkey.waiting}
-        onPress={() => void withPasskey().then(confirmed)}
-      />
-      <ProblemText reason={reasonOf(passkey)} />
-      <Field
-        label="E-Mail-Adresse"
-        value={email}
-        onChangeText={setEmail}
-        autoComplete="email"
-        textContentType="username"
-        keyboardType="email-address"
-        inputMode="email"
-        autoCapitalize="none"
-        autoCorrect={false}
-        returnKeyType="next"
-        submitBehavior="submit"
-        onSubmitEditing={toPassword}
-      />
-      <Field
-        ref={passwordField}
-        label="Passwort"
-        value={password}
-        onChangeText={setPassword}
-        autoComplete="current-password"
-        textContentType="password"
-        secureTextEntry
-        autoCapitalize="none"
-        autoCorrect={false}
-        returnKeyType="go"
-        onSubmitEditing={submitPassword}
-      />
-      <ProblemText reason={reasonOf(withPasswordResult)} />
-      <Button
-        label="Mit Passwort bestätigen"
-        kind="quiet"
-        block
-        busy={withPasswordResult.waiting}
-        onPress={submitPassword}
-      />
-      <Text variant="subhead">Ohne E-Mail-Adresse bestätigst du mit deiner Notfallkarte.</Text>
-      <ConfirmByCard accountId={accountId} kind="quiet" onConfirmed={onConfirmed} />
-    </Card>
   );
 }
 

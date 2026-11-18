@@ -57,6 +57,16 @@ export default function OverviewLayout() {
       <Stack.Screen name="hausaufgaben/neu" options={sheet("Hausaufgabe hinzufügen")} />
       <Stack.Screen name="hausaufgaben/[id]/bearbeiten" options={sheet("Hausaufgabe bearbeiten")} />
       <Stack.Screen
+        name="konto-loeschen"
+        options={{
+          title: "Konto löschen",
+          headerShown: Platform.OS === "ios",
+          headerTransparent: true,
+          headerTitle: "",
+          headerTintColor: "#FFFFFF",
+        }}
+      />
+      <Stack.Screen
         name="selbsttest"
         options={{ title: "Verschlüsselung", headerLargeTitle: Platform.OS === "ios" }}
       />

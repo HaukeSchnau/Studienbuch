@@ -494,6 +494,7 @@ export const make = Effect.gen(function* () {
           sessions,
           Fixture.crypto,
           Fixture.accountKeys,
+          Fixture.accounts,
           NobleCrypto.layer("server"),
           Layer.succeed(Listener.Service)(yield* Listener.Service),
           Layer.succeed(SqlClient.SqlClient)(yield* SqlClient.SqlClient),

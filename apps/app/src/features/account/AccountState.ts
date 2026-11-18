@@ -1,17 +1,22 @@
-import { useAtomSet, useAtomValue } from "@effect/atom-react";
+import { useAtomMount, useAtomSet, useAtomValue } from "@effect/atom-react";
 import type { Access } from "@stu/api/Access";
+import { AccountDeletion } from "@stu/api/AccountDeletion";
 import { CryptoSuite } from "@stu/e2ee";
 import { SyncClient, SyncQuery } from "@stu/sync/client";
 import * as Effect from "effect/Effect";
 import * as Equal from "effect/Equal";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import * as Redacted from "effect/Redacted";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Atom from "effect/reactivity/Atom";
+import * as AtomRegistry from "effect/reactivity/AtomRegistry";
+import * as RpcClient from "effect/rpc/RpcClient";
 import * as Stream from "effect/Stream";
 import * as SubscriptionRef from "effect/SubscriptionRef";
 import { useEffect } from "react";
 
+import { ApiProtocol } from "../../infra/api/ApiProtocol.ts";
 import { SessionStore } from "../../infra/auth/SessionStore.ts";
 import { layer as signUpStore } from "../../infra/auth/signUpStore.ts";
 import { publicComputer } from "../../infra/device/publicComputer.ts";
@@ -21,6 +26,8 @@ import { AccountEngine } from "../../infra/runtime/AccountEngine.ts";
 import { Layers } from "../../infra/runtime/Layers.ts";
 import { Offered } from "../keys/Offered.ts";
 import { Account } from "./Account.ts";
+import { Deletion } from "./Deletion.ts";
+import { DeletionServer } from "./DeletionServer.ts";
 import { PasskeyCheck } from "./PasskeyCheck.ts";
 
 // The account flows as atoms for the screens, on this device's layers. Each sign-in hands over the
@@ -28,9 +35,37 @@ import { PasskeyCheck } from "./PasskeyCheck.ts";
 
 export * as AccountState from "./AccountState.ts";
 
+const bearer = (token: Redacted.Redacted) => ({
+  headers: { authorization: `Bearer ${Redacted.value(token)}` },
+});
+
+const unreachable = Effect.fail(new DeletionServer.Unreachable());
+
+/** `DeletionServer` over HTTP to `Ports.Server`, with the token each call names. */
+const deletionServer = Layer.effect(DeletionServer.Service)(
+  Effect.gen(function* () {
+    const client = yield* RpcClient.make(AccountDeletion.Rpcs);
+
+    return DeletionServer.Service.of({
+      delete: (token) =>
+        client["AccountDeletion.delete"](undefined, bearer(token)).pipe(
+          Effect.catchTags({ RpcClientError: () => unreachable }),
+        ),
+      deleted: (token) =>
+        client["AccountDeletion.deleted"](undefined, bearer(token)).pipe(
+          Effect.catchTags({
+            RpcClientError: () => unreachable,
+            "AccountDeletion.Unavailable": () => unreachable,
+          }),
+        ),
+    });
+  }),
+).pipe(Layer.provide(ApiProtocol.authenticated(Effect.succeedNone)));
+
 const runtime = Atom.runtime(
   Layer.mergeAll(
     authenticator,
+    deletionServer,
     CryptoSuite.layer,
     Account.confirmations.pipe(Layer.provideMerge(signUpStore)),
   ).pipe(Layer.provideMerge(AccountEngine.device)),
@@ -191,9 +226,9 @@ export const confirmEmail = runtime.fn<{
   Account.confirmEmail(email, code, Option.fromNullishOr(password)),
 );
 
-// `cancelSignUp`, `finish`, `leave` and `signOut` run while their screen goes away. They stay alive
-// so the sign-up's entry goes, the sign-in completes, an unfinished session is kept or ends, and
-// the device is wiped and the session revoked.
+// `cancelSignUp`, `finish`, `leave`, `signOut` and `deleteAccount` run while their screen goes away.
+// They stay alive so the sign-up's entry goes, the sign-in completes, an unfinished session is kept
+// or ends, and the device is wiped and the session revoked.
 
 export const cancelSignUp = runtime
   .fn<void>()(() => Account.cancelSignUp)
@@ -323,6 +358,65 @@ export const signOut = runtime
     ),
   )
   .pipe(Atom.keepAlive);
+
+/**
+ * What this tab forgets of an account that was deleted, before its session goes. The gates then
+ * lead to the start, not to "Anmelden", also when another account signed out here before.
+ */
+const leftDeleted = Effect.flatMap(AtomRegistry.AtomRegistry, (registry) =>
+  Effect.sync(() => {
+    registry.set(signedOut, false);
+    registry.set(Offered.prf, Option.none());
+    registry.set(Offered.card, Option.none());
+  }),
+);
+
+/**
+ * Leaves the deleted account by its id, without asking about its unsent changes, which went with it
+ * on the server (`AccountEngine.forgetIfHeld`), and forgets it in this tab (`leftDeleted`). A
+ * failure before the point of no return is `Deletion.Unchanged` and can run again; one after it
+ * is "forget-failed" and finishes at the next start.
+ */
+export const leaveDeleted = (accountId: string) =>
+  AccountEngine.forgetIfHeld(accountId, leftDeleted).pipe(
+    Effect.catchTags({
+      // `Engines.forget` fails with these before it writes the note, its point of no return.
+      "AccountEngine.MoreUnsent": () => unchanged,
+      "Keychain.Unavailable": () => unchanged,
+      SqlError: () => unchanged,
+      "Forgetting.Unfinished": () => Effect.fail(new Deletion.Problem({ reason: "forget-failed" })),
+    }),
+  );
+
+const unchanged = Effect.fail(new Deletion.Unchanged());
+
+/**
+ * Why the device's account couldn't be deleted, for "Konto löschen". It belongs to that account:
+ * another account holding the device starts without one.
+ */
+export const deletionProblem = memory(Option.none<Deletion.Reason>());
+
+/** "Konto löschen" (`Deletion.deleteAccount`), which leaves its reason in `deletionProblem`. */
+export const deleteAccount = runtime
+  .fn<void>()((_, get) =>
+    Effect.andThen(
+      Effect.sync(() => get.set(deletionProblem, Option.none())),
+      Deletion.deleteAccount(leaveDeleted, (reason) =>
+        Effect.sync(() => get.set(deletionProblem, Option.some(reason))),
+      ),
+    ),
+  )
+  .pipe(Atom.keepAlive);
+
+const forgetWhenDeleted = runtime
+  .atom(Deletion.forgetWhenDeleted(leaveDeleted))
+  .pipe(Atom.keepAlive);
+
+/**
+ * Forgets the account when its session ends because it was deleted (`Deletion.forgetWhenDeleted`).
+ * The root layout mounts it, so it watches from the start.
+ */
+export const useForgetWhenDeleted = () => useAtomMount(forgetWhenDeleted);
 
 /** The device check's two steps (design/spikes/passkey-prf.md). */
 export const checkCreate = runtime.fn<void>()(() => PasskeyCheck.create);

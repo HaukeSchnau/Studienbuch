@@ -9,6 +9,7 @@ import * as Atom from "effect/reactivity/Atom";
 import * as Stream from "effect/Stream";
 
 import { ApiProtocol } from "../../infra/api/ApiProtocol.ts";
+import { AuthApi } from "../../infra/auth/AuthApi.ts";
 import { SessionStore } from "../../infra/auth/SessionStore.ts";
 import { Device } from "../../infra/device/Device.ts";
 import { Passkeys } from "../../infra/passkeys/Passkeys.ts";
@@ -217,7 +218,7 @@ export const unlockWithCode = Atom.family((accountId: string) =>
 
 /**
  * A passkey prompt, which also signs in again, and its PRF output: "Mit Passkey" on a locked
- * device, and the confirmation that makes the sign-in fresh before a new Notfallkarte.
+ * device, which fails when the passkey can't open the notebook.
  */
 export const withPasskey = Atom.family((accountId: string) =>
   runtime(accountId).fn<void>()(
@@ -234,6 +235,25 @@ export const withPasskey = Atom.family((accountId: string) =>
   ),
 );
 
+/**
+ * "Mit Passkey bestätigen": a passkey prompt that signs in again, which is all "Kurz bestätigen"
+ * needs. Its PRF output unlocks or heals what it can (`NotebookKeys.afterConfirmation`).
+ */
+export const confirmWithPasskey = Atom.family((accountId: string) =>
+  runtime(accountId).fn<void>()(
+    (_, get) =>
+      Effect.gen(function* () {
+        const used = yield* Account.attempt(
+          Account.signInWithPasskey(yield* Device.PublicComputer),
+        );
+
+        yield* NotebookKeys.afterConfirmation(used.credentialId, used.prf);
+        yield* refresh(accountId, get);
+      }),
+    oneAttempt,
+  ),
+);
+
 /** The password confirmation that makes the sign-in fresh, where the account has no passkey. */
 export const withPassword = Atom.family((accountId: string) =>
   runtime(accountId).fn<{ readonly email: string; readonly password: string }>()(
@@ -242,6 +262,21 @@ export const withPassword = Atom.family((accountId: string) =>
         Account.attempt(Account.signIn(email, password, publicComputer)),
       ),
     oneAttempt,
+  ),
+);
+
+/** How "Kurz bestätigen" can confirm the account (`AuthApi.waysIn`), asked when it shows. */
+export const waysIn = Atom.family((accountId: string) =>
+  runtime(accountId).atom(
+    Effect.gen(function* () {
+      const store = yield* SessionStore.Service;
+      const api = yield* AuthApi.Service;
+      const token = Option.flatMap(yield* store.current, (signed) => signed.token);
+
+      if (Option.isNone(token)) return yield* new NotebookKeys.Problem({ reason: "signed-out" });
+
+      return yield* api.waysIn(token.value);
+    }),
   ),
 );
 

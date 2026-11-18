@@ -38,3 +38,13 @@ export function SignedOut({ children }: { readonly children: ReactNode }) {
 
   return access === "signed-out" || access === "ended" ? children : <Redirect href="/" />;
 }
+
+/**
+ * Renders nothing, and forgets the device's account once the server says it was deleted
+ * (`AccountState.useForgetWhenDeleted`). The root layout renders it for the whole run.
+ */
+export function ForgetWhenDeleted() {
+  AccountState.useForgetWhenDeleted();
+
+  return null;
+}

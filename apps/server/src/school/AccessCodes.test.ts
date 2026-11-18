@@ -239,6 +239,67 @@ describe.skipIf(Postgres18.socket === null)("AccessCodes on PostgreSQL 18", () =
       }),
     );
 
+    it.effect("two confirmations of one sign-up at once admit it once", () =>
+      Effect.gen(function* () {
+        const sql = yield* SqlClient.SqlClient;
+        yield* Schools.publish(data);
+
+        const minted = yield* AccessCodes.mint({
+          school,
+          kind: "student",
+          maxUses: 2,
+        });
+
+        const { token } = yield* AccessCodes.reserve(minted.code);
+        yield* signUp("ivo", token);
+
+        // Holding the code's row stops the first confirmation after it took the sign-up, so the
+        // second starts while the first still holds what it took.
+        const holding = yield* Deferred.make<void>();
+        const release = yield* Deferred.make<void>();
+
+        const code = yield* Effect.forkChild(
+          sql.withTransaction(
+            Effect.andThen(
+              sql`select 1 from access_code where id = ${minted.id} for update`,
+              Effect.andThen(Deferred.succeed(holding, undefined), Deferred.await(release)),
+            ),
+          ),
+        );
+
+        yield* Deferred.await(holding);
+
+        const first = yield* Effect.forkChild(
+          Effect.exit(AccessCodes.admitConfirmed("ivo", Option.some(token))),
+        );
+
+        yield* DatabaseTesting.waiting(1);
+
+        const second = yield* Effect.forkChild(
+          Effect.exit(AccessCodes.admitConfirmed("ivo", Option.some(token))),
+        );
+
+        yield* DatabaseTesting.waiting(2);
+        yield* Deferred.succeed(release, undefined);
+        yield* Fiber.join(code);
+
+        const exits = [yield* Fiber.join(first), yield* Fiber.join(second)];
+
+        expect({
+          finished: exits.map((exit) => exit._tag),
+          admitted: exits.filter((exit) => exit._tag === "Success" && Option.isSome(exit.value))
+            .length,
+          ivo: yield* SchoolTesting.memberships("ivo"),
+          stored: yield* uses(minted.id),
+        }).toEqual({
+          finished: ["Success", "Success"],
+          admitted: 1,
+          ivo: expect.arrayContaining(["school am-see reader"]),
+          stored: { uses: 1, reserved: 1 },
+        });
+      }),
+    );
+
     // A hash of the student's password, often tied to a mistyped or a stranger's address, must not
     // stay in the database once nothing can confirm with it.
     it.effect(

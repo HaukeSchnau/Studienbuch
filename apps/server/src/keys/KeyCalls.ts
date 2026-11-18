@@ -9,7 +9,6 @@ import * as Effect from "effect/Effect";
 import type * as Headers from "effect/http/Headers";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
-import * as SqlClient from "effect/sql/SqlClient";
 import { Auth } from "../auth/Auth.ts";
 import { KeyStore } from "./KeyStore.ts";
 
@@ -19,7 +18,6 @@ export const handlers = Keys.Rpcs.toLayer(
   Effect.gen(function* () {
     const sessions = yield* Ports.SessionResolver;
     const auth = yield* Auth.Service;
-    const sql = yield* SqlClient.SqlClient;
 
     const caller = Effect.fn("KeyCalls.caller")(function* (headers: Headers.Headers) {
       const session = yield* sessions.resolve(headers);
@@ -47,12 +45,10 @@ export const handlers = Keys.Rpcs.toLayer(
             return yield* new Keys.Invalid({ reason: "statement" });
           }
 
-          yield* sql.withTransaction(
-            KeyStore.publishFirst(
-              session.accountId,
-              record,
-              Option.some({ wrapper, session: session.sessionId }),
-            ),
+          yield* KeyStore.publishFirst(
+            session.accountId,
+            record,
+            Option.some({ wrapper, session: session.sessionId }),
           );
         },
         Effect.catchTags({ SqlError: Effect.die }),

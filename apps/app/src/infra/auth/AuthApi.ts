@@ -134,6 +134,18 @@ const sessionExpiry = HttpIncomingMessage.schemaBodyJson(
   Schema.NullOr(Schema.Struct({ session: Schema.Struct({ expiresAt: Schema.String }) })),
 );
 
+const sessionUser = HttpIncomingMessage.schemaBodyJson(
+  Schema.NullOr(Schema.Struct({ user: Schema.Struct({ email: Schema.String }) })),
+);
+
+const passkeyList = HttpIncomingMessage.schemaBodyJson(Schema.Array(Schema.Unknown));
+
+/** How the session's account can sign in again: with a password, a passkey, both or neither. */
+export interface WaysIn {
+  readonly password: boolean;
+  readonly passkey: boolean;
+}
+
 const refusal = HttpIncomingMessage.schemaBodyJson(Schema.Struct({ code: Schema.String }));
 const creationOptions = HttpIncomingMessage.schemaBodyJson(CreationOptions);
 const requestOptions = HttpIncomingMessage.schemaBodyJson(RequestOptions);
@@ -172,6 +184,11 @@ export class Service extends Context.Service<
     /** When the session ends now, or `None` once it ended. A call also renews it (D27). */
     readonly session: (token: Redacted.Redacted) => Effect.Effect<Option.Option<Date>, Failure>;
     readonly signOut: (token: Redacted.Redacted) => Effect.Effect<void, Failure>;
+    /**
+     * How the session's account can sign in again. An account without an address has no password,
+     * and one that signed up with its Notfallkarte may have no passkey either.
+     */
+    readonly waysIn: (token: Redacted.Redacted) => Effect.Effect<WaysIn, Failure>;
     readonly passkeySignInOptions: Effect.Effect<Ceremony<RequestOptions>, Failure>;
     readonly passkeySignIn: (
       challenge: string,
@@ -321,6 +338,26 @@ export const layer = Layer.effect(Service)(
         ),
       signOut: (token) =>
         Effect.asVoid(send(HttpClientRequest.bearerToken(post("/sign-out", {}), token))),
+      waysIn: (token) =>
+        Effect.all({
+          password: Effect.map(
+            read(
+              HttpClientRequest.bearerToken(HttpClientRequest.get("/get-session"), token),
+              sessionUser,
+            ),
+            (found) => found !== null && !Accounts.isPlaceholder(found.user.email),
+          ),
+          passkey: Effect.map(
+            read(
+              HttpClientRequest.bearerToken(
+                HttpClientRequest.get("/passkey/list-user-passkeys"),
+                token,
+              ),
+              passkeyList,
+            ),
+            (passkeys) => passkeys.length > 0,
+          ),
+        }),
       passkeySignInOptions: ceremony(
         HttpClientRequest.get("/passkey/generate-authenticate-options"),
         requestOptions,

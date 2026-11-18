@@ -16,6 +16,7 @@ import * as Hex from "effect/encoding/Hex";
 import * as Layer from "effect/Layer";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
+import { Deletion } from "../account/Deletion.ts";
 import { Sync as ServerSync } from "../sync/Sync.ts";
 import { DemoKeys } from "./DemoKeys.ts";
 import { DemoSchool } from "./DemoSchool.ts";
@@ -210,5 +211,5 @@ export const seal = Effect.fn("DemoNotebooks.seal")(function* (
  */
 export const layer = Push.layer(Studienbuch.schema.contract).pipe(
   Layer.provideMerge(SyncServer.writers(Studienbuch.schema)),
-  Layer.provide(ServerSync.accountKeys),
+  Layer.provide(Layer.merge(ServerSync.accountKeys, Deletion.accounts)),
 );

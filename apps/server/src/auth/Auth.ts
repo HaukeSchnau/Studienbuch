@@ -32,6 +32,7 @@ import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import * as Stream from "effect/Stream";
 import { Pool } from "pg";
+import { Deletion } from "../account/Deletion.ts";
 import { DemoAccounts } from "../demo/DemoAccounts.ts";
 import { Deployment } from "../infra/config/Deployment.ts";
 import { Database } from "../infra/database/Database.ts";
@@ -1083,13 +1084,16 @@ const make = Effect.gen(function* () {
 
 /**
  * Better Auth, and the `SessionResolver` the sync server checks tickets and connections with. A
- * session ends for the resolver when Better Auth deletes its row: at sign-out, when another device
- * revokes it, and when a device presents it after it expired. The revocations stay in this
- * process, so a second process would need them through Postgres.
+ * session ends for the resolver when Better Auth deletes its row (sign-out, revocation, expiry) or
+ * its account is deleted (`Deletion.Ended`). The revocations stay in this process, so a second
+ * process would need them through Postgres.
  */
 export const layer = Layer.effect(Ports.SessionResolver)(
-  Effect.map(Service, (auth) => auth.sessions),
-).pipe(Layer.provideMerge(Layer.effect(Service)(make)));
+  Effect.zipWith(Service, Deletion.Ended, (auth, ended) => ({
+    resolve: auth.sessions.resolve,
+    revoked: Stream.merge(auth.sessions.revoked, Stream.fromPubSub(ended)),
+  })),
+).pipe(Layer.provideMerge(Layer.effect(Service)(make)), Layer.provideMerge(Deletion.ended));
 
 /**
  * Better Auth at `Accounts.path`. Devices keep no cookies: a session is a bearer token in the device's

@@ -3,7 +3,7 @@
   "version": "9",
   "dialect": "postgres",
   "id": "fc480f98-37eb-46c3-9201-b34213f678df",
-  "prevIds": ["7cb2cc3f-395c-4208-a8fe-6db5f0069aa7"],
+  "prevIds": ["f904cf38-c9b3-45e8-833a-221afcc58781"],
   "footprints": [
     {
       "statementType": "create_table",
