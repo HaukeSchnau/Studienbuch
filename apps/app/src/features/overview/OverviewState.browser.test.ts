@@ -3,6 +3,7 @@ import { CivilTime, Homework, Notebook, NotebookProfile } from "@stu/core";
 import { SyncClient, SyncQuery } from "@stu/sync/client";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
+import * as Redacted from "effect/Redacted";
 import type * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Atom from "effect/reactivity/Atom";
 import * as AtomRegistry from "effect/reactivity/AtomRegistry";
@@ -10,6 +11,7 @@ import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import * as Stream from "effect/Stream";
 
+import { SessionStore } from "../../infra/auth/SessionStore.ts";
 import { AccountEngine } from "../../infra/runtime/AccountEngine.ts";
 import { HomeworkState } from "../homework/HomeworkState.ts";
 import { OnboardingState } from "../onboarding/OnboardingState.ts";
@@ -78,6 +80,16 @@ it.effect("the home's queries run again for writes to what they read, and only f
   Effect.gen(function* () {
     const registry = AtomRegistry.make();
     yield* Effect.addFinalizer(() => Effect.sync(() => registry.dispose()));
+
+    // Signed in on a public computer, so the engine keeps its data in memory.
+    yield* AtomRegistry.getResult(
+      registry,
+      Atom.runtime(AccountEngine.device).atom(
+        Effect.flatMap(SessionStore.Service, (store) =>
+          store.signedIn({ accountId, token: Redacted.make("token"), demo: false }, true),
+        ),
+      ),
+    );
 
     const runtime = Atom.runtime(AccountEngine.app(accountId));
     registry.mount(runtime);

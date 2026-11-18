@@ -24,6 +24,7 @@ import { PendingSignUp } from "../../infra/auth/PendingSignUp.ts";
 import { Keychain } from "../../infra/keychain/Keychain.ts";
 import { MemoryKeychain } from "../../infra/keychain/MemoryKeychain.ts";
 import { Passkeys } from "../../infra/passkeys/Passkeys.ts";
+import { Forgetting } from "../../infra/runtime/Forgetting.ts";
 import { Account } from "./Account.ts";
 
 const signedIn = (accountId: string, token: string): AuthApi.SignedIn => ({
@@ -34,11 +35,17 @@ const signedIn = (accountId: string, token: string): AuthApi.SignedIn => ({
 const server = Layer.succeed(Ports.Server)({ origin: new URL("https://one.example") });
 const phone = Device.layer({ name: "phone" });
 
-const store = SessionStore.layer.pipe(
-  Layer.provide(DeviceSessions.layer),
-  Layer.provide(MemoryKeychain.layer()),
-  Layer.provide(phone),
-  Layer.provide(server),
+/** A device that left no sign-out unfinished and runs none. */
+const nothingUnfinished = Layer.succeed(Forgetting.Service)({ keep: (session) => session });
+
+const store = Layer.merge(
+  SessionStore.layer.pipe(
+    Layer.provide(DeviceSessions.layer),
+    Layer.provide(MemoryKeychain.layer()),
+    Layer.provide(phone),
+    Layer.provide(server),
+  ),
+  nothingUnfinished,
 );
 
 /** One run of the app on a device whose keychain is `keychain`, so a test can restart it. */
@@ -187,6 +194,48 @@ describe("Account", () => {
                 ),
               signOut: (token) =>
                 Ref.update(revoked, (tokens) => [...tokens, Redacted.value(token)]),
+            }),
+          ),
+        ),
+      );
+    }),
+  );
+
+  // A sign-out stopped after its point of no return, so its note stays. The next session waits
+  // until what the account left is gone, or the device would start it on half-deleted data.
+  it.effect("keeps a new session only once the sign-out the device left unfinished finished", () =>
+    Effect.gen(function* () {
+      const tries = yield* Ref.make(0);
+
+      const finish = Effect.flatMap(
+        Ref.updateAndGet(tries, (count) => count + 1),
+        (count) =>
+          count === 1
+            ? Effect.fail(new Forgetting.Unfinished({ cause: "keychain locked" }))
+            : Effect.void,
+      );
+
+      yield* Effect.gen(function* () {
+        const sessions = yield* SessionStore.Service;
+
+        const refused = yield* Effect.flip(Account.keep(signedIn("lena", "token-lena"), false));
+
+        assert.strictEqual(refused.reason, "failed");
+        assert.isTrue(Option.isNone(yield* sessions.current));
+
+        yield* Account.keep(signedIn("lena", "token-lena"), false);
+
+        assert.deepStrictEqual(
+          Option.map(yield* sessions.current, (signed) => signed.accountId),
+          Option.some("lena"),
+        );
+      }).pipe(
+        Effect.provide(
+          Layer.mergeAll(
+            store,
+            AuthApiTesting.layer({}),
+            Layer.succeed(Forgetting.Service)({
+              keep: (session) => Effect.andThen(finish, session),
             }),
           ),
         ),
@@ -349,8 +398,11 @@ describe("Account", () => {
         const sessions = yield* SessionStore.Service;
 
         yield* sessions.signedIn({ ...signedIn("lena", "token-lena"), demo: false }, false);
-        yield* Account.signOut(({ accountId }) =>
-          Ref.update(forgotten, (accounts) => [...accounts, accountId]),
+        yield* Account.signOut(({ accountId }, forgetSession) =>
+          Effect.andThen(
+            Ref.update(forgotten, (accounts) => [...accounts, accountId]),
+            forgetSession,
+          ),
         );
 
         assert.isTrue(Option.isNone(yield* sessions.current));

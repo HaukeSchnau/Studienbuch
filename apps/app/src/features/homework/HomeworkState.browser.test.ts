@@ -5,6 +5,7 @@ import { SyncClient } from "@stu/sync/client";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import * as Redacted from "effect/Redacted";
 import * as KeyValueStore from "effect/persistence/KeyValueStore";
 import type * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Atom from "effect/reactivity/Atom";
@@ -12,6 +13,7 @@ import * as AtomRegistry from "effect/reactivity/AtomRegistry";
 import * as Schema from "effect/Schema";
 import * as Stream from "effect/Stream";
 
+import { SessionStore } from "../../infra/auth/SessionStore.ts";
 import { AccountEngine } from "../../infra/runtime/AccountEngine.ts";
 import { HomeworkInput } from "./HomeworkInput.ts";
 import { HomeworkState } from "./HomeworkState.ts";
@@ -129,6 +131,12 @@ it("a refusal about homework another device deleted keeps its card, and none sho
   assert.deepStrictEqual(Refused.local(held, titles, false), []);
 });
 
+/** Signs `accountId` in on a public computer, so its engine keeps everything in memory. */
+const signedIn = (accountId: string) =>
+  Effect.flatMap(SessionStore.Service, (store) =>
+    store.signedIn({ accountId, token: Redacted.make(`token-${accountId}`), demo: false }, true),
+  );
+
 /**
  * A fresh account on this device whose engine stays offline and holds no notebook, so the device
  * refuses every tick and delete itself.
@@ -140,6 +148,8 @@ const refusingAccount = (accountId: string) =>
 
     const result = <A, E>(atom: Atom.Atom<AsyncResult.AsyncResult<A, E>>) =>
       AtomRegistry.getResult(registry, atom, { suspendOnWaiting: true });
+
+    yield* result(Atom.runtime(AccountEngine.device).atom(signedIn(accountId)));
 
     const engine = Atom.runtime(AccountEngine.app(accountId));
     yield* result(engine.atom(Effect.flatMap(SyncClient.Service, (sync) => sync.setOffline(true))));
@@ -191,8 +201,8 @@ it.effect("refusals that arrive together all stay, and cards dismissed together 
   }),
 );
 
-// Sign-out closes the account's engine and deletes its database; an account without a kept session
-// lives in memory, so closing its engine is all of that. Signing in again opens a fresh one.
+// Sign-out stops the account's engine and deletes its database; a public computer's account lives
+// in memory, so stopping its engine is all of that. Signing in again opens a fresh one.
 it.effect("signing in again after a sign-out shows no refusal from before, and no error", () =>
   Effect.gen(function* () {
     const accountId = "refusals-sign-out";
@@ -207,7 +217,16 @@ it.effect("signing in again after a sign-out shows no refusal from before, and n
     assert.strictEqual((yield* AtomRegistry.getResult(registry, refusals)).length, 1);
     leave();
 
-    yield* result(Atom.runtime(AccountEngine.device).atom(AccountEngine.close(accountId)));
+    yield* result(
+      Atom.runtime(AccountEngine.device).atom(
+        Effect.flatMap(SessionStore.Service, (store) =>
+          Effect.andThen(
+            AccountEngine.forget(accountId, Option.none(), store.forget),
+            signedIn(accountId),
+          ),
+        ),
+      ),
+    );
 
     assert.deepStrictEqual(yield* AtomRegistry.getResult(registry, refusals), []);
   }),

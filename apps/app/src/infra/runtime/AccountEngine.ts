@@ -1,6 +1,6 @@
 import { Studienbuch } from "@stu/core";
 import { CryptoSuite } from "@stu/e2ee";
-import { type Ports, SyncClient, WebSocketTransport } from "@stu/sync/client";
+import { type Outbox, Ports, SyncClient, WebSocketTransport } from "@stu/sync/client";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
@@ -8,11 +8,17 @@ import * as Fiber from "effect/Fiber";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Reactivity from "effect/reactivity/Reactivity";
+import * as Ref from "effect/Ref";
+import * as Schema from "effect/Schema";
 import * as Scope from "effect/Scope";
 import * as Semaphore from "effect/Semaphore";
+import * as SqlClient from "effect/sql/SqlClient";
+import type * as SqlError from "effect/sql/SqlError";
 
 import { AuthApi } from "../auth/AuthApi.ts";
 import { SessionStore } from "../auth/SessionStore.ts";
+import type { Keychain } from "../keychain/Keychain.ts";
+import { Forgetting } from "./Forgetting.ts";
 import { Layers } from "./Layers.ts";
 
 // The sync engine of the account signed in on a device, on that account's database, secrets and
@@ -65,80 +71,237 @@ type Running = Layer.Success<ReturnType<typeof forApp>> | EngineScope;
 
 type Failure = Layer.Error<ReturnType<typeof forApp>>;
 
+/** The device holds no session of the account, as once it signed out, so its engine stays off. */
+export class SignedOut extends Schema.TaggedError<SignedOut, { readonly brand: unique symbol }>()(
+  "AccountEngine.SignedOut",
+  { accountId: Schema.String },
+) {}
+
+/** A command the sign-out's question didn't show waits for the server, the newest one here. */
+export class MoreUnsent extends Schema.TaggedError<MoreUnsent, { readonly brand: unique symbol }>()(
+  "AccountEngine.MoreUnsent",
+  { newest: Schema.Int },
+) {}
+
 /**
  * The device's running engines. An account's engine starts at its first use and runs until
- * sign-out closes it, because its database may be open only once, and only a closed one can be
- * deleted. It keeps its data where the account's session chose at sign-in, and in memory for an
- * account the device holds no session of.
+ * sign-out stops it, because its database may be open only once, and only a closed one can be
+ * deleted. It keeps its data where the account's session chose at sign-in.
  */
 export class Engines extends Context.Service<
   Engines,
   {
-    readonly context: (accountId: string) => Effect.Effect<Context.Context<Running>, Failure>;
-    /** Stops the account's engine and waits until its database is closed. */
-    readonly close: (accountId: string) => Effect.Effect<void>;
+    /** The account's engine, while the device holds its session and hasn't begun to forget it. */
+    readonly context: (
+      accountId: string,
+    ) => Effect.Effect<Context.Context<Running>, Failure | SignedOut>;
+    /**
+     * Signs the account out in one turn. `unsent` is what the question before showed, `None` if
+     * unknown; a command it didn't show refuses (`moreThan`). Then the note (`Forgetting.begin`)
+     * marks the point of no return, the engine stops, and `erase` deletes the rest and ends with
+     * the session (`Forgetting.end`). No write and no engine of the account starts in between.
+     */
+    readonly forget: <E, R>(
+      accountId: string,
+      unsent: Option.Option<Unsent>,
+      erase: Effect.Effect<void, E, R>,
+    ) => Effect.Effect<void, E | MoreUnsent | SqlError.SqlError | Keychain.Unavailable, R>;
+    /**
+     * Keeps a new session (`Forgetting.Service`): `session` runs in a turn of its own, after the
+     * sign-outs the device left unfinished, so no sign-out deletes what it stores.
+     */
+    readonly keep: <A, E, R>(
+      session: Effect.Effect<A, E, R>,
+    ) => Effect.Effect<A, E | Forgetting.Unfinished | Keychain.Unavailable, R>;
   }
 >()("AccountEngine.Engines") {}
+
+/**
+ * The commands waiting for the server as the question before sign-out shows them: the client id
+ * they go out under, how many, and the newest one's mutation id, 0 for none.
+ */
+export interface Unsent {
+  readonly clientId: string;
+  readonly count: number;
+  readonly newest: number;
+}
+
+/** `Unsent` of `SyncClient.outbox`, which lists the commands oldest first. */
+export const unsentOf = ({
+  clientId,
+  commands,
+}: {
+  readonly clientId: string;
+  readonly commands: ReadonlyArray<Outbox.Command>;
+}): Unsent => ({ clientId, count: commands.length, newest: commands.at(-1)?.mutationId ?? 0 });
+
+/**
+ * Whether a command waits that the question showing `shown` didn't. Ids only grow under one client
+ * id, so a newer id is a newer command also when older ones were sent meanwhile. A renumber starts
+ * a new client id from 1, so under another client id every waiting command is one it didn't show.
+ */
+export const moreThan = (now: Unsent, shown: Unsent) =>
+  now.count > 0 && (now.clientId !== shown.clientId || now.newest > shown.newest);
+
+const unsentNow = Effect.map(SyncClient.outbox.run(), unsentOf);
 
 /** `Engines` on the device's layers, one per device. */
 export const engines = Layer.effect(Engines)(
   Effect.gen(function* () {
     const device = yield* Effect.context<Layer.Services<ReturnType<typeof forApp>>>();
+    const leftovers = yield* Effect.context<Effect.Services<typeof Layers.finishSignOuts>>();
     const sessions = yield* SessionStore.Service;
 
     const running = new Map<
       string,
-      { readonly scope: Scope.Closeable; readonly context: Context.Context<Running> }
+      {
+        readonly scope: Scope.Closeable;
+        readonly context: Context.Context<Running>;
+        /** Held by each write of the account's rows or secrets, and by sign-out until it stops. */
+        readonly writes: Semaphore.Semaphore;
+        readonly stopped: Ref.Ref<boolean>;
+      }
     >();
 
+    // One turn at a time: an engine starts, an account signs out, or a new session is kept.
     const turns = yield* Semaphore.make(1);
 
-    const close = (accountId: string) =>
-      turns.withPermit(
-        Effect.suspend(() => {
-          const known = running.get(accountId);
-          running.delete(accountId);
+    const stop = (accountId: string) =>
+      Effect.suspend(() => {
+        const known = running.get(accountId);
+        running.delete(accountId);
 
-          return known === undefined ? Effect.void : Scope.close(known.scope, Exit.void);
-        }),
-      );
+        return known === undefined ? Effect.void : Scope.close(known.scope, Exit.void);
+      });
 
-    yield* Effect.addFinalizer(() => Effect.forEach([...running.keys()], close, { discard: true }));
+    yield* Effect.addFinalizer(() =>
+      turns.withPermit(Effect.forEach([...running.keys()], stop, { discard: true })),
+    );
 
     return Engines.of({
       context: (accountId) =>
         turns.withPermit(
           Effect.gen(function* () {
+            const session = Option.filter(
+              yield* sessions.current,
+              (signed) => signed.accountId === accountId,
+            );
+
+            if (Option.isNone(session)) return yield* new SignedOut({ accountId });
             const known = running.get(accountId);
 
             if (known !== undefined) return known.context;
+
+            if ((yield* Effect.provide(Forgetting.pending, device)).includes(accountId)) {
+              return yield* new SignedOut({ accountId });
+            }
+
             const scope = yield* Scope.make();
 
-            // Only an account whose session the device keeps gets storage that outlives the engine.
+            const built = yield* Layer.buildWithScope(
+              forApp(accountId, session.value.publicComputer),
+              scope,
+            ).pipe(
+              Effect.provide(device),
+              Effect.onError(() => Scope.close(scope, Exit.void)),
+            );
+
+            const writes = yield* Semaphore.make(1);
+            const stopped = yield* Ref.make(false);
+            const sync = Context.get(built, SyncClient.Service);
+            const secrets = Context.get(built, Ports.DeviceSecrets);
+
+            // A write after sign-out stopped the engine would land in a closed database, or keep a
+            // secret the erase already deleted.
+            const gated = <A, E>(write: Effect.Effect<A, E>) =>
+              writes.withPermit(
+                Effect.flatMap(Ref.get(stopped), (done) =>
+                  done ? Effect.die(new SignedOut({ accountId })) : write,
+                ),
+              );
+
+            const context = built.pipe(
+              Context.add(
+                SyncClient.Service,
+                SyncClient.Service.of({
+                  ...sync,
+                  mutate: (mutator, args) => gated(sync.mutate(mutator, args)),
+                  redo: (rejected) => gated(sync.redo(rejected)),
+                  unlock: (keys) => gated(sync.unlock(keys)),
+                }),
+              ),
+              Context.add(
+                Ports.DeviceSecrets,
+                Ports.DeviceSecrets.of({
+                  ...secrets,
+                  set: (name, value) => gated(secrets.set(name, value)),
+                  remove: (name) => gated(secrets.remove(name)),
+                }),
+              ),
+              Context.add(EngineScope, scope),
+            );
+
+            running.set(accountId, { scope, context, writes, stopped });
+
+            return context;
+          }),
+        ),
+      forget: (accountId, unsent, erase) =>
+        turns.withPermit(
+          Effect.gen(function* () {
+            const known = running.get(accountId);
+
             const kept = Option.exists(
               yield* sessions.current,
               (signed) => signed.accountId === accountId && !signed.publicComputer,
             );
 
-            const built = yield* Layer.buildWithScope(forApp(accountId, !kept), scope).pipe(
-              Effect.provide(device),
-              Effect.onError(() => Scope.close(scope, Exit.void)),
-            );
+            const leave = Effect.gen(function* () {
+              if (known !== undefined && Option.isSome(unsent)) {
+                const now = yield* unsentNow.pipe(
+                  Effect.provideService(
+                    SqlClient.SqlClient,
+                    Context.get(known.context, SqlClient.SqlClient),
+                  ),
+                );
 
-            const context = Context.add(built, EngineScope, scope);
+                if (moreThan(now, unsent.value)) {
+                  return yield* new MoreUnsent({ newest: now.newest });
+                }
+              }
 
-            running.set(accountId, { scope, context });
+              // The note is the point of no return: until it's written, a failure leaves the
+              // engine running and the account signed in. A public computer keeps nothing to note.
+              yield* Effect.uninterruptible(
+                Effect.gen(function* () {
+                  if (kept) yield* Effect.provide(Forgetting.begin(accountId), leftovers);
 
-            return context;
+                  if (known !== undefined) yield* Ref.set(known.stopped, true);
+
+                  yield* stop(accountId);
+                  yield* erase;
+                }),
+              );
+            });
+
+            // A write under way finishes first, and none starts after, so the outbox read here is
+            // what sign-out deletes.
+            yield* known === undefined ? leave : known.writes.withPermit(leave);
           }),
         ),
-      close,
+      keep: (session) =>
+        turns.withPermit(Effect.andThen(Effect.provide(Layers.finishSignOuts, leftovers), session)),
     });
   }),
 ).pipe(Layer.provide(AuthApi.layer));
 
+/** `Forgetting.Service` on this device's engines (`Engines.keep`). */
+const keeping = Layer.effect(Forgetting.Service)(
+  Effect.map(Engines, (each) => Forgetting.Service.of({ keep: each.keep })),
+);
+
 /** The device's own layers with its engines, one value, so every atom runtime shares one build. */
-export const device = Layer.mergeAll(engines, AuthApi.layer).pipe(
+export const device = Layer.mergeAll(keeping.pipe(Layer.provideMerge(engines)), AuthApi.layer).pipe(
   Layer.provideMerge(SessionStore.layer),
   Layer.provideMerge(Layers.app),
 );
@@ -149,6 +312,9 @@ export const app = (accountId: string) =>
     Layer.provideMerge(device),
   );
 
-/** Stops the account's engine before its data goes, as at sign-out. */
-export const close = (accountId: string) =>
-  Effect.flatMap(Engines, (each) => each.close(accountId));
+/** `Engines.forget` on this device. */
+export const forget = <E, R>(
+  accountId: string,
+  unsent: Option.Option<Unsent>,
+  erase: Effect.Effect<void, E, R>,
+) => Effect.flatMap(Engines, (each) => each.forget(accountId, unsent, erase));

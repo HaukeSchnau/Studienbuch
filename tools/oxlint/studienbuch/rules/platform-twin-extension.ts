@@ -15,9 +15,8 @@ const EXTENSIONS = ["ts", "tsx", "js", "jsx"];
 
 /**
  * A platform file such as `useConfirm.web.tsx` has no twin with an extension Metro tries first.
- * Metro tries every platform for one extension before the next, so `useConfirm.ts` would win on
- * the web over `useConfirm.web.tsx`, also beside a `useConfirm.tsx`, and the web would silently run
- * the phones' code.
+ * Metro tries every platform for one extension before the next, so `useConfirm.ts` wins on the
+ * web over `useConfirm.web.tsx`, and on iOS `sheet.native.ts` wins over `sheet.ios.tsx`.
  */
 export default defineRule({
   meta: {
@@ -40,8 +39,12 @@ export default defineRule({
     const directory = NodePath.dirname(context.filename);
     const exists = (name: string) => NodeFS.existsSync(NodePath.join(directory, name));
 
+    const phone = platform === "ios" || platform === "android";
+
     const twin = EXTENSIONS.slice(0, EXTENSIONS.indexOf(extension))
-      .map((each) => `${stem}.${each}`)
+      .flatMap((each) =>
+        phone ? [`${stem}.native.${each}`, `${stem}.${each}`] : [`${stem}.${each}`],
+      )
       .find(exists);
 
     if (twin === undefined) return {};
