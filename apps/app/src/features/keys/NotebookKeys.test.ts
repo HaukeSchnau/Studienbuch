@@ -1011,6 +1011,31 @@ describe("NotebookKeys", () => {
     }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
   );
 
+  // The sign-up's key step went offline, and the server answers again by the time the passkey's
+  // output arrives. The account has no key yet, so there is no wrapper to open: the output starts
+  // the key and sends its wrapper rather than counting as a passkey that opens nothing.
+  it.effect("a passkey's output after a first key step that went offline starts the key", () =>
+    Effect.gen(function* () {
+      const server = yield* fakeServer;
+      const phone = yield* device(server);
+      const laptop = yield* device(server);
+      const prf = Redacted.make(new Uint8Array(32).fill(7));
+      const use = NotebookKeys.usePasskey("credential", Option.some(prf));
+
+      yield* Ref.set(server.offline, true);
+      const before = (yield* phone.run(NotebookKeys.settle)).status._tag;
+      yield* Ref.set(server.offline, false);
+
+      const used = yield* Effect.result(phone.run(use));
+      yield* laptop.run(use);
+
+      assert.deepStrictEqual(
+        { before, used: used._tag, laptop: Option.getOrUndefined(yield* laptop.rootKey) },
+        { before: "Offline", used: "Success", laptop: Option.getOrUndefined(yield* phone.rootKey) },
+      );
+    }).pipe(Effect.scoped, Effect.provide(TestCrypto.layer("NotebookKeys.test"))),
+  );
+
   // A new card retires the old one once the server holds it. For an account without an address
   // the new one is then the only way in, so a lost answer and a restart must not lose it.
   it.effect(

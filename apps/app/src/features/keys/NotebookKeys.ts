@@ -681,14 +681,15 @@ export const usePasskey = Effect.fn("NotebookKeys.usePasskey")(function* (
 ) {
   return yield* guarded(
     Effect.gen(function* () {
-      const locked = Option.isNone(yield* heldRootKey);
-
-      if (Option.isNone(prf)) return locked ? yield* problem("passkey-no-match") : undefined;
+      if (Option.isNone(prf)) {
+        return Option.isNone(yield* heldRootKey) ? yield* problem("passkey-no-match") : undefined;
+      }
 
       // Held before anything goes out, so a step the network stopped goes on at the next key
-      // step, even before the account's first key exists (`settlePasskey`).
+      // step, even before the account's first key exists (`settlePasskey`). The status comes
+      // from the server, as an account without a key yet has no wrapper the output could open.
       yield* holdPasskey(credentialId, prf.value);
-      const settled = yield* settlePasskey(locked ? Status.Locked() : Status.Unlocked());
+      const settled = yield* settlePasskey(yield* keyStatus);
 
       if (Option.isSome(settled.passkey)) return yield* problem(settled.passkey.value);
     }),
