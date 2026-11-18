@@ -244,11 +244,14 @@ const refusesFirstNote = AccountEngine.engines.pipe(
 
 // Lena's account was deleted on her phone, and her laptop's keychain refused the forgetting note
 // when the session ended. Nothing was erased yet, so the laptop tries again and erases her copy.
+// Tom signed out in this tab before, and the gates now lead to the start, not to "Anmelden".
 it.effect("a deleted account is erased on the next try when the keychain refused the note", () =>
   Effect.gen(function* () {
     const store = yield* SessionStore.Service;
     const engines = yield* AccountEngine.Engines;
+    const registry = yield* AtomRegistry.AtomRegistry;
     const tries = yield* Queue.unbounded<Exit.Exit<void, unknown>>();
+    registry.set(AccountState.signedOut, true);
 
     const signed = {
       accountId: "deleted-lena",
@@ -264,9 +267,7 @@ it.effect("a deleted account is erased on the next try when the keychain refused
     `;
 
     const leave = (accountId: string) =>
-      AccountState.leaveDeleted(accountId, Effect.void).pipe(
-        Effect.onExit((exit) => Queue.offer(tries, exit)),
-      );
+      AccountState.leaveDeleted(accountId).pipe(Effect.onExit((exit) => Queue.offer(tries, exit)));
 
     yield* Effect.forkChild(Deletion.forgetWhenDeleted(leave), { startImmediately: true });
     yield* store.ended;
@@ -280,8 +281,14 @@ it.effect("a deleted account is erased on the next try when the keychain refused
     const spaces = yield* Context.get(again, SqlClient.SqlClient)`select id from sync_space`;
 
     assert.deepStrictEqual(
-      { first: Exit.isFailure(first), second: Exit.isSuccess(second), left, spaces: spaces.length },
-      { first: true, second: true, left: Option.none(), spaces: 0 },
+      {
+        first: Exit.isFailure(first),
+        second: Exit.isSuccess(second),
+        left,
+        spaces: spaces.length,
+        signedOut: registry.get(AccountState.signedOut),
+      },
+      { first: true, second: true, left: Option.none(), spaces: 0, signedOut: false },
     );
-  }).pipe(Effect.provide(refusesFirstNote)),
+  }).pipe(Effect.provide(Layer.merge(refusesFirstNote, AtomRegistry.layer))),
 );

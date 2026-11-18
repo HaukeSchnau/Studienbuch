@@ -252,6 +252,44 @@ describe("Deletion", () => {
     }).pipe(Effect.provide(device)),
   );
 
+  // Lena's deletion went through, but her keychain refused the forgetting note, and her phone stays
+  // offline, so no ended session brings the watcher. "Konto löschen" itself leaves again.
+  it.effect("a deletion whose leave changed nothing leaves again without deleting twice", () =>
+    Effect.gen(function* () {
+      const asked = yield* Queue.unbounded<string>();
+      const { left, leave, report, reported } = yield* leaving;
+      const deletes = yield* Ref.make(0);
+      const refused = yield* Ref.make(false);
+
+      const refusesOnce = (accountId: string) =>
+        Effect.flatMap(Ref.getAndSet(refused, true), (before) =>
+          before ? leave(accountId) : Effect.fail(new Deletion.Unchanged()),
+        );
+
+      const counting = server(new Set(), asked, {
+        delete: () => Ref.update(deletes, (n) => n + 1),
+      });
+
+      yield* Effect.gen(function* () {
+        yield* signIn("lena", "token-lena");
+
+        const deleting = yield* Effect.forkChild(Deletion.deleteAccount(refusesOnce, report), {
+          startImmediately: true,
+        });
+
+        yield* TestClock.adjust("2 seconds");
+        yield* Fiber.join(deleting);
+
+        expect({
+          deletes: yield* Ref.get(deletes),
+          left: yield* Ref.get(left),
+          reported: yield* Ref.get(reported),
+          now: yield* holder,
+        }).toEqual({ deletes: 1, left: ["lena"], reported: ["forget-failed"], now: Option.none() });
+      }).pipe(Effect.provide(counting));
+    }).pipe(Effect.provide(device)),
+  );
+
   // Lena deletes her account, and the answer is slow. Meanwhile she signs out and Tom signs in on
   // the same phone. The late answers concern Lena only, and Tom's session stays.
   it.effect(

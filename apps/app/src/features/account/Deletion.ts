@@ -33,6 +33,22 @@ export class Unchanged extends Schema.TaggedError<Unchanged, { readonly brand: u
   {},
 ) {}
 
+/** A server that can't be reached, or a keychain that refuses, is asked again, at most every five minutes. */
+const askAgain = Schedule.min([Schedule.exponential("2 seconds"), Schedule.spaced("5 minutes")]);
+
+/**
+ * Runs `leave` again while it fails before its point of no return (`Unchanged`), as a keychain that
+ * refused may work later. A failure past that point stays with its note, which finishes the rest
+ * at the next start or before the next session (`Forgetting`); a second run could race that.
+ */
+const leaving = <R>(leave: Effect.Effect<void, Problem | Unchanged, R>) =>
+  Effect.uninterruptible(leave).pipe(
+    Effect.retry({ schedule: askAgain, while: Schema.is(Unchanged) }),
+    Effect.catchTags({
+      "Deletion.Unchanged": () => Effect.fail(new Problem({ reason: "forget-failed" })),
+    }),
+  );
+
 export const sentence: Record<Reason, string> = {
   offline:
     "Zum Löschen braucht dein Gerät eine Verbindung zum Server. Versuch es noch einmal, wenn du online bist.",
@@ -44,9 +60,9 @@ export const sentence: Record<Reason, string> = {
 };
 
 /**
- * Deletes the signed-in account on the server, then `leave`s it on this device by its id, which
- * acts only while the device still holds that account. A failure goes to `report` only while the
- * device still holds it too, so another account never sees it. Fails with "not-fresh" when the
+ * Deletes the signed-in account on the server, then `leave`s it on this device by its id until it
+ * gets past its point of no return (`leaving`). A failure goes to `report` only while the device
+ * still holds the account, so another account never sees it. Fails with "not-fresh" when the
  * sign-in is older than `Keys.freshSignInMinutes`.
  */
 export const deleteAccount = Effect.fn("Deletion.deleteAccount")(function* <R>(
@@ -60,6 +76,11 @@ export const deleteAccount = Effect.fn("Deletion.deleteAccount")(function* <R>(
   if (Option.isNone(current)) return yield* new Problem({ reason: "signed-out" });
 
   const { accountId, token } = current.value;
+
+  const reported = (reason: Reason) =>
+    Effect.flatMap(store.current, (now) =>
+      Option.exists(now, (signed) => signed.accountId === accountId) ? report(reason) : Effect.void,
+    );
 
   yield* Effect.gen(function* () {
     // Its session ended: the device holds the account and no token to delete it with.
@@ -83,22 +104,14 @@ export const deleteAccount = Effect.fn("Deletion.deleteAccount")(function* <R>(
       }),
     );
 
-    // "forget-failed" holds for both: the server ended this session too, and once the device
-    // notices, `forgetWhenDeleted` leaves again.
-    yield* leave(accountId).pipe(
-      Effect.catchTags({
-        "Deletion.Unchanged": () => Effect.fail(new Problem({ reason: "forget-failed" })),
-      }),
-    );
-  }).pipe(
-    Effect.tapError((problem) =>
-      Effect.flatMap(store.current, (now) =>
-        Option.exists(now, (signed) => signed.accountId === accountId)
-          ? report(problem.reason)
-          : Effect.void,
+    // The account is gone, so leaving goes on without a second delete, and the screen says
+    // meanwhile that this device didn't finish yet.
+    yield* leaving(
+      leave(accountId).pipe(
+        Effect.tapErrorTag("Deletion.Unchanged", () => reported("forget-failed")),
       ),
-    ),
-  );
+    );
+  }).pipe(Effect.tapError((problem) => reported(problem.reason)));
 });
 
 /** An account whose session ended, and the token it ended with, if this run still knows it. */
@@ -125,9 +138,6 @@ const endedOf = (
       ),
     }),
   );
-
-/** A server that can't be reached, or a keychain that refuses, is asked again, at most every five minutes. */
-const askAgain = Schedule.min([Schedule.exponential("2 seconds"), Schedule.spaced("5 minutes")]);
 
 /**
  * `leave`s the account whose session ended if the server says the account was deleted, asking
@@ -160,13 +170,7 @@ export const forgetWhenDeleted = Effect.fn("Deletion.forgetWhenDeleted")(functio
 
       const deleted = yield* server.deleted(asked.value).pipe(Effect.retry({ schedule: askAgain }));
 
-      if (!deleted) return;
-
-      // A failure past the point of no return isn't tried again here: its note finishes the rest at
-      // the next start or before the next session (`Forgetting`), and a second run could race that.
-      yield* Effect.uninterruptible(leave(accountId)).pipe(
-        Effect.retry({ schedule: askAgain, while: (error) => error._tag === "Deletion.Unchanged" }),
-      );
+      if (deleted) yield* leaving(leave(accountId));
     },
     Effect.catchCause((cause) =>
       Effect.logWarning("A device of a deleted account didn't forget it yet", cause),

@@ -19,6 +19,12 @@ export class NotFresh extends Schema.TaggedError<NotFresh, { readonly brand: uni
   {},
 ) {}
 
+/** The server can't answer now, as when its database fails. Asking again later may work. */
+export class Unavailable extends Schema.TaggedError<
+  Unavailable,
+  { readonly brand: unique symbol }
+>()("AccountDeletion.Unavailable", {}) {}
+
 export const Rpcs = RpcGroup.make(
   /**
    * Deletes the account of the request's session with everything the server keeps of it, and
@@ -29,5 +35,5 @@ export const Rpcs = RpcGroup.make(
    * Whether the request's bearer token belonged to an account that was deleted. A device asks once
    * its session ended, with the token it still holds, and wipes itself on `true`.
    */
-  Rpc.make("AccountDeletion.deleted", { success: Schema.Boolean }),
+  Rpc.make("AccountDeletion.deleted", { success: Schema.Boolean, error: Unavailable }),
 );

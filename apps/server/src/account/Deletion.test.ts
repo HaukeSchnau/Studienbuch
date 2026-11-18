@@ -308,6 +308,24 @@ describe.skipIf(Postgres18.socket === null)("Account deletion on PostgreSQL 18",
         }),
     );
 
+    // The question about an ended session meets a failing database. The device can't tell yet
+    // whether the account was deleted, so the answer is an error it asks again after.
+    it.effect("a database failure answers whether an account was deleted with Unavailable", () =>
+      Effect.gen(function* () {
+        const client = yield* rpc;
+        const sql = yield* SqlClient.SqlClient;
+        const tom = (yield* client["Demo.signIn"]({ persona: "tom" })).token;
+
+        const failed = yield* Effect.acquireUseRelease(
+          sql`alter table deleted_session rename to deleted_session_away`,
+          () => Effect.flip(client["AccountDeletion.deleted"](undefined, bearer(tom))),
+          () => Effect.orDie(sql`alter table deleted_session_away rename to deleted_session`),
+        );
+
+        expect(failed._tag).toBe("AccountDeletion.Unavailable");
+      }),
+    );
+
     // A card sign-in holds its login while Better Auth's own pool adds the session, and the
     // account's deletion starts in between. The sign-in finishes, and the deletion ends its session
     // too, with nothing of the account left.

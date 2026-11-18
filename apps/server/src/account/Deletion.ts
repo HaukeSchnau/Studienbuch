@@ -191,7 +191,8 @@ export const handlers = AccountDeletion.Rpcs.toLayer(
     const pubsub = yield* Ended;
     const secret = yield* Config.Redacted("AUTH_SECRET");
 
-    // A failing database fails the call as a defect, without a reason the device could act on.
+    // A failing database fails "delete" as a defect, without a reason the device could act on, and
+    // "deleted" with `Unavailable`: the device asks that question again until it gets an answer.
     return AccountDeletion.Rpcs.of({
       "AccountDeletion.delete": Effect.fn("Deletion.delete")(
         function* (_, { headers }) {
@@ -218,7 +219,16 @@ export const handlers = AccountDeletion.Rpcs.toLayer(
 
           return Option.isSome(token) && (yield* wasDeleted(token.value));
         },
-        Effect.catchTags({ SqlError: Effect.die }),
+        Effect.catchTags({
+          SqlError: (error) =>
+            Effect.andThen(
+              Effect.logWarning(
+                "A device's question about its deleted account went unanswered",
+                error,
+              ),
+              Effect.fail(new AccountDeletion.Unavailable()),
+            ),
+        }),
       ),
     });
   }),

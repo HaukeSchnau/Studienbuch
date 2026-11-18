@@ -10,7 +10,7 @@ import * as Schema from "effect/Schema";
 
 export * as DeletionServer from "./DeletionServer.ts";
 
-/** The server didn't answer: the device is offline, or the server is down. */
+/** The server didn't answer: the device is offline, or the server or its database is down. */
 export class Unreachable extends Schema.TaggedError<
   Unreachable,
   { readonly brand: unique symbol }

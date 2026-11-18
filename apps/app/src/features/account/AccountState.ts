@@ -9,6 +9,7 @@ import * as Option from "effect/Option";
 import * as Redacted from "effect/Redacted";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Atom from "effect/reactivity/Atom";
+import * as AtomRegistry from "effect/reactivity/AtomRegistry";
 import * as RpcClient from "effect/rpc/RpcClient";
 import * as Stream from "effect/Stream";
 import * as SubscriptionRef from "effect/SubscriptionRef";
@@ -36,7 +37,7 @@ const bearer = (token: Redacted.Redacted) => ({
   headers: { authorization: `Bearer ${Redacted.value(token)}` },
 });
 
-const unreachable = { RpcClientError: () => Effect.fail(new DeletionServer.Unreachable()) };
+const unreachable = Effect.fail(new DeletionServer.Unreachable());
 
 /** `DeletionServer` over HTTP to `Ports.Server`, with the token each call names. */
 const deletionServer = Layer.effect(DeletionServer.Service)(
@@ -46,11 +47,14 @@ const deletionServer = Layer.effect(DeletionServer.Service)(
     return DeletionServer.Service.of({
       delete: (token) =>
         client["AccountDeletion.delete"](undefined, bearer(token)).pipe(
-          Effect.catchTags({ ...unreachable }),
+          Effect.catchTags({ RpcClientError: () => unreachable }),
         ),
       deleted: (token) =>
         client["AccountDeletion.deleted"](undefined, bearer(token)).pipe(
-          Effect.catchTags({ ...unreachable }),
+          Effect.catchTags({
+            RpcClientError: () => unreachable,
+            "AccountDeletion.Unavailable": () => unreachable,
+          }),
         ),
     });
   }),
@@ -262,13 +266,24 @@ export const signOut = runtime
   .pipe(Atom.keepAlive);
 
 /**
- * Leaves the deleted account by its id, without asking about its unsent changes, which went with it
- * on the server (`AccountEngine.forgetIfHeld`). The gates then lead to the start, not to
- * "Anmelden". A failure before the point of no return is `Deletion.Unchanged` and can run again;
- * one after it is "forget-failed" and finishes at the next start.
+ * What this tab forgets of an account that was deleted, before its session goes. The gates then
+ * lead to the start, not to "Anmelden", also when another account signed out here before.
  */
-export const leaveDeleted = (accountId: string, forgotten: Effect.Effect<void>) =>
-  AccountEngine.forgetIfHeld(accountId, forgotten).pipe(
+const leftDeleted = Effect.flatMap(AtomRegistry.AtomRegistry, (registry) =>
+  Effect.sync(() => {
+    registry.set(signedOut, false);
+    registry.set(OfferedPrf.waiting, Option.none());
+  }),
+);
+
+/**
+ * Leaves the deleted account by its id, without asking about its unsent changes, which went with it
+ * on the server (`AccountEngine.forgetIfHeld`), and forgets it in this tab (`leftDeleted`). A
+ * failure before the point of no return is `Deletion.Unchanged` and can run again; one after it
+ * is "forget-failed" and finishes at the next start.
+ */
+export const leaveDeleted = (accountId: string) =>
+  AccountEngine.forgetIfHeld(accountId, leftDeleted).pipe(
     Effect.catchTags({
       // `Engines.forget` fails with these before it writes the note, its point of no return.
       "AccountEngine.MoreUnsent": () => unchanged,
@@ -291,27 +306,15 @@ export const deleteAccount = runtime
   .fn<void>()((_, get) =>
     Effect.andThen(
       Effect.sync(() => get.set(deletionProblem, Option.none())),
-      Deletion.deleteAccount(
-        (accountId) =>
-          leaveDeleted(
-            accountId,
-            Effect.sync(() => get.set(OfferedPrf.waiting, Option.none())),
-          ),
-        (reason) => Effect.sync(() => get.set(deletionProblem, Option.some(reason))),
+      Deletion.deleteAccount(leaveDeleted, (reason) =>
+        Effect.sync(() => get.set(deletionProblem, Option.some(reason))),
       ),
     ),
   )
   .pipe(Atom.keepAlive);
 
 const forgetWhenDeleted = runtime
-  .atom((get) =>
-    Deletion.forgetWhenDeleted((accountId) =>
-      leaveDeleted(
-        accountId,
-        Effect.sync(() => get.set(OfferedPrf.waiting, Option.none())),
-      ),
-    ),
-  )
+  .atom(Deletion.forgetWhenDeleted(leaveDeleted))
   .pipe(Atom.keepAlive);
 
 /**
