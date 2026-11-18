@@ -46,6 +46,10 @@ export const order = CivilDate.order;
 
 export const addDays = CivilDate.addDays;
 
+export const dayOfWeek = CivilDate.dayOfWeek;
+
+export const isoWeek = CivilDate.isoWeek;
+
 /** A closed range: `start` and `end` both belong to it. */
 export const DateRange = Schema.Struct({ start: PlainDate, end: PlainDate }).check(
   Schema.makeFilter(({ start, end }) => order(start, end) <= 0, {

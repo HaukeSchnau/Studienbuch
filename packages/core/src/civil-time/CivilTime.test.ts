@@ -30,6 +30,21 @@ describe("CivilTime.PlainDate", () => {
   );
 });
 
+describe("CivilTime.isoWeek", () => {
+  it.effect.each([
+    { date: "2026-11-09", week: "2026-W46", day: 1 },
+    { date: "2026-12-31", week: "2026-W53", day: 4 },
+    { date: "2027-01-01", week: "2026-W53", day: 5 },
+    { date: "2027-01-04", week: "2027-W01", day: 1 },
+  ])("puts $date in $week", ({ date, week, day }) =>
+    Effect.gen(function* () {
+      const plain = yield* decode(date);
+
+      expect([CivilTime.isoWeek(plain), CivilTime.dayOfWeek(plain)]).toEqual([week, day]);
+    }),
+  );
+});
+
 describe("CivilTime.dateIn", () => {
   const berlin = CivilTime.TimeZone.make("Europe/Berlin");
   const utc = CivilTime.TimeZone.make("UTC");

@@ -227,6 +227,9 @@ catalogs:
     '@oxlint/plugins':
       specifier: 1.89.0
       version: 1.89.0
+    '@schnau/webuntis-api':
+      specifier: 0.4.0
+      version: 0.4.0
     '@simplewebauthn/browser':
       specifier: 14.0.0
       version: 14.0.0
@@ -588,6 +591,9 @@ importers:
       '@effect/sql-pg':
         specifier: 'catalog:'
         version: 4.0.7(effect@4.0.7)
+      '@schnau/webuntis-api':
+        specifier: 'catalog:'
+        version: 0.4.0(effect@4.0.7)
       '@stu/api':
         specifier: workspace:*
         version: link:../../packages/api
@@ -2782,6 +2788,12 @@ packages:
 
   '@rolldown/pluginutils@1.0.1':
     resolution: {integrity: sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw==}
+
+  '@schnau/webuntis-api@0.4.0':
+    resolution: {integrity: sha512-yXqaGsMeXaPPREem4N5Hs/9laOwrnGQE7EcrL4Idm5/Evo4IFzt1Pg5AhbVt7Ju/wT0plvymgdDinzjyum2Mwg==}
+    engines: {node: '>=22.12.0'}
+    peerDependencies:
+      effect: ^4.0.0
 
   '@simplewebauthn/browser@13.3.0':
     resolution: {integrity: sha512-BE/UWv6FOToAdVk0EokzkqQQDOWtNydYlY6+OrmiZ5SCNmb41VehttboTetUM3T/fr6EAFYVXjz4My2wg230rQ==}
@@ -7922,6 +7934,10 @@ snapshots:
       '@redis/client': 6.3.0
 
   '@rolldown/pluginutils@1.0.1': {}
+
+  '@schnau/webuntis-api@0.4.0(effect@4.0.7)':
+    dependencies:
+      effect: 4.0.7
 
   '@simplewebauthn/browser@13.3.0': {}
 
