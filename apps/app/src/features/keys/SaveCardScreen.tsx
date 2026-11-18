@@ -149,9 +149,19 @@ function ShowCard({
           Schreib ihn ab und heb ihn gut auf, zum Beispiel bei deinen Zeugnissen. Kein Screenshot:
           Fotos sieht jeder, der dein entsperrtes Gerät hat.
         </Text>
+        {keepsNothing ? (
+          // The browser's own question before a reload can't say this.
+          <Text variant="subhead" style={[styles.center, { color: color.danger }]}>
+            Auf diesem öffentlichen Computer gibt es die Karte nur in diesem Tab. Lädst du die Seite
+            neu oder schließt du den Tab, bevor du sie aufgeschrieben hast, ist dein neues Konto
+            verloren. Für ein neues brauchst du dann einen Zugangscode, der noch gilt.
+          </Text>
+        ) : null}
         <KeyProblemBox
           reason={Option.filter(keyReasonOf(sent), (reason) => reason !== "not-fresh")}
         />
+        {/* A card-only account's stale sign-in signs in again with the card, which can fail too. */}
+        <ProblemText reason={reasonOf(sent)} />
         {notFresh ? (
           // Only after a first send that failed, once the sign-in is stale, and only with a
           // passkey: a card-only account signs in again with this card.
