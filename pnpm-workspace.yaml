@@ -122,6 +122,9 @@ catalog:
   # WebUntis, read-only, behind the import's seam (m2-import-corpus.md). The harness decodes recorded
   # bodies with its schemas, so the import sees what the live client would return.
   "@schnau/webuntis-api": 0.4.0
+  # age encryption for the import corpus's archives (m2-import-corpus.md, section 5), so packing and
+  # fetching need no age binary on the dev hosts or in CI.
+  age-encryption: 0.3.1
 
 overrides:
   vite@*: "catalog:"

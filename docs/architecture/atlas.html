@@ -1066,6 +1066,7 @@ DIAGRAMS.server = {
     { id: "m-jobs", x: 600, y: 404, w: 120, h: 60, t: "Jobs", s: "ClusterCron:\nheartbeat" },
     { id: "m-migr", x: 730, y: 404, w: 120, h: 60, t: "Migrations", s: "prepare applies\nserve requires" },
     { id: "m-import", x: 730, y: 478, w: 120, h: 56, t: "Import", s: "measured on a\nrecorded corpus", k: "read" },
+    { id: "m-corpus", x: 600, y: 262, w: 250, h: 56, t: "Corpus tools", s: "capture once, pseudonymize, check, pack\nvp run corpus:*, not in the bundle", k: "stop" },
 
     { id: "y-tickets", x: 310, y: 594, w: 130, h: 56, t: "Tickets", s: "single use, 30 s", k: "wire" },
     { id: "y-conn", x: 310, y: 664, w: 130, h: 56, t: "Connections", s: "4 per session", k: "wire" },
@@ -1115,6 +1116,7 @@ DIAGRAMS.server = {
     { a: "y-spaces", b: "t-space", k: "read" },
     { a: "y-writer", b: "y-member" },
     { a: "m-import", b: "y-writer", as: "b", bs: "t", ms: "M2", via: [[790, 548], [585, 548], [585, 734]] },
+    { a: "m-corpus", b: "m-import", as: "r", bs: "r", via: [[880, 290], [880, 506]], k: "stop" },
     { a: "m-schools", b: "y-writer", as: "b", bs: "t", via: [[660, 548], [585, 548], [585, 734]], k: "read" },
     { a: "m-migr", b: "t-misc", k: "dash" },
   ],
@@ -1436,7 +1438,7 @@ const INFO = {
 
   r2: { t: "Cloudflare R2", k: "infra", ms: "M4", d: ["Buckets for previews (objects expire after 14 days) and beta exist, made by infra's tokens stack, and the server gets <code>S3_*</code> variables. No server code reads them yet.", "They wait for photos and signatures, blob sync in M4."] },
 
-  webuntis: { t: "WebUntis", k: "infra", ms: "M2", d: ["The school's timetable and substitutions. The import will be a job inside the server that turns provider records into rows of the school and course spaces through <code>SyncWriter</code>.", "Only the import's seam and its harness exist, so beta doesn't import yet."], f: ["packages/sync/src/server/SyncWriter.ts", "apps/server/src/import/SchoolImport.ts"], a: [11] },
+  webuntis: { t: "WebUntis", k: "infra", ms: "M2", d: ["The school's timetable and substitutions. The import will be a job inside the server that turns provider records into rows of the school and course spaces through <code>SyncWriter</code>.", "Only the import's seam, its harness and the corpus tools exist, so beta doesn't import yet. The corpus tools capture it once, with Hauke's go, into a pseudonymized corpus."], f: ["packages/sync/src/server/SyncWriter.ts", "apps/server/src/import/SchoolImport.ts"], a: [11] },
 
   otlp: { t: "OTLP export", k: "infra", ms: "M5", d: ["The server exports traces, logs and metrics over OTLP as soon as <code>OTEL_EXPORTER_OTLP_ENDPOINT</code> is set. No environment sets it today.", "Crash reporting and server OTLP are M5.3."], f: ["apps/server/src/infra/telemetry/Telemetry.ts"] },
 
@@ -1608,6 +1610,8 @@ const INFO = {
   "m-migr": { t: "Migrations", d: ["drizzle-kit writes the SQL from the Drizzle schema, the sync engine's tables included. <code>prepare</code> applies them; <code>serve</code> refuses a database behind the release. Eight migrations so far."], f: ["apps/server/src/infra/database/Migrations.ts", "apps/server/drizzle.config.ts", "apps/server/src/infra/database/Schema.ts"], a: [12] },
 
   "m-import": { t: "Import", k: "read", d: ["An import reads WebUntis only through webuntis-api's <code>WebUntisClient</code> and returns an <code>ImportResult</code>: rows in all but name, the provider entries each came from, and the days it read completely. <code>SchoolImport.apply</code> replaces stored rows only inside those days, so a failed read deletes nothing.", "The harness runs an import on a corpus through <code>RecordedWebUntis</code>, a client that answers from recorded reads as of a given time, and measures the rows against WebUntis's own student, teacher and room views and hand-labelled cases. <code>NaiveImport</code> is the baseline to beat and <code>TinySchool</code> the invented school every pull request runs on (<code>vp run import:eval</code>). Writing to the school and course spaces comes later in M2."], f: ["apps/server/src/import/SchoolImport.ts", "apps/server/src/import/NaiveImport.ts", "apps/server/src/infra/webuntis/RecordedWebUntis.ts", "apps/server/src/import/evaluation/Evaluator.ts", "apps/server/src/import/evaluation/TinySchool.ts"] },
+
+  "m-corpus": { t: "Corpus tools", k: "stop", d: ["Turn one WebUntis capture into a corpus agents may read (m2-import-corpus.md). <code>Capture</code> reads master data, directories, exams and every planned timetable through the <code>WebUntisClient</code> it is given, so the import job can run it on beta's connection later; it never logs in itself, and a live run needs <code>--go</code>.", "<code>Pseudonymizer</code> walks every read by <code>Policy</code>, which names a rule for each field and fails on a field without one: names become keyed tokens, person ids keyed numbers, free text a token unless it is a stock or frequent phrase. The dictionary scan looks for every learned name in the result, and the grammar check, which needs no real data, accepts only tokens, dates and the manifest's kept words.", "<code>Archive</code> packs a corpus as tar, zstd and age: the raw capture for Hauke's key only, the corpus for his key and any other recipient. <code>corpus:fetch</code> unpacks into <code>~/.cache</code> and checks the grammar again."], f: ["apps/server/src/import/corpus/Capture.ts", "apps/server/src/import/corpus/CapturePlan.ts", "apps/server/src/import/corpus/Policy.ts", "apps/server/src/import/corpus/Pseudonymizer.ts", "apps/server/src/import/corpus/Checks.ts", "apps/server/src/import/corpus/Archive.ts", "apps/server/src/import/corpus/main.ts"] },
 
   "y-tickets": { i: "h-ticket" },
 

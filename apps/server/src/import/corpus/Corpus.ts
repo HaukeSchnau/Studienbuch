@@ -8,6 +8,7 @@ import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Path from "effect/Path";
 import * as Schema from "effect/Schema";
+import * as Stream from "effect/Stream";
 import { RecordedWebUntis } from "../../infra/webuntis/RecordedWebUntis.ts";
 import { SchoolImport } from "../SchoolImport.ts";
 
@@ -15,14 +16,27 @@ export * as Corpus from "./Corpus.ts";
 
 const Range = Schema.Struct({ start: SchoolImport.Day, end: SchoolImport.Day });
 
+const Counted = Schema.Struct({ value: Schema.String, count: Schema.Int });
+
 export const Manifest = Schema.Struct({
   id: Schema.String,
   capturedAt: Schema.DateTimeUtcFromString,
-  /** The pseudonymization policy's version, 0 for an invented school that needs none. */
+  /**
+   * The pseudonymization policy's version, 0 for an invented school or a raw capture, which no
+   * policy has touched.
+   */
   policy: Schema.Int,
   timeZone: CivilTime.TimeZone,
   /** The days the timetable reads cover. */
   ranges: Schema.Array(Range),
+  /** The requests a capture sent to WebUntis. */
+  requests: Schema.optional(Schema.Int),
+  /** Entries reads kept as WebUntis sent them although webuntis-api's schemas reject them. */
+  decodeFailures: Schema.optional(Schema.Int),
+  /** Every string the pseudonymizer kept, with its count, so a person can read the list once. */
+  kept: Schema.optional(
+    Schema.Struct({ vocabulary: Schema.Array(Counted), phrases: Schema.Array(Counted) }),
+  ),
 });
 
 export type Manifest = typeof Manifest.Type;
@@ -70,63 +84,96 @@ const ManifestJson = Schema.fromJsonString(Manifest, { space: 2 });
 const CasesJson = Schema.fromJsonString(Cases, { space: 2 });
 const ReadJson = Schema.fromJsonString(RecordedWebUntis.Read);
 
-const decodeManifest = Schema.decodeEffect(ManifestJson);
-const decodeCases = Schema.decodeEffect(CasesJson);
-const decodeRead = Schema.decodeEffect(ReadJson);
+// A field the format doesn't know fails, so a corpus file can't carry anything its checks skip.
+const strict = { onExcessProperty: "error" } as const;
+const decodeManifest = Schema.decodeEffect(ManifestJson, strict);
+const decodeCases = Schema.decodeEffect(CasesJson, strict);
+const decodeRead = Schema.decodeEffect(ReadJson, strict);
 const encodeManifest = Schema.encodeEffect(ManifestJson);
 const encodeCases = Schema.encodeEffect(CasesJson);
 const encodeRead = Schema.encodeEffect(ReadJson);
 
-export const read = Effect.fn("Corpus.read")(function* (directory: string) {
+export const readHead = Effect.fn("Corpus.readHead")(function* (directory: string) {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
-  const readsRoot = path.join(directory, "reads");
-
-  const files = (yield* fs.readDirectory(readsRoot, { recursive: true })).filter((file) =>
-    file.endsWith(".json"),
-  );
-
-  const reads = yield* Effect.forEach(files, (file) =>
-    fs.readFileString(path.join(readsRoot, file)).pipe(
-      Effect.flatMap(decodeRead),
-      Effect.map((recorded) => [file.slice(0, -".json".length), recorded] as const),
-    ),
-  );
 
   return {
     manifest: yield* decodeManifest(
       yield* fs.readFileString(path.join(directory, "manifest.json")),
     ),
-    reads: new Map(reads),
     cases: yield* decodeCases(
       yield* fs.readFileString(path.join(directory, "truth", "cases.json")),
     ),
-  } satisfies Corpus;
+  };
 });
 
-export const write = Effect.fn("Corpus.write")(function* (directory: string, corpus: Corpus) {
+/**
+ * The corpus's reads one by one, in the order of their paths. A real capture holds more than fits
+ * in memory as JSON objects, so its tools never load it whole.
+ */
+export const readEach = (directory: string) =>
+  Stream.unwrap(
+    Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const readsRoot = path.join(directory, "reads");
+
+      const files = (yield* fs.readDirectory(readsRoot, { recursive: true }))
+        .filter((file) => file.endsWith(".json"))
+        .map((file) => file.split(path.sep).join("/"))
+        .toSorted();
+
+      return Stream.fromIterable(files).pipe(
+        Stream.mapEffect((file) =>
+          fs.readFileString(path.join(readsRoot, file)).pipe(
+            Effect.flatMap(decodeRead),
+            Effect.map((recorded) => [file.slice(0, -".json".length), recorded] as const),
+          ),
+        ),
+      );
+    }),
+  );
+
+export const read = Effect.fn("Corpus.read")(function* (directory: string) {
+  const reads = yield* Stream.runCollect(readEach(directory));
+
+  return { ...(yield* readHead(directory)), reads: new Map(reads) } satisfies Corpus;
+});
+
+export const writeHead = Effect.fn("Corpus.writeHead")(function* (
+  directory: string,
+  head: Pick<Corpus, "manifest" | "cases">,
+) {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
 
   yield* fs.makeDirectory(path.join(directory, "truth"), { recursive: true });
   yield* fs.writeFileString(
     path.join(directory, "manifest.json"),
-    yield* encodeManifest(corpus.manifest),
+    yield* encodeManifest(head.manifest),
   );
   yield* fs.writeFileString(
     path.join(directory, "truth", "cases.json"),
-    yield* encodeCases(corpus.cases),
+    yield* encodeCases(head.cases),
   );
+});
 
-  yield* Effect.forEach(
-    corpus.reads,
-    ([name, recorded]) =>
-      Effect.gen(function* () {
-        const file = path.join(directory, "reads", `${name}.json`);
+export const writeRead = Effect.fn("Corpus.writeRead")(function* (
+  directory: string,
+  name: string,
+  recorded: RecordedWebUntis.Read,
+) {
+  const fs = yield* FileSystem.FileSystem;
+  const path = yield* Path.Path;
+  const file = path.join(directory, "reads", `${name}.json`);
 
-        yield* fs.makeDirectory(path.dirname(file), { recursive: true });
-        yield* fs.writeFileString(file, yield* encodeRead(recorded));
-      }),
-    { discard: true },
-  );
+  yield* fs.makeDirectory(path.dirname(file), { recursive: true });
+  yield* fs.writeFileString(file, yield* encodeRead(recorded));
+});
+
+export const write = Effect.fn("Corpus.write")(function* (directory: string, corpus: Corpus) {
+  yield* writeHead(directory, corpus);
+  yield* Effect.forEach(corpus.reads, ([name, recorded]) => writeRead(directory, name, recorded), {
+    discard: true,
+  });
 });
