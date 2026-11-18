@@ -187,7 +187,9 @@ const runtimeAndroid = Expo.runtimeVersion("android", { ...app, shell, setup: in
 /**
  * The store builds are keyed by the fingerprint and, while there are no over-the-air updates (D94),
  * by everything the app bundles too: a new build is then the only way new JavaScript reaches testers.
- * Once M5.16's update server ships JavaScript, drop `inputs` so only a native change rebuilds.
+ * Once M5.16's update server ships JavaScript, drop `inputs` so only a native change rebuilds. Calder
+ * reuses a key it built before, so a revert to such a tree uploads nothing until main's newest push
+ * run starts again with `calder rerun --force <run>`.
  */
 const store = { ...app, shell, inputs: Files.workspace("apps/app") };
 
