@@ -3,6 +3,7 @@ import { Accounts } from "@stu/api/Accounts";
 import { Ports } from "@stu/sync/client";
 import type * as Cause from "effect/Cause";
 import * as Context from "effect/Context";
+import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Headers from "effect/http/Headers";
 import * as HttpClient from "effect/http/HttpClient";
@@ -26,7 +27,13 @@ export class Refused extends Schema.TaggedError<Refused, { readonly brand: uniqu
   { status: Schema.Int, code: Schema.String },
 ) {}
 
-/** No answer at all: the device is offline, or the server is down. */
+/**
+ * How long a request may wait for its whole answer. The slowest ones wait while the server hands
+ * the code's mail to the mail server, which takes seconds.
+ */
+export const answerWithin = Duration.seconds(30);
+
+/** No answer at all: the device is offline, the server is down, or it didn't answer in time. */
 export class Unreachable extends Schema.TaggedError<
   Unreachable,
   { readonly brand: unique symbol }
@@ -252,19 +259,32 @@ export const layer = Layer.effect(Service)(
       ),
     );
 
-    const send = (request: HttpClientRequest.HttpClientRequest) =>
+    // A server that takes the request and never answers, or stops in the middle of the body,
+    // counts as no answer once `answerWithin` passed, so no sign-in waits forever.
+    const exchange = <A>(
+      request: HttpClientRequest.HttpClientRequest,
+      handle: (response: HttpClientResponse.HttpClientResponse) => Effect.Effect<A, Failure>,
+    ) =>
       client.execute(request).pipe(
         Effect.mapError((cause) => new Unreachable({ cause })),
         Effect.flatMap(checked),
+        Effect.flatMap(handle),
+        Effect.timeoutOrElse({
+          duration: answerWithin,
+          orElse: () => Effect.fail(new Unreachable({ cause: "no answer in time" })),
+        }),
       );
 
+    const send = (request: HttpClientRequest.HttpClientRequest) =>
+      exchange(request, () => Effect.void);
+
     const read = <A>(request: HttpClientRequest.HttpClientRequest, body: Read<A>) =>
-      Effect.flatMap(send(request), (response) =>
+      exchange(request, (response) =>
         Effect.mapError(body(response), (cause) => new ServerFailed({ cause })),
       );
 
     const ceremony = <A>(request: HttpClientRequest.HttpClientRequest, body: Read<A>) =>
-      Effect.flatMap(send(request), (response) =>
+      exchange(request, (response) =>
         Effect.all({
           options: body(response),
           challenge: Effect.fromOption(Headers.get(response.headers, Accounts.challengeHeader)),
