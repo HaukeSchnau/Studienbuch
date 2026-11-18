@@ -96,8 +96,8 @@
       }
     },
     "kurswahl": {
-      "right": 166,
-      "of": 493
+      "right": 146,
+      "of": 473
     },
     "ghostCourses": 39,
     "changes": {
@@ -123,17 +123,17 @@
       "of": 5610
     },
     "exams": {
-      "right": 32,
-      "of": 274
+      "right": 36,
+      "of": 65
     },
     "examStudents": {
       "recall": {
         "right": 804,
-        "of": 5611
+        "of": 939
       },
       "precision": {
         "right": 804,
-        "of": 869
+        "of": 865
       }
     },
     "weekLabels": {
@@ -265,8 +265,8 @@
       }
     },
     "kurswahl": {
-      "right": 166,
-      "of": 493
+      "right": 146,
+      "of": 473
     },
     "ghostCourses": 39,
     "changes": {
@@ -292,17 +292,17 @@
       "of": 5753
     },
     "exams": {
-      "right": 32,
-      "of": 274
+      "right": 36,
+      "of": 65
     },
     "examStudents": {
       "recall": {
         "right": 804,
-        "of": 5611
+        "of": 939
       },
       "precision": {
         "right": 804,
-        "of": 869
+        "of": 865
       }
     },
     "weekLabels": {

@@ -39,15 +39,22 @@ class Refused extends Schema.TaggedError<Refused, { readonly brand: unique symbo
   { reason: Schema.String },
 ) {}
 
-/** Numbers differ from the baseline. The summary is printed already, as the last line CI shows. */
+/**
+ * Numbers differ from the baseline: exit code 3, which CI tells apart from a failed evaluation.
+ * The summary is printed already, as the last line.
+ */
 class Differs extends Schema.TaggedError<Differs, { readonly brand: unique symbol }>()(
   "ImportEval.Differs",
   { count: Schema.Int },
 ) {
   override readonly [Runtime.errorReported] = false;
+  override readonly [Runtime.errorExitCode] = 3;
 }
 
-/** Errors whose fields name ids, paths and counts only, so they print as they are. */
+/**
+ * Errors that print as they are. The harness's own, which name resource ids and read paths of
+ * the corpus, print their tag only, since CI's logs are no place for corpus content.
+ */
 const sanitized = Sanitized.only(
   new Set([
     "ImportEval.UnknownImport",
@@ -55,8 +62,6 @@ const sanitized = Sanitized.only(
     "ImportEval.Refused",
     "ImportEval.Differs",
     "Pin.NotFetched",
-    "Truth.Incomplete",
-    "Evaluator.NotCaptured",
     "Evaluator.NothingMeasured",
   ]),
 );
@@ -66,8 +71,11 @@ const encodeBaseline = Schema.encodeEffect(Baseline.Json);
 const decodeJson = Schema.decodeEffect(Schema.fromJsonString(Schema.Json));
 
 const encodeComment = Schema.encodeEffect(
-  Schema.fromJsonString(Schema.Struct({ markdown: Schema.String })),
+  Schema.fromJsonString(Schema.Struct({ markdown: Schema.String, differences: Schema.Int })),
 );
+
+/** The differences a pull request's comment lists before it says how many more there are. */
+const listed = 30;
 
 const isIsoWeek = Schema.is(CivilTime.IsoWeek);
 
@@ -172,10 +180,18 @@ const evaluate = Effect.fn("ImportEval.evaluate")(function* (flags: {
     const markdown = [
       `**import-eval**, ${flags.import} on \`${measured.corpus}\`: ${summary.at(-1) ?? ""}`,
       "",
+      ...found
+        .slice(0, listed)
+        .map((each) => `- \`${each.number}\`: ${each.measured}, the baseline has ${each.baseline}`),
+      ...(found.length > listed ? [`- and ${found.length - listed} more`] : []),
+      ...(found.length > 0 ? [""] : []),
       Report.markdown(weekly, timeline),
     ].join("\n");
 
-    yield* fs.writeFileString(flags.comment.value, `${yield* encodeComment({ markdown })}\n`);
+    yield* fs.writeFileString(
+      flags.comment.value,
+      `${yield* encodeComment({ markdown, differences: found.length })}\n`,
+    );
   }
 
   yield* Console.log("");

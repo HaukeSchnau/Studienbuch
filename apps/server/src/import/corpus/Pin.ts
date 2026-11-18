@@ -6,7 +6,6 @@
 import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
-import * as Path from "effect/Path";
 import * as Schema from "effect/Schema";
 import pinJson from "./pin.json" with { type: "json" };
 
@@ -46,21 +45,17 @@ export const cacheRoot = Config.String("XDG_CACHE_HOME").pipe(
   Config.map((dir) => `${dir}/studienbuch/import-corpus`),
 );
 
-/** The file beside a fetched corpus that names the SHA-256 of the archive it came from. */
-export const marker = (root: string, id: string) => `${root}/${id}.sha256`;
+/**
+ * A fetched corpus's directory in the cache, named by its archive's SHA-256. A fetch writes it
+ * once, complete, and never replaces it, so an evaluation that reads it can't see another fetch.
+ */
+export const directory = (root: string, sha256: string) => `${root}/${sha256}`;
 
-/** The pinned corpus's directory in the cache, when the cache holds it from the pinned archive. */
+/** The pinned corpus's directory in the cache, when a fetch of the pinned archive put it there. */
 export const cached = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
-  const path = yield* Path.Path;
   const pin = yield* pinned;
-  const root = yield* cacheRoot;
+  const fetched = directory(yield* cacheRoot, pin.sha256);
 
-  const fetched = yield* fs
-    .readFileString(marker(root, pin.id))
-    .pipe(Effect.orElseSucceed(() => ""));
-
-  return fetched.trim() === pin.sha256
-    ? path.join(root, pin.id)
-    : yield* new NotFetched({ id: pin.id });
+  return (yield* fs.exists(fetched)) ? fetched : yield* new NotFetched({ id: pin.id });
 });

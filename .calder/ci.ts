@@ -1,5 +1,6 @@
 import {
   Action,
+  Calder,
   Files,
   Flake,
   Nix,
@@ -11,7 +12,7 @@ import {
   cmd,
 } from "@calder-ci/core";
 import { Environments, Expo, Pnpm, Vitest } from "@calder-ci/std";
-import { Schema } from "effect";
+import { Effect, Option, Schema } from "effect";
 import { flake } from "./flake.ts";
 
 const shell = flake.devShells.ci;
@@ -193,10 +194,10 @@ const importEval = Task.make("import-eval", {
   shell: flake.devShells.corpus,
   setup: install,
   inputs: Files.union(
-    Files.imports(
+    Files.imports([
       "apps/server/src/import/corpus/main.ts",
       "apps/server/src/import/evaluation/main.ts",
-    ),
+    ]),
     Files.of(
       "apps/server/package.json",
       "apps/server/src/import/corpus/pin.json",
@@ -210,25 +211,44 @@ const importEval = Task.make("import-eval", {
   },
   run: cmd`bash -c ${[
     "set -euo pipefail",
-    // ssh refuses a key file that others may read, so it gets a private copy, and uses that key
-    // alone, against git.schnau.dev's pinned host key.
-    'key="$(mktemp)"',
-    "trap 'rm -f \"$key\"' EXIT",
-    'cat "$CORPUS_DEPLOY_KEY" > "$key"',
-    'export GIT_SSH_COMMAND="ssh -F /dev/null -o IdentityAgent=none -o IdentitiesOnly=yes -i $key -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$PWD/.calder/known_hosts"',
-    'comment="$PWD/import-eval-comment.json"',
+    // The deploy key alone, against git.schnau.dev's pinned host key.
+    'export GIT_SSH_COMMAND="ssh -F /dev/null -o IdentityAgent=none -o IdentitiesOnly=yes -i $CORPUS_DEPLOY_KEY -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$PWD/.calder/known_hosts -o GlobalKnownHostsFile=/dev/null"',
+    'result="$PWD/import-eval.json"',
+    'rm -f "$result"',
     "cd apps/server",
     "vp run corpus:fetch --pinned",
-    'vp run import:eval --corpus pinned --against baseline --comment "$comment"',
+    // Exit code 3 says numbers differ from the baseline: the step passes its result on, and the
+    // gate comments it and fails.
+    "status=0",
+    'vp run import:eval --corpus pinned --against baseline --comment "$result" || status=$?',
+    '[ "$status" -eq 0 ] || [ "$status" -eq 3 ]',
   ].join("\n")}`,
-  value: { path: "import-eval-comment.json", schema: Schema.Struct({ markdown: Schema.String }) },
+  value: {
+    path: "import-eval.json",
+    schema: Schema.Struct({ markdown: Schema.String, differences: Schema.Number }),
+  },
 }).pipe(Step.timeout("30 minutes"));
 
-const importEvalComment = Action.make(
-  "import-eval-comment",
+class BaselineDiffers extends Calder.Failure<BaselineDiffers>("studienbuch")("BaselineDiffers", {
+  count: Schema.Number,
+}) {
+  override get message() {
+    const numbers = this.count === 1 ? "1 number differs" : `${this.count} numbers differ`;
+
+    return `${numbers} from baseline.json: fix the import, or update baseline.json in this commit with the reason`;
+  }
+}
+
+/** Comments the numbers on a pull request, and fails when any differs from the baseline. */
+const importEvalGate = Action.make(
+  "import-eval-gate",
   { needs: { result: importEval } },
   function* ({ result }) {
-    yield* PullRequest.comment(result.markdown);
+    const pullRequest = yield* Effect.serviceOption(PullRequest);
+
+    if (Option.isSome(pullRequest)) yield* pullRequest.value.comment(result.markdown);
+
+    if (result.differences > 0) return yield* new BaselineDiffers({ count: result.differences });
   },
 );
 
@@ -304,7 +324,7 @@ export default Environments.project({
   // The corpus gate runs where secrets reach: same-repo pull requests and pushes to main.
   rules: [
     On.pullRequest([pnpmDeps, runtimeIos, runtimeAndroid]),
-    On.preview([importEval, importEvalComment]),
-    On.push("main", [pnpmDeps, importEval]),
+    On.preview([importEval, importEvalGate]),
+    On.push("main", [pnpmDeps, importEval, importEvalGate]),
   ],
 });
