@@ -56,9 +56,18 @@ export type Leaf = Data.TaggedEnum<{
 
 export const Leaf = Data.taggedEnum<Leaf>();
 
-/** An object: the rule for each field, which may depend on its kept fields such as `type`. */
+/**
+ * Whose rules a walk follows: the corpus's, which agents read, or the source store's, which keeps a
+ * run's reads on the server (m2-import-path.md, section 3).
+ */
+export type Column = "corpus" | "store";
+
+/**
+ * An object: the rule for each field, which may depend on its kept fields such as `type`, and on
+ * the column.
+ */
 export class Fields extends Data.TaggedClass("Fields")<{
-  readonly fields: (value: JsonObject) => Readonly<Record<string, Node>>;
+  readonly fields: (value: JsonObject, column: Column) => Readonly<Record<string, Node>>;
 }> {}
 
 /** A list whose items all follow one rule. */
@@ -75,9 +84,10 @@ export class Problem extends Data.Class<{
 
 /**
  * Each pass decides what a leaf becomes, or fails it with a problem. `dropped` leaves the field
- * out.
+ * out. A pass follows the corpus's column unless it names another.
  */
 export interface Handlers {
+  readonly column?: Column;
   readonly leaf: (
     leaf: Leaf,
     value: Json,
@@ -86,6 +96,9 @@ export interface Handlers {
 }
 
 export const dropped: unique symbol = Symbol("Policy.dropped");
+
+/** The problem of a field the rules don't name, which the store drops and counts as drift. */
+export const withoutRule = "a field without a rule";
 
 /** Problems of many reads, counted by read kind, path and problem, never by value. */
 export interface Tally {
@@ -185,7 +198,7 @@ export const walk = (node: Node, value: Json, handlers: Handlers): Walked => {
         return null;
       }
 
-      const fields = current.fields(input);
+      const fields = current.fields(input, handlers.column ?? "corpus");
       const inner = [input, ...ancestors];
       const out: Record<string, Json> = {};
 
@@ -199,7 +212,7 @@ export const walk = (node: Node, value: Json, handlers: Handlers): Walked => {
           problems.push(
             new Problem({
               path: path === "" ? shown : `${path}.${shown}`,
-              problem: "a field without a rule",
+              problem: withoutRule,
             }),
           );
 
@@ -332,7 +345,7 @@ const timeGrid = object({
   units: array(object({ unitOfDay: keep, startTime: keep, endTime: keep })),
 });
 
-const filter = object({
+const filterFields = {
   resourceType: keep,
   preSelected: constant(null),
   buildings: constant([]),
@@ -370,14 +383,37 @@ const filter = object({
       imageUrl: constant(null),
     }),
   ),
+};
+
+/** A directory. The store keeps students only in the students' own, where the import needs them. */
+const filter = new Fields({
+  fields: (value, column) =>
+    column === "store" && value.resourceType !== "STUDENT"
+      ? { ...filterFields, students: constant([]) }
+      : filterFields,
 });
+
+/**
+ * A student in an entry's position, as the store keeps one: no position has an id, so every name
+ * becomes the same placeholder, and the nullable label none. The corpus has no rule for it yet.
+ */
+const studentPosition = {
+  type: keep,
+  status: keep,
+  shortName: Leaf.PersonName({ kind: "S", by: "shortName" }),
+  longName: Leaf.PersonName({ kind: "S", by: "shortName" }),
+  displayName: Leaf.PersonName({ kind: "S", by: "shortName" }),
+  displayNameLabel: constant(null),
+} satisfies Readonly<Record<string, Node>>;
 
 /**
  * A resource in one of an entry's positions. Only a teacher's has no id, so its short name finds
  * it. An `INFO` position holds the school's free text.
  */
 const positionResource = new Fields({
-  fields: (value) => {
+  fields: (value, column) => {
+    if (column === "store" && value.type === "STUDENT") return studentPosition;
+
     const names: Leaf | undefined =
       value.type === "TEACHER"
         ? Leaf.PersonName({ kind: "T", by: "shortName" })
@@ -576,3 +612,32 @@ export const personOfView = (type: string): Tokens.Person | undefined =>
 /** The path of an entries read with its resource id replaced. */
 export const entriesPath = (view: NonNullable<Read["view"]>, resource: number) =>
   `${view.year}/entries/${view.type}/${resource}`;
+
+const placeholders: Readonly<Record<Tokens.Person, string>> = {
+  T: "teacher",
+  S: "student",
+  P: "person",
+};
+
+/**
+ * What the source store keeps (m2-import-path.md, section 3): school data, staff names and free
+ * text as WebUntis sent them, every id, and in place of a student's or the account's name a
+ * placeholder named after the id beside it, or one without an id where there is none.
+ */
+export const store: Handlers = {
+  column: "store",
+  leaf: (leaf, value, { ancestors }) => {
+    if (leaf._tag === "Drop") return Result.succeed(dropped);
+
+    if (leaf._tag === "Constant") return Result.succeed(leaf.value);
+
+    if (leaf._tag !== "PersonName" || leaf.kind === "T" || value === null) {
+      return Result.succeed(value);
+    }
+
+    const id = leaf.by === "id" ? ancestors[0]?.id : undefined;
+    const name = placeholders[leaf.kind];
+
+    return Result.succeed(Predicate.isNumber(id) ? `${name}-${id}` : name);
+  },
+};

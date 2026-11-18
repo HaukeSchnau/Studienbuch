@@ -194,13 +194,15 @@ const plan: ReadonlyArray<Slot> = [
   },
 ];
 
-// Case: the weeks after the autumn break, 2026-W44 to W46, are A, B and A, against ISO parity,
-// which makes W44 a B-week. W44 and W45 open the capture and give each student's Kurswahl; W46
-// is measured against it.
+// Case: the weeks after the autumn break, 2026-W44 to W48, alternate from A, against ISO parity,
+// which makes W44 a B-week. W44 and W45 open the capture and give each student's Kurswahl; later
+// weeks are measured against it.
 const weeks = [
   { label: "A", days: ["2026-10-26", "2026-10-27", "2026-10-28", "2026-10-29", "2026-10-30"] },
   { label: "B", days: ["2026-11-02", "2026-11-03", "2026-11-04", "2026-11-05", "2026-11-06"] },
   { label: "A", days: ["2026-11-09", "2026-11-10", "2026-11-11", "2026-11-12", "2026-11-13"] },
+  { label: "B", days: ["2026-11-16", "2026-11-17", "2026-11-18", "2026-11-19", "2026-11-20"] },
+  { label: "A", days: ["2026-11-23", "2026-11-24", "2026-11-25", "2026-11-26", "2026-11-27"] },
 ] as const;
 
 // Case: a free day, a Friday WebUntis lists among its holidays.
@@ -366,7 +368,8 @@ const timetable = (view: (typeof views)[number], version: 1 | 2, dates: Readonly
   errors: [],
 });
 
-const range = { start: "2026-10-26", end: "2026-11-15" };
+// Four weeks from the second week, the window of a run on its Monday.
+const range = { start: "2026-10-26", end: "2026-11-29" };
 
 const entryReads = views.map((view): [string, RecordedWebUntis.Read] => {
   const before = timetable(view, 1, [lateChangeDay]);

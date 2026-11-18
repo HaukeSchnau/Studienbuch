@@ -31,7 +31,8 @@ const evaluate = (
     profile: TinySchool.profile,
     importName: "naive",
     importLayer,
-    weeks: Option.none(),
+    // The weeks the invented school's truth was written for. Its last two weeks fill a run's window.
+    weeks: Option.some({ from: "2026-W44", to: "2026-W46" }),
     timeline,
   });
 
@@ -93,7 +94,7 @@ const both = {
     secondRunChanges: 0,
     reversedReadChanges: 0,
     failedReadChanges: 0,
-    injectedFailures: 6,
+    injectedFailures: 7,
   },
   // Students of `11.1` who skip `INF`, and `13`. `MA-E` shows each group the other's lessons, and
   // the joint `INF` lesson is two courses, so its students take both.
@@ -132,10 +133,10 @@ describe("Evaluator", () => {
         },
         // "Betreuung" reads as a substitution, and Monday's run never sees Wednesday's version.
         changes: of(3, 5),
-        courseIdsKept: of(70, 70),
-        lookahead: of(32, 32),
-        runs: { total: 3, failed: 0 },
-        reads: { requests: 57, outOfRange: 18, decodeFailures: 0 },
+        courseIdsKept: of(140, 140),
+        lookahead: of(35, 35),
+        runs: { total: 5, failed: 0 },
+        reads: { requests: 95, outOfRange: 18, decodeFailures: 0 },
         passingCases: [
           "cancellation",
           "free-day",
@@ -171,10 +172,10 @@ describe("Evaluator", () => {
           },
         },
         changes: of(4, 5),
-        courseIdsKept: of(1015, 1015),
-        lookahead: of(272, 272),
-        runs: { total: 30, failed: 0 },
-        reads: { requests: 642, outOfRange: 252, decodeFailures: 0 },
+        courseIdsKept: of(1715, 1715),
+        lookahead: of(352, 352),
+        runs: { total: 50, failed: 0 },
+        reads: { requests: 1070, outOfRange: 276, decodeFailures: 0 },
         passingCases: [
           "cancellation",
           "free-day",
@@ -207,7 +208,7 @@ describe("Evaluator", () => {
         runs: report.runs,
         failedReruns: report.invariants.failedRuns,
       }),
-      expected: { runs: { total: 3, failed: 2 }, failedReruns: 2 },
+      expected: { runs: { total: 5, failed: 4 }, failedReruns: 2 },
     },
     {
       name: "makes one course per lesson",
@@ -229,7 +230,7 @@ describe("Evaluator", () => {
       }),
       // Lessons the later runs didn't touch keep their ids; the rest change. Nobody chose the
       // last run's courses.
-      expected: { studentWeeks: of(0, 8), kept: of(34, 70), ghosts: 11 },
+      expected: { studentWeeks: of(0, 8), kept: of(104, 140), ghosts: 11 },
     },
     {
       name: "makes one course of each subject",
@@ -295,7 +296,7 @@ describe("Evaluator", () => {
         });
       }),
       measure: (report: Effect.Success<ReturnType<typeof evaluate>>) => report.lookahead,
-      expected: of(26, 32),
+      expected: of(26, 35),
     },
     {
       name: "claims every week read without importing a lesson",
@@ -304,7 +305,7 @@ describe("Evaluator", () => {
         lookahead: report.lookahead,
         recall: report.views.student.recall,
       }),
-      expected: { lookahead: of(0, 32), recall: of(0, 28) },
+      expected: { lookahead: of(0, 35), recall: of(0, 28) },
     },
     {
       name: "keeps one lesson a day that claims all of the day's entries",
@@ -333,7 +334,7 @@ describe("Evaluator", () => {
       }),
       // Only the entries at the time of the one lesson kept count, and a lesson that claims
       // entries at other times gives no student their week.
-      expected: { lookahead: of(16, 32), kurswahl: of(2, 8) },
+      expected: { lookahead: of(17, 35), kurswahl: of(2, 8) },
     },
     {
       name: "puts the exam in a course of another subject with its teacher and students",
@@ -365,7 +366,7 @@ describe("Evaluator", () => {
       importLayer: variant((result) => Effect.succeed({ ...result, courses: [] })),
       measure: (report: Effect.Success<ReturnType<typeof evaluate>>) =>
         report.invariants.danglingCourses,
-      expected: 39,
+      expected: 65,
     },
   ])("scores an import that $name worse", ({ importLayer, measure, expected }) =>
     Effect.gen(function* () {
@@ -381,7 +382,7 @@ describe("Evaluator", () => {
           ...TinySchool.corpus.manifest,
           ranges: [
             { start: "2026-10-26", end: "2026-11-04" },
-            { start: "2026-11-02", end: "2026-11-15" },
+            { start: "2026-11-02", end: "2026-11-29" },
           ],
         },
       };
@@ -453,7 +454,7 @@ describe("Evaluator", () => {
         reads: new Map(reads),
       });
 
-      assert.deepStrictEqual(lookahead, of(32, 32));
+      assert.deepStrictEqual(lookahead, of(35, 35));
     }),
   );
 
