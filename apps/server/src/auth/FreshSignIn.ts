@@ -1,6 +1,6 @@
 /**
- * ADR 0025's fresh sign-in: adding a passkey or a recovery wrapper needs a session at most
- * `Keys.freshSignInMinutes` old, by the database's clock that stamped it.
+ * ADR 0025's fresh sign-in: adding a passkey or a recovery wrapper, or deleting the account, needs
+ * a session at most `Keys.freshSignInMinutes` old, by the database's clock that stamped it.
  */
 import { Keys } from "@stu/api/Keys";
 import * as Effect from "effect/Effect";

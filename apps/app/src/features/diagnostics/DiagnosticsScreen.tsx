@@ -16,6 +16,7 @@ import { CryptoSelfTest } from "./CryptoSelfTest.ts";
 import { DeviceStorage } from "./DeviceStorage.ts";
 import { ServerInfo } from "./ServerInfo.ts";
 import { StatusRow, type StatusRowProps } from "./StatusRow.tsx";
+import { DeleteAccountButton } from "../account/DeleteAccountButton.tsx";
 import { SignOutButton } from "../account/SignOutButton.tsx";
 import { KeysState } from "../keys/KeysState.ts";
 import { keyReasonOf } from "../keys/KeysUi.tsx";
@@ -23,8 +24,8 @@ import { NotebookKeys } from "../keys/NotebookKeys.ts";
 
 /**
  * "Dieses Gerät", behind the overview: whether the notebook survives losing this device, what runs
- * here, and whether its server, crypto and storage work. The way to Notizbuch-Schlüssel and signing
- * out sit here until "Mein Profil" exists.
+ * here, and whether its server, crypto and storage work. The way to Notizbuch-Schlüssel, signing
+ * out and deleting the account sit here until "Mein Profil" exists.
  */
 export function DiagnosticsScreen() {
   const server = useAtomValue(ServerInfo.info);
@@ -66,6 +67,7 @@ export function DiagnosticsScreen() {
         <StatusRow {...storageRow(storage, persistence)} />
       </Card>
       <SignOutButton />
+      <DeleteAccountButton />
     </HeroScreen>
   );
 }

@@ -311,6 +311,12 @@ export const accountKeys = Layer.effectContext(
   }),
 );
 
+/** Every account exists: the engine's own tests delete none. */
+export const accounts = Layer.succeed(
+  Ports.Accounts,
+  Ports.Accounts.of({ hold: () => Effect.succeed(true) }),
+);
+
 /** The suite for the signatures a `Seal` carries. */
 export const suite = CryptoSuite.layer;
 
@@ -353,6 +359,7 @@ export const serverWith = (options?: SyncServer.Options) =>
         sessions,
         crypto,
         accountKeys,
+        accounts,
         suite,
         Listener.layer(PgClient.PgClient, (notification) => notification.payload),
       ),

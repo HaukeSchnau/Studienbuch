@@ -611,7 +611,7 @@ svg .st { font-size: 12.5px; font-weight: 700; fill: var(--ink); }
 
 <section id="life">
   <h2><span class="n">9</span>A device's life</h2>
-  <p>Offline is a normal state, and so is a session that ended: the device keeps its data and its outbox and waits for the same account to sign in again. The only ways to lose local data are signing out (which now warns about unsent changes) and, from M3, being removed by another device.</p>
+  <p>Offline is a normal state, and so is a session that ended: the device keeps its data and its outbox and waits for the same account to sign in again. Local data goes when the device signs out (which warns about unsent changes), when its account is deleted, here with "Konto löschen" or on another device, found out when its session ends, and, from M3, when another device removes it.</p>
   <div class="dia wide" data-d="life"></div>
   <p class="scrollhint">Scroll the diagram sideways.</p>
 </section>
@@ -753,7 +753,6 @@ svg .st { font-size: 12.5px; font-weight: 700; fill: var(--ink); }
     <li><b>The access flow is shorter.</b>domain.md has <code>access.reserve(code)</code> then <code>access.redeem(reservation)</code>. The code has one <code>Access.redeem({code})</code> that returns a reservation; the sign-up carries it in a header, and confirming the email admits, or for an account without an address the sign-up itself.<span class="src"><code>packages/api/src/Access.ts</code>, <code>apps/server/src/auth/Auth.ts</code></span></li>
     <li><b>The profile mutator changed.</b>domain.md's <code>notebook.update(cohortId?, adult?, displayName?)</code> is <code>notebookProfile.set(notebook, displayName, adult)</code>. The server-written <code>Notebook</code> row and the separate <code>CourseOffering</code> table aren't in domain.md.<span class="src"><code>packages/core/src/notebook/</code></span></li>
     <li><b>Space keys live in SQLite.</b>encryption.md keeps them in a <code>space_key</code> table and deletes them from the keychain at logout. They are in <code>sync_space_key</code> in the account database.<span class="src"><code>packages/sync/src/client/EngineTables.ts</code></span></li>
-    <li><b>Account deletion doesn't exist.</b>Several docs describe <code>account.delete</code> crypto-shredding the account. Better Auth's <code>/delete-user</code> is disabled and there is no other path.<span class="src"><code>apps/server/src/auth/Auth.ts</code></span></li>
     <li><b>architecture.md is ahead of the code.</b>It describes the WebUntis import, <code>Lesson</code>, <code>ImportStatus</code> and blobs in the present tense. There is no import code, and no server code reads the blob buckets.<span class="src"><code>apps/server/src/main.ts</code></span></li>
     <li><b>Hosting details drifted.</b>hosting.md puts the R2 bucket in the Studienbuch stack (infra's tokens stack makes it), removes previews after 7 idle days (only closing the PR does), lets the preview wait on the bundle (it waits on serverSmoke) and grants 6 services (4). ADR 0010 says there is no separate <code>tsc</code> run; CI runs <code>tsc --noEmit</code>.<span class="src"><code>.calder/ci.ts</code>, <code>deploy/alchemy.run.ts</code></span></li>
   </ul>
@@ -767,7 +766,6 @@ svg .st { font-size: 12.5px; font-weight: 700; fill: var(--ink); }
     <li><b>The simulation never seals.</b>It runs with <code>sealing = false</code>, so the engine's own encrypted path (sealing at push, Stale and re-seal, opening on pull) isn't exercised there, and the plaintext invariant only ever sees forged markers. The flag's comment still says the engine sends no <code>Seal</code> yet, which stopped being true when <code>Sealing.ts</code> landed. The encrypted path is the one that matters most for privacy.</li>
     <li><b>E2E doesn't run in CI.</b>No E2E runner exists yet although 74 scenario contracts are accepted. The browser tests run in CI (<code>test-app-browser</code>), in the CI shell's Chromium and Firefox, which an E2E job can use as well.</li>
     <li><b>Some security state lives only in memory.</b>Rate limits and session revocations are per process. A restart clears every limit. A second server process would miss revocations, so a revoked session's sockets there stay open until that connection checks its session again, 4 to 6 minutes later.</li>
-    <li><b>Deleting an account would leave ciphertext behind.</b><code>space_member</code>, <code>sync_client</code>, <code>command_log</code> and notebook spaces have no foreign key to <code>auth_user</code>. Deleting a user cascades the auth, access, demo and key tables: sessions and keys go, while the notebook space, its ciphertext and key boxes in <code>sync_row</code>, the memberships and the command log stay. Worth deciding before the first real deletion request.</li>
     <li><b>Provisioned, unused.</b>Garage and R2 buckets exist in every environment with credentials in the process, and no code reads them until M4. The heartbeat job runs on every preview because <code>STUDIENBUCH_JOBS</code> is never set.</li>
     <li><b>Probing seal fetches is free.</b><code>fetchSeals</code> counts only fetches that found seals. Probing unknown credential ids costs nothing, though it also returns nothing.</li>
   </ul>
@@ -1049,7 +1047,8 @@ DIAGRAMS.server = {
     { id: "s-redeem", x: 310, y: 132, w: 246, h: 50, t: "Access.redeem", s: "code to reservation, failure limits" },
     { id: "s-keys", x: 310, y: 192, w: 118, h: 50, t: "Keys.*", s: "state, init, add,\nfetchSeals", k: "key" },
     { id: "s-demo", x: 438, y: 192, w: 118, h: 50, t: "Demo.*", s: "persona sign-in" },
-    { id: "s-dev", x: 310, y: 250, w: 246, h: 40, t: "Dev.*: a school per call", s: "" },
+    { id: "s-dev", x: 310, y: 250, w: 118, h: 44, t: "Dev.*", s: "a school per call" },
+    { id: "s-delete", x: 438, y: 250, w: 118, h: 44, t: "AccountDeletion", s: "fresh sign-in", k: "stop" },
 
     { id: "s-ba", x: 310, y: 348, w: 246, h: 56, t: "Better Auth", s: "email and password, passkeys,\nNotfallkarte, signed bearer tokens" },
     { id: "s-hooks", x: 310, y: 414, w: 120, h: 120, t: "Hooks", s: "sign-up needs a\nreservation; the\npassword counts\nonly after the\nemail code", k: "stop" },
@@ -1084,7 +1083,7 @@ DIAGRAMS.server = {
     { id: "t-row", x: 916, y: 628, w: 248, h: 56, t: "sync_row", s: "JSONB, or envelope and ciphertext", k: "seal" },
     { id: "t-log", x: 916, y: 696, w: 248, h: 56, t: "command_log, sync_client", s: "every command, refusals", k: "wire" },
     { id: "t-epoch", x: 916, y: 764, w: 248, h: 44, t: "sync_epoch", s: "", k: "wire" },
-    { id: "t-misc", x: 916, y: 300, w: 248, h: 74, t: "demo_account, captured_mail", s: "job_run, cluster_* (Effect's)\nmigrations", k: "infra" },
+    { id: "t-misc", x: 916, y: 300, w: 248, h: 74, t: "demo_account, captured_mail", s: "job_run, deleted_session,\ncluster_* (Effect's), migrations", k: "infra" },
   ],
   edges: [
     { a: "h-rpc", b: "s-sys", as: "r", bs: "l", ex: 270 },
@@ -1576,6 +1575,8 @@ const INFO = {
 
   "s-demo": { t: "Demo.*", d: ["On dev and previews anyone can sign in as Lena or Tom without a password. Every server hands a signed-in demo account its root key, which the server derives from <code>DEMO_KEY_SEED</code>; beta's store review account needs that."], f: ["apps/server/src/demo/PersonaSignIn.ts", "apps/server/src/demo/DemoKeys.ts"], a: [27] },
 
+  "s-delete": { t: "AccountDeletion.*", k: "stop", d: ["<code>delete</code> needs a sign-in in the last 10 minutes, then deletes the account in one transaction: its user row with everything that cascades (passwords, passkeys, key records, wrappers, seals, recovery events, sign-ups), its sessions, notebooks with their rows and key boxes, memberships, sync clients and command log, access and email codes. The ended sessions reach the sync server's revocations. Every path that writes the account's rows first takes its lock (<code>AccountLock</code>), an advisory lock on the account's id: exclusive for the deletion, a card replacement and an admission to a school, else shared. Row locks follow under it in one order: its logins, its user row, then its newest key record. Card sign-in, pushed commands (<code>Ports.Accounts</code>) and the key store take it too. A write on a connection still open either finishes before the deletion and is deleted with it, or finds the account gone and writes nothing, and a card sign-in under way finishes first.", "Each ended session leaves only the SHA-256 of its token in <code>deleted_session</code>, with no account and no time. A device whose session ended asks <code>deleted</code> with its token and, on yes, forgets the account as sign-out does."], f: ["apps/server/src/account/Deletion.ts", "apps/server/src/account/AccountLock.ts", "apps/server/src/account/DeletionTables.ts", "packages/api/src/AccountDeletion.ts", "packages/sync/src/server/Ports.ts", "apps/app/src/features/account/Deletion.ts"], a: [31] },
+
   "s-dev": { t: "Dev.*", d: ["A fresh school per call and the caller's admission to it, for the Sync Lab and future E2E runs. Every server has the handlers, only development and preview answer."], f: ["apps/server/src/dev/Shortcuts.ts", "packages/api/src/Dev.ts"] },
 
   "s-ba": { t: "Better Auth", d: ["Email and password with required confirmation, a 6-digit email code (keyed hash, 5 tries, 15 minutes), passkeys with user verification, and signed bearer tokens. Sessions last 90 days and renew at most daily. Unused flows are switched off by path.", "An account without an address (D97) signs up with a passkey first, or with the Notfallkarte where a device has no passkeys, and the card then signs in. It has Better Auth's placeholder address under <code>.invalid</code>, which <code>Mail</code> never sends to and no email route accepts. Its own plugin, <code>WithoutAddress</code>, holds these routes and hooks."], f: ["apps/server/src/auth/Auth.ts", "apps/server/src/auth/AuthTables.ts", "apps/server/src/auth/WithoutAddress.ts", "apps/server/src/auth/CardLogins.ts"], a: [28] },
@@ -1638,7 +1639,7 @@ const INFO = {
 
   "t-epoch": { t: "sync_epoch", k: "wire", d: ["One random id written when <code>prepare</code> first meets the database and rewritten by a restore. Combined with Postgres's system identifier and timeline, it tells devices that the server rewound, so they resend what it lost."], f: ["packages/sync/src/server/SyncEpoch.ts"], a: [21] },
 
-  "t-misc": { t: "Everything else", k: "infra", d: ["demo_account marks the seed's accounts, captured_mail keeps dev and preview mail, job_run records the last run of each job, and Effect's cluster creates its own cluster_* tables."], f: ["apps/server/src/demo/DemoTables.ts", "apps/server/src/infra/mail/MailTables.ts"] },
+  "t-misc": { t: "Everything else", k: "infra", d: ["demo_account marks the seed's accounts, captured_mail keeps dev and preview mail, job_run records the last run of each job, deleted_session keeps a hash of each session a deletion ended, and Effect's cluster creates its own cluster_* tables."], f: ["apps/server/src/demo/DemoTables.ts", "apps/server/src/account/DeletionTables.ts", "apps/server/src/infra/mail/MailTables.ts"] },
 
   /* seq lanes */
   "seq-A": { t: "Device A", d: ["The device that writes. Its engine runs the mutator on local SQLite and keeps the command in the outbox until a pull settles it. Readable and encrypted writes look the same here; they differ at push."], f: ["packages/sync/src/client/SyncClient.ts", "packages/sync/src/client/Outbox.ts", "packages/sync/src/client/Sealing.ts"], a: [17, 23] },
@@ -1763,7 +1764,7 @@ const INFO = {
 
   "l-update": { t: "Update required", k: "stop", d: ["Close code 4426: the client's contract is below the server's minimum. The device waits for a newer app. The server deploys first and sends each message tag only to clients that know it, so this should be rare."], f: ["packages/sync/src/server/Contract.ts"] },
 
-  "l-signout": { t: "Abmelden", k: "stop", d: ["Asks first when the engine counted changes the server hasn't received (PR 99), or when no passkey, Notfallkarte or other device opens the notebook without this one. Then, in one turn of the engines, it stops the engine and deletes the account's database, secrets and session, and revokes the session on the server. A change saved after the question makes it ask again. The note it writes first is the point of no return: from there it retries what fails, says \"Abmelden hat nicht geklappt\" when it still fails, and finishes before the next session or at the next start.", "Nothing of the account stays in the app's memory: its atoms go with its screens, and what outlives a screen sits in <code>AccountState.memory</code>, which forgets it when another account or none holds the device (<code>studienbuch/no-kept-account-atom</code>)."], f: ["apps/app/src/features/account/SignOutButton.tsx", "apps/app/src/features/account/AccountState.ts", "apps/app/src/infra/runtime/AccountEngine.ts", "apps/app/src/infra/runtime/Forgetting.ts"] },
+  "l-signout": { t: "Abmelden", k: "stop", d: ["Asks first when the engine counted changes the server hasn't received (PR 99), or when no passkey, Notfallkarte or other device opens the notebook without this one. Then, in one turn of the engines, it stops the engine and deletes the account's database, secrets and session, and revokes the session on the server. A change saved after the question makes it ask again. The note it writes first is the point of no return: from there it retries what fails, says \"Abmelden hat nicht geklappt\" when it still fails, and finishes before the next session or at the next start. Konto löschen leaves the same way, without the question, since the account and its unsent changes are gone on the server; so does any device of the account whose session ends when the server says the account was deleted.", "Nothing of the account stays in the app's memory: its atoms go with its screens, and what outlives a screen sits in <code>AccountState.memory</code>, which forgets it when another account or none holds the device (<code>studienbuch/no-kept-account-atom</code>)."], f: ["apps/app/src/features/account/SignOutButton.tsx", "apps/app/src/features/account/AccountState.ts", "apps/app/src/infra/runtime/AccountEngine.ts", "apps/app/src/infra/runtime/Forgetting.ts", "apps/app/src/features/account/Deletion.ts"] },
 
   "l-revoked": { t: "Removed by another device", k: "stop", ms: "M3", d: ["The client already handles <code>Sync.DeviceRevoked</code> and close code 4403 by wiping itself after one more pull, but the server never sends either: device removal is M3."], f: ["packages/sync/src/client/SyncClient.ts", "packages/sync/src/protocol/Connection.ts"] },
 
@@ -1969,6 +1970,7 @@ const ADR = {
   24: "0024-epoch-keys-sealed-per-member-account", 25: "0025-recovery-without-escrow",
   26: "0026-recovery-methods-are-key-pairs", 27: "0027-demo-accounts-have-server-derived-keys",
   28: "0028-sessions-and-the-sync-connection",
+  31: "0031-account-deletion-leaves-token-hashes",
 };
 const KIND = {
   read: "Readable: plaintext the server may read",

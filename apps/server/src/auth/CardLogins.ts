@@ -11,6 +11,7 @@ import * as Base64Url from "effect/encoding/Base64Url";
 import * as Hex from "effect/encoding/Hex";
 import * as Option from "effect/Option";
 import * as SqlClient from "effect/sql/SqlClient";
+import { AccountLock } from "../account/AccountLock.ts";
 
 export * as CardLogins from "./CardLogins.ts";
 
@@ -27,19 +28,11 @@ export const digest = Effect.fn("CardLogins.digest")(function* (login: string) {
 });
 
 /**
- * The account whose card the login is from. Holds the login for share until the caller's
- * transaction ends, so `replace` can't retire it meanwhile.
+ * The account whose card the login is from. Holds the account and the login for share until the
+ * caller's transaction ends (`AccountLock`), so `replace` can't retire it meanwhile.
  */
 export const owner = Effect.fn("CardLogins.owner")(function* (login: string) {
-  const sql = yield* SqlClient.SqlClient;
-
-  const [row] = yield* sql<{ readonly userId: string }>`
-    select "userId" from auth_account
-    where "providerId" = ${provider} and "accountId" = ${yield* digest(login)}
-    for share
-  `;
-
-  return Option.map(Option.fromNullishOr(row), ({ userId }) => userId);
+  return yield* AccountLock.holdLoginOwner(provider, yield* digest(login));
 });
 
 /**

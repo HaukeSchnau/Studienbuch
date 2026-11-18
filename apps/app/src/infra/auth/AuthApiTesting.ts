@@ -19,6 +19,7 @@ export const layer = (calls: Partial<AuthApi.Service["Service"]>) =>
     confirmEmail: unexpected("confirmEmail"),
     session: unexpected("session"),
     signOut: unexpected("signOut"),
+    waysIn: unexpected("waysIn"),
     passkeySignInOptions: Effect.die("AuthApi.passkeySignInOptions was not expected"),
     passkeySignIn: unexpected("passkeySignIn"),
     passkeyCreationOptions: unexpected("passkeyCreationOptions"),

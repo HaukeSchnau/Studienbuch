@@ -1,21 +1,31 @@
 import { assert, it } from "@effect/vitest";
 import { Notebook, NotebookProfile } from "@stu/core";
 import { SyncClient } from "@stu/sync/client";
+import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
+import * as Exit from "effect/Exit";
+import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import * as Queue from "effect/Queue";
 import * as Redacted from "effect/Redacted";
+import * as Ref from "effect/Ref";
 import * as Atom from "effect/reactivity/Atom";
 import * as AtomRegistry from "effect/reactivity/AtomRegistry";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import * as Stream from "effect/Stream";
+import * as TestClock from "effect/testing/TestClock";
 
 import { SessionStore } from "../../infra/auth/SessionStore.ts";
-import type { Keychain } from "../../infra/keychain/Keychain.ts";
+import { Keychain } from "../../infra/keychain/Keychain.ts";
 import { AccountEngine } from "../../infra/runtime/AccountEngine.ts";
+import { Forgetting } from "../../infra/runtime/Forgetting.ts";
+import { Layers } from "../../infra/runtime/Layers.ts";
 import { Onboarding } from "../onboarding/Onboarding.ts";
 import { OnboardingState } from "../onboarding/OnboardingState.ts";
 import { AccountState } from "./AccountState.ts";
+import { Deletion } from "./Deletion.ts";
+import { DeletionServer } from "./DeletionServer.ts";
 
 const accountId = "leaves-lena";
 
@@ -158,8 +168,13 @@ it.effect("an account's memory lasts through a new token and the session's end, 
     const card = AccountState.memory(Option.none<string>());
     registry.set(card, Option.some("card"));
 
+    // Her deletion went through, but this device couldn't erase her copy yet.
+    registry.set(AccountState.deletionProblem, Option.some("forget-failed" as const));
+
     /** What the registry holds for `card`, without reading it, which would build it again. */
     const held = () => registry.getNodes().get(card)?.valueOption();
+
+    const problem = () => registry.getNodes().get(AccountState.deletionProblem)?.valueOption();
 
     yield* session(
       (store) => store.ended,
@@ -171,16 +186,119 @@ it.effect("an account's memory lasts through a new token and the session's end, 
     yield* signIn("second");
 
     const afterSignIn = held();
+    const problemBefore = problem();
 
     yield* session((store) => store.forget, Option.isNone);
+    const afterSignOut = held();
+
+    // Another student signs in on the device and opens "Konto löschen": the button is there.
+    yield* session(
+      (store) =>
+        store.signedIn({ accountId: "another", token: Redacted.make("other"), demo: false }, true),
+      (signed) => Option.exists(signed, (each) => each.accountId === "another"),
+    );
 
     assert.deepStrictEqual(
-      { afterEnd, afterSignIn, afterSignOut: held() },
+      { afterEnd, afterSignIn, afterSignOut, problemBefore, problemAfter: problem() },
       {
         afterEnd: Option.some(Option.some("card")),
         afterSignIn: Option.some(Option.some("card")),
         afterSignOut: Option.some(Option.none()),
+        problemBefore: Option.some(Option.some("forget-failed")),
+        problemAfter: Option.some(Option.none()),
       },
     );
   }).pipe(Effect.scoped),
+);
+
+/** A device whose keychain refuses the first forgetting note, and a server that deleted everyone. */
+const refusesFirstNote = AccountEngine.engines.pipe(
+  Layer.provideMerge(SessionStore.layer),
+  Layer.provideMerge(
+    Layer.effect(Keychain.Store)(
+      Effect.gen(function* () {
+        const store = yield* Keychain.Store;
+        const refused = yield* Ref.make(false);
+
+        return Keychain.Store.of({
+          ...store,
+          set: (name, value) =>
+            name.startsWith("forgetting.")
+              ? Effect.flatMap(Ref.getAndSet(refused, true), (before) =>
+                  before
+                    ? store.set(name, value)
+                    : Effect.fail(new Keychain.Unavailable({ operation: "set", cause: "locked" })),
+                )
+              : store.set(name, value),
+        });
+      }),
+    ),
+  ),
+  Layer.provideMerge(Layers.device({ name: "refuses-first-note" })),
+  Layer.provideMerge(
+    Layer.succeed(DeletionServer.Service)({
+      delete: () => Effect.void,
+      deleted: () => Effect.succeed(true),
+    }),
+  ),
+);
+
+// Lena's account was deleted on her phone, and her laptop's keychain refused the forgetting note
+// when the session ended. Nothing was erased yet, so the laptop tries again and erases her copy.
+// Tom signed out in this tab before, and the gates now lead to the start, not to "Anmelden".
+it.effect("a deleted account is erased on the next try when the keychain refused the note", () =>
+  Effect.gen(function* () {
+    const store = yield* SessionStore.Service;
+    const engines = yield* AccountEngine.Engines;
+    const registry = yield* AtomRegistry.AtomRegistry;
+    const tries = yield* Queue.unbounded<Exit.Exit<void, unknown>>();
+    registry.set(AccountState.signedOut, true);
+
+    const signed = {
+      accountId: "deleted-lena",
+      token: Redacted.make("token-deleted"),
+      demo: false,
+    };
+
+    yield* store.signedIn(signed, false);
+    const engine = yield* engines.context(signed.accountId);
+    yield* Context.get(engine, SyncClient.Service).setOffline(true);
+    yield* Context.get(engine, SqlClient.SqlClient)`
+      insert into sync_space (id, kind, role, version) values ('nb-deleted-lena', 'notebook', 'owner', 1)
+    `;
+
+    const leave = (accountId: string) =>
+      AccountState.leaveDeleted(accountId).pipe(Effect.onExit((exit) => Queue.offer(tries, exit)));
+
+    yield* Effect.forkChild(Deletion.forgetWhenDeleted(leave), { startImmediately: true });
+    yield* store.ended;
+    const first = yield* Queue.take(tries);
+    yield* TestClock.adjust("2 seconds");
+    const second = yield* Queue.take(tries);
+    const left = yield* store.current;
+    const pending = yield* Forgetting.pending;
+
+    yield* engines.keep(store.signedIn(signed, false));
+    const again = yield* engines.context(signed.accountId);
+    const spaces = yield* Context.get(again, SqlClient.SqlClient)`select id from sync_space`;
+
+    assert.deepStrictEqual(
+      {
+        first: Exit.isFailure(first),
+        second: Exit.isSuccess(second),
+        left,
+        pending: pending.includes(signed.accountId),
+        spaces: spaces.length,
+        signedOut: registry.get(AccountState.signedOut),
+      },
+      {
+        first: true,
+        second: true,
+        left: Option.none(),
+        pending: false,
+        spaces: 0,
+        signedOut: false,
+      },
+    );
+  }).pipe(Effect.provide(Layer.merge(refusesFirstNote, AtomRegistry.layer))),
 );

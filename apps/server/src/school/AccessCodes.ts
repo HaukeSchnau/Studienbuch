@@ -15,6 +15,7 @@ import * as Base64Url from "effect/encoding/Base64Url";
 import * as Hex from "effect/encoding/Hex";
 import * as Option from "effect/Option";
 import * as SqlClient from "effect/sql/SqlClient";
+import { AccountLock } from "../account/AccountLock.ts";
 import type * as Statement from "effect/sql/Statement";
 import { Access } from "./Access.ts";
 
@@ -375,6 +376,10 @@ export const admitConfirmed = Effect.fn("AccessCodes.admitConfirmed")(function* 
 
   return yield* sql.withTransaction(
     Effect.gen(function* () {
+      // Exclusive, as `Access.admit` takes it, and first, before the sign-up rows: a second
+      // confirmation, or a deletion, waits here for this one to end.
+      if (!(yield* AccountLock.hold(account, "update"))) return Option.none<Access.Admission>();
+
       const signedUp = yield* sql<{ readonly reservation: string }>`
         delete from access_sign_up where account_id = ${account}
         returning reservation_id as reservation
@@ -465,6 +470,9 @@ export const admitSignedUp = Effect.fn("AccessCodes.admitSignedUp")(function* (
 
   return yield* sql.withTransaction(
     Effect.gen(function* () {
+      // Exclusive, as `Access.admit` takes it, and before the code's lock, as `admitConfirmed`.
+      if (!(yield* AccountLock.hold(account, "update"))) return Option.none<Access.Admission>();
+
       const [held] = yield* heldBy(sql, token);
 
       if (held === undefined || held.spentAt === null || held.spentBy !== null) {
