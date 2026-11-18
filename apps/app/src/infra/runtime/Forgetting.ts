@@ -88,19 +88,36 @@ const finishing = Effect.fn("Forgetting.finishing")(
 export const pending = Effect.flatMap(note, ({ read }) => read);
 
 /**
- * Signs the account out of this device: deletes its database (with `removeDatabase`, after its
- * layer closed), its secrets and its session, then runs `signedOut`. The note goes first and
- * marks the point of no return; from there the sign-out runs to its end.
+ * Writes the account into the note: the sign-out's point of no return. From here its engine stays
+ * off, and the sign-out finishes in this run (`end`), before the next session or at the next start.
  */
+export const begin = Effect.fn("Forgetting.begin")(function* (accountId: string) {
+  const { read, write } = yield* note;
+
+  yield* write([...new Set([...(yield* read), accountId])]);
+});
+
+/**
+ * Runs a begun sign-out to its end: deletes the account's database (with `removeDatabase`, after
+ * its layer closed), its secrets and its session, then runs `signedOut`, and takes the account
+ * off the note.
+ */
+export const end = Effect.fn("Forgetting.end")(function* <E, R, E2, R2>(
+  accountId: string,
+  removeDatabase: (accountId: string) => Effect.Effect<void, E, R>,
+  signedOut: Effect.Effect<void, E2, R2>,
+) {
+  yield* finishing(accountId, Effect.andThen(erase(accountId, removeDatabase), signedOut));
+});
+
+/** `begin` and `end` in one, for a sign-out with no engine to stop first. */
 export const forget = Effect.fn("Forgetting.forget")(function* <E, R, E2, R2>(
   accountId: string,
   removeDatabase: (accountId: string) => Effect.Effect<void, E, R>,
   signedOut: Effect.Effect<void, E2, R2>,
 ) {
-  const { read, write } = yield* note;
-
-  yield* write([...new Set([...(yield* read), accountId])]);
-  yield* finishing(accountId, Effect.andThen(erase(accountId, removeDatabase), signedOut));
+  yield* begin(accountId);
+  yield* end(accountId, removeDatabase, signedOut);
 }, Effect.uninterruptible);
 
 /** Finishes the sign-outs a previous run left unfinished. One that fails again waits for the next. */

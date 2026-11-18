@@ -213,7 +213,11 @@ export const signOut = runtime
         accountId,
         unsent,
         // A public computer's account kept everything in its engine, which `forget` stopped.
-        publicComputer ? signedOutHere : Layers.forget(accountId, signedOutHere),
+        Effect.gen(function* () {
+          if (publicComputer) return yield* signedOutHere;
+
+          yield* Layers.endSignOut(accountId, signedOutHere);
+        }),
       );
     }).pipe(
       Effect.catchTags({

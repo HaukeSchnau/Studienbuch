@@ -96,16 +96,16 @@ export class Engines extends Context.Service<
       accountId: string,
     ) => Effect.Effect<Context.Context<Running>, Failure | SignedOut>;
     /**
-     * Signs the account out in one turn. `unsent` is what the question before showed, `None` when
-     * it couldn't tell. A command it didn't show refuses (`moreThan`); otherwise the engine stops
-     * and `erase` deletes what the account kept and ends with its session. No write and no engine
-     * of the account starts in between.
+     * Signs the account out in one turn. `unsent` is what the question before showed, `None` if
+     * unknown; a command it didn't show refuses (`moreThan`). Then the note (`Forgetting.begin`)
+     * marks the point of no return, the engine stops, and `erase` deletes the rest and ends with
+     * the session (`Forgetting.end`). No write and no engine of the account starts in between.
      */
     readonly forget: <E, R>(
       accountId: string,
       unsent: Option.Option<Unsent>,
       erase: Effect.Effect<void, E, R>,
-    ) => Effect.Effect<void, E | MoreUnsent | SqlError.SqlError, R>;
+    ) => Effect.Effect<void, E | MoreUnsent | SqlError.SqlError | Keychain.Unavailable, R>;
     /**
      * Keeps a new session (`Forgetting.Service`): `session` runs in a turn of its own, after the
      * sign-outs the device left unfinished, so no sign-out deletes what it stores.
@@ -251,30 +251,42 @@ export const engines = Layer.effect(Engines)(
           Effect.gen(function* () {
             const known = running.get(accountId);
 
-            // A write under way finishes first, and none starts after, so the outbox read here is
-            // what sign-out deletes.
-            if (known !== undefined) {
-              yield* known.writes.withPermit(
+            const kept = Option.exists(
+              yield* sessions.current,
+              (signed) => signed.accountId === accountId && !signed.publicComputer,
+            );
+
+            const leave = Effect.gen(function* () {
+              if (known !== undefined && Option.isSome(unsent)) {
+                const now = yield* unsentNow.pipe(
+                  Effect.provideService(
+                    SqlClient.SqlClient,
+                    Context.get(known.context, SqlClient.SqlClient),
+                  ),
+                );
+
+                if (moreThan(now, unsent.value)) {
+                  return yield* new MoreUnsent({ newest: now.newest });
+                }
+              }
+
+              // The note is the point of no return: until it's written, a failure leaves the
+              // engine running and the account signed in. A public computer keeps nothing to note.
+              yield* Effect.uninterruptible(
                 Effect.gen(function* () {
-                  if (Option.isSome(unsent)) {
-                    const now = yield* unsentNow.pipe(
-                      Effect.provideService(
-                        SqlClient.SqlClient,
-                        Context.get(known.context, SqlClient.SqlClient),
-                      ),
-                    );
+                  if (kept) yield* Effect.provide(Forgetting.begin(accountId), leftovers);
 
-                    if (moreThan(now, unsent.value)) {
-                      return yield* new MoreUnsent({ newest: now.newest });
-                    }
-                  }
+                  if (known !== undefined) yield* Ref.set(known.stopped, true);
 
-                  yield* Ref.set(known.stopped, true);
+                  yield* stop(accountId);
+                  yield* erase;
                 }),
               );
-            }
+            });
 
-            yield* Effect.uninterruptible(Effect.andThen(stop(accountId), erase));
+            // A write under way finishes first, and none starts after, so the outbox read here is
+            // what sign-out deletes.
+            yield* known === undefined ? leave : known.writes.withPermit(leave);
           }),
         ),
       keep: (session) =>

@@ -190,7 +190,7 @@ export const pending: SyncQuery.SyncQuery<
 /**
  * The commands waiting for the server, oldest first, and the client id they go out under. A
  * renumber after `Sync.ClientUnknown` gives them a new client id and numbers them from 1 again,
- * so mutation ids compare only under one client id.
+ * so mutation ids compare only under one client id, and both are read in one transaction.
  */
 export const outbox: SyncQuery.SyncQuery<
   void,
@@ -199,10 +199,14 @@ export const outbox: SyncQuery.SyncQuery<
 > = {
   keys: [keys.outbox],
   run: () =>
-    Effect.all({
-      clientId: Effect.map(Outbox.meta, (meta) => meta.clientId),
-      commands: Outbox.pending,
-    }),
+    Effect.flatMap(SqlClient.SqlClient, (sql) =>
+      sql.withTransaction(
+        Effect.all({
+          clientId: Effect.map(Outbox.meta, (meta) => meta.clientId),
+          commands: Outbox.pending,
+        }),
+      ),
+    ),
 };
 
 /** A space the account reads, and when the device last pulled ("zuletzt synchronisiert"). */

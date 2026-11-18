@@ -40,49 +40,68 @@ const engines = (device: string) =>
     Layer.provideMerge(Layers.device({ name: device })),
   );
 
-/** Where the test holds the next root key the device stores, and lets it go. */
-class Hold extends Context.Service<
-  Hold,
-  { readonly reached: Deferred.Deferred<void>; readonly release: Deferred.Deferred<void> }
->()("Test.Hold") {}
+/**
+ * What the test does to the device's keychain: hold the next root key it stores until `release`,
+ * and fail the next write of a forgetting note while `failNote` is set.
+ */
+class Tamper extends Context.Service<
+  Tamper,
+  {
+    readonly reached: Deferred.Deferred<void>;
+    readonly release: Deferred.Deferred<void>;
+    readonly failNote: Ref.Ref<boolean>;
+  }
+>()("Test.Tamper") {}
 
-/** `engines`, on a keychain that stops before it stores a root key until `Hold.release`. */
-const holdingEngines = (device: string) =>
+/** `engines`, on a keychain the test tampers with (`Tamper`). */
+const tamperedEngines = (device: string) =>
   AccountEngine.engines.pipe(
     Layer.provideMerge(SessionStore.layer),
     Layer.provideMerge(
       Layer.effect(Keychain.Store)(
         Effect.gen(function* () {
           const store = yield* Keychain.Store;
-          const hold = yield* Hold;
+          const tamper = yield* Tamper;
 
-          return Keychain.Store.of({
-            ...store,
-            set: (name, value) =>
-              name.endsWith(".root-key")
-                ? Effect.andThen(
-                    Effect.andThen(
-                      Deferred.succeed(hold.reached, undefined),
-                      Deferred.await(hold.release),
-                    ),
-                    store.set(name, value),
-                  )
+          const set = (name: string, value: string) => {
+            if (name.endsWith(".root-key")) {
+              return Effect.andThen(
+                Effect.andThen(
+                  Deferred.succeed(tamper.reached, undefined),
+                  Deferred.await(tamper.release),
+                ),
+                store.set(name, value),
+              );
+            }
+
+            if (!name.startsWith("forgetting.")) return store.set(name, value);
+
+            return Effect.flatMap(Ref.getAndSet(tamper.failNote, false), (fail) =>
+              fail
+                ? Effect.fail(new Keychain.Unavailable({ operation: "set", cause: "locked" }))
                 : store.set(name, value),
-          });
+            );
+          };
+
+          return Keychain.Store.of({ ...store, set });
         }),
       ),
     ),
     Layer.provideMerge(
-      Layer.effect(Hold)(
-        Effect.all({ reached: Deferred.make<void>(), release: Deferred.make<void>() }),
+      Layer.effect(Tamper)(
+        Effect.all({
+          reached: Deferred.make<void>(),
+          release: Deferred.make<void>(),
+          failNote: Ref.make(false),
+        }),
       ),
     ),
     Layer.provideMerge(Layers.device({ name: device })),
   );
 
-/** What sign-out deletes of an account the device keeps, ending with its session. */
+/** What sign-out deletes of an account the device keeps once it began, ending with its session. */
 const erase = (accountId: string) =>
-  Layers.forget(
+  Layers.endSignOut(
     accountId,
     Effect.flatMap(SessionStore.Service, (store) => store.forget),
   );
@@ -302,6 +321,82 @@ it.effect("refuses to sign out when a change was saved after the outbox was renu
   }).pipe(Effect.provide(engines("engines-renumbered"))),
 );
 
+// The keychain refuses the forgetting note. Before the note nothing has happened, so the student
+// stays signed in on a working engine and can save, and "Abmelden" says it didn't work.
+it.effect("leaves the engine working when the forgetting note can't be written", () =>
+  Effect.gen(function* () {
+    const sessions = yield* SessionStore.Service;
+    const engines = yield* AccountEngine.Engines;
+    const tamper = yield* Tamper;
+    const sync = yield* lenasEngine;
+
+    yield* Ref.set(tamper.failNote, true);
+
+    const failed = yield* Effect.flip(
+      engines.forget("lena", Option.some(yield* shown), erase("lena")),
+    );
+
+    const saved = yield* Effect.exit(nameLena(sync));
+
+    assert.deepStrictEqual(
+      {
+        failed: failed._tag,
+        saved: Exit.isSuccess(saved),
+        signedIn: Option.map(yield* sessions.current, (signed) => signed.accountId),
+        waiting: (yield* shown).count,
+      },
+      { failed: "Keychain.Unavailable", saved: true, signedIn: Option.some("lena"), waiting: 1 },
+    );
+  }).pipe(Effect.provide(tamperedEngines("engines-note-fails"))),
+);
+
+// A renumber lands while sign-out reads the outbox. The client id and the commands come from one
+// transaction, so the read can't pair the old client id with the new numbering.
+it.effect("reads the outbox and its client id together while a renumber lands", () =>
+  Effect.gen(function* () {
+    const engines = yield* AccountEngine.Engines;
+    const sync = yield* lenasEngine;
+    const sql = Context.get(yield* engines.context("lena"), SqlClient.SqlClient);
+
+    yield* nameLena(sync);
+    yield* nameLena(sync);
+    yield* nameLena(sync);
+
+    const question = yield* shown;
+
+    // The fourth change arrives after the question, and the first two reach the server.
+    yield* nameLena(sync);
+    yield* sql`delete from sync_outbox where mutation_id < 3`;
+
+    // Takes the connection first, so the renumber below queues behind its first statement.
+    const reading = yield* Effect.forkChild(
+      SyncClient.outbox
+        .run()
+        .pipe(Effect.map(AccountEngine.unsentOf), Effect.provideService(SqlClient.SqlClient, sql)),
+      { startImmediately: true },
+    );
+
+    // What `Outbox.renumber` does: 3 and 4 become 1 and 2 under a new client id.
+    const renumbering = yield* Effect.forkChild(
+      sql.withTransaction(
+        Effect.andThen(
+          sql`update sync_outbox set mutation_id = mutation_id - 2`,
+          sql`update sync_meta set client_id = 'renumbered', last_mutation_id = 2, settled_mutation_id = 0 where id = 1`,
+        ),
+      ),
+      { startImmediately: true },
+    );
+
+    const read = yield* Fiber.join(reading);
+    yield* Fiber.join(renumbering);
+
+    assert.deepStrictEqual(
+      { read, refuses: AccountEngine.moreThan(read, question) },
+      { read: { clientId: question.clientId, count: 2, newest: 4 }, refuses: true },
+    );
+  }).pipe(Effect.provide(engines("engines-renumbering"))),
+);
+
 // A write already under way when "Trotzdem abmelden" lands commits while sign-out stops the
 // engine. It finishes first and counts, rather than being deleted unasked.
 it.effect("refuses to sign out when a change commits while it stops the engine", () =>
@@ -353,7 +448,7 @@ it.effect("keeps the engine off once a sign-out began, until it finishes", () =>
       engines.forget(
         "lena",
         Option.none(),
-        Forgetting.forget("lena", () => Effect.die("the app ended"), sessions.forget),
+        Forgetting.end("lena", () => Effect.die("the app ended"), sessions.forget),
       ),
     );
 
@@ -372,7 +467,7 @@ it.effect("signs out after an unlock under way and leaves no root key", () =>
   Effect.gen(function* () {
     const sessions = yield* SessionStore.Service;
     const engines = yield* AccountEngine.Engines;
-    const hold = yield* Hold;
+    const hold = yield* Tamper;
     const store = yield* Keychain.Store;
 
     yield* sessions.signedIn(signedIn("lena"), false);
@@ -398,7 +493,7 @@ it.effect("signs out after an unlock under way and leaves no root key", () =>
     );
 
     assert.isTrue(Option.isNone(rootKey), "no root key after sign-out");
-  }).pipe(Effect.provide(holdingEngines("engines-unlocking"))),
+  }).pipe(Effect.provide(tamperedEngines("engines-unlocking"))),
 );
 
 // The last step of a sign-out failed once and waits to try again when Lena signs in again. Her new
@@ -427,7 +522,7 @@ it.live("keeps a new session only after a sign-out that retries has ended", () =
     );
 
     const leaving = yield* Effect.forkChild(
-      engines.forget("lena", Option.none(), Layers.forget("lena", signedOut)),
+      engines.forget("lena", Option.none(), Layers.endSignOut("lena", signedOut)),
     );
 
     yield* Deferred.await(failedOnce);

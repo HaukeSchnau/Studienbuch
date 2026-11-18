@@ -80,5 +80,9 @@ export const account = (accountId: string, publicComputer: boolean) => {
 export const forget = <E, R>(accountId: string, signedOut: Effect.Effect<void, E, R>) =>
   Forgetting.forget(accountId, AccountDatabase.remove, signedOut);
 
+/** The rest of a sign-out that `AccountEngine.Engines.forget` began (`Forgetting.end`). */
+export const endSignOut = <E, R>(accountId: string, signedOut: Effect.Effect<void, E, R>) =>
+  Forgetting.end(accountId, AccountDatabase.remove, signedOut);
+
 /** Finishes the sign-outs this device began and didn't finish (`Forgetting.finish`). */
 export const finishSignOuts = Forgetting.finish(AccountDatabase.remove);
