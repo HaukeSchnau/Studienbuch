@@ -124,12 +124,12 @@
     },
     "exams": {
       "right": 36,
-      "of": 65
+      "of": 54
     },
     "examStudents": {
       "recall": {
         "right": 804,
-        "of": 939
+        "of": 830
       },
       "precision": {
         "right": 804,
@@ -293,12 +293,12 @@
     },
     "exams": {
       "right": 36,
-      "of": 65
+      "of": 54
     },
     "examStudents": {
       "recall": {
         "right": 804,
-        "of": 939
+        "of": 830
       },
       "precision": {
         "right": 804,

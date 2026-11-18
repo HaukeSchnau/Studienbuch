@@ -33,8 +33,8 @@ describe("Baseline", () => {
       expected: [
         {
           number: "weekly.passingCases",
-          baseline: '"cancellation"',
-          measured: '"cancellation", "free-day"',
+          baseline: '["cancellation"]',
+          measured: '["cancellation", "free-day"]',
         },
       ],
     },
@@ -46,8 +46,8 @@ describe("Baseline", () => {
         retired: 4,
       },
       expected: [
-        { number: "retired", baseline: "4", measured: "nothing" },
         { number: "weekly.hiddenDays", baseline: "nothing", measured: "0" },
+        { number: "retired", baseline: "4", measured: "nothing" },
       ],
     },
     {
@@ -65,11 +65,29 @@ describe("Baseline", () => {
         },
       },
       expected: [
-        { number: "weekly.views.student.recall.right", baseline: "28", measured: "nothing" },
-        { number: "weekly.views.student.recall.of", baseline: "28", measured: "nothing" },
-        { number: "weekly.views.student.recall.rounded", baseline: "1", measured: "nothing" },
-        { number: "weekly.views.student.recall", baseline: "nothing", measured: "28 of 28" },
+        {
+          number: "weekly.views.student.recall",
+          baseline: "{right, of, rounded}",
+          measured: "28 of 28",
+        },
       ],
+    },
+    {
+      name: "a number moved to a key that spells its path",
+      committed: {
+        corpus: "capture",
+        weekly: { views: measured.weekly.views, passingCases: measured.weekly.passingCases },
+        "weekly.hiddenDays": 0,
+      },
+      expected: [
+        { number: "weekly.hiddenDays", baseline: "nothing", measured: "0" },
+        { number: "weekly.hiddenDays", baseline: "0", measured: "nothing" },
+      ],
+    },
+    {
+      name: "an empty object more",
+      committed: { ...measured, retired: {} },
+      expected: [{ number: "retired", baseline: "{}", measured: "nothing" }],
     },
   ])("finds $name", ({ committed, expected }) =>
     Effect.gen(function* () {

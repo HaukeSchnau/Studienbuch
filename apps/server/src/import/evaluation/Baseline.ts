@@ -38,52 +38,53 @@ const hasFractionFields = Schema.is(Report.Fraction);
 const isList = Schema.is(Schema.Array(Schema.Json));
 const isObject = Schema.is(Schema.Record(Schema.String, Schema.Json));
 
-/** A string quoted, so `"5"` and `5` differ. */
-const show = (value: string | number | boolean | null) =>
-  isText(value) ? `"${value}"` : String(value);
+/** A fraction is one only with exactly its two fields. */
+const isFraction = (value: Schema.Json) =>
+  hasFractionFields(value) && Object.keys(value).length === 2;
 
-/**
- * Every number by its path, a fraction as `right of total` and a list of values in one line. An
- * object with more than a fraction's two fields isn't one, so its other fields show.
- */
-const flatten = (value: Schema.Json, path: string): ReadonlyArray<readonly [string, string]> => {
-  const under = (key: string | number) => (path === "" ? `${key}` : `${path}.${key}`);
+/** One value in a line: text quoted, so `"5"` and `5` differ, and anything else by its shape. */
+const describe = (value: Schema.Json | undefined): string => {
+  if (value === undefined) return "nothing";
 
-  if (isScalar(value)) return [[path, show(value)]];
+  if (isScalar(value)) return isText(value) ? `"${value}"` : String(value);
 
-  if (hasFractionFields(value) && Object.keys(value).length === 2) {
-    return [[path, `${value.right} of ${value.of}`]];
-  }
+  if (hasFractionFields(value) && isFraction(value)) return `${value.right} of ${value.of}`;
 
-  if (isList(value)) {
-    return value.every(isScalar)
-      ? [[path, value.map(show).join(", ")]]
-      : value.flatMap((each, index) => flatten(each, under(index)));
-  }
+  if (isList(value)) return `[${value.map(describe).join(", ")}]`;
 
-  return isObject(value)
-    ? Object.entries(value).flatMap(([key, inner]) => flatten(inner, under(key)))
-    : [];
+  return isObject(value) ? `{${Object.keys(value).join(", ")}}` : "something else";
 };
 
+/** Whether a value holds fields to compare one by one: an object that isn't a fraction. */
+const isRecord = (value: Schema.Json | undefined) =>
+  value !== undefined && !isList(value) && isObject(value) && !isFraction(value);
+
 /**
- * The numbers that differ between the committed file and what was measured. Both are plain JSON,
- * so a number the file lacks, or an old one it still has, shows up as a difference too.
+ * Walks the committed file and what was measured side by side, field by field, so a number the
+ * file lacks, an old one it still has, or one in another place shows up as a difference too.
  */
+const compare = (
+  baseline: Schema.Json | undefined,
+  measured: Schema.Json | undefined,
+  path: ReadonlyArray<string>,
+): ReadonlyArray<Difference> => {
+  if (isRecord(baseline) && isRecord(measured) && isObject(baseline) && isObject(measured)) {
+    return [...new Set([...Object.keys(baseline), ...Object.keys(measured)])].flatMap((key) =>
+      compare(baseline[key], measured[key], [...path, key]),
+    );
+  }
+
+  const was = describe(baseline);
+  const is = describe(measured);
+
+  return was === is ? [] : [{ number: path.join("."), baseline: was, measured: is }];
+};
+
+/** The numbers that differ between the committed file and what was measured, as plain JSON. */
 export const differences = (
   baseline: Schema.Json,
   measured: Schema.Json,
-): ReadonlyArray<Difference> => {
-  const before = new Map(flatten(baseline, ""));
-  const now = new Map(flatten(measured, ""));
-
-  return [...new Set([...before.keys(), ...now.keys()])].flatMap((number) => {
-    const was = before.get(number) ?? "nothing";
-    const is = now.get(number) ?? "nothing";
-
-    return was === is ? [] : [{ number, baseline: was, measured: is }];
-  });
-};
+): ReadonlyArray<Difference> => compare(baseline, measured, []);
 
 /** What a terminal and CI's last line say about the differences. */
 export const summary = (all: ReadonlyArray<Difference>) => {
