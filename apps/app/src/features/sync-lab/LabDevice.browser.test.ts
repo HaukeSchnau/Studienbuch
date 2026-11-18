@@ -1,14 +1,18 @@
 import { expect, it } from "@effect/vitest";
 import { Faults } from "@stu/sync/lab";
+import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as Option from "effect/Option";
 import * as Redacted from "effect/Redacted";
 import * as SqlClient from "effect/sql/SqlClient";
 import * as Stream from "effect/Stream";
 import * as SubscriptionRef from "effect/SubscriptionRef";
 
+import { SessionStore } from "../../infra/auth/SessionStore.ts";
 import { Names } from "../../infra/device/Names.ts";
 import { layer as keychain } from "../../infra/keychain/platform.ts";
+import { Layers } from "../../infra/runtime/Layers.ts";
 import { layer as open } from "../../infra/sqlite/database.ts";
 import { LabAccounts } from "./LabAccounts.ts";
 import { LabDevice } from "./LabDevice.ts";
@@ -82,4 +86,37 @@ it.effect(
       Effect.provideService(Faults.Allowed, { environment: "development" }),
     );
   },
+);
+
+// The Lab's runtime builds its devices on the memo map every atom runtime of the tab shares, where
+// the root layout has built the app's own device ("browser") already.
+it.effect("a device keeps its session out of the app's device that the tab built first", () =>
+  Effect.gen(function* () {
+    const memoMap = yield* Layer.makeMemoMap;
+    const scope = yield* Effect.scope;
+
+    const app = yield* Layer.buildWithMemoMap(
+      SessionStore.layer.pipe(Layer.provideMerge(Layers.device({ name: "browser" }))),
+      memoMap,
+      scope,
+    );
+
+    const lab = yield* LabDevice.make(LabDevice.specs.b).pipe(
+      Effect.provideService(Layer.CurrentMemoMap, memoMap),
+    );
+
+    expect((yield* settled(lab))._tag).toBe("Running");
+    expect(yield* Context.get(app, SessionStore.Service).current).toEqual(Option.none());
+  }).pipe(
+    Effect.scoped,
+    Effect.provideService(LabAccounts.Service, {
+      signIn: () =>
+        Effect.succeed({
+          accountId: "lab-test-lena-b",
+          token: Redacted.make("token"),
+          rootKey: crypto.getRandomValues(new Uint8Array(32)),
+        }),
+    }),
+    Effect.provideService(Faults.Allowed, { environment: "development" }),
+  ),
 );

@@ -220,13 +220,14 @@ export const make = Effect.fn("LabDevice.make")(function* (spec: Spec) {
   const deviceName = `sync-lab-${spec.id}`;
   const accounts = yield* LabAccounts.Service;
 
-  const device = yield* Layer.build(
-    Layer.mergeAll(
-      SessionStore.layer,
-      AuthApi.layer,
-      CryptoSuite.layer,
-      Layer.fresh(Reactivity.layer),
-    ).pipe(Layer.provideMerge(Layers.device({ name: deviceName }))),
+  // A memo map of its own: `Layer.build` would reuse what the tab's atom runtimes built already,
+  // such as the session store of the app's own device, which the root layout builds.
+  const device = yield* Layer.buildWithMemoMap(
+    Layer.mergeAll(SessionStore.layer, AuthApi.layer, CryptoSuite.layer, Reactivity.layer).pipe(
+      Layer.provideMerge(Layers.device({ name: deviceName })),
+    ),
+    yield* Layer.makeMemoMap,
+    yield* Effect.scope,
   );
 
   const engine = yield* SubscriptionRef.make<Engine>(Engine.Starting());
