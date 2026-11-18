@@ -253,6 +253,36 @@ describe("Deletion", () => {
       }).pipe(Effect.provide(device)),
   );
 
+  // The server deleted Lena's account, but its answer got lost, so the screen still shows the
+  // button. Pressed again, the server no longer knows her session.
+  it.effect(
+    "a deletion asked again after a lost answer leaves the device; an expired session doesn't",
+    () =>
+      Effect.gen(function* () {
+        const asked = yield* Queue.unbounded<string>();
+        const { left, leave } = yield* leaving;
+        const signedOut = { delete: () => Effect.fail(new AccountDeletion.SignedOut()) };
+
+        yield* signIn("lena", "token-gone");
+        yield* Deletion.deleteAccount(leave).pipe(
+          Effect.provide(server(new Set(["token-gone"]), asked, signedOut)),
+        );
+        const afterLostAnswer = yield* Ref.get(left);
+
+        yield* signIn("tom", "token-expired");
+
+        const expired = yield* Effect.flip(
+          Deletion.deleteAccount(leave).pipe(Effect.provide(server(new Set(), asked, signedOut))),
+        );
+
+        expect({
+          afterLostAnswer,
+          expired: expired._tag === "Deletion.Problem" ? expired.reason : expired._tag,
+          left: yield* Ref.get(left),
+        }).toEqual({ afterLostAnswer: ["lena"], expired: "signed-out", left: ["lena"] });
+      }).pipe(Effect.provide(device)),
+  );
+
   it.effect("a stale sign-in and no connection delete nothing and forget nothing", () =>
     Effect.gen(function* () {
       const asked = yield* Queue.unbounded<string>();

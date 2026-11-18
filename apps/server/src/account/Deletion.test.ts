@@ -115,6 +115,9 @@ const rpc = Effect.gen(function* () {
 
 const bearer = (token: string) => ({ headers: { authorization: `Bearer ${token}` } });
 
+/** The session token in a signed bearer, as `auth_session` keeps it. */
+const rawOf = (signed: string) => decodeURIComponent(signed).split(".")[0] ?? "";
+
 /**
  * How many rows of each table name any of `needles` anywhere, a table per line. A row is read as
  * its whole text, so a column added later is searched too.
@@ -271,6 +274,15 @@ describe.skipIf(Postgres18.socket === null)("Account deletion on PostgreSQL 18",
               laptop: yield* client["AccountDeletion.deleted"](undefined, bearer(devices.laptop)),
               tom: yield* client["AccountDeletion.deleted"](undefined, bearer(tom)),
               nobody: yield* client["AccountDeletion.deleted"](undefined),
+              // A backup holds the phone's raw token, without the signature only the device has.
+              raw: yield* client["AccountDeletion.deleted"](
+                undefined,
+                bearer(rawOf(devices.phone)),
+              ),
+              forged: yield* client["AccountDeletion.deleted"](
+                undefined,
+                bearer(`${rawOf(devices.phone)}.${btoa("not the server's signature")}`),
+              ),
             },
           }).toEqual({
             stale: "AccountDeletion.NotFresh",
@@ -280,9 +292,49 @@ describe.skipIf(Postgres18.socket === null)("Account deletion on PostgreSQL 18",
             toms,
             revoked: Option.some(Arr.getSomes(sessions).sort()),
             resolved: [Option.none(), Option.none()],
-            deleted: { phone: true, laptop: true, tom: false, nobody: false },
+            deleted: {
+              phone: true,
+              laptop: true,
+              tom: false,
+              nobody: false,
+              raw: false,
+              forged: false,
+            },
           });
         }),
+    );
+
+    // A deletion outside the app, as the inactivity job or the operator will run it, closes the
+    // account's connections as the app's does.
+    it.effect("any caller of run ends the account's sessions for the resolver", () =>
+      Effect.gen(function* () {
+        const sql = yield* SqlClient.SqlClient;
+        const resolver = yield* Ports.SessionResolver;
+
+        yield* sql`
+          insert into auth_user (id, name, email, "emailVerified")
+          values ('inactive', '', 'inactive@example.org', true)
+        `;
+
+        yield* sql`
+          insert into auth_session (id, "expiresAt", token, "userId") values
+            ('inactive-phone', now() + interval '1 day', 'token-inactive-phone', 'inactive'),
+            ('inactive-laptop', now() + interval '1 day', 'token-inactive-laptop', 'inactive')
+        `;
+
+        const revoked = yield* Effect.forkChild(
+          Stream.runCollect(Stream.take(resolver.revoked, 2)),
+          { startImmediately: true },
+        );
+
+        yield* Deletion.run("inactive");
+
+        expect(
+          Option.map(yield* Effect.timeoutOption(Fiber.join(revoked), "10 seconds"), (ids) =>
+            [...ids].sort(),
+          ),
+        ).toEqual(Option.some(["inactive-laptop", "inactive-phone"]));
+      }),
     );
 
     it.effect(

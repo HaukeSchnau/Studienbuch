@@ -6,12 +6,16 @@
  */
 import { AccountDeletion } from "@stu/api/AccountDeletion";
 import { Ports } from "@stu/sync/server";
+import * as Config from "effect/Config";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
+import * as Base64 from "effect/encoding/Base64";
 import * as Headers from "effect/http/Headers";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as PubSub from "effect/PubSub";
+import * as Redacted from "effect/Redacted";
+import * as Result from "effect/Result";
 import * as SqlClient from "effect/sql/SqlClient";
 import { FreshSignIn } from "../auth/FreshSignIn.ts";
 
@@ -29,26 +33,24 @@ export const ended = Layer.effect(Ended)(PubSub.unbounded<string>());
 const codeTypes = ["email-verification", "sign-in", "forget-password", "change-email"];
 
 /**
- * Deletes the account and everything the server keeps of it, and answers the ids of the sessions
- * that ended, for `Ended`. Each session leaves a `deleted_session` row, so its device wipes itself
- * when it comes back. An account that is gone already deletes nothing.
+ * Deletes the account's rows in the caller's transaction and answers the ids of the sessions that
+ * ended. Each session leaves a `deleted_session` row, so its device wipes itself when it comes
+ * back. An account that is gone already deletes nothing.
  */
-export const run = Effect.fn("Deletion.run")(function* (account: string) {
+const deleteRows = Effect.fn("Deletion.deleteRows")(function* (account: string) {
   const sql = yield* SqlClient.SqlClient;
 
-  return yield* sql.withTransaction(
-    Effect.gen(function* () {
-      const [user] = yield* sql<{ readonly email: string }>`
+  const [user] = yield* sql<{ readonly email: string }>`
         select email from auth_user where id = ${account} for update
       `;
 
-      if (user === undefined) return [];
+  if (user === undefined) return [];
 
-      const notebooks = yield* sql<{ readonly id: string }>`
+  const notebooks = yield* sql<{ readonly id: string }>`
         select notebook_id as id from school_access where account_id = ${account}
       `;
 
-      const sessions = yield* sql<{ readonly id: string }>`
+  const sessions = yield* sql<{ readonly id: string }>`
         with ended as (
           delete from auth_session where "userId" = ${account} returning id, token
         ), kept as (
@@ -59,32 +61,45 @@ export const run = Effect.fn("Deletion.run")(function* (account: string) {
         select id from ended
       `;
 
-      // A device's sync identity and the commands it sent, which no foreign key ties to the account.
-      yield* sql`delete from command_log where account_id = ${account}`;
-      yield* sql`delete from sync_client where account_id = ${account}`;
-      // Its memberships, the course spaces its enrollments granted among them.
-      yield* sql`delete from space_member where account_id = ${account}`;
-      // Access names the notebook, which goes with its rows and key boxes.
-      yield* sql`delete from school_access where account_id = ${account}`;
-      yield* sql`delete from space where id = any(${notebooks.map((row) => row.id)})`;
-      // The code's use stays spent.
-      yield* sql`update access_reservation set spent_by = null where spent_by = ${account}`;
-      // Codes for the address, by Better Auth's identifiers for them, and passkey challenges, which
-      // carry the account's id.
-      yield* sql`
+  // A device's sync identity and the commands it sent, which no foreign key ties to the account.
+  yield* sql`delete from command_log where account_id = ${account}`;
+  yield* sql`delete from sync_client where account_id = ${account}`;
+  // Its memberships, the course spaces its enrollments granted among them.
+  yield* sql`delete from space_member where account_id = ${account}`;
+  // Access names the notebook, which goes with its rows and key boxes.
+  yield* sql`delete from school_access where account_id = ${account}`;
+  yield* sql`delete from space where id = any(${notebooks.map((row) => row.id)})`;
+  // The code's use stays spent.
+  yield* sql`update access_reservation set spent_by = null where spent_by = ${account}`;
+  // Codes for the address, by Better Auth's identifiers for them, and passkey challenges, which
+  // carry the account's id.
+  yield* sql`
         delete from auth_verification
         where identifier = any(${codeTypes.map((type) => `${type}-otp-${user.email}`)})
           or strpos(value, ${account}) > 0
       `;
-      // Only development and preview keep mail.
-      yield* sql`delete from captured_mail where lower("to") = ${user.email.toLowerCase()}`;
-      // Cascades to its passwords, passkeys, key records, wrappers with their seals, recovery
-      // events, sign-ups and demo row.
-      yield* sql`delete from auth_user where id = ${account}`;
+  // Only development and preview keep mail.
+  yield* sql`delete from captured_mail where lower("to") = ${user.email.toLowerCase()}`;
+  // Cascades to its passwords, passkeys, key records, wrappers with their seals, recovery
+  // events, sign-ups and demo row.
+  yield* sql`delete from auth_user where id = ${account}`;
 
-      return sessions.map((row) => row.id);
-    }),
-  );
+  return sessions.map((row) => row.id);
+});
+
+/**
+ * Deletes the account and everything the server keeps of it in one transaction, after `guard`
+ * passed inside it, then ends its sessions for this process's resolver (`Ended`), so no caller
+ * can delete without closing the account's connections.
+ */
+export const run = Effect.fn("Deletion.run")(function* <E = never, R = never>(
+  account: string,
+  guard: Effect.Effect<void, E, R> = Effect.void,
+) {
+  const sql = yield* SqlClient.SqlClient;
+  const sessions = yield* sql.withTransaction(Effect.andThen(guard, deleteRows(account)));
+
+  yield* Effect.flatMap(Ended, (pubsub) => PubSub.publishAll(pubsub, sessions));
 });
 
 /**
@@ -104,15 +119,11 @@ export const accounts = Layer.effect(
   ),
 );
 
-/** Ends the sessions for the resolver, once their rows are gone. */
-export const announce = (sessions: ReadonlyArray<string>) =>
-  Effect.flatMap(Ended, (pubsub) => PubSub.publishAll(pubsub, sessions));
-
 /**
- * The session token in a request's `Authorization`, as Better Auth's bearer plugin reads it: the
- * part before the signature, URL-decoded if it is encoded.
+ * The bearer token in a request's `Authorization`, split as Better Auth's bearer plugin splits it:
+ * the session token and its signature, URL-decoded if it is encoded.
  */
-const tokenOf = (headers: Headers.Headers) =>
+const bearerOf = (headers: Headers.Headers) =>
   Option.flatMap(Headers.get(headers, "authorization"), (value) => {
     if (value.slice(0, 7).toLowerCase() !== "bearer ") return Option.none();
 
@@ -122,11 +133,47 @@ const tokenOf = (headers: Headers.Headers) =>
       ? Option.liftThrowable(decodeURIComponent)(raw)
       : Option.some(raw);
 
-    return Option.filter(
-      Option.map(decoded, (signed) => signed.split(".")[0] ?? ""),
-      (token) => token !== "",
-    );
+    return Option.flatMap(decoded, (signed) => {
+      const [token = "", signature = ""] = signed.split(".");
+
+      return token === "" || signature === "" ? Option.none() : Option.some({ token, signature });
+    });
   });
+
+const encoder = new TextEncoder();
+
+/**
+ * The session token of a bearer whose signature `AUTH_SECRET` made, as the bearer plugin checks it
+ * (`requireSignature`): a raw token from a dump or a backup answers nothing.
+ */
+const signedToken = Effect.fn("Deletion.signedToken")(function* (
+  headers: Headers.Headers,
+  secret: Redacted.Redacted,
+) {
+  const bearer = bearerOf(headers);
+
+  if (Option.isNone(bearer)) return Option.none<string>();
+  const { token, signature } = bearer.value;
+  const bytes = Base64.decode(signature);
+
+  if (Result.isFailure(bytes)) return Option.none<string>();
+
+  const valid = yield* Effect.tryPromise(() =>
+    crypto.subtle
+      .importKey(
+        "raw",
+        encoder.encode(Redacted.value(secret)),
+        { name: "HMAC", hash: "SHA-256" },
+        false,
+        ["verify"],
+      )
+      .then((key) =>
+        crypto.subtle.verify("HMAC", key, new Uint8Array(bytes.success), encoder.encode(token)),
+      ),
+  ).pipe(Effect.orElseSucceed(() => false));
+
+  return valid ? Option.some(token) : Option.none<string>();
+});
 
 /** Whether the token belonged to a session of a deleted account. */
 export const wasDeleted = Effect.fn("Deletion.wasDeleted")(function* (token: string) {
@@ -145,6 +192,7 @@ export const handlers = AccountDeletion.Rpcs.toLayer(
     const sessions = yield* Ports.SessionResolver;
     const sql = yield* SqlClient.SqlClient;
     const pubsub = yield* Ended;
+    const secret = yield* Config.Redacted("AUTH_SECRET");
 
     // A failing database fails the call as a defect, without a reason the device could act on.
     return AccountDeletion.Rpcs.of({
@@ -156,23 +204,20 @@ export const handlers = AccountDeletion.Rpcs.toLayer(
 
           const { accountId, sessionId } = session.value;
 
-          const ended = yield* sql.withTransaction(
-            Effect.gen(function* () {
-              if (!(yield* FreshSignIn.isFresh(accountId, sessionId))) {
-                return yield* new AccountDeletion.NotFresh();
-              }
-
-              return yield* run(accountId);
-            }),
+          const fresh = Effect.flatMap(FreshSignIn.isFresh(accountId, sessionId), (isFresh) =>
+            isFresh ? Effect.void : Effect.fail(new AccountDeletion.NotFresh()),
           );
 
-          yield* announce(ended).pipe(Effect.provideService(Ended, pubsub));
+          yield* run(accountId, fresh).pipe(
+            Effect.provideService(Ended, pubsub),
+            Effect.provideService(SqlClient.SqlClient, sql),
+          );
         },
         Effect.catchTags({ SqlError: Effect.die }),
       ),
       "AccountDeletion.deleted": Effect.fn("Deletion.deleted")(
         function* (_, { headers }) {
-          const token = tokenOf(headers);
+          const token = yield* signedToken(headers, secret);
 
           return Option.isSome(token) && (yield* wasDeleted(token.value));
         },

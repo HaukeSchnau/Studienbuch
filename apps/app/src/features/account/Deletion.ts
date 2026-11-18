@@ -55,7 +55,17 @@ export const deleteAccount = Effect.fn("Deletion.deleteAccount")(function* <E, R
     Effect.catchTags({
       "DeletionServer.Unreachable": () => Effect.fail(new Problem({ reason: "offline" })),
       "AccountDeletion.NotFresh": () => Effect.fail(new Problem({ reason: "not-fresh" })),
-      "AccountDeletion.SignedOut": () => Effect.fail(new Problem({ reason: "signed-out" })),
+      // The server deleted the account before, and its answer was lost or the device couldn't
+      // finish leaving: the session is gone because the account is, so the device leaves now.
+      "AccountDeletion.SignedOut": () =>
+        server.deleted(token.value).pipe(
+          Effect.catchTags({
+            "DeletionServer.Unreachable": () => Effect.fail(new Problem({ reason: "offline" })),
+          }),
+          Effect.flatMap((deleted) =>
+            deleted ? Effect.void : Effect.fail(new Problem({ reason: "signed-out" })),
+          ),
+        ),
     }),
   );
 

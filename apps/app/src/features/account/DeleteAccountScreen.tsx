@@ -109,14 +109,17 @@ function DeleteAccount({ accountId }: { readonly accountId: string }) {
         />
       ) : (
         <View style={styles.actions}>
-          <Button
-            label="Konto löschen"
-            kind="danger"
-            block
-            busy={deleted.waiting}
-            disabled={offline}
-            onPress={() => void press()}
-          />
+          {/* The account is gone; only this device's copy waits for the next start. */}
+          {Option.contains(reason, "forget-failed") ? null : (
+            <Button
+              label="Konto löschen"
+              kind="danger"
+              block
+              busy={deleted.waiting}
+              disabled={offline}
+              onPress={() => void press()}
+            />
+          )}
           {Option.match(
             Option.filter(reason, (found) => found !== "not-fresh"),
             {

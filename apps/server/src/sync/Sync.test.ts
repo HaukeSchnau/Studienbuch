@@ -67,7 +67,9 @@ const pausing = Layer.effect(Ports.Accounts)(
 
 const engine = SyncServer.layer(Studienbuch.schema).pipe(
   Layer.provideMerge(Listener.layer(PgClient.PgClient, (notification) => notification.payload)),
-  Layer.provideMerge(Layer.mergeAll(noSessions, Sync.accountKeys, pausing, CryptoSuite.layer)),
+  Layer.provideMerge(
+    Layer.mergeAll(noSessions, Sync.accountKeys, pausing, Deletion.ended, CryptoSuite.layer),
+  ),
   Layer.provideMerge(DatabaseTesting.prepared),
   Layer.provideMerge(NodeServices.layer),
 );
