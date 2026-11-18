@@ -102,6 +102,7 @@ describe("CivilTime.Instant", () => {
     { name: "no milliseconds", text: "2026-11-18T06:30:00Z" },
     { name: "a date only", text: "2026-11-18" },
     { name: "a time that doesn't exist", text: "2026-11-18T25:30:00.000Z" },
+    { name: "a day that doesn't exist", text: "2026-02-30T06:30:00.000Z" },
   ])("refuses $name", ({ text }) =>
     Effect.gen(function* () {
       expect(Exit.isFailure(yield* Effect.exit(decodeInstant(text)))).toBe(true);

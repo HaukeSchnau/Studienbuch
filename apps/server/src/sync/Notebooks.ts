@@ -8,6 +8,7 @@ import type { School } from "@stu/core";
 import { Spaces, SyncWriter } from "@stu/sync/server";
 import * as Effect from "effect/Effect";
 import * as SqlClient from "effect/sql/SqlClient";
+import { Schools } from "../school/Schools.ts";
 
 export * as Notebooks from "./Notebooks.ts";
 
@@ -16,10 +17,20 @@ export const create = Effect.fn("Notebooks.create")(function* (
   notebook: Notebook.Id,
   school: School.Id,
 ) {
+  const sql = yield* SqlClient.SqlClient;
   const spaces = yield* Spaces.Service;
   const writer = yield* SyncWriter.Service;
-  yield* spaces.create(notebook, Notebook.Space, { parent: school });
-  yield* writer.reconcile(notebook, Notebook.Row, [{ id: notebook, row: { schoolId: school } }]);
+
+  yield* sql.withTransaction(
+    Effect.gen(function* () {
+      // A publish of the school reads its spaces once, so the notebook waits for it.
+      yield* Schools.holdSpaces(school, "share");
+      yield* spaces.create(notebook, Notebook.Space, { parent: school });
+      yield* writer.reconcile(notebook, Notebook.Row, [
+        { id: notebook, row: { schoolId: school } },
+      ]);
+    }),
+  );
 });
 
 /** Notebooks whose space and `Notebook` row name different schools, or that have no row. */

@@ -56,7 +56,7 @@ export interface Data {
   readonly weekLabels: Rows<typeof WeekLabel.Row>;
   /** Absent, the published status stays as it is. */
   readonly importStatus?: Encoded<typeof ImportStatus.Row>;
-  /** Lessons by course, for courses that `courses` holds. */
+  /** Lessons by course, for courses that `courses` holds or that have a space already. */
   readonly lessons: { readonly [course: string]: Rows<typeof Lesson.Row> };
 }
 
@@ -185,6 +185,23 @@ const closuresAfter = (
 };
 
 /**
+ * The lock on the school's set of spaces, until the transaction ends. A publish holds it
+ * exclusively before it reads them, and a path that adds a space under the school holds it shared,
+ * so no space joins between a publish's read and its row locks.
+ */
+export const holdSpaces = Effect.fn("Schools.holdSpaces")(function* (
+  school: School.Id,
+  mode: "share" | "update",
+) {
+  const sql = yield* SqlClient.SqlClient;
+  const key = `studienbuch.school:${school}`;
+
+  yield* mode === "update"
+    ? sql`select pg_advisory_xact_lock(hashtextextended(${key}, 0))`
+    : sql`select pg_advisory_xact_lock_shared(hashtextextended(${key}, 0))`;
+});
+
+/**
  * Makes the school's spaces hold `data` in one transaction, creating those it lacks. Rows `data`
  * lacks stay unless `removals` names them, and the same data again writes nothing. It locks the
  * School space and the Course spaces first, in id order as commands and `Spaces` do, and every
@@ -209,8 +226,8 @@ export const publish = Effect.fn("Schools.publish")(function* (data: Data, remov
       Effect.gen(function* () {
         const decoded = yield* entries(Lesson.Row, rows);
 
-        if (!courses.has(course) || decoded.some(({ row }) => row.courseId !== course)) {
-          return yield* Effect.die(`The lessons of ${course} name another course or none`);
+        if (decoded.some(({ row }) => row.courseId !== course)) {
+          return yield* Effect.die(`The lessons of ${course} name another course`);
         }
 
         return [course, decoded] as const;
@@ -220,6 +237,7 @@ export const publish = Effect.fn("Schools.publish")(function* (data: Data, remov
 
   yield* sql.withTransaction(
     Effect.gen(function* () {
+      yield* holdSpaces(data.id, "update");
       yield* spaces.create(data.id, School.Space);
 
       const children = yield* sql<{
@@ -276,8 +294,16 @@ export const publish = Effect.fn("Schools.publish")(function* (data: Data, remov
         created.map(([key, id]) => ({ id, key })),
       );
 
+      const reconciled = new Map([...courses, ...published]);
+
+      for (const course of lessons.keys()) {
+        if (!reconciled.has(course)) {
+          return yield* Effect.die(`The lessons of ${course} name a course without a space`);
+        }
+      }
+
       // Every course's space, also one whose lessons are now none.
-      for (const [course, space] of new Map([...courses, ...published])) {
+      for (const [course, space] of reconciled) {
         yield* writer.reconcile(space, Lesson.Row, lessons.get(course) ?? [], {
           covers: removals.lesson,
         });

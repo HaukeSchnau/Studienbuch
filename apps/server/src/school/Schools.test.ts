@@ -181,10 +181,16 @@ const interleave = <E1, R1, A2, E2, R2, A3, E3, R3>(
 
     yield* Deferred.await(held);
     const second = yield* Effect.forkChild(Effect.exit(waiting));
-    yield* DatabaseTesting.someoneWaits;
+
+    // Without a lock to wait for, the second runs through, and the check fails on `blocked`.
+    const blocked = yield* Effect.raceFirst(
+      Effect.as(DatabaseTesting.someoneWaits, true),
+      Effect.as(Fiber.await(second), false),
+    );
+
     yield* Deferred.succeed(release, undefined);
 
-    return { held: yield* Fiber.join(first), waited: yield* Fiber.join(second) };
+    return { blocked, held: yield* Fiber.join(first), waited: yield* Fiber.join(second) };
   });
 
 /** Lena with a notebook at the school, admitted as sign-up admits her. */
@@ -374,18 +380,26 @@ describe.skipIf(Postgres18.socket === null)("Schools.publish on PostgreSQL 18", 
         );
 
         expect({
-          publishFirst: [outcome(publishFirst.held), outcome(publishFirst.waited)],
+          publishFirst: [
+            publishFirst.blocked,
+            outcome(publishFirst.held),
+            outcome(publishFirst.waited),
+          ],
           lena: Exit.isSuccess(publishFirst.waited) ? publishFirst.waited.value : [],
-          choiceFirst: [outcome(choiceFirst.held), outcome(choiceFirst.waited)],
+          choiceFirst: [
+            choiceFirst.blocked,
+            outcome(choiceFirst.held),
+            outcome(choiceFirst.waited),
+          ],
           tom: Exit.isSuccess(choiceFirst.held) ? choiceFirst.held.value : [],
           courses: [
             (yield* SchoolTesting.memberships("lena-fluss")).length,
             (yield* SchoolTesting.memberships("tom-fluss")).length,
           ],
         }).toEqual({
-          publishFirst: ["done", "done"],
+          publishFirst: [true, "done", "done"],
           lena: ["Applied"],
-          choiceFirst: ["done", "done"],
+          choiceFirst: [true, "done", "done"],
           tom: ["Applied"],
           // The school, the notebook, and both courses.
           courses: [4, 4],
@@ -424,19 +438,58 @@ describe.skipIf(Postgres18.socket === null)("Schools.publish on PostgreSQL 18", 
         );
 
         expect({
-          publishFirst: [outcome(publishFirst.held), outcome(publishFirst.waited)],
-          deletionFirst: [outcome(deletionFirst.held), outcome(deletionFirst.waited)],
+          publishFirst: [
+            publishFirst.blocked,
+            outcome(publishFirst.held),
+            outcome(publishFirst.waited),
+          ],
+          deletionFirst: [
+            deletionFirst.blocked,
+            outcome(deletionFirst.held),
+            outcome(deletionFirst.waited),
+          ],
           left: [
             ...(yield* SchoolTesting.memberships("lena-berg")),
             ...(yield* SchoolTesting.memberships("tom-berg")),
           ],
           courses: (yield* versions("am-berg")).filter(({ id }) => id.startsWith("course-")).length,
         }).toEqual({
-          publishFirst: ["done", "done"],
-          deletionFirst: ["done", "done"],
+          publishFirst: [true, "done", "done"],
+          deletionFirst: [true, "done", "done"],
           left: [],
           courses: 3,
         });
+      }),
+    );
+
+    // A publish reads the school's spaces once, before its row locks. A notebook created after
+    // that read would be locked late, against id order, and deadlock with its account's deletion.
+    it.effect("a notebook joins the school only after a publish that read its spaces", () =>
+      Effect.gen(function* () {
+        yield* Schools.publish(schoolWith("am-ufer", ["ma-1"]), keepAll);
+        yield* SchoolTesting.account("mia-ufer");
+
+        const admitting = Access.admit(
+          "mia-ufer",
+          School.Id.make("am-ufer"),
+          Option.some({ termId: term, gradeLevel: 11, courseIds: [Course.Id.make("ph-1")] }),
+        );
+
+        const raced = yield* interleave(
+          Schools.holdSpaces(School.Id.make("am-ufer"), "update"),
+          Schools.publish(schoolWith("am-ufer", ["ma-1", "ph-1"]), keepAll),
+          admitting,
+        );
+
+        const physics = yield* Schools.courseSpace(School.Id.make("am-ufer"), "ph-1");
+
+        expect({
+          raced: [raced.blocked, outcome(raced.held), outcome(raced.waited)],
+          // It chose the course the publish added, so it waited for all of it.
+          physics: (yield* SchoolTesting.memberships("mia-ufer")).includes(
+            `course ${physics} reader`,
+          ),
+        }).toEqual({ raced: [true, "done", "done"], physics: true });
       }),
     );
 
