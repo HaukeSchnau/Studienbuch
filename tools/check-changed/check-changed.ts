@@ -239,41 +239,30 @@ for (const dir of affected) {
   steps.push({ name: `typecheck ${dir}`, args: ["exec", "tsc", "--noEmit", "-p", dir] });
 }
 
-// apps/app's "browser" project runs `*.browser.test.ts(x)` once in each of these Playwright browsers
-// (apps/app/vite.config.ts). CI's shell has them all; another shell or machine may lack one.
+// apps/app's "browser" project runs `src/**/*.browser.test.ts(x)` once in each of these Playwright
+// browsers (apps/app/vite.config.ts). CI's shell has them all; another shell or machine may lack one.
 const APP = "apps/app";
 const APP_BROWSERS = { chromium: "Chromium", firefox: "Firefox" };
-const BROWSER_TEST = /\.browser\.test\.[cm]?[jt]sx?$/u;
+const BROWSER_TEST = /^apps\/app\/src\/.+\.browser\.test\.tsx?$/u;
 
-/**
- * The first line of Playwright's error when it can't start the browser headless here, or null when
- * it starts. It launches through apps/app's Playwright, as the app's tests do.
- */
-function cannotStart(browser: string): Promise<string | null> {
-  const probe = `
-    try {
-      const { ${browser} } = await import("playwright");
-      await (await ${browser}.launch()).close();
-    } catch (error) {
-      console.error(String(error?.message ?? error).split("\\n")[0]);
-      process.exitCode = 1;
-    }`;
-
-  const child = NodeChildProcess.spawn(process.execPath, ["--input-type=module", "--eval", probe], {
-    cwd: NodePath.join(root, APP),
-    stdio: ["ignore", "ignore", "pipe"],
+// Launches the browser its argument names headless, through apps/app's Playwright as the app's tests
+// do. Only a launch that fails exits with 2; any other failure leaves the browser in the run.
+const LAUNCH_PROBE = `
+  const playwright = await import("playwright");
+  const browser = await playwright[process.argv[1]].launch().catch((error) => {
+    console.error(error.message);
+    process.exitCode = 2;
   });
+  await browser?.close();`;
 
-  const output: Array<Buffer> = [];
-
-  child.stderr.on("data", (chunk: Buffer) => output.push(chunk));
-  child.on("error", (error) => output.push(Buffer.from(error.message)));
-
+/** Playwright's error when it can't start the browser here, or null. */
+function cannotStart(browser: string): Promise<string | null> {
   return new Promise((resolve) => {
-    child.on("close", (status, signal) =>
-      resolve(
-        status === 0 ? null : Buffer.concat(output).toString().trim() || `exit ${status ?? signal}`,
-      ),
+    NodeChildProcess.execFile(
+      process.execPath,
+      ["--input-type=module", "--eval", LAUNCH_PROBE, browser],
+      { cwd: NodePath.join(root, APP) },
+      (error, _stdout, stderr) => resolve(error?.code === 2 ? stderr.trim() : null),
     );
   });
 }
@@ -375,7 +364,7 @@ if (!runKnip) summary.push("  knip skipped: no code or manifest changed");
 if (tests.size === 0) summary.push("  tests skipped: no test file beside a changed file");
 
 for (const { name, reason } of unstartable) {
-  summary.push(`  browser tests in ${name} skipped: ${reason}`);
+  summary.push(`  browser tests in ${name} skipped: ${reason.replaceAll("\n", "\n    ")}`);
 }
 
 for (const dir of uninstalled) {
