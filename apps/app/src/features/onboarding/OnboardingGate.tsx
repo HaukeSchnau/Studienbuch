@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 
 import { KeysState } from "../keys/KeysState.ts";
 import { NotebookKeys } from "../keys/NotebookKeys.ts";
-import { SaveCardScreen } from "../keys/SaveCardScreen.tsx";
+import { CardTrouble, SaveCardScreen } from "../keys/SaveCardScreen.tsx";
 import { Onboarding } from "./Onboarding.ts";
 import { OnboardingScreen } from "./OnboardingScreen.tsx";
 import { OnboardingState } from "./OnboardingState.ts";
@@ -41,9 +41,11 @@ function Gate({
 
   if (AsyncResult.isInitial(pending)) return null;
 
-  // A device that can't read its secrets has no card to show either. A card the student saved
-  // already, as one typed to sign in, waits for the server without a step.
-  const card = Option.filter(Option.flatten(AsyncResult.value(pending)), (each) => each.unsaved);
+  // The device couldn't keep or read a new card: the first start waits until it can.
+  if (AsyncResult.isFailure(pending)) return <CardTrouble accountId={accountId} />;
+
+  // A card the student saved already, as one typed to sign in, waits for the server without a step.
+  const card = Option.filter(pending.value, (each) => each.unsaved);
 
   if (Option.isSome(card)) return <SaveCardScreen accountId={accountId} card={card.value} />;
 

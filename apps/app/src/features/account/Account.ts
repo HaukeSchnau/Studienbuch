@@ -2,15 +2,18 @@ import { Access } from "@stu/api/Access";
 import { Accounts } from "@stu/api/Accounts";
 import { Demo } from "@stu/api/Demo";
 import { RecoveryCode } from "@stu/e2ee";
+import { Ports } from "@stu/sync/client";
 import * as Arr from "effect/Array";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
+import * as Base64 from "effect/encoding/Base64";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Redacted from "effect/Redacted";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Ref from "effect/Ref";
+import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 import * as Semaphore from "effect/Semaphore";
 import * as SubscriptionRef from "effect/SubscriptionRef";
@@ -18,6 +21,8 @@ import * as SubscriptionRef from "effect/SubscriptionRef";
 import { AuthApi } from "../../infra/auth/AuthApi.ts";
 import { PendingSignUp } from "../../infra/auth/PendingSignUp.ts";
 import { SessionStore } from "../../infra/auth/SessionStore.ts";
+import { Device } from "../../infra/device/Device.ts";
+import { Names } from "../../infra/device/Names.ts";
 import { Keychain } from "../../infra/keychain/Keychain.ts";
 import { Passkeys } from "../../infra/passkeys/Passkeys.ts";
 import { Forgetting } from "../../infra/runtime/Forgetting.ts";
@@ -275,16 +280,13 @@ export class Confirmations extends Context.Service<
     readonly guard: Semaphore.Semaphore;
     /** Changed only through `waitForCode`, which keeps it on the device. */
     readonly signingUp: SubscriptionRef.SubscriptionRef<Option.Option<SigningUp>>;
-    /** The card of a sign-up without an address until the device keeps its session. */
-    readonly newCard: Ref.Ref<Option.Option<PendingCard>>;
+    /**
+     * The card of a sign-up without an address, until the new account's secrets hold it. A device
+     * that keeps its session also keeps it in its keychain (`signUpCard`).
+     */
+    readonly newCard: Ref.Ref<Option.Option<Redacted.Redacted<Uint8Array>>>;
   }
 >()("Account.Confirmations") {}
-
-/** A sign-up's card, with the reservation it went out with. */
-interface PendingCard {
-  readonly reservation: string;
-  readonly code: Redacted.Redacted<Uint8Array>;
-}
 
 /**
  * A sign-up waiting for its address's code. The device keeps address and reservation, so a
@@ -333,7 +335,7 @@ export const confirmations = Layer.effect(Confirmations)(
     current: SubscriptionRef.make(Option.none<Confirmed>()),
     guard: Semaphore.make(1),
     signingUp: Effect.flatMap(restore, SubscriptionRef.make),
-    newCard: Ref.make(Option.none<PendingCard>()),
+    newCard: Ref.make(Option.none<Redacted.Redacted<Uint8Array>>()),
   }),
 );
 
@@ -505,26 +507,57 @@ const keepWithCard = Effect.fn("Account.keepWithCard")(function* (
   const secrets = Keychain.accountSecrets(card.accountId);
   const inSecrets = <A, E, R>(effect: Effect.Effect<A, E, R>) => Effect.provide(effect, secrets);
 
-  const fresh =
-    !publicComputer &&
-    (yield* inSecrets(NotebookKeys.pendingCard).pipe(
-      Effect.flatMap((held) =>
-        Effect.as(
-          inSecrets(NotebookKeys.holdCard(card)),
-          !Option.exists(held, (each) => NotebookKeys.sameCard(each.code, card.code)),
+  // Whether the account's secrets hold the card now, and whether they held it before.
+  const { held, before } = publicComputer
+    ? { held: false, before: true }
+    : yield* inSecrets(NotebookKeys.pendingCard).pipe(
+        Effect.flatMap((earlier) =>
+          Effect.as(inSecrets(NotebookKeys.holdCard(card)), {
+            held: true,
+            before: Option.exists(earlier, (each) => NotebookKeys.sameCard(each.code, card.code)),
+          }),
         ),
-      ),
-      Effect.orElseSucceed(() => false),
-    ));
+        Effect.orElseSucceed(() => ({ held: false, before: true })),
+      );
 
   yield* offer(Option.some(card));
 
   const takeBack = Effect.andThen(
-    fresh ? Effect.ignore(inSecrets(NotebookKeys.dropCard(card.code))) : Effect.void,
+    held && !before ? Effect.ignore(inSecrets(NotebookKeys.dropCard(card.code))) : Effect.void,
     offer(Option.none()),
   );
 
   yield* keep(signedIn, publicComputer).pipe(Effect.onError(() => takeBack));
+
+  return held;
+});
+
+/**
+ * Where a card-first sign-up keeps its card on this device, from before its request goes out until
+ * the new account's secrets hold it: the server may make the account and lose its answer, and the
+ * card is then the account's only way in. A sign-up after a restart takes it up again, and signs
+ * in to that account. A public computer keeps it in memory only.
+ */
+const signUpCard = Effect.gen(function* () {
+  const keychain = yield* Keychain.Store;
+  const device = yield* Device.Service;
+  const server = yield* Ports.Server;
+  const entry = `card-sign-up.${Names.device(server.origin, device.name)}`;
+
+  return {
+    get: keychain.get(entry).pipe(
+      Effect.map(
+        Option.flatMap((text) =>
+          Option.map(Result.getSuccess(Base64.decode(text)), (bytes) => Redacted.make(bytes)),
+        ),
+      ),
+      Effect.orElseSucceed(() => Option.none<Redacted.Redacted<Uint8Array>>()),
+    ),
+    // A keychain that refuses leaves the card in this run's memory, as on a public computer.
+    set: (code: Redacted.Redacted<Uint8Array>) =>
+      Effect.ignore(keychain.set(entry, Base64.encode(Redacted.value(code)))),
+    remove: Effect.ignore(keychain.remove(entry)),
+  };
 });
 
 /**
@@ -539,24 +572,30 @@ export const signUpWithCard = Effect.fn("Account.signUpWithCard")(function* (
 ) {
   const api = yield* AuthApi.Service;
   const { newCard } = yield* Confirmations;
-  const { token } = reservation;
+  const stored = yield* signUpCard;
 
-  const earlier = Option.filter(yield* Ref.get(newCard), (card) => card.reservation === token);
-  const code = Option.isSome(earlier) ? earlier.value.code : (yield* RecoveryCode.generate).bytes;
+  const earlier = yield* Ref.get(newCard);
+  const kept = Option.isSome(earlier) || publicComputer ? earlier : yield* stored.get;
+  const code = Option.isSome(kept) ? kept.value : (yield* RecoveryCode.generate).bytes;
 
-  yield* Ref.set(newCard, Option.some({ reservation: token, code }));
+  yield* Ref.set(newCard, Option.some(code));
+
+  if (!publicComputer) yield* stored.set(code);
 
   const signedIn = yield* api
-    .cardSignUp(yield* NotebookKeys.cardLogin(code), token)
+    .cardSignUp(yield* NotebookKeys.cardLogin(code), reservation.token)
     .pipe(Effect.mapError(problem));
 
-  yield* keepWithCard(
+  const held = yield* keepWithCard(
     signedIn,
     { accountId: signedIn.accountId, code, withPasskey: false, unsaved: true },
     publicComputer,
     offer,
   );
+
   yield* Ref.set(newCard, Option.none());
+
+  if (held) yield* stored.remove;
 });
 
 /**

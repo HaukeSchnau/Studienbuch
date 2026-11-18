@@ -10,7 +10,8 @@ An access code makes an account without an email address. Where the device keeps
 passkey prompt makes the account; on a public computer or a device without passkeys, the
 Notfallkarte does. Either way the account's Notfallkarte shows next, before anything else, and
 nothing skips it: it is the account's way back. Until the student says it is saved, the device
-keeps the card, so a reload or a restart shows the same card again. Without a passkey the step
+keeps the card, so a reload or a restart shows the same card again. Signing out before that
+deletes it from the device with the account's other secrets. Without a passkey the step
 offers one, and if the student says "Später", it ends with typing the code back once, which also
 signs in with it. A public computer offers no passkey and goes straight to the typing: the card
 then gives the notebook's key its way back on the student's own device. "Lieber mit E-Mail-Adresse" keeps the email sign-up.

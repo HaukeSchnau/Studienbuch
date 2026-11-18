@@ -523,14 +523,31 @@ export const unlockWithCode = Effect.fn("NotebookKeys.unlockWithCode")(function*
   );
 });
 
-/** Sends a wrapper. A card's goes with its login, which signs in to an account without an address. */
-const add = (wrapper: Keys.Sealed, login = Option.none<Redacted.Redacted>()) =>
-  Effect.flatMap(KeyServer.Service, (server) => server.addWrapper(wrapper, login)).pipe(
+/** Sends a passkey's wrapper. Our own wrappers don't fail the server's checks, so a refusal dies. */
+const add = (wrapper: Keys.Sealed) =>
+  Effect.flatMap(KeyServer.Service, (server) => server.addWrapper(wrapper, Option.none())).pipe(
     Effect.catchTags({
       ...fromServer,
       "Keys.NotFresh": () => Effect.fail(problem("not-fresh")),
       "Keys.Stale": () => Effect.fail(problem("stale")),
       "Keys.Invalid": Effect.die,
+    }),
+  );
+
+/**
+ * Sends a card's wrapper with its login, which signs in to an account without an address. The
+ * server refuses a card that a newer one retired, as when another device replaced it after this
+ * one's answer was lost.
+ */
+const addCard = (wrapper: Keys.Sealed, login: Redacted.Redacted) =>
+  Effect.flatMap(KeyServer.Service, (server) =>
+    server.addWrapper(wrapper, Option.some(login)),
+  ).pipe(
+    Effect.catchTags({
+      ...fromServer,
+      "Keys.NotFresh": () => Effect.fail(problem("not-fresh")),
+      "Keys.Stale": () => Effect.fail(problem("stale")),
+      "Keys.Invalid": () => Effect.fail(problem("no-match")),
     }),
   );
 
@@ -642,7 +659,7 @@ export const newRecoveryCode = guarded(
 export const sendRecoveryCode = (card: Card) =>
   guarded(
     Effect.gen(function* () {
-      yield* add(card.wrapper, Option.some(card.login));
+      yield* addCard(card.wrapper, card.login);
       yield* (yield* Ports.DeviceSecrets).remove("pending-card");
 
       const id = card.wrapper.statement.id;
@@ -673,10 +690,7 @@ const sendCard = Effect.fn("NotebookKeys.sendCard")(function* (
   if (known) return;
   const id = `card-${Hex.encode(derived.publicKey.slice(0, 16))}`;
 
-  yield* add(
-    yield* wrap("code", code, keys, { place: "card", id }),
-    Option.some(yield* cardLogin(code)),
-  );
+  yield* addCard(yield* wrap("code", code, keys, { place: "card", id }), yield* cardLogin(code));
 });
 
 /**

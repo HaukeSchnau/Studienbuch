@@ -1,4 +1,4 @@
-import { useAtom, useAtomValue } from "@effect/atom-react";
+import { useAtom, useAtomSet, useAtomValue } from "@effect/atom-react";
 import { AuthHeading } from "@stu/ui/AuthHeading";
 import { Button } from "@stu/ui/Button";
 import { Link } from "@stu/ui/Link";
@@ -51,6 +51,27 @@ export function SaveCardScreen({
       ) : (
         <ReadBack accountId={accountId} onShowAgain={() => setStep("card")} />
       )}
+    </AuthShell>
+  );
+}
+
+/**
+ * The device couldn't keep or read the new account's card. The step waits with a retry rather
+ * than letting the first start go on without the card.
+ */
+export function CardTrouble({ accountId }: { readonly accountId: string }) {
+  const retry = useAtomSet(KeysState.retryCard(accountId));
+
+  return (
+    <AuthShell>
+      <AuthHeading>Deine Notfallkarte</AuthHeading>
+      <Lead>
+        Dieses Gerät konnte deine Notfallkarte gerade nicht speichern oder lesen. Ohne sie geht es
+        nicht weiter, denn sie ist der Weg zurück in dein Konto.
+      </Lead>
+      <Form>
+        <Button kind="action" label="Noch einmal versuchen" block onPress={() => retry()} />
+      </Form>
     </AuthShell>
   );
 }

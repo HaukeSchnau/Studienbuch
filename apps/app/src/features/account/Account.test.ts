@@ -424,15 +424,20 @@ describe("Account", () => {
             }),
         );
 
-        // The answer is lost, and the student presses "Notfallkarte erstellen" again.
-        const [lost, holder, kept] = yield* phoneRun(
-          Effect.all([
-            Effect.tap(reason(signUp), () => signUp),
-            SessionStore.Service.use((each) => each.current),
-            keptCard,
-          ]),
+        // The answer is lost, and the app closes before the student tries again.
+        const lost = yield* phoneRun(reason(signUp), api);
+
+        // After a restart, with the access code redeemed again.
+        const [holder, kept] = yield* phoneRun(
+          Effect.andThen(
+            Account.signUpWithCard(later, false, offer),
+            Effect.all([SessionStore.Service.use((each) => each.current), keptCard]),
+          ),
           api,
         );
+
+        // The next sign-up on this device makes a card of its own.
+        yield* phoneRun(Account.signUpWithCard(later, false, offer), api);
 
         // A public computer keeps nothing on disk, so its card goes through memory.
         const kioskRun = yield* restarts;
@@ -452,7 +457,7 @@ describe("Account", () => {
           api,
         );
 
-        const [first, retry] = yield* Ref.get(sent);
+        const [first, retry, next] = yield* Ref.get(sent);
         const cards = yield* Ref.get(offered);
 
         const keptLogin = Option.match(kept, {
@@ -464,6 +469,7 @@ describe("Account", () => {
           {
             lost,
             retriedWithSameLogin: first !== undefined && first === retry,
+            nextHasItsOwn: next !== undefined && next !== retry,
             kept: Option.map(kept, (card) => [card.withPasskey, card.unsaved]),
             publicKept: Option.isSome(publicKept),
             offered: cards.map((card) => card.unsaved),
@@ -474,11 +480,12 @@ describe("Account", () => {
           {
             lost: "offline",
             retriedWithSameLogin: true,
+            nextHasItsOwn: true,
             kept: Option.some([false, true]),
             publicKept: false,
-            // The key status hears of every card: the phone's and the public computer's new ones,
-            // and the one the laptop signed in with.
-            offered: [true, true, false],
+            // The key status hears of every card: the phone's two and the public computer's new
+            // ones, and the one the laptop signed in with.
+            offered: [true, true, true, false],
             holder: Option.some(`noa-${yield* keptLogin}`),
             laptop: { typo: "typo", short: "length", unknown: "unknown-card", typed: "mia" },
             // The typo and the short code never left the device.

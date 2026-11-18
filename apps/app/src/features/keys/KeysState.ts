@@ -273,8 +273,10 @@ export const createRecoveryCode = Atom.family((accountId: string) =>
 
       const text = yield* NotebookKeys.sendRecoveryCode(card).pipe(
         Effect.tapError((refused) =>
-          // A card for an older key generation can't go out any more.
-          refused._tag === "NotebookKeys.Problem" && refused.reason === "stale"
+          // A card for an older key generation can't go out any more, nor one a newer card from
+          // another device retired since.
+          refused._tag === "NotebookKeys.Problem" &&
+          (refused.reason === "stale" || refused.reason === "no-match")
             ? Effect.sync(() => get.set(unsentCard, Option.none()))
             : Effect.void,
         ),
@@ -292,14 +294,28 @@ export const createRecoveryCode = Atom.family((accountId: string) =>
 /**
  * The Notfallkarte the device still has work for (`NotebookKeys.PendingCard`). The card step shows
  * it while the student hasn't saved it. It reads again after each key status, which may have taken
- * a card in or put one to work.
+ * a card in or put one to work, and fails while a card waits that the device couldn't keep.
  */
 export const pendingCard = Atom.family((accountId: string) =>
   runtime(accountId).atom((get) => {
-    get(status(accountId));
+    const now = get(status(accountId));
+    const offered = ofAccount(accountId)(get(Offered.card));
+
+    // A card the key status couldn't take in is neither held nor gone, so the step waits for it.
+    if (Option.isSome(offered) && AsyncResult.isFailure(now)) return Effect.failCause(now.cause);
 
     return NotebookKeys.pendingCard;
   }),
+);
+
+/** Tries again to take the card in and read it, after the device's store refused. */
+export const retryCard = Atom.family((accountId: string) =>
+  runtime(accountId).fn<void>()((_, get) =>
+    Effect.sync(() => {
+      get.refresh(status(accountId));
+      get.refresh(pendingCard(accountId));
+    }),
+  ),
 );
 
 // The account's runtime settles cards itself, so its sign-ins hand none to `Offered`.
