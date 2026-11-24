@@ -9,6 +9,9 @@ catalog:
   # Exactly the oxlint that Vite+ bundles, which loads the local plugins in tools/oxlint.
   "@oxlint/plugins": 1.94.0
   knip: 6.43.0
+  # Nothing installs it since tsrs checks every project. It stays while branches started before
+  # the move may still use `typescript: catalog:`, as the catalog is append-only (AGENTS.md).
+  typescript: 7.0.2
   # Exactly the tsrs that Vite+ bundles, so the lint's type check and `tsrs -p` are one compiler.
   tsrs: 7.1.0-beta.tsrs4
   # Vite+ bundles Vite and Vitest. These two follow its release, so every package and plugin
