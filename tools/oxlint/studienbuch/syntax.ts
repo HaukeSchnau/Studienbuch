@@ -30,6 +30,14 @@ export function isLoop(node: ESTree.Node): node is LoopNode {
   return LOOPS.has(node.type);
 }
 
+/**
+ * Where a rule about the whole file reports: its first statement. The program starts at the file's
+ * first byte, so a `disable-next-line` directive above the first statement wouldn't cover it.
+ */
+export function fileStart(program: ESTree.Program): ESTree.Node {
+  return program.body[0] ?? program;
+}
+
 /** The name in `import { name }` or `export { name }`, written as an identifier or a string. */
 export function moduleExportName(name: ESTree.ModuleExportName): string {
   return name.type === "Identifier" ? name.name : name.value;

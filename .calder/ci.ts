@@ -23,7 +23,7 @@ const typecheck = Task.make("typecheck", {
   setup: install,
   run: cmd`bash -c ${[
     "status=0",
-    'for config in apps/*/tsconfig.json packages/*/tsconfig.json tools/*/tsconfig.json; do tsc --noEmit -p "$config" || status=1; done',
+    'for config in apps/*/tsconfig.json packages/*/tsconfig.json tools/*/tsconfig.json; do tsrs --noEmit -p "$config" || status=1; done',
     "exit $status",
   ].join("\n")}`,
 });
@@ -156,7 +156,7 @@ const deployChecks = [
     shell,
     setup: deployInstall,
     inputs: Files.of("deploy", "tsconfig.base.json"),
-    run: cmd`tsc --noEmit -p deploy`,
+    run: cmd`tsrs --noEmit -p deploy`,
   }),
   Vitest.files({
     name: "test-deploy",

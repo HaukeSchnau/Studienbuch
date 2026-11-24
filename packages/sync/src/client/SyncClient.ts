@@ -433,9 +433,7 @@ export const make = Effect.fnUntraced(function* (
     sql
       .withTransaction(
         Effect.provideService(
-          Effect.flatMap(effect, (result) =>
-            Effect.map(Outbox.waiting, (waiting) => ({ result, waiting })),
-          ),
+          Effect.zipWith(effect, Outbox.waiting, (result, waiting) => ({ result, waiting })),
           SqlClient.SqlClient,
           sql,
         ),

@@ -89,13 +89,11 @@ export const layer = (roots: Roots) =>
       const metadata = yield* Etag.Generator;
 
       const handler = (options: Parameters<typeof HttpStaticServer.make>[0]) =>
-        NodeHttpPlatform.make.pipe(
-          Effect.provideService(Etag.Generator, releaseEtags(metadata, revision, options.root)),
-          Effect.flatMap((platform) =>
-            Effect.provideService(
-              HttpStaticServer.make(options),
-              HttpPlatform.HttpPlatform,
-              platform,
+        HttpStaticServer.make(options).pipe(
+          Effect.provideServiceEffect(
+            HttpPlatform.HttpPlatform,
+            NodeHttpPlatform.make.pipe(
+              Effect.provideService(Etag.Generator, releaseEtags(metadata, revision, options.root)),
             ),
           ),
           Effect.map((serve) =>

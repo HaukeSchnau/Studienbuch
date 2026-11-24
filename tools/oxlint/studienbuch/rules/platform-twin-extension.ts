@@ -4,6 +4,7 @@ import * as NodePath from "node:path";
 import { defineRule } from "@oxlint/plugins";
 
 import { clientCode, type Scope } from "../scope.ts";
+import { fileStart } from "../syntax.ts";
 
 export const scope: Scope = { files: clientCode };
 
@@ -51,7 +52,11 @@ export default defineRule({
 
     return {
       Program(node) {
-        context.report({ node, messageId: "extension", data: { twin, file, platform } });
+        context.report({
+          node: fileStart(node),
+          messageId: "extension",
+          data: { twin, file, platform },
+        });
       },
     };
   },

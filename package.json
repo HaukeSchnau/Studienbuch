@@ -4,7 +4,7 @@
   "license": "BUSL-1.1",
   "type": "module",
   "scripts": {
-    "prepare": "effect-tsgo patch --oxlint",
+    "prepare": "effect-tsgo patch --no-typescript --oxlint --tsrs",
     "check:atlas": "node tools/check-atlas/check-atlas.ts",
     "check:changed": "node tools/check-changed/check-changed.ts",
     "nix:update-hash": "nix/update-pnpm-hash.sh"
@@ -16,7 +16,7 @@
     "@types/node": "catalog:",
     "effect": "catalog:",
     "knip": "catalog:",
-    "typescript": "catalog:",
+    "tsrs": "catalog:",
     "vite-plus": "catalog:"
   },
   "engines": {

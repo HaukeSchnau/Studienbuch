@@ -70,7 +70,7 @@ export const run = Effect.fn("Capture.run")(function* <E, R>(input: {
   const observed = <A, E2, R2>(read: Effect.Effect<A, E2, R2>) =>
     read.pipe(
       Effect.tap(() => Effect.sync(() => requests++)),
-      Effect.flatMap((value) => Effect.map(DateTime.now, (at) => ({ value, at }))),
+      Effect.zipWith(DateTime.now, (value, at) => ({ value, at })),
     );
 
   const once = Effect.fn("Capture.once")(function* (
