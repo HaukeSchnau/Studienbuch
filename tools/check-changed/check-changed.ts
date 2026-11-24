@@ -14,7 +14,7 @@ const root = NodePath.resolve(import.meta.dirname, "../..");
 const CODE = /\.[cm]?[jt]sx?$/u;
 const TEST = /\.test\.[cm]?[jt]sx?$/u;
 
-// Shared compiler options and the installed dependencies, oxlint's and tsgo's versions among them,
+// Shared compiler options and the installed dependencies, oxlint's and tsrs's versions among them,
 // reach every project's types.
 const AFFECTS_EVERY_PROJECT = new Set([
   "package.json",
@@ -236,7 +236,7 @@ const runAtlas = files.some(
 if (runAtlas) steps.push({ name: "atlas paths", args: ["run", "check:atlas"] });
 
 for (const dir of affected) {
-  steps.push({ name: `typecheck ${dir}`, args: ["exec", "tsc", "--noEmit", "-p", dir] });
+  steps.push({ name: `typecheck ${dir}`, args: ["exec", "tsrs", "--noEmit", "-p", dir] });
 }
 
 // apps/app's "browser" project runs `src/**/*.browser.test.ts(x)` once in each of these Playwright

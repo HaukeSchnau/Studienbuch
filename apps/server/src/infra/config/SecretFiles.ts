@@ -25,9 +25,7 @@ export const provider = Effect.fn("SecretFiles.provider")(function* (
                 }),
             ),
           )
-        : // ConfigProvider.make needs `Node | undefined`, and Effect.void is typed `void`.
-          // oxlint-disable-next-line effecttsgo/effect-succeed-with-void -- see above
-          Effect.succeed(undefined),
+        : Effect.undefined,
     ),
   );
 

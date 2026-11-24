@@ -1,6 +1,7 @@
 import { defineRule } from "@oxlint/plugins";
 
 import { repositoryPath } from "../repository-path.ts";
+import { fileStart } from "../syntax.ts";
 
 // These name a kind of file, so they attract anything without an obvious home (AGENTS.md,
 // "Directory naming").
@@ -27,7 +28,7 @@ export default defineRule({
           .find((name) => FILE_KINDS.has(name));
 
         if (directory !== undefined) {
-          context.report({ node, messageId: "fileKind", data: { directory } });
+          context.report({ node: fileStart(node), messageId: "fileKind", data: { directory } });
         }
       },
     };

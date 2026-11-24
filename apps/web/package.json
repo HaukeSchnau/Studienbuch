@@ -29,7 +29,6 @@
     "@vitejs/plugin-react": "catalog:",
     "oxc-transform-react": "catalog:",
     "react-native": "catalog:",
-    "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:"
   }

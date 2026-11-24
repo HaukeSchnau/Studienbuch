@@ -31,7 +31,6 @@
     "@types/react": "catalog:",
     "react": "catalog:",
     "react-native": "catalog:",
-    "typescript": "catalog:",
     "vite-plus": "catalog:"
   },
   "peerDependencies": {

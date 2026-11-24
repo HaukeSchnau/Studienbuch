@@ -61,7 +61,6 @@
     "drizzle-kit": "catalog:",
     "drizzle-orm": "catalog:",
     "playwright": "catalog:",
-    "typescript": "catalog:",
     "vite-plus": "catalog:"
   }
 }

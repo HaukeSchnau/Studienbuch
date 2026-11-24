@@ -5,16 +5,17 @@ packages:
 catalogMode: strict
 
 catalog:
-  "@effect/tsgo": 0.62.0
+  "@effect/tsgo": 0.73.4
   # Exactly the oxlint that Vite+ bundles, which loads the local plugins in tools/oxlint.
-  "@oxlint/plugins": 1.89.0
+  "@oxlint/plugins": 1.94.0
   knip: 6.43.0
-  typescript: 7.0.2
+  # Exactly the tsrs that Vite+ bundles, so the lint's type check and `tsrs -p` are one compiler.
+  tsrs: 7.1.0-beta.tsrs4
   # Vite+ bundles Vite and Vitest. These two follow its release, so every package and plugin
   # resolves the same copies as `vp`.
-  vite: npm:@voidzero-dev/vite-plus-core@1.4.0
-  vite-plus: 1.4.0
-  vitest: 5.0.5
+  vite: npm:@voidzero-dev/vite-plus-core@8.3.8001
+  vite-plus: 1.8.0
+  vitest: 5.1.1
   # Effect's unstable modules change in patch releases, so `effect` and every `@effect/*` sit at one
   # exact version and move together.
   effect: 4.0.7
@@ -94,7 +95,7 @@ catalog:
   expo-network: 58.0.4
   # Browser tests (`*.browser.test.ts`): Vitest's Playwright provider at Vite+'s Vitest version, and
   # the Playwright whose browsers nixpkgs builds (`playwright-driver.browsers`).
-  "@vitest/browser-playwright": 5.0.5
+  "@vitest/browser-playwright": 5.1.1
   playwright: 1.64.1
   # Metro's Babel transformer, which apps/app/metro.transformer.js wraps, at the version Expo 58.0.20
   # depends on.
@@ -135,9 +136,7 @@ overrides:
   react-native-worklets@*: "catalog:"
 
 peerDependencyRules:
-  # The alias reports Vite+'s version, not the Vite 8 inside it.
   allowedVersions:
-    vite: "*"
     # The driver's range is stale: Effect's own repository tests it against 0.2.1.
     "@effect/sql-sqlite-wasm>@effect/wa-sqlite": 0.2.1
 
@@ -154,6 +153,16 @@ minimumReleaseAgeExclude:
   - "@effect/sql-sqlite-wasm@4.0.7"
   - "@electric-sql/pglite@0.5.13"
   - "@noxcturnal/noxcturnal-win32-x64-msvc@0.1.11"
+  - "@voidzero-dev/vite-plus-core@8.3.8001"
+  - "@voidzero-dev/vite-plus-darwin-arm64@1.8.0"
+  - "@voidzero-dev/vite-plus-darwin-x64@1.8.0"
+  - "@voidzero-dev/vite-plus-linux-arm64-gnu@1.8.0"
+  - "@voidzero-dev/vite-plus-linux-arm64-musl@1.8.0"
+  - "@voidzero-dev/vite-plus-linux-x64-gnu@1.8.0"
+  - "@voidzero-dev/vite-plus-linux-x64-musl@1.8.0"
+  - "@voidzero-dev/vite-plus-win32-arm64-msvc@1.8.0"
+  - "@voidzero-dev/vite-plus-win32-x64-msvc@1.8.0"
+  - vite-plus@1.8.0
 
 patchedDependencies:
   # Passkey sign-in asks for "preferred" user verification and both verify calls accept none, but

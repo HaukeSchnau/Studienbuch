@@ -2,7 +2,7 @@ import * as NodePath from "node:path";
 
 import { defineRule, type ESTree } from "@oxlint/plugins";
 
-import { moduleExportName } from "../syntax.ts";
+import { fileStart, moduleExportName } from "../syntax.ts";
 
 // A module is one PascalCase `.ts` file. Components (`.tsx`), tests (`X.test.ts`) and platform
 // variants (`X.web.ts`) don't match.
@@ -100,7 +100,11 @@ export default defineRule({
       },
       "Program:exit"(node) {
         if (self !== undefined && !selfExported) {
-          context.report({ node, messageId: "missingSelfExport", data: { name: self } });
+          context.report({
+            node: fileStart(node),
+            messageId: "missingSelfExport",
+            data: { name: self },
+          });
         }
       },
     };

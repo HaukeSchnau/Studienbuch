@@ -4,7 +4,7 @@
   // its functions' error channels, belongs to that namespace even without an outside import.
   "ignoreExportsUsedInFile": true,
   "ignoreDependencies": [
-    // The tsconfig plugin that @effect/tsgo's patched TypeScript provides, not a package.
+    // The tsconfig plugin that @effect/tsgo patches into tsrs, not a package.
     "@effect/language-service",
   ],
   // PostgreSQL 18 comes from Nix, not npm. The sync tests start a throwaway server with it.
@@ -13,6 +13,8 @@
     ".": {
       // The lint plugin loads every file in its rules/ directory by name.
       "entry": ["tools/oxlint/studienbuch/rules/*.ts"],
+      // Only CI's typecheck task (.calder/ci.ts, ignored below) and check:changed's spawn run it.
+      "ignoreDependencies": ["tsrs"],
     },
     "apps/web": {
       // vite.config.ts resolves `react-native` to it by name.

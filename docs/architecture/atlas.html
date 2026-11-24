@@ -754,7 +754,7 @@ svg .st { font-size: 12.5px; font-weight: 700; fill: var(--ink); }
     <li><b>The profile mutator changed.</b>domain.md's <code>notebook.update(cohortId?, adult?, displayName?)</code> is <code>notebookProfile.set(notebook, displayName, adult)</code>. The server-written <code>Notebook</code> row and the separate <code>CourseOffering</code> table aren't in domain.md.<span class="src"><code>packages/core/src/notebook/</code></span></li>
     <li><b>Space keys live in SQLite.</b>encryption.md keeps them in a <code>space_key</code> table and deletes them from the keychain at logout. They are in <code>sync_space_key</code> in the account database.<span class="src"><code>packages/sync/src/client/EngineTables.ts</code></span></li>
     <li><b>architecture.md is ahead of the code.</b>It describes the WebUntis import and blobs in the present tense. The import exists only as its seam and the harness that measures it, only the demo seed writes lessons, and no server code reads the blob buckets.<span class="src"><code>apps/server/src/main.ts</code></span></li>
-    <li><b>Hosting details drifted.</b>hosting.md puts the R2 bucket in the Studienbuch stack (infra's tokens stack makes it), removes previews after 7 idle days (only closing the PR does), lets the preview wait on the bundle (it waits on serverSmoke) and grants 6 services (4). ADR 0010 says there is no separate <code>tsc</code> run; CI runs <code>tsc --noEmit</code>.<span class="src"><code>.calder/ci.ts</code>, <code>deploy/alchemy.run.ts</code></span></li>
+    <li><b>Hosting details drifted.</b>hosting.md puts the R2 bucket in the Studienbuch stack (infra's tokens stack makes it), removes previews after 7 idle days (only closing the PR does), lets the preview wait on the bundle (it waits on serverSmoke) and grants 6 services (4).<span class="src"><code>.calder/ci.ts</code>, <code>deploy/alchemy.run.ts</code></span></li>
   </ul>
 </section>
 
@@ -1785,7 +1785,7 @@ const INFO = {
 
   "c-plan": { t: "Calder's plan", k: "infra", d: ["<code>.calder/ci.ts</code> declares every job and their order. The format, lint, typecheck and test jobs time out after 15 minutes; the Nix builds have no limit of their own."], f: [".calder/ci.ts"] },
 
-  "c-checks": { t: "Checks", d: ["fmt, lint (oxlint with type information and the local plugin), knip, typecheck, and the test jobs: test, test-app, test-app-browser (headless Chromium and Firefox), test-server and test-sync (both on a real PostgreSQL 18), typecheck-deploy and test-deploy, plus the flake checks serverSmoke and closureGuard."], f: [".calder/ci.ts", "vite.config.ts"], a: [10] },
+  "c-checks": { t: "Checks", d: ["fmt, lint (oxlint with type information from tsrs, and the local plugin), knip, typecheck (<code>tsrs -p</code> for every project, which also checks shared packages under each app's options), and the test jobs: test, test-app, test-app-browser (headless Chromium and Firefox), test-server and test-sync (both on a real PostgreSQL 18), typecheck-deploy and test-deploy, plus the flake checks serverSmoke and closureGuard."], f: [".calder/ci.ts", "vite.config.ts"], a: [10, 32] },
 
   "c-build": { t: "Artifacts", k: "infra", d: ["The architecture-independent bundle (server, landing, console, Expo web export), built on x86_64 on the tower or dev-hauke, Node for aarch64, and the pnpm dependencies' hash."], f: ["nix/bundle.nix", "flake.nix"], a: [5] },
 
@@ -1980,7 +1980,7 @@ const ADR = {
   24: "0024-epoch-keys-sealed-per-member-account", 25: "0025-recovery-without-escrow",
   26: "0026-recovery-methods-are-key-pairs", 27: "0027-demo-accounts-have-server-derived-keys",
   28: "0028-sessions-and-the-sync-connection",
-  31: "0031-account-deletion-leaves-token-hashes",
+  31: "0031-account-deletion-leaves-token-hashes", 32: "0032-tsrs-type-checks",
 };
 const KIND = {
   read: "Readable: plaintext the server may read",

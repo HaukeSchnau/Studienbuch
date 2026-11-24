@@ -100,9 +100,7 @@ export const courseSpace = Effect.fn("Schools.courseSpace")(function* (
 
 /** The server's own reads, of every space. */
 const reading = <A, E>(effect: Effect.Effect<A, E, Tx.Service>) =>
-  Effect.flatMap(PostgresTx.make({ actor: "", writes: [] }), (tx) =>
-    Effect.provideService(effect, Tx.Service, tx),
-  );
+  Effect.provideServiceEffect(effect, Tx.Service, PostgresTx.make({ actor: "", writes: [] }));
 
 const entries = <T extends Sync.Any>(table: T, rows: Rows<T>) =>
   Effect.forEach(Object.entries(rows), ([id, row]) =>

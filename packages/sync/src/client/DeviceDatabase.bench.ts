@@ -19,11 +19,8 @@ import { DeviceDatabase } from "./DeviceDatabase.ts";
 const rows = 1_000;
 const groups = 20;
 
-const seed = Effect.gen(function* () {
-  yield* DeviceDatabase.migrate(ProbeMigrations.migrations);
-  const sql = yield* SqlClient.SqlClient;
-
-  const data = Array.from({ length: rows }, (_, index) => ({
+const payload = JSON.stringify(
+  Array.from({ length: rows }, (_, index) => ({
     id: `row-${String(index).padStart(4, "0")}`,
     data: JSON.stringify({
       amount: index / 7,
@@ -33,11 +30,16 @@ const seed = Effect.gen(function* () {
       nested: [index, { deep: [index] }],
       text: `Hausaufgabe ${index}`,
     }),
-  }));
+  })),
+);
+
+const seed = Effect.gen(function* () {
+  yield* DeviceDatabase.migrate(ProbeMigrations.migrations);
+  const sql = yield* SqlClient.SqlClient;
 
   yield* sql`
     insert into base_row (space, tbl, id, version, data)
-    select 'bench', 'Probe', value ->> '$.id', 1, value ->> '$.data' from json_each(${JSON.stringify(data)})
+    select 'bench', 'Probe', value ->> '$.id', 1, value ->> '$.data' from json_each(${payload})
   `;
 });
 

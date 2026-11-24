@@ -300,7 +300,7 @@ export const run = Effect.fnUntraced(function* (options: Options) {
     const nextOrStop = <A>(effect: Effect.Effect<A>) =>
       Effect.raceFirst(
         Effect.map(effect, () => Option.none<End>()),
-        Effect.map(Deferred.await(stop), Option.some),
+        Effect.asSome(Deferred.await(stop)),
       );
 
     yield* Queue.offer(rounds, undefined);
