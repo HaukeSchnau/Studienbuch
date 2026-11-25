@@ -1,8 +1,12 @@
 # Fails when the bundle stops being architecture-independent or grows past its budget (ADR 0005).
 # CI builds it on x86_64, and srv-2 runs it on aarch64 with its own Node.
-{ pkgs, bundle }:
+{
+  pkgs,
+  sdk,
+  bundle,
+}:
 let
-  inherit (import ./toolchain.nix { inherit pkgs; }) nodejs;
+  inherit (import ./toolchain.nix { inherit pkgs sdk; }) nodejs;
   closure = pkgs.closureInfo { rootPaths = [ bundle ]; };
   budget = 100 * 1000 * 1000;
 

@@ -1,10 +1,10 @@
 # The release: one architecture-independent JS bundle (ADR 0005, hosting.md section 2). `deps`
 # installs the workspace once per lockfile, each build filters its source to its own package and the
 # workspace packages it depends on, and `bundle` only puts the three outputs side by side.
-{ pkgs }:
+{ pkgs, sdk }:
 let
   inherit (pkgs) lib stdenvNoCC;
-  inherit (import ./toolchain.nix { inherit pkgs; }) nodejs pnpm;
+  inherit (import ./toolchain.nix { inherit pkgs sdk; }) nodejs pnpm;
   fs = lib.fileset;
   root = ../.;
 

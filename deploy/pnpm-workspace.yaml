@@ -4,3 +4,8 @@
 # Cloudflare's local runtime, which only `alchemy dev` uses.
 allowBuilds:
   workerd: false
+
+pmOnFail: error
+
+minimumReleaseAgeExclude:
+  - "@schnau/tsconfig"
