@@ -6,10 +6,14 @@
   pkgs,
   lib,
   config,
+  inputs,
   ...
 }:
 let
-  toolchain = import ./nix/toolchain.nix { inherit pkgs; };
+  toolchain = import ./nix/toolchain.nix {
+    inherit pkgs;
+    sdk = inputs.projectSdk;
+  };
   root = config.devenv.root;
   state = config.env.DEVENV_STATE;
   port = name: toString config.processes.${name}.ports.http.value;

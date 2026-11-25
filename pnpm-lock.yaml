@@ -227,6 +227,9 @@ catalogs:
     '@oxlint/plugins':
       specifier: 1.94.0
       version: 1.94.0
+    '@schnau/tsconfig':
+      specifier: github:HaukeSchnau/nix-infra-modules#b365d13637b9dc83c397df542b5112a50ac8cbb9&path:/packages/tsconfig
+      version: https://codeload.github.com/HaukeSchnau/nix-infra-modules/tar.gz/b365d13637b9dc83c397df542b5112a50ac8cbb9#path:/packages/tsconfig
     '@schnau/webuntis-api':
       specifier: 0.4.0
       version: 0.4.0
@@ -407,6 +410,9 @@ importers:
       '@oxlint/plugins':
         specifier: 'catalog:'
         version: 1.94.0
+      '@schnau/tsconfig':
+        specifier: 'catalog:'
+        version: https://codeload.github.com/HaukeSchnau/nix-infra-modules/tar.gz/b365d13637b9dc83c397df542b5112a50ac8cbb9#path:/packages/tsconfig
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.5
@@ -2764,6 +2770,10 @@ packages:
 
   '@rolldown/pluginutils@1.0.1':
     resolution: {integrity: sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw==}
+
+  '@schnau/tsconfig@https://codeload.github.com/HaukeSchnau/nix-infra-modules/tar.gz/b365d13637b9dc83c397df542b5112a50ac8cbb9#path:/packages/tsconfig':
+    resolution: {gitHosted: true, integrity: sha512-ZAAzZGsh+MXoXtHk4H/s7RTb5k78DKCV76BXWXlqurULCeYLibsF2iMyXhom4N4DJ7LQgpSojX4JE5a0Y4I9gA==, path: /packages/tsconfig, tarball: https://codeload.github.com/HaukeSchnau/nix-infra-modules/tar.gz/b365d13637b9dc83c397df542b5112a50ac8cbb9}
+    version: 0.1.0
 
   '@schnau/webuntis-api@0.4.0':
     resolution: {integrity: sha512-yXqaGsMeXaPPREem4N5Hs/9laOwrnGQE7EcrL4Idm5/Evo4IFzt1Pg5AhbVt7Ju/wT0plvymgdDinzjyum2Mwg==}
@@ -7849,6 +7859,8 @@ snapshots:
       '@redis/client': 6.3.0
 
   '@rolldown/pluginutils@1.0.1': {}
+
+  '@schnau/tsconfig@https://codeload.github.com/HaukeSchnau/nix-infra-modules/tar.gz/b365d13637b9dc83c397df542b5112a50ac8cbb9#path:/packages/tsconfig': {}
 
   '@schnau/webuntis-api@0.4.0(effect@4.0.7)':
     dependencies:

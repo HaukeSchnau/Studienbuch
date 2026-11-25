@@ -155,7 +155,7 @@ const deployChecks = [
   Task.make("typecheck-deploy", {
     shell,
     setup: deployInstall,
-    inputs: Files.of("deploy", "tsconfig.base.json"),
+    inputs: Files.of("deploy"),
     run: cmd`tsrs --noEmit -p deploy`,
   }),
   Vitest.files({

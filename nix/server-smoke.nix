@@ -1,8 +1,12 @@
 # Runs the bundle the way a host does, with environment variables only, against PostgreSQL 18:
 # `prepare`, `verify`, `serve` until readiness reports the revision, the pages, then a clean SIGTERM.
-{ pkgs, bundle }:
+{
+  pkgs,
+  sdk,
+  bundle,
+}:
 let
-  inherit (import ./toolchain.nix { inherit pkgs; }) nodejs postgresql;
+  inherit (import ./toolchain.nix { inherit pkgs sdk; }) nodejs postgresql;
 in
 pkgs.runCommand "studienbuch-server-smoke"
   {

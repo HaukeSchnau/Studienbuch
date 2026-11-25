@@ -3,6 +3,7 @@ packages:
   - packages/*
 
 catalogMode: strict
+pmOnFail: error
 
 catalog:
   "@effect/tsgo": 0.73.4
@@ -126,6 +127,10 @@ catalog:
   # age encryption for the import corpus's archives (m2-import-corpus.md, section 5), so packing and
   # fetching need no age binary on the dev hosts or in CI.
   age-encryption: 0.3.1
+  # The shared tsconfig at the toolchain's nix-infra-modules revision. It comes from the GitHub
+  # mirror rather than the Gitea registry, because mapping the @schnau scope to Gitea would also
+  # send @schnau/webuntis-api there, which npm publishes.
+  "@schnau/tsconfig": github:HaukeSchnau/nix-infra-modules#b365d13637b9dc83c397df542b5112a50ac8cbb9&path:/packages/tsconfig
 
 overrides:
   vite@*: "catalog:"
@@ -153,6 +158,8 @@ minimumReleaseAgeExclude:
   - "@effect/sql-sqlite-wasm@4.0.7"
   - "@electric-sql/pglite@0.5.13"
   - "@noxcturnal/noxcturnal-win32-x64-msvc@0.1.11"
+  # Vite+ 1.8.0 came out on 2026-11-24 between 02:15 and 03:15 UTC, and pnpm 12 also checks the
+  # lockfile against the one-day minimumReleaseAge. Delete these entries after 2026-11-25 03:16 UTC.
   - "@voidzero-dev/vite-plus-core@8.3.8001"
   - "@voidzero-dev/vite-plus-darwin-arm64@1.8.0"
   - "@voidzero-dev/vite-plus-darwin-x64@1.8.0"
