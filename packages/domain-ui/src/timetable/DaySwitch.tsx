@@ -29,7 +29,7 @@ export function DaySwitch({ days, selected, onSelect }: DaySwitchProps) {
             key={day.id}
             accessibilityRole="tab"
             accessibilityLabel={`${day.long}, ${day.date}`}
-            accessibilityState={{ selected: chosen }}
+            aria-selected={chosen}
             onPress={() => onSelect(index)}
             style={({ pressed }) => [
               styles.day,

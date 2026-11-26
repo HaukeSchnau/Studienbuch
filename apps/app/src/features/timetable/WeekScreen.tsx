@@ -47,9 +47,12 @@ function AccountWeek({ accountId }: { readonly accountId: string }) {
     return <View style={[styles.blank, { backgroundColor: color.canvas }]} />;
   }
 
-  const { week, current, heading, chips, offline, grid } = screen.value;
+  const { week, current, heading, chips, offline, card } = screen.value;
   const wide = width >= Tokens.layout.wideBreakpoint;
-  const list = fontScale >= Tokens.layout.weekGridListAtFontScale;
+  const large = Tokens.layout.weekGridListAtFontScale;
+  // Large text switches the grid to a day list. The web has no font scale, but zooming narrows
+  // the window by the same factor, so a phone's browser at 135 % lists too.
+  const list = fontScale >= large || width < Tokens.layout.phoneWidth / large;
 
   return (
     <HeroScreen
@@ -68,9 +71,10 @@ function AccountWeek({ accountId }: { readonly accountId: string }) {
     >
       <ArrowKeys left={() => show(week.previous)} right={() => show(week.next)} />
       <Arrive delay={110} style={styles.band}>
-        {Option.match(grid, {
-          onNone: () => <NoTimetable />,
-          onSome: (shown) => {
+        {WeekState.Card.$match(card, {
+          Reading: () => null,
+          NoTimetable: () => <NoTimetable />,
+          Week: (shown) => {
             if (!list) return <WeekGrid week={shown.week} wide={wide} stand={shown.stand} />;
 
             const chosen = shown.week.days.findIndex((day) => day.id === tag);

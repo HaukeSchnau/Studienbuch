@@ -260,6 +260,8 @@ export const layout = {
   // Meine Woche's grid, whose cells need the room for full names and details (m2-5-week.md).
   weekMaxWidth: 960,
   weekGridListAtFontScale: 1.35,
+  // The phone the screens are drawn for, 390 points wide.
+  phoneWidth: 390,
 } as const;
 
 // Nested shapes subtract the padding: a card of 28 with padding 8 holds an inner shape of 20.

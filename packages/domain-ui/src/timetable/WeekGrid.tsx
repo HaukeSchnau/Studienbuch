@@ -129,7 +129,7 @@ export function WeekGrid({ week, wide, stand, onOpen }: WeekGridProps) {
                 cell={cell}
                 day={week.days[cell.day]?.long ?? ""}
                 wide={wide}
-                tall={y(cell.end) - y(cell.start) >= 56 * scale}
+                tall={y(cell.end) - y(cell.start) >= 64 * scale}
                 onOpen={onOpen}
               />
             </View>
@@ -201,7 +201,7 @@ function LessonCell({
   readonly cell: WeekItem.Cell;
   readonly day: string;
   readonly wide: boolean;
-  /** Room for three lines on a phone: the name, the teacher and the room. */
+  /** Room for three lines on a phone, or two and the note under them from 768 points on. */
   readonly tall: boolean;
   readonly onOpen: ((id: string) => void) | undefined;
 }) {
@@ -286,7 +286,9 @@ function LessonCell({
           style={[
             styles.note,
             note.line === undefined
-              ? styles.noteLow
+              ? tall
+                ? styles.noteLow
+                : styles.noteCorner
               : [styles.noteOn, { top: cellTop + nameLine + (note.line - 1) * detailLine - 1 }],
             { backgroundColor: color.note },
           ]}
@@ -460,6 +462,8 @@ const styles = StyleSheet.create({
   },
   noteOn: { left: 1 },
   noteLow: { right: -4, bottom: 6 },
+  // A single period has no room under its lines, so the note sticks to its corner.
+  noteCorner: { right: -4, top: -8 },
   homework: {
     position: "absolute",
     top: -3,

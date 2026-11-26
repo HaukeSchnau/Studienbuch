@@ -1,6 +1,7 @@
 import { CivilTime, Timetable } from "@stu/core";
 import { AgendaItem } from "@stu/domain-ui/timetable/AgendaItem";
 import { WeekItem } from "@stu/domain-ui/timetable/WeekItem";
+import * as Data from "effect/Data";
 import * as Option from "effect/Option";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Atom from "effect/reactivity/Atom";
@@ -22,6 +23,17 @@ export interface Grid {
   readonly stand: AgendaItem.Stand | undefined;
 }
 
+/** What the card under the hero shows. */
+export type Card = Data.TaggedEnum<{
+  /** The device is still reading a week before the one it opens. */
+  Reading: {};
+  /** A school without a timetable: no lessons on the device and no Stand. */
+  NoTimetable: {};
+  Week: Grid;
+}>;
+
+export const Card = Data.taggedEnum<Card>();
+
 export interface Screen {
   /** The shown week and its neighbours as ISO weeks, such as `2026-W48`, for the route. */
   readonly week: { readonly previous: string; readonly next: string };
@@ -32,14 +44,14 @@ export interface Screen {
   /** "KW 47", "A-Woche" */
   readonly chips: ReadonlyArray<string>;
   readonly offline: DeviceStatus.Status["offline"];
-  /** `None` at a school without a timetable: no lessons on the device and no Stand. */
-  readonly grid: Option.Option<Grid>;
+  readonly card: Card;
 }
 
 /**
  * Meine Woche of the account for `requested`, an ISO week such as `2026-W48`, or the week it opens
- * by default for anything else. `None` until the device has read the notebook and the timetable,
- * so the screen doesn't change as it appears.
+ * by default for anything else. `None` until the device has read the notebook and the timetable
+ * from the week it opens on, so the screen doesn't change as it appears. A week before that one
+ * reads from its own Monday, and while it does, the hero stays and the card waits.
  */
 export const screen = Atom.family((accountId: string) =>
   Atom.family((requested: string) =>
@@ -57,42 +69,49 @@ export const screen = Atom.family((accountId: string) =>
       });
       const opening = Timetable.schoolWeek(today);
       const monday = Option.getOrElse(CivilTime.mondayOf(requested), () => opening);
-      // The device's lessons from the earlier Monday on tell whether the school has a timetable.
-      const from = CivilTime.order(monday, opening) < 0 ? monday : opening;
-      const timetable = get(TimetableState.reading(accountId)(CivilTime.format(from)));
+      const opened = get(TimetableState.reading(accountId)(CivilTime.format(opening)));
 
-      if (AsyncResult.isInitial(timetable)) return Option.none();
+      if (AsyncResult.isInitial(opened)) return Option.none();
 
-      const held = Option.flatten(AsyncResult.value(timetable));
-      const weekId = CivilTime.isoWeek(monday);
+      const timetable =
+        CivilTime.order(monday, opening) < 0
+          ? get(TimetableState.reading(accountId)(CivilTime.format(monday)))
+          : opened;
 
-      const grid = Option.flatMap(held, (reading): Option.Option<Grid> => {
-        if (reading.plan.coveredUntil === undefined && reading.plan.lessons.length === 0) {
-          return Option.none();
-        }
+      const card = AsyncResult.isInitial(timetable)
+        ? Card.Reading()
+        : Option.match(Option.flatten(AsyncResult.value(timetable)), {
+            onNone: () => Card.NoTimetable(),
+            onSome: (reading): Card => {
+              // The device's lessons from the earlier Monday on tell whether there is a timetable.
+              if (reading.plan.coveredUntil === undefined && reading.plan.lessons.length === 0) {
+                return Card.NoTimetable();
+              }
 
-        const moment = CivilTime.momentIn(now.value, reading.timeZone);
-        const shown = Timetable.week(reading.plan, monday);
+              const moment = CivilTime.momentIn(now.value, reading.timeZone);
+              const shown = Timetable.week(reading.plan, monday);
 
-        return Option.some({
-          week: WeekItem.week(shown, reading.names, moment, homework),
-          days: shown.columns.map((_, index) =>
-            WeekItem.day(shown, index, reading.names, moment, homework),
-          ),
-          stand: AgendaItem.staleStand(
-            reading.observedAt,
-            now.value,
-            reading.timeZone,
-            disconnected,
-          ),
-        });
-      });
+              return Card.Week({
+                week: WeekItem.week(shown, reading.names, moment, homework),
+                days: shown.columns.map((_, index) =>
+                  WeekItem.day(shown, index, reading.names, moment, homework),
+                ),
+                stand: AgendaItem.staleStand(
+                  reading.observedAt,
+                  now.value,
+                  reading.timeZone,
+                  disconnected,
+                ),
+              });
+            },
+          });
 
       // Monday to Friday, and Saturday when a lesson falls on it.
-      const days = Option.match(grid, { onNone: () => 5, onSome: ({ week }) => week.days.length });
+      const days = card._tag === "Week" ? card.week.days.length : 5;
 
-      const label = Option.flatMap(held, (reading) =>
-        Option.fromNullishOr(reading.weekLabels.get(weekId)),
+      // The school's rows are read whole, so the opening week's read has every label.
+      const label = Option.flatMap(Option.flatten(AsyncResult.value(opened)), (reading) =>
+        Option.fromNullishOr(reading.weekLabels.get(CivilTime.isoWeek(monday))),
       );
 
       return Option.some({
@@ -104,7 +123,7 @@ export const screen = Atom.family((accountId: string) =>
         heading: WeekItem.heading(monday, days),
         chips: WeekItem.chips(monday, Option.getOrUndefined(label)),
         offline,
-        grid,
+        card,
       });
     }),
   ),
