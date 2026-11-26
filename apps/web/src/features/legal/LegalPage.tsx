@@ -11,7 +11,15 @@ import { Operator } from "./Operator.ts";
  * parents, school administrators and, if it comes to it, a supervisory authority, so they say "Sie"
  * where the landing page says "du" to students.
  */
-export function LegalPage({ title, children }: { title: string; children: ReactNode }) {
+export function LegalPage({
+  title,
+  updated = Operator.lastUpdated,
+  children,
+}: {
+  title: string;
+  updated?: string;
+  children: ReactNode;
+}) {
   return (
     <div className="public-page legal">
       <SiteHeader />
@@ -19,7 +27,7 @@ export function LegalPage({ title, children }: { title: string; children: ReactN
         <Blob className="legal-blob" duration={30} rotate={24} outline="kidney" tone="green" />
         <div className="container legal-column">
           <h1>{title}</h1>
-          <p className="legal-updated">Stand: {Operator.lastUpdated}</p>
+          <p className="legal-updated">Stand: {updated}</p>
           <div className="legal-prose">{children}</div>
         </div>
       </main>
