@@ -138,6 +138,7 @@ describe("AgendaItem", () => {
       sheet({ teacherIds: [], ...changed("Substitution", { teachers: ["bra"] }) }).note,
       sheet(changed("Other", {}, "Exkursion")).phrase,
       sheet(changed("Moved", {}, "Exkursion")).phrase,
+      sheet(changed("Substitution", { teachers: ["bra"] }, "Vertretung")).phrase,
       sheet(changed("Cancelled", {}, "Klassenfahrt")).off,
       sheet({}).due,
     ]).toEqual([
@@ -145,6 +146,7 @@ describe("AgendaItem", () => {
       "Vertretung",
       undefined,
       "Exkursion",
+      undefined,
       "Entfall",
       "Die nächste Stunde steht noch nicht im Plan.",
     ]);

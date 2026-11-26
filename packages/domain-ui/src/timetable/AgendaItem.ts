@@ -209,9 +209,9 @@ export const detail = (
     ...shared,
     when: `${DateText.full(source.date, today)} · ${range(source.start, source.end)}`,
     note: Option.getOrUndefined(note),
-    // Not where the note or the struck name says it already, as `Other` does.
+    // Not where the change's own word says it already, as `Other` does.
     phrase:
-      phrase === off || Option.exists(shared.note, (change) => change.text === phrase)
+      phrase === (off ?? Option.getOrUndefined(Option.map(shared.note, changeText)))
         ? undefined
         : phrase,
     due: Option.match(next, {
