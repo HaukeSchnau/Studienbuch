@@ -311,7 +311,7 @@ function LessonCell({
       )}
       {cell.homework === true ? (
         <View
-          style={[styles.homework, { backgroundColor: color.action, borderColor: color.surface }]}
+          style={[styles.homework, { backgroundColor: color.homework, borderColor: color.surface }]}
         />
       ) : null}
     </>
