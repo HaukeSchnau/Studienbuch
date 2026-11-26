@@ -1,4 +1,5 @@
 import { SubjectSticker } from "@stu/domain-ui/subject/SubjectSticker";
+import { AgendaCard } from "@stu/domain-ui/timetable/AgendaCard";
 import { Hero, type HeroProps } from "@stu/ui/Hero";
 import { Pill } from "@stu/ui/Pill";
 import { Theme } from "@stu/ui/Theme";
@@ -6,7 +7,6 @@ import { Tokens } from "@stu/ui/Tokens";
 import { StyleSheet, View } from "react-native";
 
 import { AbsenceCard } from "#/domain-ui/app/AbsenceCard.tsx";
-import { AgendaCard } from "#/domain-ui/app/AgendaCard.tsx";
 import { type Exam, GradesCard } from "#/domain-ui/app/GradesCard.tsx";
 import { WeekGrid } from "#/domain-ui/app/WeekGrid.tsx";
 
@@ -29,7 +29,7 @@ function PhoneScreen(props: Omit<HeroProps, "top">) {
 export function TodayScreen({ onOpen }: { onOpen?: (id: string) => void }) {
   return (
     <PhoneScreen subtitle="Das steht heute an:" title={`Moin, ${Demo.student}!`}>
-      <AgendaCard onOpen={onOpen} rows={Demo.today} />
+      <AgendaCard items={Demo.today} onOpen={onOpen} />
       <AbsenceCard days={1} unexcused={2} />
     </PhoneScreen>
   );
