@@ -154,15 +154,6 @@ export const measure = (input: {
     ),
   }));
 
-  // A label that names two entries of one roster as different courses splits that roster.
-  const splitByLabel = new Set(
-    labelled.flatMap(({ same, keys: named }) => {
-      const groups = named.map((key) => groupOf.get(key) ?? "");
-
-      return same ? [] : groups.filter((group, i) => groups.indexOf(group) !== i);
-    }),
-  );
-
   const parent = new Map<string, string>();
 
   const find = (key: string): string => {
@@ -181,21 +172,41 @@ export const measure = (input: {
     if (first !== undefined) for (const key of rest) parent.set(find(key), find(first));
   };
 
+  for (const { same, keys: named } of labelled) if (same) join(named);
+
+  const different = labelled.flatMap((label) => (label.same ? [] : [label.keys]));
+
+  /** Whether one course of the courses so far of `members` would hold entries a label tells apart. */
+  const conflicts = (members: ReadonlyArray<string>) => {
+    const roots = new Set(members.map(find));
+
+    return different.some(
+      (named) => new Set(named.map(find).filter((root) => roots.has(root))).size > 1,
+    );
+  };
+
   const byGroup = new Map<string, Array<Row>>();
 
   for (const row of rows) push(byGroup, row.group, row);
 
-  const whole = [...byGroup].flatMap(([group, members]) =>
-    splitByLabel.has(group) ? [] : [members],
-  );
+  // A roster that would join entries a label tells apart is split: its entries no label names
+  // could be in any of its courses, so they leave the measure.
+  const splitByLabel = new Set<string>();
+  const whole: Array<ReadonlyArray<Row>> = [];
 
-  for (const members of whole) join(members.map((row) => row.key));
+  for (const [group, members] of byGroup) {
+    const entries = members.map((row) => row.key);
 
-  for (const { same, keys: named } of labelled) if (same) join(named);
+    if (conflicts(entries)) splitByLabel.add(group);
+    else {
+      join(entries);
+      whole.push(members);
+    }
+  }
 
   // A student takes one course of a subject at a time, so two rosters of a subject that share more
   // than half of each one's students, and whose courses so far meet in different opening weeks,
-  // are one course whose roster changed in between. A label that tells them apart wins.
+  // are one course whose roster changed in between.
   const alike = (a: Row, b: Row) => {
     const shared = [...a.students].filter((student) => b.students.has(student)).length;
 
@@ -205,14 +216,8 @@ export const measure = (input: {
   const weeksOf = (key: string) =>
     new Set(rows.flatMap((row) => (find(row.key) === find(key) ? [row.week] : [])));
 
-  const different = labelled.flatMap((label) => (label.same ? [] : [label.keys]));
-
   const apart = (a: string, b: string) =>
-    [...weeksOf(a)].some((week) => weeksOf(b).has(week)) ||
-    different.some(
-      (named) =>
-        named.some((key) => find(key) === find(a)) && named.some((key) => find(key) === find(b)),
-    );
+    [...weeksOf(a)].some((week) => weeksOf(b).has(week)) || conflicts([a, b]);
 
   for (const [i, [a]] of whole.entries()) {
     for (const [b] of whole.slice(i + 1)) {
@@ -222,7 +227,6 @@ export const measure = (input: {
     }
   }
 
-  // An entry of a split roster that no label names could be in any of its courses.
   const named = new Set(labelled.flatMap((label) => label.keys));
   const components = new Map<string, Array<string>>();
 

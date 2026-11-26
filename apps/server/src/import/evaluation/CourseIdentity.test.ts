@@ -207,21 +207,34 @@ describe("CourseIdentity.measure", () => {
     assert.deepStrictEqual(measure(attendance, lessons, [label]).total, total);
   });
 
-  it("weighs a label that two entries differ against what other labels join first", () => {
-    // Thursday's S4 is one course with next Monday's group, which a roster change would also join
-    // to this Monday's group, which the first label tells apart from Thursday's.
-    const attendance = { S1: [e1, e3], S2: [e1, e3], S3: [e1], S4: [e2] };
-
-    const labels = [
-      { id: "two", same: false, entries: [e1, e2] },
-      { id: "one", same: true, entries: [e2, e3] },
-    ];
-
-    assert.deepStrictEqual(
-      measure(attendance, [lesson("ma", e1), lesson("ma", e2), lesson("ma", e3)], labels).total,
-      counts(2, 0, 1, 1),
-    );
-  });
+  // A label joins Thursday's entry to next Monday's, and another tells it apart from this Monday's,
+  // which shares next Monday's roster or most of it.
+  it.each([
+    {
+      name: "a roster change",
+      attendance: { S1: [e1, e3], S2: [e1, e3], S3: [e1], S4: [e2] },
+      labels: [
+        { id: "two", same: false, entries: [e1, e2] },
+        { id: "one", same: true, entries: [e2, e3] },
+      ],
+    },
+    {
+      name: "one roster",
+      attendance: { S1: [e1, e3], S2: [e2] },
+      labels: [
+        { id: "two", same: false, entries: [e1, e2] },
+        { id: "one", same: true, entries: [e2, e3] },
+      ],
+    },
+  ])(
+    "keeps two entries a label tells apart in two courses, despite $name",
+    ({ attendance, labels }) => {
+      assert.deepStrictEqual(
+        measure(attendance, [lesson("ma", e1), lesson("ma", e2), lesson("ma", e3)], labels).total,
+        counts(2, 0, 1, 1),
+      );
+    },
+  );
 });
 
 describe("CourseIdentity.combine", () => {
