@@ -101,7 +101,7 @@
     },
     "ghostCourses": 39,
     "courseIdentity": {
-      "realCourses": 376,
+      "realCourses": 377,
       "split": 42,
       "ourCourses": 388,
       "merged": 18,
@@ -317,7 +317,7 @@
           "merged": 0
         },
         "Tutorium": {
-          "realCourses": 10,
+          "realCourses": 11,
           "split": 10,
           "ourCourses": 9,
           "merged": 9
@@ -758,7 +758,7 @@
     },
     "ghostCourses": 39,
     "courseIdentity": {
-      "realCourses": 376,
+      "realCourses": 377,
       "split": 42,
       "ourCourses": 388,
       "merged": 18,
@@ -974,7 +974,7 @@
           "merged": 0
         },
         "Tutorium": {
-          "realCourses": 10,
+          "realCourses": 11,
           "split": 10,
           "ourCourses": 9,
           "merged": 9

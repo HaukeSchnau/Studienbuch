@@ -95,6 +95,20 @@ describe("CourseIdentity.measure", () => {
       looks: ["merged MA nested"],
     },
     {
+      // Each shares most students with next Monday's roster, which may join only one of them.
+      name: "two groups the same week that each share most students with a group next week",
+      attendance: {
+        S1: [e1, e2, e3],
+        S2: [e1, e2, e3],
+        S3: [e1, e2, e3],
+        S4: [e1, e3],
+        S5: [e2, e3],
+      },
+      lessons: [lesson("ma", e1), lesson("ma", e2), lesson("ma", e3)],
+      total: counts(2, 0, 1, 1),
+      looks: ["merged MA nested"],
+    },
+    {
       name: "parallel groups in one of our courses",
       attendance: { S1: [e1], S2: [e1], S3: [e2], S4: [e2] },
       lessons: [lesson("ma", e1), lesson("ma", e2)],
@@ -192,21 +206,25 @@ describe("CourseIdentity.measure", () => {
   ])("a label $name", ({ attendance, lessons, label, total }) => {
     assert.deepStrictEqual(measure(attendance, lessons, [label]).total, total);
   });
+
+  it("weighs a label that two entries differ against what other labels join first", () => {
+    // Thursday's S4 is one course with next Monday's group, which a roster change would also join
+    // to this Monday's group, which the first label tells apart from Thursday's.
+    const attendance = { S1: [e1, e3], S2: [e1, e3], S3: [e1], S4: [e2] };
+
+    const labels = [
+      { id: "two", same: false, entries: [e1, e2] },
+      { id: "one", same: true, entries: [e2, e3] },
+    ];
+
+    assert.deepStrictEqual(
+      measure(attendance, [lesson("ma", e1), lesson("ma", e2), lesson("ma", e3)], labels).total,
+      counts(2, 0, 1, 1),
+    );
+  });
 });
 
 describe("CourseIdentity.combine", () => {
-  it("publishes a subject's code without a person's token in it", () => {
-    const code = "BI-TQ4M7KZA";
-
-    const measured = measure({ S1: [entry(monday, 1, code)] }, [
-      lesson("bi", entry(monday, 1, code)),
-    ]);
-
-    assert.deepStrictEqual(Object.keys(CourseIdentity.combine([measured]).counts.subjects), [
-      "BI-T*",
-    ]);
-  });
-
   it("adds up terms and keeps each subject's worst cases, most pieces first", () => {
     const twoPieces = measure({ S1: [e1] }, [lesson("a", e1), lesson("b", e1)], [], "summer");
 

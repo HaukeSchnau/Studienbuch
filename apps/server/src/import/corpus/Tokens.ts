@@ -31,15 +31,6 @@ export const name = new RegExp(`^[TSPR][${alphabet}]{${widths.T}}$`, "u");
 
 export const text = new RegExp(`^X[${alphabet}]{${widths.X}}-\\d+$`, "u");
 
-const person = new RegExp(`[TSP][${alphabet}]{${widths.T}}`, "gu");
-
-/**
- * The text with each run that could be a person's token, such as one the pseudonymizer put into a
- * subject's code, cut to its kind: `BI-TQ4M7KZA` becomes `BI-T*`.
- */
-export const withoutPeople = (text: string) =>
-  text.replace(person, (token) => `${token.slice(0, 1)}*`);
-
 export const isId = (value: number) =>
   Number.isInteger(value) && value >= ids.min && value < ids.min + ids.size;
 

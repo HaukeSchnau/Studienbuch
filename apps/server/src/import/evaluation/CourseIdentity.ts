@@ -6,7 +6,6 @@
  */
 import * as Arr from "effect/Array";
 import * as Order from "effect/Order";
-import { Tokens } from "../corpus/Tokens.ts";
 import { Metrics } from "./Metrics.ts";
 
 export * as CourseIdentity from "./CourseIdentity.ts";
@@ -192,41 +191,36 @@ export const measure = (input: {
 
   for (const members of whole) join(members.map((row) => row.key));
 
-  // A student takes one course of a subject at a time, so two rosters of a subject that meet in
-  // different opening weeks and share more than half of each one's students are one course whose
-  // roster changed in between. A label that tells them apart wins.
-  const oneCourse = (a: ReadonlyArray<Row>, b: ReadonlyArray<Row>) => {
-    const [first, other] = [a[0], b[0]];
+  for (const { same, keys: named } of labelled) if (same) join(named);
 
-    if (first === undefined || other === undefined || first.subject !== other.subject) return false;
+  // A student takes one course of a subject at a time, so two rosters of a subject that share more
+  // than half of each one's students, and whose courses so far meet in different opening weeks,
+  // are one course whose roster changed in between. A label that tells them apart wins.
+  const alike = (a: Row, b: Row) => {
+    const shared = [...a.students].filter((student) => b.students.has(student)).length;
 
-    const weeks = new Set(a.map((row) => row.week));
-    const shared = [...first.students].filter((student) => other.students.has(student)).length;
-
-    return (
-      b.every((row) => !weeks.has(row.week)) &&
-      shared * 2 > first.students.size &&
-      shared * 2 > other.students.size
-    );
+    return a.subject === b.subject && shared * 2 > a.students.size && shared * 2 > b.students.size;
   };
+
+  const weeksOf = (key: string) =>
+    new Set(rows.flatMap((row) => (find(row.key) === find(key) ? [row.week] : [])));
 
   const different = labelled.flatMap((label) => (label.same ? [] : [label.keys]));
 
   const apart = (a: string, b: string) =>
+    [...weeksOf(a)].some((week) => weeksOf(b).has(week)) ||
     different.some(
       (named) =>
         named.some((key) => find(key) === find(a)) && named.some((key) => find(key) === find(b)),
     );
 
-  for (const [i, a] of whole.entries()) {
-    for (const b of whole.slice(i + 1)) {
-      const [x, y] = [a[0]?.key ?? "", b[0]?.key ?? ""];
-
-      if (oneCourse(a, b) && !apart(x, y)) join([x, y]);
+  for (const [i, [a]] of whole.entries()) {
+    for (const [b] of whole.slice(i + 1)) {
+      if (a !== undefined && b !== undefined && alike(a, b) && !apart(a.key, b.key)) {
+        join([a.key, b.key]);
+      }
     }
   }
-
-  for (const { same, keys: named } of labelled) if (same) join(named);
 
   // An entry of a split roster that no label names could be in any of its courses.
   const named = new Set(labelled.flatMap((label) => label.keys));
@@ -340,17 +334,12 @@ const worstFirst = Order.combineAll<Case>([
   Order.mapInput(Order.String, (each) => each.realCourses[0]?.entries[0]?.entry ?? ""),
 ]);
 
-/**
- * Every term's counts added up, by subject in code order, and each subject's `worst` cases. The
- * counts are public, so a person's token in a subject's code becomes its kind.
- */
+/** Every term's counts added up, by subject in code order, and each subject's `worst` cases. */
 export const combine = (terms: ReadonlyArray<Measured>, worst = 5) => {
   const bySubject = new Map<string, Counts>();
 
   for (const term of terms) {
-    for (const [code, counts] of term.subjects) {
-      const subject = Tokens.withoutPeople(code);
-
+    for (const [subject, counts] of term.subjects) {
       bySubject.set(subject, add(bySubject.get(subject) ?? zero, counts));
     }
   }
