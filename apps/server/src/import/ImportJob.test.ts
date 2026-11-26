@@ -247,6 +247,53 @@ describe.skipIf(Postgres18.socket === null)("ImportJob on PostgreSQL 18", () => 
       }),
     );
 
+    it.effect(
+      "a run doesn't wait for a lease its row keeps locked; the lease passes by itself",
+      () =>
+        Effect.gen(function* () {
+          const sql = yield* SqlClient.SqlClient;
+          const school = "job-locked";
+          const requested = yield* Deferred.make<void>();
+          const locked = yield* Deferred.make<void>();
+          const unlock = yield* Deferred.make<void>();
+
+          // The run's first request waits until another transaction holds the school's row, and the
+          // run then loses its session, so it writes no checkpoint to that row before its release.
+          const unauthorized = yield* firstAnswered("GET app/data", 401);
+
+          const answer = (request: WebUntisTesting.Request) =>
+            request.name === "index.do"
+              ? Deferred.succeed(requested, undefined).pipe(
+                  Effect.andThen(Deferred.await(locked)),
+                  Effect.as(Option.none()),
+                )
+              : unauthorized(request);
+
+          const run = yield* Effect.forkChild(runWith(school, { answer }));
+          yield* Deferred.await(requested);
+
+          const holder = yield* Effect.forkChild(
+            sql.withTransaction(
+              sql`select 1 from import_school where school_id = ${school} for update`.pipe(
+                Effect.andThen(Deferred.succeed(locked, undefined)),
+                Effect.andThen(Deferred.await(unlock)),
+              ),
+            ),
+          );
+
+          // Without the bounded release this join would wait for the unlock below.
+          const ran = yield* Fiber.join(run);
+          yield* Deferred.succeed(unlock, undefined);
+          yield* Fiber.join(holder);
+
+          const [lease] = yield* sql<{ readonly held: boolean }>`
+          select lease_owner is not null as held from import_school where school_id = ${school}
+        `;
+
+          expect([ran.outcome, lease?.held]).toEqual([Option.some("SessionLost"), true]);
+        }),
+    );
+
     it.effect("a 401 on the metadata bootstrap ends the run, and nothing is sent after it", () =>
       Effect.gen(function* () {
         const ran = yield* runWith("job-bootstrap", {
