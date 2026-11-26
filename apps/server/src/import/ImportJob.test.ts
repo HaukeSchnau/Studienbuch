@@ -18,6 +18,7 @@ import * as Ref from "effect/Ref";
 import * as SqlClient from "effect/sql/SqlClient";
 import * as TestClock from "effect/testing/TestClock";
 import { Deployment } from "../infra/config/Deployment.ts";
+import { DatabaseTesting } from "../infra/database/DatabaseTesting.ts";
 import { RecordedWebUntis } from "../infra/webuntis/RecordedWebUntis.ts";
 import { WebUntisTesting } from "../infra/webuntis/WebUntisTesting.ts";
 import { SchoolTesting } from "../school/SchoolTesting.ts";
@@ -292,6 +293,50 @@ describe.skipIf(Postgres18.socket === null)("ImportJob on PostgreSQL 18", () => 
 
           expect([ran.outcome, lease?.held]).toEqual([Option.some("SessionLost"), true]);
         }),
+    );
+
+    it.effect("a run keeps its outcome when the connection clearing its lease dies", () =>
+      Effect.gen(function* () {
+        const sql = yield* SqlClient.SqlClient;
+        const school = "job-killed";
+        const requested = yield* Deferred.make<void>();
+        const locked = yield* Deferred.make<void>();
+        const unlock = yield* Deferred.make<void>();
+        const unauthorized = yield* firstAnswered("GET app/data", 401);
+
+        const answer = (request: WebUntisTesting.Request) =>
+          request.name === "index.do"
+            ? Deferred.succeed(requested, undefined).pipe(
+                Effect.andThen(Deferred.await(locked)),
+                Effect.as(Option.none()),
+              )
+            : unauthorized(request);
+
+        const run = yield* Effect.forkChild(runWith(school, { answer }));
+        yield* Deferred.await(requested);
+
+        const holder = yield* Effect.forkChild(
+          sql.withTransaction(
+            sql`select 1 from import_school where school_id = ${school} for update`.pipe(
+              Effect.andThen(Deferred.succeed(locked, undefined)),
+              Effect.andThen(Deferred.await(unlock)),
+            ),
+          ),
+        );
+
+        // The release waits for the row; its connection then ends under it.
+        yield* DatabaseTesting.someoneWaits;
+        yield* sql`
+          select pg_terminate_backend(pid) from pg_stat_activity
+          where datname = current_database() and wait_event_type = 'Lock'
+        `;
+
+        const ran = yield* Fiber.join(run);
+        yield* Deferred.succeed(unlock, undefined);
+        yield* Fiber.join(holder);
+
+        expect(ran.outcome).toEqual(Option.some("SessionLost"));
+      }),
     );
 
     it.effect("a 401 on the metadata bootstrap ends the run, and nothing is sent after it", () =>
