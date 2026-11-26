@@ -25,7 +25,8 @@ export const enabled = Config.Literal("none", "STUDIENBUCH_JOBS").pipe(
   Config.withDefault(Name.literals),
 );
 
-const recordRun = Effect.fn("Jobs.recordRun")(function* (name: Name) {
+/** Notes that `name` ran now, for readiness. */
+export const recordRun = Effect.fn("Jobs.recordRun")(function* (name: Name) {
   const db = yield* Database.Drizzle;
   const lastRunAt = DateTime.toDateUtc(yield* DateTime.now);
   yield* db

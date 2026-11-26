@@ -27,7 +27,8 @@ export interface Request {
 /** What a test answers instead of the recording. */
 export interface Answer {
   readonly status: number;
-  readonly body?: string;
+  /** A stream lets a test hold the body back after the status arrived. */
+  readonly body?: string | ReadableStream<Uint8Array>;
   readonly headers?: Readonly<Record<string, string>>;
 }
 

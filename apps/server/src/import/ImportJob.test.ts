@@ -8,17 +8,21 @@ import * as ConfigProvider from "effect/ConfigProvider";
 import * as Cron from "effect/Cron";
 import * as DateTime from "effect/DateTime";
 import * as Deferred from "effect/Deferred";
+import * as Clock from "effect/Clock";
 import * as Effect from "effect/Effect";
+import * as Fiber from "effect/Fiber";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Redacted from "effect/Redacted";
 import * as Ref from "effect/Ref";
 import * as SqlClient from "effect/sql/SqlClient";
+import * as TestClock from "effect/testing/TestClock";
 import { Deployment } from "../infra/config/Deployment.ts";
 import { RecordedWebUntis } from "../infra/webuntis/RecordedWebUntis.ts";
 import { WebUntisTesting } from "../infra/webuntis/WebUntisTesting.ts";
 import { SchoolTesting } from "../school/SchoolTesting.ts";
 import type { Corpus } from "./corpus/Corpus.ts";
+import { NamedSchoolTesting } from "./corpus/NamedSchoolTesting.ts";
 import { TinySchool } from "./evaluation/TinySchool.ts";
 import { ImportCommand } from "./ImportCommand.ts";
 import { ImportJob } from "./ImportJob.ts";
@@ -135,6 +139,15 @@ const crossing: Corpus.Corpus = (() => {
   };
 })();
 
+/** The recording, with WebUntis calling an earlier school year current than the one of today. */
+const earlierCurrent = NamedSchoolTesting.planted(
+  TinySchool.corpus,
+  RecordedWebUntis.paths.appData,
+  (body) => {
+    NamedSchoolTesting.object(body.currentSchoolYear).id = 9;
+  },
+);
+
 describe.skipIf(Postgres18.socket === null)("ImportJob on PostgreSQL 18", () => {
   // The live clock, moved to the invented school's dates for each run (`ImportTesting.at`).
   layer(SchoolTesting.database, { excludeTestServices: true })((it) => {
@@ -164,6 +177,52 @@ describe.skipIf(Postgres18.socket === null)("ImportJob on PostgreSQL 18", () => 
           outcome: Option.some("Published"),
           sent: login.length + reads.length + 3,
         });
+      }),
+    );
+
+    it.effect("reads the school year of today, whichever WebUntis calls current", () =>
+      Effect.gen(function* () {
+        const ran = yield* runWith("job-current", { corpus: earlierCurrent });
+
+        expect([ran.outcome, ran.sent.length]).toEqual([Option.some("Published"), 15]);
+      }),
+    );
+
+    it.effect("a 401 whose body never ends still ends the run as a lost session", () =>
+      Effect.gen(function* () {
+        const clock = yield* TestClock.make();
+        const { promise: reading, resolve } = Promise.withResolvers<void>();
+
+        // Its body starts being read only after the connection has seen the 401.
+        const body = new ReadableStream<Uint8Array>(
+          {
+            pull: () => {
+              resolve();
+
+              // A pull that never settles, so the body neither ends nor is pulled again.
+              return Promise.withResolvers<void>().promise;
+            },
+          },
+          { highWaterMark: 0 },
+        );
+
+        const unauthorized = yield* firstAnswered("GET app/data", 401);
+
+        const answer = (request: WebUntisTesting.Request) =>
+          Effect.map(
+            unauthorized(request),
+            Option.map((given) => ({ ...given, body })),
+          );
+
+        const run = yield* Effect.forkChild(
+          runWith("job-stalled", { answer }).pipe(Effect.provideService(Clock.Clock, clock)),
+        );
+
+        yield* Effect.promise(() => reading);
+        yield* clock.adjust("5 minutes");
+        const ran = yield* Fiber.join(run);
+
+        expect([ran.outcome, ran.sent]).toEqual([Option.some("SessionLost"), login]);
       }),
     );
 
@@ -371,7 +430,7 @@ describe("ImportJob.registration", () => {
       Effect.provideService(ConfigProvider.ConfigProvider, ConfigProvider.fromEnv({ env })),
     );
 
-  it.effect("runs only with credentials, and never on a dev instance or a preview", () =>
+  it.effect("runs only on beta and only with credentials", () =>
     Effect.gen(function* () {
       expect([
         yield* registered("beta", {}),
@@ -383,9 +442,9 @@ describe("ImportJob.registration", () => {
       ]).toEqual([
         "not registered: no WebUntis credentials",
         "registered",
-        "registered",
-        "not registered: a development server never logs in",
-        "not registered: a preview server never logs in",
+        "not registered: only beta imports, and this is production",
+        "not registered: only beta imports, and this is development",
+        "not registered: only beta imports, and this is preview",
         "not registered: STUDIENBUCH_JOBS leaves it out",
       ]);
     }),

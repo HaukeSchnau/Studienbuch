@@ -1,11 +1,11 @@
 /**
  * The scheduled import (m2-import-path.md, sections 1 and 2): the school's daytime and nightly runs
  * on two `ClusterCron`s, each over a connection of its own, and the job's own pause when the
- * account can't be used. It exists only where WebUntis credentials do, and never on a dev instance
- * or a preview, which must not log in (AGENTS.md rule 2).
+ * account can't be used. It runs only on beta and only with WebUntis credentials: one account
+ * serves it, and two logins with it log each other out (AGENTS.md rule 2).
  */
 import type { WebUntisConnection } from "@schnau/webuntis-api";
-import { System } from "@stu/api/System";
+import type { System } from "@stu/api/System";
 import { type School, Studienbuch } from "@stu/core";
 import { SyncServer } from "@stu/sync/server";
 import * as ClusterCron from "effect/cluster/ClusterCron";
@@ -45,7 +45,7 @@ export type Registration = Data.TaggedEnum<{
   /** `STUDIENBUCH_JOBS` leaves the import out. */
   NotEnabled: {};
   NoCredentials: {};
-  /** A dev instance or a preview never logs in, even with credentials at hand. */
+  /** Beta's account is the only one, so no other environment logs in, credentials or not. */
   NotHere: { readonly environment: System.Environment };
 }>;
 
@@ -56,11 +56,11 @@ export const registration = Effect.gen(function* () {
 
   if (!(yield* Jobs.enabled).includes("import")) return Registration.NotEnabled();
 
+  if (environment !== "beta") return Registration.NotHere({ environment });
+
   const credentials = yield* LiveWebUntis.credentials;
 
   if (Option.isNone(credentials)) return Registration.NoCredentials();
-
-  if (System.isDevelopmentOrPreview(environment)) return Registration.NotHere({ environment });
 
   return Registration.Registered({ connection: credentials.value });
 });
@@ -70,7 +70,7 @@ export const describe = Registration.$match({
   Registered: () => "registered",
   NotEnabled: () => "not registered: STUDIENBUCH_JOBS leaves it out",
   NoCredentials: () => "not registered: no WebUntis credentials",
-  NotHere: ({ environment }) => `not registered: a ${environment} server never logs in`,
+  NotHere: ({ environment }) => `not registered: only beta imports, and this is ${environment}`,
 });
 
 /**
@@ -158,14 +158,12 @@ export const layer = Layer.unwrap(
         cron: run.cron,
         // A backlog after downtime skips slot by slot instead of running them all at once.
         skipIfOlderThan: "5 minutes",
-        execute: Effect.asVoid(
-          runOnce({
-            profile,
-            run,
-            connection: found.connection,
-            transport: LiveWebUntis.transport,
-          }),
-        ),
+        execute: runOnce({
+          profile,
+          run,
+          connection: found.connection,
+          transport: LiveWebUntis.transport,
+        }).pipe(Effect.andThen(Jobs.recordRun("import"))),
       });
 
     return Layer.mergeAll(

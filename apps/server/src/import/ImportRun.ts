@@ -3,7 +3,12 @@
  * and the school's rows with the checkpoint in one transaction, or nothing. It records its outcome
  * and never fails. What it records names reads by kind and failures by tag, never a body or a name.
  */
-import { type ConfigurationError, WebUntisClient, type WebUntisError } from "@schnau/webuntis-api";
+import {
+  type ConfigurationError,
+  WebUntisClient,
+  type WebUntisError,
+  withSchoolYear,
+} from "@schnau/webuntis-api";
 import {
   AppDataSchema,
   ExamsSchema,
@@ -199,6 +204,7 @@ export const dispatch = Effect.fn("ImportRun.dispatch")(function* (
 ) {
   const sent = yield* Ref.make(0);
   const lost = yield* Ref.make(false);
+  const refused = yield* Ref.make(false);
 
   const admit = Effect.gen(function* () {
     if (yield* Ref.get(lost)) return yield* new SessionLost();
@@ -214,7 +220,18 @@ export const dispatch = Effect.fn("ImportRun.dispatch")(function* (
 
   return {
     gate: { admit, lose: Ref.set(lost, true) } satisfies LiveWebUntis.Gate<Refused>,
-    lost: Ref.get(lost),
+    /** WebUntis refused the password. */
+    refuse: Ref.set(refused, true),
+    /** What the account did to the run. It outranks any outcome the run reached after it. */
+    account: Effect.map(
+      Effect.all([Ref.get(refused), Ref.get(lost)]),
+      ([isRefused, isLost]): Option.Option<Outcome> =>
+        isRefused
+          ? Option.some("CredentialsRefused")
+          : isLost
+            ? Option.some("SessionLost")
+            : Option.none(),
+    ),
     sent: Ref.get(sent),
   };
 });
@@ -373,6 +390,8 @@ const readSnapshot = Effect.fn("ImportRun.readSnapshot")(function* (input: {
 
   const { year, start, end, last } = held.value;
   const first = CivilTime.format(input.window.start);
+  // WebUntis answers for the year a request names, else for the one it calls current.
+  const ofYear = withSchoolYear(year.id);
 
   yield* read(paths.appData, client.app.getData, encodeAppData);
   yield* read(paths.timeGrid, client.timetable.getTimeGrid, encodeTimeGrid);
@@ -380,12 +399,16 @@ const readSnapshot = Effect.fn("ImportRun.readSnapshot")(function* (input: {
   const [classes] = yield* Effect.forEach(directories, (resourceType) =>
     read(
       paths.filter(year.id, resourceType),
-      client.timetable.getFilter({ resourceType, start, end }),
+      ofYear(client.timetable.getFilter({ resourceType, start, end })),
       encodeFilter,
     ),
   );
 
-  yield* read(paths.exams(year.id), client.exams.list({ start: first, end: last }), encodeExams);
+  yield* read(
+    paths.exams(year.id),
+    ofYear(client.exams.list({ start: first, end: last })),
+    encodeExams,
+  );
 
   const yearStart = decodeDate(start);
 
@@ -410,27 +433,24 @@ const readSnapshot = Effect.fn("ImportRun.readSnapshot")(function* (input: {
     (resource) =>
       read(
         paths.entries(year.id, "CLASS", resource),
-        client.timetable
-          .getEntriesForResources(
+        ofYear(
+          client.timetable.getEntriesForResources(
             { resourceType: "CLASS", resources: [resource], start: first, end: last },
             { raw: true },
-          )
-          .pipe(
-            Effect.flatMap(
-              ([answer]): Effect.Effect<
-                unknown,
-                ReadFailed | AnsweredWithErrors | WebUntisError
-              > => {
-                if (answer === undefined) return Effect.fail(new ReadFailed());
-
-                if (Result.isFailure(answer.result)) return Effect.fail(answer.result.failure);
-
-                return answer.result.success.errors.length > 0
-                  ? Effect.fail(new AnsweredWithErrors())
-                  : Effect.succeed(answer.raw);
-              },
-            ),
           ),
+        ).pipe(
+          Effect.flatMap(
+            ([answer]): Effect.Effect<unknown, ReadFailed | AnsweredWithErrors | WebUntisError> => {
+              if (answer === undefined) return Effect.fail(new ReadFailed());
+
+              if (Result.isFailure(answer.result)) return Effect.fail(answer.result.failure);
+
+              return answer.result.success.errors.length > 0
+                ? Effect.fail(new AnsweredWithErrors())
+                : Effect.succeed(answer.raw);
+            },
+          ),
+        ),
         decodeJson,
         { start: first, end: last },
       ),
@@ -605,6 +625,8 @@ const leased = Effect.fn("ImportRun.leased")(function* (
     ),
   );
 
+  if (snapshot.failures.some(({ tag }) => tag === "InvalidCredentials")) yield* requests.refuse;
+
   // Reads that answered are stored even when another failed: the store is a log.
   const versions: Array<SourceStore.Version> = [];
   const drift = new Set<string>();
@@ -652,11 +674,9 @@ const leased = Effect.fn("ImportRun.leased")(function* (
   }));
 
   // A lost session ends the run whatever a view already in flight returned.
-  if (failures.some(({ tag }) => tag === "InvalidCredentials")) {
-    return "CredentialsRefused" as const;
-  }
+  const account = yield* requests.account;
 
-  if (yield* requests.lost) return "SessionLost" as const;
+  if (Option.isSome(account)) return account.value;
 
   if (failures.length > 0) return "Incomplete" as const;
 
@@ -802,11 +822,10 @@ export const run = Effect.fn("ImportRun.run")(function* (options: Options) {
     const error = Exit.isFailure(exit) ? Cause.findErrorOption(exit.cause) : Option.none();
     const superseded = Option.exists(error, Schema.is(Superseded));
 
-    const outcome: Outcome = Exit.isSuccess(exit)
-      ? exit.value
-      : superseded
-        ? "Superseded"
-        : "Failed";
+    // A refused password or a lost session stands even when the deadline or a failure came later.
+    const outcome: Outcome = Option.getOrElse(yield* requests.account, () =>
+      Exit.isSuccess(exit) ? exit.value : superseded ? "Superseded" : "Failed",
+    );
 
     const final = yield* Ref.get(report);
 
