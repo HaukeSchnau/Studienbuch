@@ -57,21 +57,24 @@ export const isoWeek = CivilDate.isoWeek;
 
 const isoWeekText = /^(\d{4})-W(\d{2})$/u;
 
+/** The Monday of `week`, such as `2026-W53`, when its year has that week. */
+export const mondayOf = (week: string): Option.Option<PlainDate> => {
+  const [, year, number] = isoWeekText.exec(week) ?? [];
+
+  if (year === undefined || number === undefined) return Option.none();
+
+  // 4 January is always in week 1, so the week's Monday follows from it.
+  const january4 = PlainDateFns.create(Number(year), 1, 4);
+  const monday = addDays(january4, 7 * Number(number) - 6 - dayOfWeek(january4));
+
+  return isoWeek(monday) === week ? Option.some(monday) : Option.none();
+};
+
 /** An ISO 8601 week such as `2026-W53`, in a year that has it: most years end with week 52. */
 export const IsoWeek = Schema.String.check(
-  Schema.makeFilter(
-    (text) => {
-      const [, year, week] = isoWeekText.exec(text) ?? [];
-
-      if (year === undefined || week === undefined) return false;
-
-      // 4 January is always in week 1, so the week's Monday follows from it.
-      const january4 = PlainDateFns.create(Number(year), 1, 4);
-
-      return isoWeek(addDays(january4, 7 * Number(week) - 6 - dayOfWeek(january4))) === text;
-    },
-    { expected: "an ISO week its year has, such as 2026-W53" },
-  ),
+  Schema.makeFilter((text) => Option.isSome(mondayOf(text)), {
+    expected: "an ISO week its year has, such as 2026-W53",
+  }),
 );
 
 /** A time of day as milliseconds since midnight, such as `28_800_000` for 08:00. */

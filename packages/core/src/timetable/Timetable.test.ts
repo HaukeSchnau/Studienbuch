@@ -472,6 +472,161 @@ describe("Timetable.nextLesson", () => {
   });
 });
 
+/** A week's columns as `"Mo: de 08:00-09:30 1/2, ma 08:45-09:30 2/2"`, `"Mi: Ferien until 2026-11-20"`. */
+const describeWeek = (week: Timetable.Week<Listed>) => {
+  const names = ["Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+
+  const columns = week.columns.map((column) => {
+    const name = names[CivilTime.dayOfWeek(column.date) - 1] ?? "";
+
+    switch (column._tag) {
+      case "Open":
+        return `${name}: ${column.lessons
+          .map(
+            ({ lesson, lane, lanes }) =>
+              `${lesson.courseId} ${clock(lesson.start)}-${clock(lesson.end)}${
+                lanes === 1 ? "" : ` ${String(lane + 1)}/${String(lanes)}`
+              }`,
+          )
+          .join(", ")}`;
+      case "Closed":
+        return `${name}: ${column.name} until ${CivilTime.format(column.until)}`;
+      case "Unpublished":
+        return `${name}: unpublished`;
+    }
+  });
+
+  const hours = Option.match(week.hours, {
+    onNone: () => "no hours",
+    onSome: ({ start, end, starts }) =>
+      `${clock(start)}-${clock(end)} at ${starts.map(clock).join(" ")}`,
+  });
+
+  return [...columns, hours];
+};
+
+describe("Timetable.week", () => {
+  const monday = date("2026-11-16");
+
+  it("draws Monday to Friday with the week's hours, labelled at each start", () => {
+    expect(describeWeek(Timetable.week(plan(), monday))).toEqual([
+      "Mo: ma 08:00-09:30, de 09:50-11:20",
+      "Di: en 08:00-09:30, sf 13:50-14:35",
+      "Mi: de 08:00-09:30, ma 09:50-11:20, bi 11:40-13:10, sp 13:50-15:20",
+      "Do: ku 08:00-09:30, ge 11:40-13:10",
+      "Fr: ma 08:00-09:30",
+      "08:00-15:20 at 08:00 09:50 11:40 13:50",
+    ]);
+  });
+
+  it.each([
+    {
+      name: "joins double periods and puts overlapping lessons side by side",
+      plan: plan({
+        lessons: [
+          lesson("2026-11-16 08:00-08:45 ma"),
+          lesson("2026-11-16 08:45-09:30 ma"),
+          lesson("2026-11-16 08:00-08:45 de"),
+          lesson("2026-11-16 08:45-09:30 bi"),
+          lesson("2026-11-16 09:50-11:20 en"),
+          lesson("2026-11-16 09:50-10:35 ge"),
+          lesson("2026-11-16 10:35-11:20 ku"),
+        ],
+      }),
+      week: [
+        "Mo: de 08:00-08:45 1/2, ma 08:00-09:30 2/2, bi 08:45-09:30 1/2, en 09:50-11:20 1/2, ge 09:50-10:35 2/2, ku 10:35-11:20 2/2",
+        "Di: ",
+        "Mi: ",
+        "Do: ",
+        "Fr: ",
+        "08:00-11:20 at 08:00 08:45 09:50 10:35",
+      ],
+    },
+    {
+      name: "adds Saturday only when a lesson takes place on it",
+      plan: plan({
+        lessons: [
+          lesson("2026-11-16 08:00-09:30 ma"),
+          lesson("2026-11-21 09:50-11:20 sp"),
+          lesson("2026-11-22 07:00-08:00 de"),
+        ],
+        coveredUntil: date("2026-11-27"),
+      }),
+      week: [
+        "Mo: ma 08:00-09:30",
+        "Di: ",
+        "Mi: ",
+        "Do: ",
+        "Fr: ",
+        "Sa: sp 09:50-11:20",
+        "08:00-11:20 at 08:00 09:50",
+      ],
+    },
+    {
+      name: "closes the days of a closure and hides what the device still holds for them",
+      plan: plan({
+        closures: [
+          {
+            name: "Weihnachtsferien",
+            dates: [{ start: date("2026-11-18"), end: date("2027-01-09") }],
+          },
+        ],
+      }),
+      week: [
+        "Mo: ma 08:00-09:30, de 09:50-11:20",
+        "Di: en 08:00-09:30, sf 13:50-14:35",
+        "Mi: Weihnachtsferien until 2027-01-09",
+        "Do: Weihnachtsferien until 2027-01-09",
+        "Fr: Weihnachtsferien until 2027-01-09",
+        "08:00-14:35 at 08:00 09:50 13:50",
+      ],
+    },
+    {
+      name: "marks the days after the last one published, lessons or not",
+      plan: plan({ coveredUntil: date("2026-11-18") }),
+      week: [
+        "Mo: ma 08:00-09:30, de 09:50-11:20",
+        "Di: en 08:00-09:30, sf 13:50-14:35",
+        "Mi: de 08:00-09:30, ma 09:50-11:20, bi 11:40-13:10, sp 13:50-15:20",
+        "Do: unpublished",
+        "Fr: unpublished",
+        "08:00-15:20 at 08:00 09:50 11:40 13:50",
+      ],
+    },
+    {
+      name: "has no hours in a week without lessons",
+      plan: plan({ coveredUntil: date("2026-11-13") }),
+      week: [
+        "Mo: unpublished",
+        "Di: unpublished",
+        "Mi: unpublished",
+        "Do: unpublished",
+        "Fr: unpublished",
+        "no hours",
+      ],
+    },
+  ])("$name", ({ plan, week }) => {
+    expect(describeWeek(Timetable.week(plan, monday))).toEqual(week);
+  });
+
+  it("keeps the halves of double periods apart for the day list's free periods", () => {
+    const halves = [lesson("2026-11-16 08:00-08:45 ma"), lesson("2026-11-16 08:45-09:30 ma")];
+
+    expect(Timetable.week(plan({ lessons: halves }), monday).published).toEqual(halves);
+  });
+});
+
+describe("Timetable.schoolWeek", () => {
+  it.each([
+    { day: "2026-11-16", monday: "2026-11-16" },
+    { day: "2026-11-20", monday: "2026-11-16" },
+    { day: "2026-11-21", monday: "2026-11-23" },
+    { day: "2026-11-22", monday: "2026-11-23" },
+  ])("opens $monday on $day", ({ day, monday }) => {
+    expect(CivilTime.format(Timetable.schoolWeek(date(day)))).toBe(monday);
+  });
+});
+
 describe("Timetable.staleSince", () => {
   const zone = School.defaultTimeZone;
   // 18 November 2026 in Berlin is UTC+1.

@@ -49,6 +49,16 @@ export const time = (millis: number) => {
   return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
 };
 
+/** "Sa, 9. Januar" */
+export const medium = (date: CivilTime.PlainDate) =>
+  `${shortWeekday(date)}, ${String(date.day)}. ${month(date)}`;
+
+/** "16.–20. November", or "30. November – 4. Dezember" across months. */
+export const span = (first: CivilTime.PlainDate, last: CivilTime.PlainDate) =>
+  first.month === last.month && first.year === last.year
+    ? `${String(first.day)}.–${String(last.day)}. ${month(last)}`
+    : `${String(first.day)}. ${month(first)} – ${String(last.day)}. ${month(last)}`;
+
 /** "Mittwoch, 11. November", as the Übersicht's hero names today. */
 export const long = (date: CivilTime.PlainDate) =>
   `${weekday(date)}, ${String(date.day)}. ${month(date)}`;

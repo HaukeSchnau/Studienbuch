@@ -52,13 +52,12 @@ export const agenda = (
   const moment = CivilTime.momentIn(now, held.timeZone);
   const shown = AgendaItem.agenda(Timetable.shown(held.plan, moment), held.names, moment, homework);
 
-  const stand = Option.flatMap(held.observedAt, (observedAt) =>
-    Timetable.staleSince(observedAt, now, held.timeZone),
-  ).pipe(Option.map((read) => AgendaItem.stand(read, moment.date, disconnected)));
-
   return {
     ...shown,
-    stand: shown.card === undefined ? undefined : Option.getOrUndefined(stand),
+    stand:
+      shown.card === undefined
+        ? undefined
+        : AgendaItem.staleStand(held.observedAt, now, held.timeZone, disconnected),
   };
 };
 

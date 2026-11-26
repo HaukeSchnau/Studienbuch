@@ -21,33 +21,29 @@ export interface Named {
   readonly was?: string | undefined;
 }
 
-/** "Voss statt Brandt", as a screen reader says what a struck name shows. */
-export const spoken = (named: Named): string =>
-  named.was === undefined ? named.now : `${named.now || "niemand"} statt ${named.was}`;
-
 export type Phase = "past" | "now" | "later";
 
-export type Item =
-  | {
-      readonly kind: "lesson";
-      readonly id: string;
-      /** "08:00–09:30" */
-      readonly time: string;
-      readonly subject: string;
-      readonly mark: SubjectMark.Mark;
-      readonly teacher?: Named | undefined;
-      readonly room?: Named | undefined;
-      readonly phase: Phase;
-      /** On the lesson running now: "Noch 50 Minuten". */
-      readonly remaining?: string | undefined;
-      /** The yellow note of a change: "Vertretung", "Raumänderung". */
-      readonly note?: string | undefined;
-      /** The name is struck through, with this beside it: "Entfall", "Freisetzung". */
-      readonly off?: string | undefined;
-      /** "Hausaufgabe offen": the course has open homework due that day, and the lesson is ahead. */
-      readonly homework?: boolean | undefined;
-    }
-  | { readonly kind: "free"; readonly id: string; readonly time: string };
+export type Item = Lesson | { readonly kind: "free"; readonly id: string; readonly time: string };
+
+export interface Lesson {
+  readonly kind: "lesson";
+  readonly id: string;
+  /** "08:00–09:30" */
+  readonly time: string;
+  readonly subject: string;
+  readonly mark: SubjectMark.Mark;
+  readonly teacher?: Named | undefined;
+  readonly room?: Named | undefined;
+  readonly phase: Phase;
+  /** On the lesson running now: "Noch 50 Minuten". */
+  readonly remaining?: string | undefined;
+  /** The yellow note of a change: "Vertretung", "Raumänderung". */
+  readonly note?: string | undefined;
+  /** The name is struck through, with this beside it: "Entfall", "Freisetzung". */
+  readonly off?: string | undefined;
+  /** "Hausaufgabe offen": the course has open homework due that day, and the lesson is ahead. */
+  readonly homework?: boolean | undefined;
+}
 
 /** A message in place of the rows, such as when school resumes after the holidays. */
 export interface Notice {
@@ -145,7 +141,7 @@ export const lesson = (
   names: Names,
   now: CivilTime.Moment,
   homework: ReadonlyArray<HomeworkDates.OfCourse>,
-): Item => {
+): Lesson => {
   const phase = Timetable.phase(source, now);
   const shared = facts(source, names);
 
@@ -222,6 +218,24 @@ export const detail = (
   };
 };
 
+/** The rows of a day (`Timetable.day`) at `now`, with the notebook's `homework` as `lesson` takes it. */
+export const items = (
+  rows: ReadonlyArray<Timetable.Row<Source>>,
+  names: Names,
+  now: CivilTime.Moment,
+  homework: ReadonlyArray<HomeworkDates.OfCourse>,
+): ReadonlyArray<Item> =>
+  rows.map(
+    Timetable.Row.$match({
+      Lesson: ({ lesson: each }) => lesson(each, names, now, homework),
+      Free: ({ start, end }): Item => ({
+        kind: "free",
+        id: `free-${String(start)}`,
+        time: range(start, end),
+      }),
+    }),
+  );
+
 /** "heute", "morgen", "Montag" within the week, else "Mo, 11.1.". */
 const dayWord = (date: CivilTime.PlainDate, today: CivilTime.PlainDate) => {
   const days = PlainDateFns.diffDays(today, date);
@@ -240,6 +254,11 @@ const onDay = (date: CivilTime.PlainDate, today: CivilTime.PlainDate) => {
   return word === "heute" || word === "morgen" ? word : `am ${word}`;
 };
 
+/** "Für Montag ist noch nichts veröffentlicht." */
+export const unpublished = (day: string): Notice => ({
+  lines: [`Für ${day} ist noch nichts veröffentlicht.`],
+});
+
 const holidays = /ferien$/iu;
 
 /** What the Übersicht shows of what `Timetable.shown` picked, at `now`, with `lesson`'s homework. */
@@ -252,30 +271,12 @@ export const agenda = (
   Timetable.Shown.$match(shown, {
     Day: ({ date, rows }) => ({
       heading: `Das steht ${onDay(date, now.date)} an:`,
-      card: {
-        items: rows.map(
-          Timetable.Row.$match({
-            Lesson: ({ lesson: each }) => lesson(each, names, now, homework),
-            Free: ({ start, end }): Item => ({
-              kind: "free",
-              id: `free-${String(start)}`,
-              time: range(start, end),
-            }),
-          }),
-        ),
-      },
+      card: { items: items(rows, names, now, homework) },
     }),
-    Unpublished: ({ date }) => {
-      const word = dayWord(date, now.date);
-
-      return {
-        heading: `Das steht ${onDay(date, now.date)} an:`,
-        card: {
-          items: [],
-          notice: { lines: [`Für ${word} ist noch nichts veröffentlicht.`] },
-        },
-      };
-    },
+    Unpublished: ({ date }) => ({
+      heading: `Das steht ${onDay(date, now.date)} an:`,
+      card: { items: [], notice: unpublished(dayWord(date, now.date)) },
+    }),
     Closed: ({ name, until, resumes, first }) => {
       const ferien = holidays.test(name);
 
@@ -311,6 +312,21 @@ export interface Stand {
   readonly title: string;
   readonly hint: string;
 }
+
+/**
+ * The Stand for a card's foot at `now`, once the import's last read at `observedAt` is old
+ * (`Timetable.staleSince`), in the school's `timeZone`.
+ */
+export const staleStand = (
+  observedAt: Option.Option<number>,
+  now: number,
+  timeZone: CivilTime.TimeZone,
+  offline: boolean,
+): Stand | undefined =>
+  Option.flatMap(observedAt, (read) => Timetable.staleSince(read, now, timeZone)).pipe(
+    Option.map((read) => stand(read, CivilTime.momentIn(now, timeZone).date, offline)),
+    Option.getOrUndefined,
+  );
 
 /** The Stand read at `read`, today being `today`, and whether the device is offline. */
 export const stand = (

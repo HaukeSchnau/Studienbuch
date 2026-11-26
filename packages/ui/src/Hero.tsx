@@ -29,6 +29,8 @@ export interface HeroProps {
   readonly toolbar?: { readonly start?: ReactNode; readonly end?: ReactNode };
   /** The space above the title: the status bar and the native toolbar row. */
   readonly top: number;
+  /** The content column's widest, `Tokens.layout.contentMaxWidth` unless a screen needs more. */
+  readonly maxWidth?: number;
   /**
    * Reports how far down the colour reaches at the right edge, where the swoosh starts, so a screen
    * can tell when the status bar has left the colour.
@@ -53,6 +55,7 @@ export function Hero({
   leading,
   toolbar,
   top,
+  maxWidth = Tokens.layout.contentMaxWidth,
   onColourEnd,
   children,
 }: HeroProps) {
@@ -78,12 +81,12 @@ export function Hero({
       >
         <Swoosh band={swoosh.band} line={color.heroEdge} canvas={color.canvas} />
         {toolbar === undefined ? null : (
-          <View style={[styles.column, styles.toolbar]}>
+          <View style={[styles.column, { maxWidth }, styles.toolbar]}>
             <View style={styles.toolbarGroup}>{toolbar.start}</View>
             <View style={styles.toolbarGroup}>{toolbar.end}</View>
           </View>
         )}
-        <View style={[styles.column, styles.heading]} onLayout={swoosh.onHeading}>
+        <View style={[styles.column, { maxWidth }, styles.heading]} onLayout={swoosh.onHeading}>
           {leading}
           <View style={styles.text} onLayout={swoosh.onText}>
             <View style={[styles.text, styles.reach]} onLayout={swoosh.onReach}>
@@ -134,6 +137,7 @@ export function Hero({
       <View
         style={[
           styles.column,
+          { maxWidth },
           styles.content,
           { marginTop: heroGap - below, minHeight: below - heroGap },
         ]}
@@ -265,7 +269,7 @@ function Swoosh({
 const styles = StyleSheet.create({
   area: { position: "relative" },
   swoosh: { position: "absolute", left: 0, right: 0, bottom: -1 },
-  column: { width: "100%", maxWidth: Tokens.layout.contentMaxWidth, alignSelf: "center" },
+  column: { width: "100%", alignSelf: "center" },
   toolbar: {
     flexDirection: "row",
     alignItems: "center",

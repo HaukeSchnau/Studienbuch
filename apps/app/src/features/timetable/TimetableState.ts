@@ -12,6 +12,7 @@ import {
   Teacher,
   Term,
   Timetable,
+  WeekLabel,
 } from "@stu/core";
 import type { AgendaItem } from "@stu/domain-ui/timetable/AgendaItem";
 import { DeviceDatabase, DeviceSchema, SyncQuery } from "@stu/sync/client";
@@ -26,9 +27,9 @@ import * as Struct from "effect/Struct";
 import { AccountEngine } from "../../infra/runtime/AccountEngine.ts";
 import { Schema as Device } from "../../infra/sqlite/Schema.ts";
 
-// The school's timetable as the device holds it, for the Übersicht's card and the lesson sheet: the
-// student's lessons from a date on with their courses, and the school's teachers, rooms, closures
-// and Stand.
+// The school's timetable as the device holds it, for the Übersicht's card, Meine Woche and the
+// lesson sheet: the student's lessons from a date on with their courses, and the school's teachers,
+// rooms, closures, week labels and Stand.
 
 export * as TimetableState from "./TimetableState.ts";
 
@@ -42,6 +43,8 @@ export interface Reading {
   readonly names: AgendaItem.Names;
   /** When the import last read the school, in epoch milliseconds. `None` without a Stand. */
   readonly observedAt: Option.Option<number>;
+  /** The school's label of a week, such as "A", by ISO week (`CivilTime.isoWeek`). */
+  readonly weekLabels: ReadonlyMap<string, string>;
 }
 
 const decode = {
@@ -56,6 +59,7 @@ const decode = {
   lesson: DeviceSchema.decodeView(Lesson.Row),
   term: DeviceSchema.decodeView(Term.Row),
   enrollment: DeviceSchema.decodeView(Enrollment.Row),
+  weekLabel: DeviceSchema.decodeView(WeekLabel.Row),
 };
 
 /**
@@ -111,6 +115,10 @@ const read = Effect.fn("TimetableState.read")(function* (from: string) {
     decode.enrollment,
   )).filter((row) => row.space === notebook.id);
 
+  const weekLabels = inSchool(
+    yield* Effect.flatMap(db.select().from(Device.WeekLabel), decode.weekLabel),
+  );
+
   const chosen = (lesson: Lesson.Row) =>
     Enrollment.chosenOn(enrollments, terms, lesson.date).includes(lesson.courseId);
 
@@ -138,6 +146,7 @@ const read = Effect.fn("TimetableState.read")(function* (from: string) {
     observedAt: Option.map(Option.fromNullishOr(status), (row) =>
       DateTime.toEpochMillis(row.observedAt),
     ),
+    weekLabels: new Map(weekLabels.map((row) => [row.id, row.label])),
   });
 });
 
@@ -153,6 +162,7 @@ const tables = [
   Lesson.Row,
   Term.Row,
   Enrollment.Row,
+  WeekLabel.Row,
 ];
 
 /** The timetable from a date on, again whenever a table it reads changes. */

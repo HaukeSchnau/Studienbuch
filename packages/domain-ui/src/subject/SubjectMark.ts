@@ -139,6 +139,39 @@ export const ofCourse = (courseName: string): Mark =>
     courseName,
   );
 
+// A week grid's cell on a phone is about 55 points wide and fits eight letters. Longer names get a
+// short form students use (D105); a name this list lacks falls back to the school's short name.
+const shorts = new Map([
+  ["mathematik", "Mathe"],
+  ["biologie", "Bio"],
+  ["geschichte", "Gesch."],
+  ["politikwirtschaft", "PoWi"],
+  ["seminarfach", "Seminar"],
+  ["erdkunde", "Erdkunde"],
+  ["geographie", "Erdkunde"],
+  ["informatik", "Info"],
+  ["franzoesisch", "Franz."],
+  ["werteundnormen", "WuN"],
+  ["philosophie", "Philo"],
+  ["darstellendesspiel", "DS"],
+]);
+
+const fits = 8;
+
+/** A subject's name as a phone's week grid writes it: "Mathe", "Gesch.", "Deutsch". */
+export const short = (subject: Pick<Subject.Row, "name" | "shortName">): string => {
+  const normalized = normalize(subject.name);
+
+  return (
+    shorts.get(normalized) ??
+    (normalized.includes("religion")
+      ? "Reli"
+      : subject.name.length <= fits || subject.shortName === ""
+        ? subject.name
+        : subject.shortName)
+  );
+};
+
 /**
  * How a course shows: by its subject's name and mark, or by its own name where the school named no
  * subject.

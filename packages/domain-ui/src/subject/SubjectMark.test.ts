@@ -87,4 +87,16 @@ describe("SubjectMark", () => {
     expect(subject("astronomie")).toBe(slot);
     expect(course("Astronomie")).toBe(slot);
   });
+
+  it.each([
+    ["Mathematik", "MA", "Mathe"],
+    ["Geschichte", "GE", "Gesch."],
+    ["Politik-Wirtschaft", "PW", "PoWi"],
+    ["Evangelische Religion", "RE", "Reli"],
+    ["Englisch", "EN", "Englisch"],
+    ["Sozialwissenschaften", "SW", "SW"],
+    ["Astronomie", "", "Astronomie"],
+  ])("writes %s as a phone's week grid does", (name, shortName, short) => {
+    expect(SubjectMark.short({ name, shortName })).toBe(short);
+  });
 });

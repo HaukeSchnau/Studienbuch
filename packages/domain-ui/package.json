@@ -21,7 +21,10 @@
     "./subject/SubjectSticker": "./src/subject/SubjectSticker.tsx",
     "./timetable/AgendaCard": "./src/timetable/AgendaCard.tsx",
     "./timetable/AgendaItem": "./src/timetable/AgendaItem.ts",
-    "./timetable/LessonSheet": "./src/timetable/LessonSheet.tsx"
+    "./timetable/DaySwitch": "./src/timetable/DaySwitch.tsx",
+    "./timetable/LessonSheet": "./src/timetable/LessonSheet.tsx",
+    "./timetable/WeekGrid": "./src/timetable/WeekGrid.tsx",
+    "./timetable/WeekItem": "./src/timetable/WeekItem.ts"
   },
   "dependencies": {
     "@stu/core": "workspace:*",

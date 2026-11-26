@@ -6,9 +6,11 @@ import { Tokens } from "@stu/ui/Tokens";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { SubjectMarker } from "../subject/SubjectMarker.tsx";
-import { AgendaItem } from "./AgendaItem.ts";
+import type { AgendaItem } from "./AgendaItem.ts";
 import { ChangeNote } from "./ChangeNote.tsx";
 import { NamedText } from "./NamedText.tsx";
+import { Spoken } from "./Spoken.ts";
+import { StandFoot } from "./StandFoot.tsx";
 
 export interface AgendaCardProps {
   readonly items: ReadonlyArray<AgendaItem.Item>;
@@ -67,50 +69,16 @@ export function AgendaCard({ items, notice, stand, onOpen }: AgendaCardProps) {
           ))}
         </View>
       )}
-      {stand === undefined ? null : (
-        <View
-          accessible
-          accessibilityLiveRegion="polite"
-          style={[styles.stand, { backgroundColor: color.warningTint }]}
-        >
-          <Icon name="clock" color={color.warning} size={18} />
-          <View style={styles.grow}>
-            <Text variant="footnote" weight="bold" style={{ color: color.warning }}>
-              {stand.title}
-            </Text>
-            <Text variant="footnote" style={{ color: color.ink }}>
-              {stand.hint}
-            </Text>
-          </View>
-        </View>
-      )}
+      {stand === undefined ? null : <StandFoot stand={stand} />}
     </Card>
   );
 }
-
-type LessonItem = Extract<AgendaItem.Item, { readonly kind: "lesson" }>;
-
-const homeworkOpen = "Hausaufgabe offen";
-
-const labelOf = (lesson: LessonItem) =>
-  [
-    lesson.subject,
-    lesson.time.replace("–", " bis "),
-    ...(lesson.off === undefined ? [] : [lesson.off]),
-    ...(lesson.note === undefined ? [] : [lesson.note]),
-    ...[lesson.teacher, lesson.room].flatMap((named) =>
-      named === undefined ? [] : [AgendaItem.spoken(named)],
-    ),
-    ...(lesson.homework === true ? [homeworkOpen] : []),
-    ...(lesson.phase === "past" ? ["vorbei"] : []),
-    ...(lesson.remaining === undefined ? [] : [lesson.remaining]),
-  ].join(", ");
 
 function Lesson({
   lesson,
   onOpen,
 }: {
-  readonly lesson: LessonItem;
+  readonly lesson: AgendaItem.Lesson;
   readonly onOpen: ((id: string) => void) | undefined;
 }) {
   const { color } = Theme.useTheme();
@@ -170,7 +138,7 @@ function Lesson({
           <View style={[styles.pill, { backgroundColor: color.homework }]}>
             <Icon name="book" color={color.onHomework} size={14} />
             <Text variant="caption" weight="bold" style={{ color: color.onHomework }}>
-              {homeworkOpen}
+              {Spoken.homeworkOpen}
             </Text>
           </View>
         ) : null}
@@ -187,12 +155,12 @@ function Lesson({
   const tint = running ? { backgroundColor: color.accentTint } : null;
 
   return onOpen === undefined ? (
-    <View accessible accessibilityLabel={labelOf(lesson)} style={[styles.row, tint]}>
+    <View accessible accessibilityLabel={Spoken.lesson(lesson)} style={[styles.row, tint]}>
       {content}
     </View>
   ) : (
     <Pressable
-      accessibilityLabel={labelOf(lesson)}
+      accessibilityLabel={Spoken.lesson(lesson)}
       accessibilityRole="button"
       onPress={() => onOpen(lesson.id)}
       style={({ pressed }) => [
@@ -255,13 +223,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: Tokens.layout.cardPadding,
     paddingVertical: Tokens.space.lg,
   },
-  stand: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: Tokens.space.sm,
-    paddingHorizontal: Tokens.layout.cardPadding,
-    paddingTop: 10,
-    paddingBottom: Tokens.space.md,
-  },
-  grow: { flex: 1 },
 });

@@ -23,6 +23,12 @@ export interface HeroScreenProps {
   /** Draws the hand-drawn line under the title, as under "Moin, Lena!". */
   readonly underline?: boolean;
   readonly subtitle?: string | undefined;
+  /** Short facts in white pills under the subtitle, such as "KW 47". */
+  readonly chips?: ReadonlyArray<string>;
+  /** Buttons at the right of the toolbar row above the title, such as the week arrows. */
+  readonly actions?: ReactNode;
+  /** The content column's widest, wider than the usual for the week's grid. */
+  readonly maxWidth?: number;
   /** Under the subtitle, such as the sync status. */
   readonly status?: ReactNode;
   /** Art at the right of the title, such as the app icon on the sign-in screens. */
@@ -56,6 +62,9 @@ export function HeroScreen({
   title,
   underline,
   subtitle,
+  chips,
+  actions,
+  maxWidth,
   status,
   aside,
   leading,
@@ -129,15 +138,23 @@ export function HeroScreen({
           title={title}
           underline={underline}
           subtitle={subtitle}
+          chips={chips}
           status={status}
           aside={aside}
           leading={leading}
           toolbar={
-            back === undefined || Platform.OS === "ios"
+            (back === undefined || Platform.OS === "ios") && actions === undefined
               ? undefined
-              : { start: <Pill icon="back" label="Zurück" onPress={() => goBack(back)} /> }
+              : {
+                  start:
+                    back === undefined || Platform.OS === "ios" ? undefined : (
+                      <Pill icon="back" label="Zurück" onPress={() => goBack(back)} />
+                    ),
+                  end: actions,
+                }
           }
           top={heroTop(insets.top)}
+          maxWidth={maxWidth}
           onColourEnd={onHeroEnd}
         >
           {children}

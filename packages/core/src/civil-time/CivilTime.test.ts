@@ -1,5 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
+import * as Option from "effect/Option";
 import * as Exit from "effect/Exit";
 import * as Schema from "effect/Schema";
 import { CivilTime } from "./CivilTime.ts";
@@ -58,6 +59,17 @@ describe("CivilTime.IsoWeek", () => {
     { week: "2026-W5", valid: false },
   ])("takes $week only if its year has it: $valid", ({ week, valid }) => {
     expect(isIsoWeek(week)).toBe(valid);
+  });
+
+  it.each([
+    { week: "2026-W47", monday: "2026-11-16" },
+    { week: "2026-W53", monday: "2026-12-28" },
+    { week: "2027-W01", monday: "2027-01-04" },
+    { week: "2025-W53", monday: "none" },
+  ])("starts $week on $monday", ({ week, monday }) => {
+    expect(
+      Option.match(CivilTime.mondayOf(week), { onNone: () => "none", onSome: CivilTime.format }),
+    ).toBe(monday);
   });
 });
 

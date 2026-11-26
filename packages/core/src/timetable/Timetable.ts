@@ -1,7 +1,8 @@
 /**
- * The timetable as the screens read it: the day the Übersicht shows, where a lesson stands at a
- * moment, free periods, double periods as one block, what changed, and when the Stand is old.
- * Core reads no clock, so the caller passes the school's moment (`CivilTime.momentIn`).
+ * The timetable as the screens read it: the day the Übersicht shows, the week Meine Woche shows,
+ * where a lesson stands at a moment, free periods, double periods as one block, what changed, and
+ * when the Stand is old. Core reads no clock, so the caller passes the school's moment
+ * (`CivilTime.momentIn`).
  */
 import * as Arr from "effect/Array";
 import * as Data from "effect/Data";
@@ -229,6 +230,23 @@ const covered = (plan: Plan<Timed>, date: CivilTime.PlainDate) =>
 const counts = (plan: Plan<Timed>, date: CivilTime.PlainDate) =>
   covered(plan, date) && Option.isNone(closureOn(plan, date));
 
+/** The Monday of the week that holds `date`. */
+const mondayOf = (date: CivilTime.PlainDate) =>
+  CivilTime.addDays(date, 1 - CivilTime.dayOfWeek(date));
+
+/**
+ * The lessons of the week from `monday` that take place in the school's eyes (`counts`). The halves
+ * of double periods stay apart, as `day` needs them.
+ */
+const published = <A extends Timed>(plan: Plan<A>, monday: CivilTime.PlainDate) => {
+  const sunday = CivilTime.addDays(monday, 6);
+
+  return plan.lessons.filter(
+    (lesson) =>
+      CivilTime.contains({ start: monday, end: sunday }, lesson.date) && counts(plan, lesson.date),
+  );
+};
+
 /**
  * The day the Übersicht shows at `now`. Inside a closure, the closure. Else today while one of its
  * lessons that is not off hasn't ended, or before its first lesson even when all are off. Else the
@@ -251,18 +269,8 @@ export const shown = <A extends Timed>(plan: Plan<A>, now: CivilTime.Moment): Sh
       return isSchoolDay(candidate) ? Option.some(candidate) : Option.none();
     }).pipe(Option.getOrElse(() => date));
 
-  const dayOf = (date: CivilTime.PlainDate): Shown<A> => {
-    const monday = CivilTime.addDays(date, 1 - CivilTime.dayOfWeek(date));
-    const sunday = CivilTime.addDays(monday, 6);
-
-    const week = plan.lessons.filter(
-      (lesson) =>
-        CivilTime.contains({ start: monday, end: sunday }, lesson.date) &&
-        counts(plan, lesson.date),
-    );
-
-    return Shown.Day({ date, rows: day(on(date), week) });
-  };
+  const dayOf = (date: CivilTime.PlainDate): Shown<A> =>
+    Shown.Day({ date, rows: day(on(date), published(plan, mondayOf(date))) });
 
   const closure = closureOn(plan, now.date);
 
@@ -324,6 +332,138 @@ export const nextLesson = <A extends Timed>(
       !isOff(lesson) &&
       counts(plan, lesson.date),
   );
+
+/**
+ * The Monday of the school week that holds `date`, or of the next one on Saturday and Sunday, when
+ * the week just over has nothing left to show.
+ */
+export const schoolWeek = (date: CivilTime.PlainDate): CivilTime.PlainDate => {
+  const weekday = CivilTime.dayOfWeek(date);
+
+  return CivilTime.addDays(date, weekday <= 5 ? 1 - weekday : 8 - weekday);
+};
+
+/** A lesson in its day's column, sharing it with the lessons it overlaps as one of `lanes`. */
+export interface Placed<A> {
+  readonly lesson: A;
+  /** From 0, left to right. */
+  readonly lane: number;
+  readonly lanes: number;
+}
+
+/** A day of the week as Meine Woche shows it. */
+export type Column<A> = Data.TaggedEnum<{
+  Open: { readonly date: CivilTime.PlainDate; readonly lessons: ReadonlyArray<Placed<A>> };
+  /** In a closure: its name and the last day of its range. */
+  Closed: {
+    readonly date: CivilTime.PlainDate;
+    readonly name: string;
+    readonly until: CivilTime.PlainDate;
+  };
+  /** After the last day the school has published. */
+  Unpublished: { readonly date: CivilTime.PlainDate };
+}>;
+
+interface ColumnDefinition extends Data.TaggedEnum.WithGenerics<1> {
+  readonly taggedEnum: Column<this["A"]>;
+}
+
+export const Column = Data.taggedEnum<ColumnDefinition>();
+
+/** The week Meine Woche shows. */
+export interface Week<A> {
+  /** Monday to Friday, and Saturday when a lesson falls on it. */
+  readonly columns: ReadonlyArray<Column<A>>;
+  /**
+   * From the earliest start to the latest end of the week's lessons, with each start as a label.
+   * `None` when no lesson takes place.
+   */
+  readonly hours: Option.Option<{
+    readonly start: number;
+    readonly end: number;
+    readonly starts: ReadonlyArray<number>;
+  }>;
+  /** The lessons that take place, halves of double periods apart, for `day`. */
+  readonly published: ReadonlyArray<A>;
+}
+
+/**
+ * Lanes for a day's lessons in order of start: lessons that overlap, directly or through others,
+ * share the column, each in the first lane free at its start.
+ */
+const lanes = <A extends Timed>(lessons: ReadonlyArray<A>): ReadonlyArray<Placed<A>> => {
+  const placed: Array<Placed<A>> = [];
+  let group: Array<{ readonly lesson: A; readonly lane: number }> = [];
+  let ends: Array<number> = [];
+
+  const close = () => {
+    for (const each of group) placed.push({ ...each, lanes: ends.length });
+    group = [];
+    ends = [];
+  };
+
+  for (const lesson of lessons) {
+    if (group.length > 0 && ends.every((end) => end <= lesson.start)) close();
+
+    const free = ends.findIndex((end) => end <= lesson.start);
+    const lane = free === -1 ? ends.length : free;
+
+    ends[lane] = lesson.end;
+    group.push({ lesson, lane });
+  }
+
+  close();
+
+  return placed;
+};
+
+const saturday = 6;
+
+/**
+ * The week from `monday`: a column per day, closed in a closure and unpublished after
+ * `coveredUntil` whatever lessons the device still holds for it, and else its `blocks` side by
+ * side where they overlap.
+ */
+export const week = <A extends Timed>(plan: Plan<A>, monday: CivilTime.PlainDate): Week<A> => {
+  const taking = published(plan, monday);
+  const lessons = blocks(taking);
+
+  const columns = Arr.range(0, saturday - 1).map((offset): Column<A> => {
+    const date = CivilTime.addDays(monday, offset);
+    const closed = closureOn(plan, date);
+
+    if (Option.isSome(closed)) return Column.Closed({ date, ...closed.value });
+
+    if (!covered(plan, date)) return Column.Unpublished({ date });
+
+    return Column.Open({
+      date,
+      lessons: lanes(lessons.filter((lesson) => sameDate(lesson.date, date))),
+    });
+  });
+
+  const shown = columns.filter(
+    (column, offset) =>
+      offset < saturday - 1 || (column._tag === "Open" && column.lessons.length > 0),
+  );
+
+  const drawn = shown.flatMap((column) =>
+    column._tag === "Open" ? column.lessons.map(({ lesson }) => lesson) : [],
+  );
+
+  return {
+    columns: shown,
+    hours:
+      drawn.length === 0
+        ? Option.none()
+        : Option.some({
+            start: Math.min(...drawn.map((lesson) => lesson.start)),
+            end: Math.max(...drawn.map((lesson) => lesson.end)),
+            starts: Arr.sort(Arr.dedupe(drawn.map((lesson) => lesson.start)), Order.Number),
+          }),
+    published: taking,
+  };
+};
 
 /** Once the import read this long ago, the Stand says so. */
 export const staleAfter = 60 * minute;
