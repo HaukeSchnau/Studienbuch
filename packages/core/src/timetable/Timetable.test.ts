@@ -462,9 +462,16 @@ describe("Timetable.nextLesson", () => {
       plan: plan({ lessons: friday(cancelled) }),
       next: "none",
     },
-  ])("finds $name", ({ plan: held, next }) => {
+    {
+      name: "one from today on, when the lesson after has passed",
+      plan: plan(),
+      after: "2026-11-16",
+      today: "2026-11-20",
+      next: "2026-11-20 08:00-09:30 ma",
+    },
+  ])("finds $name", ({ plan: held, after = "2026-11-18", today = "2026-11-18", next }) => {
     expect(
-      Option.match(Timetable.nextLesson(held, Course.Id.make("ma"), date("2026-11-18")), {
+      Option.match(Timetable.nextLesson(held, Course.Id.make("ma"), date(after), date(today)), {
         onNone: () => "none",
         onSome: ({ id }) => id,
       }),
