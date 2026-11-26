@@ -42,20 +42,20 @@
     "views": {
       "student": {
         "weeks": {
-          "right": 2101,
+          "right": 3153,
           "of": 4196
         },
         "recall": {
-          "right": 52193,
+          "right": 52192,
           "of": 55890
         },
         "precision": {
-          "right": 51999,
-          "of": 65235
+          "right": 52192,
+          "of": 54677
         },
         "attributes": {
-          "right": 50097,
-          "of": 52193
+          "right": 52192,
+          "of": 52192
         }
       },
       "teacher": {
@@ -68,11 +68,11 @@
           "of": 35471
         },
         "precision": {
-          "right": 4758,
-          "of": 5600
+          "right": 4763,
+          "of": 4795
         },
         "attributes": {
-          "right": 119,
+          "right": 125,
           "of": 4763
         }
       },
@@ -86,31 +86,31 @@
           "of": 28714
         },
         "precision": {
-          "right": 4528,
-          "of": 5340
+          "right": 4535,
+          "of": 4535
         },
         "attributes": {
-          "right": 30,
+          "right": 32,
           "of": 4536
         }
       }
     },
     "kurswahl": {
-      "right": 146,
+      "right": 244,
       "of": 473
     },
-    "ghostCourses": 39,
+    "ghostCourses": 27,
     "courseIdentity": {
       "realCourses": 377,
-      "split": 42,
-      "ourCourses": 388,
-      "merged": 18,
+      "split": 0,
+      "ourCourses": 333,
+      "merged": 5,
       "subjects": {
         "Biologie": {
           "realCourses": 8,
-          "split": 2,
-          "ourCourses": 9,
-          "merged": 1
+          "split": 0,
+          "ourCourses": 8,
+          "merged": 0
         },
         "CH1": {
           "realCourses": 1,
@@ -132,8 +132,8 @@
         },
         "Darstellendes Spiel": {
           "realCourses": 3,
-          "split": 2,
-          "ourCourses": 6,
+          "split": 0,
+          "ourCourses": 2,
           "merged": 0
         },
         "EK": {
@@ -168,8 +168,8 @@
         },
         "Französisch": {
           "realCourses": 2,
-          "split": 2,
-          "ourCourses": 6,
+          "split": 0,
+          "ourCourses": 2,
           "merged": 0
         },
         "GE1": {
@@ -204,20 +204,20 @@
         },
         "Informatik": {
           "realCourses": 4,
-          "split": 3,
-          "ourCourses": 9,
+          "split": 0,
+          "ourCourses": 3,
           "merged": 0
         },
         "KU": {
           "realCourses": 4,
-          "split": 2,
-          "ourCourses": 6,
+          "split": 0,
+          "ourCourses": 2,
           "merged": 0
         },
         "Latein": {
           "realCourses": 2,
-          "split": 2,
-          "ourCourses": 6,
+          "split": 0,
+          "ourCourses": 2,
           "merged": 0
         },
         "MA": {
@@ -240,8 +240,8 @@
         },
         "MU": {
           "realCourses": 3,
-          "split": 2,
-          "ourCourses": 6,
+          "split": 0,
+          "ourCourses": 2,
           "merged": 0
         },
         "NW- PHY G": {
@@ -276,9 +276,9 @@
         },
         "Physik": {
           "realCourses": 8,
-          "split": 2,
-          "ourCourses": 9,
-          "merged": 1
+          "split": 0,
+          "ourCourses": 8,
+          "merged": 0
         },
         "Politik-Wirtschaft": {
           "realCourses": 9,
@@ -294,8 +294,8 @@
         },
         "REL": {
           "realCourses": 4,
-          "split": 2,
-          "ourCourses": 6,
+          "split": 0,
+          "ourCourses": 2,
           "merged": 0
         },
         "SP": {
@@ -306,26 +306,26 @@
         },
         "Spanisch-A": {
           "realCourses": 4,
-          "split": 4,
-          "ourCourses": 9,
-          "merged": 3
+          "split": 0,
+          "ourCourses": 4,
+          "merged": 0
         },
         "Spanisch-F": {
           "realCourses": 2,
-          "split": 2,
-          "ourCourses": 6,
+          "split": 0,
+          "ourCourses": 2,
           "merged": 0
         },
         "Tutorium": {
           "realCourses": 11,
-          "split": 10,
+          "split": 0,
           "ourCourses": 9,
-          "merged": 9
+          "merged": 1
         },
         "WPK O": {
           "realCourses": 3,
-          "split": 3,
-          "ourCourses": 9,
+          "split": 0,
+          "ourCourses": 3,
           "merged": 0
         },
         "XCFJTF5TO1": {
@@ -570,14 +570,14 @@
         },
         "wn1": {
           "realCourses": 6,
-          "split": 2,
-          "ourCourses": 9,
+          "split": 0,
+          "ourCourses": 5,
           "merged": 0
         },
         "wn2": {
           "realCourses": 3,
-          "split": 2,
-          "ourCourses": 6,
+          "split": 0,
+          "ourCourses": 2,
           "merged": 0
         },
         "wn23": {
@@ -589,7 +589,7 @@
       }
     },
     "changes": {
-      "right": 938,
+      "right": 945,
       "of": 7064
     },
     "courses": {
@@ -607,8 +607,8 @@
       }
     },
     "links": {
-      "right": 5610,
-      "of": 5610
+      "right": 4782,
+      "of": 4782
     },
     "exams": {
       "right": 36,
@@ -633,7 +633,7 @@
       "of": 91993
     },
     "lookahead": {
-      "right": 4727,
+      "right": 4728,
       "of": 34837
     },
     "runs": {
@@ -646,7 +646,7 @@
       "danglingCourses": 324,
       "unpublishedLessons": 0,
       "secondRunChanges": 0,
-      "reversedReadChanges": 14,
+      "reversedReadChanges": 8,
       "failedReadChanges": 0,
       "injectedFailures": 1
     },
@@ -699,20 +699,20 @@
     "views": {
       "student": {
         "weeks": {
-          "right": 2192,
+          "right": 3309,
           "of": 4196
         },
         "recall": {
-          "right": 54075,
+          "right": 54074,
           "of": 55890
         },
         "precision": {
-          "right": 53881,
-          "of": 67426
+          "right": 54074,
+          "of": 56584
         },
         "attributes": {
-          "right": 51979,
-          "of": 54075
+          "right": 54074,
+          "of": 54074
         }
       },
       "teacher": {
@@ -725,11 +725,11 @@
           "of": 35471
         },
         "precision": {
-          "right": 4887,
-          "of": 5743
+          "right": 4892,
+          "of": 4924
         },
         "attributes": {
-          "right": 119,
+          "right": 125,
           "of": 4892
         }
       },
@@ -743,31 +743,31 @@
           "of": 28714
         },
         "precision": {
-          "right": 4651,
-          "of": 5477
+          "right": 4658,
+          "of": 4658
         },
         "attributes": {
-          "right": 30,
+          "right": 32,
           "of": 4659
         }
       }
     },
     "kurswahl": {
-      "right": 146,
+      "right": 244,
       "of": 473
     },
-    "ghostCourses": 39,
+    "ghostCourses": 27,
     "courseIdentity": {
       "realCourses": 377,
-      "split": 42,
-      "ourCourses": 388,
-      "merged": 18,
+      "split": 0,
+      "ourCourses": 333,
+      "merged": 5,
       "subjects": {
         "Biologie": {
           "realCourses": 8,
-          "split": 2,
-          "ourCourses": 9,
-          "merged": 1
+          "split": 0,
+          "ourCourses": 8,
+          "merged": 0
         },
         "CH1": {
           "realCourses": 1,
@@ -789,8 +789,8 @@
         },
         "Darstellendes Spiel": {
           "realCourses": 3,
-          "split": 2,
-          "ourCourses": 6,
+          "split": 0,
+          "ourCourses": 2,
           "merged": 0
         },
         "EK": {
@@ -825,8 +825,8 @@
         },
         "Französisch": {
           "realCourses": 2,
-          "split": 2,
-          "ourCourses": 6,
+          "split": 0,
+          "ourCourses": 2,
           "merged": 0
         },
         "GE1": {
@@ -861,20 +861,20 @@
         },
         "Informatik": {
           "realCourses": 4,
-          "split": 3,
-          "ourCourses": 9,
+          "split": 0,
+          "ourCourses": 3,
           "merged": 0
         },
         "KU": {
           "realCourses": 4,
-          "split": 2,
-          "ourCourses": 6,
+          "split": 0,
+          "ourCourses": 2,
           "merged": 0
         },
         "Latein": {
           "realCourses": 2,
-          "split": 2,
-          "ourCourses": 6,
+          "split": 0,
+          "ourCourses": 2,
           "merged": 0
         },
         "MA": {
@@ -897,8 +897,8 @@
         },
         "MU": {
           "realCourses": 3,
-          "split": 2,
-          "ourCourses": 6,
+          "split": 0,
+          "ourCourses": 2,
           "merged": 0
         },
         "NW- PHY G": {
@@ -933,9 +933,9 @@
         },
         "Physik": {
           "realCourses": 8,
-          "split": 2,
-          "ourCourses": 9,
-          "merged": 1
+          "split": 0,
+          "ourCourses": 8,
+          "merged": 0
         },
         "Politik-Wirtschaft": {
           "realCourses": 9,
@@ -951,8 +951,8 @@
         },
         "REL": {
           "realCourses": 4,
-          "split": 2,
-          "ourCourses": 6,
+          "split": 0,
+          "ourCourses": 2,
           "merged": 0
         },
         "SP": {
@@ -963,26 +963,26 @@
         },
         "Spanisch-A": {
           "realCourses": 4,
-          "split": 4,
-          "ourCourses": 9,
-          "merged": 3
+          "split": 0,
+          "ourCourses": 4,
+          "merged": 0
         },
         "Spanisch-F": {
           "realCourses": 2,
-          "split": 2,
-          "ourCourses": 6,
+          "split": 0,
+          "ourCourses": 2,
           "merged": 0
         },
         "Tutorium": {
           "realCourses": 11,
-          "split": 10,
+          "split": 0,
           "ourCourses": 9,
-          "merged": 9
+          "merged": 1
         },
         "WPK O": {
           "realCourses": 3,
-          "split": 3,
-          "ourCourses": 9,
+          "split": 0,
+          "ourCourses": 3,
           "merged": 0
         },
         "XCFJTF5TO1": {
@@ -1227,14 +1227,14 @@
         },
         "wn1": {
           "realCourses": 6,
-          "split": 2,
-          "ourCourses": 9,
+          "split": 0,
+          "ourCourses": 5,
           "merged": 0
         },
         "wn2": {
           "realCourses": 3,
-          "split": 2,
-          "ourCourses": 6,
+          "split": 0,
+          "ourCourses": 2,
           "merged": 0
         },
         "wn23": {
@@ -1246,7 +1246,7 @@
       }
     },
     "changes": {
-      "right": 938,
+      "right": 945,
       "of": 7064
     },
     "courses": {
@@ -1264,8 +1264,8 @@
       }
     },
     "links": {
-      "right": 5753,
-      "of": 5753
+      "right": 4911,
+      "of": 4911
     },
     "exams": {
       "right": 36,
@@ -1290,7 +1290,7 @@
       "of": 933688
     },
     "lookahead": {
-      "right": 42692,
+      "right": 42702,
       "of": 308684
     },
     "runs": {
@@ -1303,7 +1303,7 @@
       "danglingCourses": 342,
       "unpublishedLessons": 0,
       "secondRunChanges": 0,
-      "reversedReadChanges": 14,
+      "reversedReadChanges": 8,
       "failedReadChanges": 0,
       "injectedFailures": 1
     },

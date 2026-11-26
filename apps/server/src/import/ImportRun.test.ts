@@ -239,8 +239,9 @@ describe.skipIf(Postgres18.socket === null)("ImportRun on PostgreSQL 18", () => 
               CivilTime.format(coveredUntil),
             ]),
           }).toEqual({
-            // Four weeks of the invented school's lessons, and nothing the plan didn't read.
-            first: ["Published", 64, []],
+            // Four weeks of the invented school's lessons, the joint INF lesson once a week, and
+            // nothing the plan didn't read.
+            first: ["Published", 60, []],
             again: {},
             later: { ImportStatus: { written: 1, removed: 0 } },
             // A recording sends no request; the live connection's runs count theirs.
@@ -283,7 +284,7 @@ describe.skipIf(Postgres18.socket === null)("ImportRun on PostgreSQL 18", () => 
             // The reads that answered are stored: the store is a log.
             failed: ["Incomplete", { [tag]: 1 }, true],
             before: { rows: [], checkpoint: { revision: 0, previous: "", pending: "[]" } },
-            complete: ["Published", 64],
+            complete: ["Published", 60],
           });
         }),
     );

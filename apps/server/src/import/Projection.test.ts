@@ -16,7 +16,6 @@ import { NamedSchoolTesting } from "./corpus/NamedSchoolTesting.ts";
 import { Policy } from "./corpus/Policy.ts";
 import { Pseudonymizer } from "./corpus/Pseudonymizer.ts";
 import { TinySchool } from "./evaluation/TinySchool.ts";
-import { ImportIds } from "./ImportIds.ts";
 import { ImportTesting } from "./ImportTesting.ts";
 import { Projection } from "./Projection.ts";
 import { SchoolImport } from "./SchoolImport.ts";
@@ -563,25 +562,6 @@ describe("Projection", () => {
           (yield* rowsOf(pseudonymized.result)).filter((leaf) => tokens.has(leaf)),
           [],
         );
-      }),
-    );
-
-    it.effect("makes a joint lesson one row in each of its courses' spaces", () =>
-      Effect.gen(function* () {
-        const { result } = yield* ImportTesting.naive(TinySchool.corpus);
-        const { data } = project(result);
-
-        // `INF` on Wednesday of W45 is one entry for `11.1` and `12`.
-        const joint = ["INF/11.1", "INF/12"].map((key) =>
-          Object.values(data.lessons[ImportIds.course(profile.id, key)] ?? {})
-            .filter(({ date }) => date === "2026-11-04")
-            .map(({ start, teacherIds }) => ({ start, teacherIds })),
-        );
-
-        assert.deepStrictEqual(joint, [
-          [{ start: 41_400_000, teacherIds: [ImportIds.teacher(profile.id, 206)] }],
-          [{ start: 41_400_000, teacherIds: [ImportIds.teacher(profile.id, 206)] }],
-        ]);
       }),
     );
 
