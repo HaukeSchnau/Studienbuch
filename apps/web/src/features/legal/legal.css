@@ -25,6 +25,8 @@
 
 .legal-column {
   max-width: 48rem;
+  /* Package names and the beta URL are single words wider than a 320 px phone. */
+  overflow-wrap: break-word;
 }
 
 .legal-column h1 {
@@ -32,7 +34,6 @@
   /* Small enough on a phone for "Datenschutzerklärung" and a package name to fit on one line. */
   font-size: clamp(1.75rem, 0.9rem + 3.4vw, 3.25rem);
   line-height: 1.2;
-  overflow-wrap: break-word;
 }
 
 .legal-updated {
