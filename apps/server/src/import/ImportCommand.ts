@@ -4,6 +4,7 @@
  * the same owner resumes. The console never connects to WebUntis itself.
  */
 import { CivilTime, School } from "@stu/core";
+import * as CliError from "effect/cli/CliError";
 import * as Command from "effect/cli/Command";
 import * as Flag from "effect/cli/Flag";
 import * as Console from "effect/Console";
@@ -19,11 +20,15 @@ export * as ImportCommand from "./ImportCommand.ts";
 
 const { profile } = ImportJob.school;
 
-/** The pause belongs to someone else, or to no one. */
+/** The pause belongs to someone else, or to no one. The CLI prints its message alone. */
 export class Refused extends Schema.TaggedError<Refused, { readonly brand: unique symbol }>()(
   "ImportCommand.Refused",
   { message: Schema.String },
-) {}
+) {
+  override get [CliError.userMessage]() {
+    return this.message;
+  }
+}
 
 const iso = (date: Date | null) =>
   date === null ? "never" : DateTime.formatIso(DateTime.fromDateUnsafe(date));

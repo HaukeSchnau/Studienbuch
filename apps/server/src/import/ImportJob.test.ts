@@ -182,9 +182,30 @@ describe.skipIf(Postgres18.socket === null)("ImportJob on PostgreSQL 18", () => 
 
     it.effect("reads the school year of today, whichever WebUntis calls current", () =>
       Effect.gen(function* () {
-        const ran = yield* runWith("job-current", { corpus: earlierCurrent });
+        const named = yield* Ref.make<ReadonlyArray<string>>([]);
 
-        expect([ran.outcome, ran.sent.length]).toEqual([Option.some("Published"), 15]);
+        const answer = (request: WebUntisTesting.Request) =>
+          Ref.update(named, (all) => [
+            ...all,
+            `${request.name}: ${request.schoolYear ?? "none"}`,
+          ]).pipe(Effect.as(Option.none()));
+
+        const ran = yield* runWith("job-current", { corpus: earlierCurrent, answer });
+        const years = (yield* Ref.get(named)).filter((line) => /^(timetable|exams)/u.test(line));
+
+        expect([ran.outcome, years]).toEqual([
+          Option.some("Published"),
+          [
+            "timetable/filter CLASS: 10",
+            "timetable/filter TEACHER: 10",
+            "timetable/filter SUBJECT: 10",
+            "timetable/filter ROOM: 10",
+            "exams: 10",
+            "timetable/entries CLASS 111: 10",
+            "timetable/entries CLASS 112: 10",
+            "timetable/entries CLASS 113: 10",
+          ],
+        ]);
       }),
     );
 

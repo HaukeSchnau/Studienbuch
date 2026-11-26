@@ -18,10 +18,11 @@ import { RecordedWebUntis } from "./RecordedWebUntis.ts";
 
 export * as WebUntisTesting from "./WebUntisTesting.ts";
 
-/** A request by what it reads, such as `timetable/entries CLASS 111`. */
+/** A request by what it reads, such as `timetable/entries CLASS 111`, and the year it names. */
 export interface Request {
   readonly method: string;
   readonly name: string;
+  readonly schoolYear: string | undefined;
 }
 
 /** What a test answers instead of the recording. */
@@ -143,7 +144,12 @@ export const make = Effect.fn("WebUntisTesting.make")(function* (
 
   const client = HttpClient.make((request, url) =>
     Effect.gen(function* () {
-      const asked: Request = { method: request.method, name: nameOf(url) };
+      const asked: Request = {
+        method: request.method,
+        name: nameOf(url),
+        schoolYear: request.headers["x-webuntis-api-school-year-id"],
+      };
+
       const label = `${asked.method} ${asked.name}`;
 
       yield* Ref.update(events, (all) => [...all, `→ ${label}`]);
