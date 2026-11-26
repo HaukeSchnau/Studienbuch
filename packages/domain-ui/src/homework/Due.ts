@@ -9,14 +9,6 @@ import { DateText } from "../calendar/DateText.ts";
 
 export * as Due from "./Due.ts";
 
-/** "9.11.", or "9.11.2027" in another year than today's. */
-const dayMonth = (date: CivilTime.PlainDate, today: CivilTime.PlainDate) =>
-  `${String(date.day)}.${String(date.month)}.${date.year === today.year ? "" : String(date.year)}`;
-
-/** "Mo, 9.11." */
-const short = (date: CivilTime.PlainDate, today: CivilTime.PlainDate) =>
-  `${DateText.shortWeekday(date)}, ${dayMonth(date, today)}`;
-
 const done = (doneOn: CivilTime.PlainDate, today: CivilTime.PlainDate) => {
   const ago = PlainDateFns.diffDays(doneOn, today);
 
@@ -24,7 +16,7 @@ const done = (doneOn: CivilTime.PlainDate, today: CivilTime.PlainDate) => {
     ? "Heute erledigt"
     : ago === 1
       ? "Gestern erledigt"
-      : `Erledigt am ${ago < 7 ? DateText.weekday(doneOn) : dayMonth(doneOn, today)}`;
+      : `Erledigt am ${ago < 7 ? DateText.weekday(doneOn) : DateText.dayMonth(doneOn, today)}`;
 };
 
 /** The due date as the list and the panel show it. */
@@ -36,12 +28,12 @@ export const label = (homework: HomeworkDates.Listed, today: CivilTime.PlainDate
   if (HomeworkDates.isOverdue(homework, today)) {
     if (days === -1) return "Überfällig seit gestern";
 
-    return `Überfällig seit ${days > -7 ? DateText.weekday(homework.dueOn) : dayMonth(homework.dueOn, today)}`;
+    return `Überfällig seit ${days > -7 ? DateText.weekday(homework.dueOn) : DateText.dayMonth(homework.dueOn, today)}`;
   }
 
   return days === 0
     ? "Heute fällig"
     : days === 1
       ? "Bis morgen"
-      : `Bis ${days < 7 ? DateText.weekday(homework.dueOn) : short(homework.dueOn, today)}`;
+      : `Bis ${days < 7 ? DateText.weekday(homework.dueOn) : DateText.short(homework.dueOn, today)}`;
 };

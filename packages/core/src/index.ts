@@ -39,3 +39,5 @@ export { WeekLabel } from "./school/WeekLabel.ts";
 export { Studienbuch } from "./registry/Studienbuch.ts";
 
 export { Text } from "./text/Text.ts";
+
+export { Timetable } from "./timetable/Timetable.ts";

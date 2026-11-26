@@ -1,8 +1,8 @@
 /**
- * The baseline M2.2 must beat (m2-import-corpus.md, section 8): one course per subject code and
- * class or cohort, lessons from the class views of the profile's grade levels, no rosters, A and B
- * by ISO week parity. It is wrong on purpose where IGS is hard, and the harness's numbers show
- * where. It reads the window a week at a time and deletes only what it read completely.
+ * The import M2.2 improves against the corpus (m2-import-corpus.md, section 8): lessons from the
+ * class views of the profile's grade levels, a course per Kopplung and per parallel group
+ * (`CourseKey`), no rosters, A and B by ISO week parity. It reads the window a week at a time and
+ * deletes only what it read completely.
  */
 import { WebUntisClient } from "@schnau/webuntis-api";
 import type { TimetableEntry, TimetableEntryDay } from "@schnau/webuntis-api/schemas";
@@ -14,6 +14,7 @@ import * as Option from "effect/Option";
 import * as Order from "effect/Order";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
+import { CourseKey } from "./CourseKey.ts";
 import { ImportIds } from "./ImportIds.ts";
 import { Plan } from "./Plan.ts";
 import { SchoolProfile } from "./profiles/SchoolProfile.ts";
@@ -100,6 +101,22 @@ const changeKind = (entry: TimetableEntry, status: Lesson.Status) => {
 };
 
 const union = (lists: ReadonlyArray<ReadonlyArray<string>>) => Arr.dedupe(lists.flat()).sort();
+
+/** An entry as the view of a class showed it, before the run knows which course it is of. */
+interface Seen {
+  readonly entry: TimetableEntry;
+  readonly date: string;
+  readonly ids: ReadonlyArray<number>;
+  readonly start: number;
+  readonly end: number;
+  readonly subject: Option.Option<string>;
+  /** The classes it is taught to, its view's own included. */
+  readonly taughtTo: ReadonlyArray<string>;
+  readonly family: string;
+  /** Whether its family may have parallel groups, which an entry without a subject hasn't. */
+  readonly grouped: boolean;
+  readonly teachers: ReadonlyArray<string>;
+}
 
 /** One row of a class view, before rows of one course in one slot become one lesson. */
 interface Row {
@@ -212,6 +229,7 @@ export const layer = Layer.effect(SchoolImport.Service)(
       const roomIds = new Map(rooms.map(({ shortName, id }) => [shortName, id]));
       const subjectIds = new Map(subjects.map(({ shortName, id }) => [shortName, id]));
       const classNames = new Map(classes.map(({ id, shortName }) => [id, shortName]));
+      const classIdsByName = new Map(classes.map(({ id, shortName }) => [shortName, id]));
       const teacherId = (id: number) => ImportIds.teacher(school, id);
       const roomId = (id: number) => ImportIds.room(school, id);
       const knownCourses = new Set(previous.courses.map(({ id }) => id));
@@ -231,16 +249,22 @@ export const layer = Layer.effect(SchoolImport.Service)(
       const termOf = (date: string) => terms.find((term) => term.start <= date && date <= term.end);
 
       /**
-       * The course of a class's entry, or none when only the nightly run may create it, or when the
-       * entry names a subject the directory lacks, whose name could be anything.
+       * The course of `key` for an entry of a class's view, or none when only the nightly run may
+       * create it, or when the entry names a subject the directory lacks, whose name could be
+       * anything.
        */
-      const courseOf = (day: TimetableEntryDay, group: string, subject: Option.Option<string>) => {
+      const courseOf = (
+        date: string,
+        subject: Option.Option<string>,
+        key: string,
+        taughtTo: ReadonlyArray<string>,
+      ) => {
         const subjectId = Option.isSome(subject) ? subjectIds.get(subject.value) : undefined;
 
         if (Option.isSome(subject) && subjectId === undefined) return Option.none();
 
         const name = Option.getOrElse(subject, () => "?");
-        const id = ImportIds.course(school, `${name}/${group}`);
+        const id = ImportIds.course(school, key);
 
         if (!nightly && !knownCourses.has(id)) return Option.none();
 
@@ -250,29 +274,63 @@ export const layer = Layer.effect(SchoolImport.Service)(
           subjectId: subjectId === undefined ? undefined : ImportIds.subject(school, subjectId),
         });
 
-        courseClasses.set(id, new Set([...(courseClasses.get(id) ?? []), day.resource.id]));
+        // The classes it is taught to whose views a run reads, so which of their views answered
+        // can't change where it is read from or who it is offered to.
+        const read = taughtTo.flatMap((group) => {
+          const classId = classIdsByName.get(group);
+          const gradeLevel = gradeLevelOf(group);
 
-        const term = termOf(day.date.slice(0, 10));
-        const gradeLevel = gradeLevelOf(group);
+          return classId === undefined || Option.isNone(gradeLevel)
+            ? []
+            : [{ group, classId, gradeLevel: gradeLevel.value }];
+        });
 
-        if (nightly && term !== undefined && Option.isSome(gradeLevel)) {
-          const lasting = profile.classify(group)._tag === "Lasting";
+        courseClasses.set(
+          id,
+          new Set([...(courseClasses.get(id) ?? []), ...read.map((each) => each.classId)]),
+        );
+
+        const term = termOf(date);
+
+        if (nightly && term !== undefined) {
           const offeringId = CourseOffering.idFor(id, term.id);
 
-          offerings.set(offeringId, {
-            id: offeringId,
-            courseId: id,
-            termId: term.id,
-            gradeLevels: [gradeLevel.value],
-            classIds: lasting ? [ImportIds.schoolClass(yearId, group)] : [],
-          });
+          // An offering can't name classes for one grade only, so a course of a class and a whole
+          // grade is offered to every class of both grades.
+          for (const { group, gradeLevel } of read) {
+            const lasting = profile.classify(group)._tag === "Lasting";
+
+            offerings.set(
+              offeringId,
+              SchoolImport.widen(offerings.get(offeringId), {
+                id: offeringId,
+                courseId: id,
+                termId: term.id,
+                gradeLevels: [gradeLevel],
+                classIds: lasting ? [ImportIds.schoolClass(yearId, group)] : [],
+              }),
+            );
+          }
         }
 
         return Option.some(id);
       };
 
-      /** Adds the entry's row of `group`'s view, or says the read can't count as complete. */
-      const addRow = (
+      const unattributedEntry = (date: string, ids: ReadonlyArray<number>) => {
+        unattributed.push({ date, ids });
+        diagnostics.push({ code: "unattributed", detail: `${date} ${ids.join("+")}` });
+      };
+
+      const seen: Array<Seen> = [];
+
+      // A Kopplung's entry is in the view of each of its classes, and one lesson of its course.
+      const copies = new Set<string>();
+
+      /**
+       * Keeps the entry of `group`'s view until every week is read, since which course it is of
+       * depends on the others, or says the read can't count as complete.
+       */
+      const observe = (
         day: TimetableEntryDay,
         group: string | undefined,
         entry: TimetableEntry,
@@ -288,20 +346,45 @@ export const layer = Layer.effect(SchoolImport.Service)(
           return false;
         }
 
-        const subject = Option.fromUndefinedOr(WebUntisEntry.names(entry, "SUBJECT").current[0]);
-        const course = group === undefined ? Option.none() : courseOf(day, group, subject);
+        if (group === undefined) unattributedEntry(date, ids);
+        else {
+          const subject = Option.fromUndefinedOr(WebUntisEntry.names(entry, "SUBJECT").current[0]);
+          const ofFamily = CourseKey.familyOf(subject, entry, group);
+          const copy = `${ofFamily.family}\n${date}\n${ids.join("+")}`;
 
-        if (Option.isNone(course)) {
-          unattributed.push({ date, ids });
-          diagnostics.push({ code: "unattributed", detail: `${date} ${ids.join("+")}` });
+          if (!copies.has(copy)) {
+            copies.add(copy);
 
-          return true;
+            seen.push({
+              entry,
+              date,
+              ids,
+              start: start.value,
+              end: end.value,
+              subject,
+              ...ofFamily,
+              teachers: WebUntisEntry.names(entry, "TEACHER").planned,
+            });
+          }
         }
 
+        return true;
+      };
+
+      /** Adds the row of an entry `seen` holds to the lesson of its course in its slot. */
+      const addRow = (
+        { entry, date, ids, start, end, subject, taughtTo, family, grouped, teachers }: Seen,
+        courseKey: (family: string, teachers: ReadonlyArray<string>) => string,
+      ) => {
+        const key = grouped ? courseKey(family, teachers) : family;
+        const course = courseOf(date, subject, key, taughtTo);
+
+        if (Option.isNone(course)) return unattributedEntry(date, ids);
+
+        const id = ImportIds.lesson(school, course.value, date, start);
         const teacherNames = WebUntisEntry.names(entry, "TEACHER");
         const roomNames = WebUntisEntry.names(entry, "ROOM");
         const status = WebUntisEntry.status(entry);
-        const id = ImportIds.lesson(school, course.value, date, start.value);
         const text = entry.substitutionText ?? undefined;
 
         const row: Row = {
@@ -310,8 +393,8 @@ export const layer = Layer.effect(SchoolImport.Service)(
             id,
             courseId: course.value,
             date,
-            start: start.value,
-            end: end.value,
+            start,
+            end,
             teacherIds: idsFor(teacherNames.current, teacherIds, teacherId),
             roomIds: idsFor(roomNames.current, roomIds, roomId),
             status,
@@ -333,8 +416,6 @@ export const layer = Layer.effect(SchoolImport.Service)(
         else slot.push(row);
 
         link(id, SchoolImport.ProviderRef.cases.Entry.make({ date, ids }));
-
-        return true;
       };
 
       for (const week of weeks) {
@@ -365,7 +446,7 @@ export const layer = Layer.effect(SchoolImport.Service)(
           );
 
           const added = named.flatMap((day) =>
-            day.gridEntries.map((entry) => addRow(day, group, entry)),
+            day.gridEntries.map((entry) => observe(day, group, entry)),
           );
 
           answered.push(new Set(named.map((day) => day.date.slice(0, 10))));
@@ -405,6 +486,29 @@ export const layer = Layer.effect(SchoolImport.Service)(
           );
         }
       }
+
+      // Which families meet in parallel groups shows only across the whole window. Only the nightly
+      // run, which alone creates courses, splits a family; a daytime run keeps the courses it knows.
+      const courseKey = CourseKey.resolver(
+        CourseKey.parallel(
+          seen.flatMap(({ family, grouped, date, start, teachers, entry }) =>
+            nightly && grouped
+              ? [
+                  {
+                    family,
+                    date,
+                    start,
+                    teachers,
+                    regular: WebUntisEntry.status(entry) === "Regular",
+                  },
+                ]
+              : [],
+          ),
+        ),
+        (key) => knownCourses.has(ImportIds.course(school, key)),
+      );
+
+      for (const each of seen) addRow(each, courseKey);
 
       const lessons = [...slots.values()].map(merge);
 
@@ -458,13 +562,21 @@ export const layer = Layer.effect(SchoolImport.Service)(
 
             link(id, SchoolImport.ProviderRef.cases.Exam.make({ id: exam.examId }));
 
-            // The class with the lowest id, so the order WebUntis lists them in can't matter.
-            const group = [...exam.classes].sort((a, b) => a.id - b.id)[0]?.shortName ?? "?";
+            // An exam lists every class of its course, and the teachers of its group.
+            const classNamesOfExam = exam.classes.map(({ shortName }) => shortName);
+
+            const key = courseKey(
+              CourseKey.family(
+                exam.subject.shortName,
+                classNamesOfExam.length === 0 ? ["?"] : classNamesOfExam,
+              ),
+              exam.teachers.map(({ shortName }) => shortName),
+            );
 
             return [
               {
                 id,
-                courseId: ImportIds.course(school, `${exam.subject.shortName}/${group}`),
+                courseId: ImportIds.course(school, key),
                 date: exam.examStart.slice(0, 10),
                 start: start.value,
                 end: end.value,
@@ -518,7 +630,15 @@ export const layer = Layer.effect(SchoolImport.Service)(
         lessons,
         closures,
         exams,
-        teachers: teachers.map(({ id, shortName }) => ({ id: teacherId(id), shortName })),
+        teachers: teachers.map(({ id, shortName, longName }) => {
+          const teacher = { id: teacherId(id), shortName };
+          const displayName = longName.trim();
+
+          // A long name that repeats the short one says nothing more.
+          return displayName === "" || displayName === shortName
+            ? teacher
+            : { ...teacher, displayName };
+        }),
         rooms: rooms.map(({ id, shortName }) => ({ id: roomId(id), name: shortName })),
         weeks: weeks.map(({ week }) => ({
           week,

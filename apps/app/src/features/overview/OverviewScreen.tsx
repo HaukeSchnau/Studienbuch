@@ -1,6 +1,7 @@
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import { DateText } from "@stu/domain-ui/calendar/DateText";
 import { HomeworkPanel } from "@stu/domain-ui/homework/HomeworkPanel";
+import { AgendaCard } from "@stu/domain-ui/timetable/AgendaCard";
 import { Arrive } from "@stu/ui/Arrive";
 import { Pill } from "@stu/ui/Pill";
 import { Theme } from "@stu/ui/Theme";
@@ -18,9 +19,10 @@ import { KeysState } from "../keys/KeysState.ts";
 import { OverviewState } from "./OverviewState.ts";
 
 /**
- * "Übersicht", the Flutter app's home: "Moin, Lena!" with today's date in the green hero, and the
- * blue homework panel below. From M2, "Heute" and "Morgen" come between the two. A refused change
- * waits as a card on the hero's band until the student picks what happens to it.
+ * "Übersicht", the Flutter app's home: "Moin, Lena!" and "Das steht heute an:" in the green hero,
+ * the day's lessons on its band, and the blue homework panel below. Without a timetable the hero
+ * names today's date and the card stays away. A refused change waits as a card on the band until
+ * the student picks what happens to it.
  */
 export function OverviewScreen() {
   return Option.match(KeysState.useAccountId(), {
@@ -40,7 +42,8 @@ function AccountOverview({ accountId }: { readonly accountId: string }) {
     return <View style={[styles.blank, { backgroundColor: color.canvas }]} />;
   }
 
-  const { name, today, locked, readable, offline, reading, panel } = overview.value;
+  const { name, today, locked, readable, offline, reading, panel, agenda } = overview.value;
+  const card = Option.getOrUndefined(agenda)?.card;
 
   const setDone = (id: string, done: boolean) =>
     Option.map(panel, ({ notebook }) => toggle({ notebook, id, doneOn: done ? today : undefined }));
@@ -49,7 +52,10 @@ function AccountOverview({ accountId }: { readonly accountId: string }) {
     <HeroScreen
       title={Option.match(name, { onNone: () => "Moin!", onSome: (first) => `Moin, ${first}!` })}
       underline
-      subtitle={DateText.long(today)}
+      subtitle={Option.match(agenda, {
+        onNone: () => DateText.long(today),
+        onSome: ({ heading }) => heading,
+      })}
       status={<OfflineChip offline={offline} />}
       aside={
         <Pill label="Profil" icon="person" iconOnly onPress={() => router.navigate("/profil")} />
@@ -72,6 +78,13 @@ function AccountOverview({ accountId }: { readonly accountId: string }) {
       }}
     >
       <Arrive delay={110} style={styles.band}>
+        {card === undefined ? null : (
+          <AgendaCard
+            items={card.items}
+            notice={card.notice}
+            stand={Option.getOrUndefined(agenda)?.stand}
+          />
+        )}
         {Option.match(reading, {
           onNone: () => null,
           onSome: (reading) => (

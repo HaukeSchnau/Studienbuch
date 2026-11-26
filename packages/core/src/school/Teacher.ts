@@ -1,4 +1,4 @@
-/** Lehrkraft: a teacher as the timetable names them, by short name only. */
+/** Lehrkraft: a teacher as the timetable names them. */
 import { Ids, Sync } from "@stu/sync";
 import * as Schema from "effect/Schema";
 
@@ -14,6 +14,12 @@ export const Row = Sync.table("Teacher", {
   fields: {
     /** Such as "MÜL". */
     shortName: Schema.String,
+    /**
+     * The name students know them by, such as "Müller": WebUntis's long name, which is the
+     * surname and carries no salutation. Absent where the school shows short names only; screens
+     * then write `shortName`.
+     */
+    displayName: Schema.optional(Schema.String),
   },
 });
 

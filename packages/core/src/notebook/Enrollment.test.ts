@@ -246,6 +246,52 @@ describe("Enrollment.groups and Enrollment.unanswered", () => {
   );
 });
 
+describe("Enrollment.chosenOn", () => {
+  const term = (id: string, start: string, end: string) => ({
+    id,
+    row: {
+      schoolYearId: Fixture.schoolYear,
+      name: id,
+      dates: { start: Fixture.date(start), end: Fixture.date(end) },
+    } satisfies Term.Row,
+  });
+
+  const terms = [
+    term("winter", "2026-08-01", "2027-01-31"),
+    term("summer", "2027-02-01", "2027-07-31"),
+  ];
+
+  const enrollments = [
+    { termId: "summer", courseIds: ["course-ch"] },
+    { termId: "winter", courseIds: ["course-ma", "course-de"] },
+  ];
+
+  it("takes the courses chosen for the term a date falls in, and only those", () => {
+    expect([
+      Enrollment.chosenOn(enrollments, terms, Fixture.date("2026-11-16")),
+      Enrollment.chosenOn(enrollments, terms, Fixture.date("2027-02-01")),
+    ]).toEqual([["course-ma", "course-de"], ["course-ch"]]);
+  });
+
+  it("takes none while the date's term has no course choice, not another term's courses", () => {
+    expect(
+      Enrollment.chosenOn(
+        [{ termId: "summer", courseIds: ["course-ch"] }],
+        terms,
+        Fixture.date("2026-11-16"),
+      ),
+    ).toEqual([]);
+  });
+
+  it("takes every chosen course on a date in no term", () => {
+    expect(Enrollment.chosenOn(enrollments, terms, Fixture.date("2027-08-20"))).toEqual([
+      "course-ch",
+      "course-ma",
+      "course-de",
+    ]);
+  });
+});
+
 describe("Enrollment.courseMembership", () => {
   it.effect("grants the Course spaces a notebook chose, and takes back the ones it dropped", () =>
     Effect.gen(function* () {

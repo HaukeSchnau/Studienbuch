@@ -58,9 +58,10 @@ describe("WebUntisEntry", () => {
         ids: WebUntisEntry.ids(substituted),
       },
       {
-        teachers: { current: ["LA", "LE"], removed: ["LB"] },
-        subjects: { current: ["MA"], removed: [] },
-        rooms: { current: [], removed: [] },
+        // The plan has the teacher the substitute replaced, not the substitute.
+        teachers: { current: ["LA", "LE"], removed: ["LB"], planned: ["LA", "LB"] },
+        subjects: { current: ["MA"], removed: [], planned: ["MA"] },
+        rooms: { current: [], removed: [], planned: [] },
         ids: [1, 2],
       },
     );

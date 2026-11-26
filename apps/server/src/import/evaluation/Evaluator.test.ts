@@ -127,7 +127,7 @@ const both = {
   // MA23's two rows become two courses, the two MA-E groups one, and S8's two DE courses one.
   courses: of(1, 4),
   closures: { recall: of(1, 1), precision: of(1, 1) },
-  links: of(46, 46),
+  links: of(43, 43),
   // The exam's course is both MA-E groups, so the other group's two students see it too.
   exams: of(0, 1),
   examStudents: { recall: of(2, 2), precision: of(2, 4) },
@@ -143,20 +143,20 @@ const both = {
     failedReadChanges: 0,
     injectedFailures: 7,
   },
-  // Students of `11.1` who skip `INF`, and `13`. `MA-E` shows each group the other's lessons, and
-  // the joint `INF` lesson is two courses, so its students take both.
-  kurswahl: of(3, 8),
+  // Students of `11.1` and `13`. `MA-E` shows each group the other's lessons.
+  kurswahl: of(4, 8),
   ghostCourses: 0,
-  // Split: MA23's two rows, the joint INF lesson, and BI, booked under two classes, which nothing
-  // else measures. Merged: the two MA-E groups, and S8's two DE courses, which a label tells apart.
+  // Split: MA23's two rows, and BI, booked under two classes, which nothing else measures. Merged:
+  // the two MA-E groups, and S8's two DE courses, which a label tells apart. The joint INF lesson
+  // is one course of both its classes.
   courseIdentity: {
-    ...identity(13, 3, 14, 2),
+    ...identity(13, 2, 13, 2),
     subjects: {
       BI: identity(1, 1, 2, 0),
       CH: identity(1, 0, 1, 0),
       DE: identity(3, 0, 2, 1),
       EN: identity(2, 0, 2, 0),
-      INF: identity(1, 1, 2, 0),
+      INF: identity(1, 0, 1, 0),
       "MA-E": identity(2, 0, 1, 1),
       MA23: identity(1, 1, 2, 0),
       PH: identity(2, 0, 2, 0),
@@ -171,25 +171,24 @@ describe("Evaluator", () => {
       expected: {
         ...both,
         mode: "weekly" as const,
-        // Students count in W46 only. Precision misses the other MA-E group and the joint INF
-        // lesson, counted once per class.
+        // Students count in W46 only. Precision misses the other MA-E group.
         views: {
           student: {
-            weeks: of(3, 8),
+            weeks: of(4, 8),
             recall: of(33, 33),
-            precision: of(33, 39),
+            precision: of(33, 37),
             attributes: of(33, 33),
           },
           teacher: {
-            weeks: of(13, 18),
+            weeks: of(15, 18),
             recall: of(39, 40),
-            precision: of(39, 43),
+            precision: of(39, 40),
             attributes: of(38, 39),
           },
           room: {
-            weeks: of(11, 15),
+            weeks: of(13, 15),
             recall: of(43, 43),
-            precision: of(43, 46),
+            precision: of(43, 43),
             attributes: of(41, 43),
           },
         },
@@ -215,21 +214,21 @@ describe("Evaluator", () => {
         mode: "timeline" as const,
         views: {
           student: {
-            weeks: of(3, 8),
+            weeks: of(4, 8),
             recall: of(33, 33),
-            precision: of(33, 39),
+            precision: of(33, 37),
             attributes: of(33, 33),
           },
           teacher: {
-            weeks: of(15, 18),
+            weeks: of(18, 18),
             recall: of(40, 40),
-            precision: of(40, 43),
+            precision: of(40, 40),
             attributes: of(40, 40),
           },
           room: {
-            weeks: of(12, 15),
+            weeks: of(15, 15),
             recall: of(43, 43),
-            precision: of(43, 46),
+            precision: of(43, 43),
             attributes: of(43, 43),
           },
         },
@@ -276,13 +275,6 @@ describe("Evaluator", () => {
             looksLike: "overlapping",
             ours: 1,
             students: [["S8"], ["S8"]],
-          },
-          {
-            kind: "split",
-            subject: "INF",
-            looksLike: "one entry",
-            ours: 2,
-            students: [["S1", "S4"]],
           },
           {
             kind: "merged",
@@ -344,7 +336,7 @@ describe("Evaluator", () => {
       }),
       // Lessons the later runs didn't touch keep their ids; the rest change. Nobody chose the
       // last run's courses.
-      expected: { studentWeeks: of(0, 8), kept: of(127, 172), ghosts: 13 },
+      expected: { studentWeeks: of(0, 8), kept: of(127, 172), ghosts: 12 },
     },
     {
       name: "makes one course of each subject",
@@ -394,7 +386,7 @@ describe("Evaluator", () => {
         }),
       ),
       measure: (report: Effect.Success<ReturnType<typeof evaluate>>) => report.links,
-      expected: of(0, 46),
+      expected: of(0, 43),
     },
     {
       name: "reads only the current week",
@@ -477,14 +469,14 @@ describe("Evaluator", () => {
       importLayer: variant((result) => Effect.succeed({ ...result, offerings: [] })),
       measure: (report: Effect.Success<ReturnType<typeof evaluate>>) =>
         report.invariants.unpublishedLessons,
-      expected: 46,
+      expected: 43,
     },
     {
       name: "drops its course rows",
       importLayer: variant((result) => Effect.succeed({ ...result, courses: [] })),
       measure: (report: Effect.Success<ReturnType<typeof evaluate>>) =>
         report.invariants.danglingCourses,
-      expected: 79,
+      expected: 74,
     },
   ])("scores an import that $name worse", ({ importLayer, measure, expected }) =>
     Effect.gen(function* () {
@@ -661,17 +653,16 @@ describe("Evaluator", () => {
   );
 
   // WebUntis hides a student's days from the capture's account from some date on. W46 is the one
-  // week students are scored in. On its Wednesday S1 has two entries, and naive shows S1 three
-  // lessons: both, and the joint INF lesson a second time, S1's only error that week.
+  // week students are scored in, and S1's is exactly right. On its Wednesday S1 has two entries.
   it.effect.each([
     {
       name: "a day",
       days: ["2026-11-11"],
-      // Neither the entries nor the extra lesson count, so S1's week is now exactly right.
+      // Neither the entries nor their lessons count, and S1's week stays exactly right.
       student: {
         weeks: of(4, 8),
         recall: of(31, 31),
-        precision: of(31, 36),
+        precision: of(31, 35),
         attributes: of(31, 31),
       },
     },
@@ -681,7 +672,7 @@ describe("Evaluator", () => {
       student: {
         weeks: of(3, 7),
         recall: of(28, 28),
-        precision: of(28, 33),
+        precision: of(28, 32),
         attributes: of(28, 28),
       },
     },
@@ -735,7 +726,7 @@ describe("Evaluator", () => {
       days: ["2026-11-05"],
       // S4 leaves the exam's roster and the students it is shown to.
       expected: {
-        kurswahl: of(3, 8),
+        kurswahl: of(4, 8),
         exams: of(0, 1),
         examStudents: { recall: of(1, 1), precision: of(1, 3) },
         hiddenDays: 1,
@@ -749,7 +740,7 @@ describe("Evaluator", () => {
       student: 505,
       days: ["2026-10-26"],
       expected: {
-        kurswahl: of(3, 8),
+        kurswahl: of(4, 8),
         exams: of(0, 1),
         examStudents: { recall: of(2, 2), precision: of(2, 4) },
         hiddenDays: 1,
