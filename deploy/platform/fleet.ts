@@ -95,6 +95,13 @@ export const spec = (
       onNone: () => ({}),
       onSome: (apps) => ({ STUDIENBUCH_NATIVE_APPS: JSON.stringify(apps) }),
     }),
+    ...Option.match(environment.webuntis, {
+      onNone: () => ({}),
+      onSome: (school) => ({
+        WEBUNTIS_SCHOOL_LOGIN_NAME: school.loginName,
+        WEBUNTIS_SERVER_URL: school.serverUrl,
+      }),
+    }),
     S3_ENDPOINT: storage.endpoint,
     S3_REGION: "auto",
     S3_BUCKET: storage.bucket,
@@ -107,6 +114,14 @@ export const spec = (
     S3_SECRET_ACCESS_KEY: {
       sops: `projects/studienbuch/r2/${environment.storage}/secret-access-key`,
     },
+    // With the school in `env` from the same field, because the server needs all four or none.
+    ...Option.match(environment.webuntis, {
+      onNone: () => ({}),
+      onSome: () => ({
+        WEBUNTIS_USERNAME: { sops: `projects/studienbuch/${environment.stage}/webuntis-username` },
+        WEBUNTIS_PASSWORD: { sops: `projects/studienbuch/${environment.stage}/webuntis-password` },
+      }),
+    }),
   },
   memory: { max: environment.memory },
 });

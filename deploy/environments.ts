@@ -34,6 +34,18 @@ export interface Environment {
    * `NativeApps.Apps` reads them. Previews are web only.
    */
   readonly nativeApps: Option.Option<NativeApps>;
+  /**
+   * The WebUntis school the import reads. Its account is the stage's SOPS keys `webuntis-username`
+   * and `webuntis-password`. Only beta imports (D107): two logins with one account log each other
+   * out (AGENTS.md rule 2), so production needs an account of its own first.
+   */
+  readonly webuntis: Option.Option<WebUntisSchool>;
+}
+
+/** A school pinned by its login name and server, so a run needs no school search. */
+export interface WebUntisSchool {
+  readonly loginName: string;
+  readonly serverUrl: string;
 }
 
 export interface NativeApps {
@@ -62,6 +74,7 @@ const preview = (pr: number): Environment => ({
   dropDatabase: true,
   databaseConnections: 10,
   nativeApps: Option.none(),
+  webuntis: Option.none(),
 });
 
 const beta: Environment = {
@@ -76,6 +89,10 @@ const beta: Environment = {
   dropDatabase: false,
   databaseConnections: 40,
   nativeApps: Option.some(studienbuchApps),
+  webuntis: Option.some({
+    loginName: "igs-lilienthal",
+    serverUrl: "https://igs-lilienthal.webuntis.com",
+  }),
 };
 
 const prod: Environment = {
@@ -90,6 +107,7 @@ const prod: Environment = {
   dropDatabase: false,
   databaseConnections: 40,
   nativeApps: Option.some(studienbuchApps),
+  webuntis: Option.none(),
 };
 
 /** The environment of a stage, or none for a stage that isn't one of Studienbuch's. */
