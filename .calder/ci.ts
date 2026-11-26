@@ -297,6 +297,10 @@ const storeBuilds = (ready: Step.Any) => [
     keystore: "play-upload-keystore",
     password: "play-upload-password",
     serviceAccount: "play-service-account",
+    // Google refuses an automatic review while the live "IGS Lilienthal" record has a rejected
+    // change, and the flag keeps an internal upload from ever sending the Console's queued changes
+    // to review (D106). Play refuses the flag when changes go to review automatically.
+    changesNotSentForReview: true,
     after: [ready],
   }).pipe(Step.timeout("90 minutes")),
 ];
