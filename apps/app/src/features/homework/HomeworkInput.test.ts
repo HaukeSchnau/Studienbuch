@@ -71,6 +71,45 @@ describe("HomeworkInput.decode", () => {
   });
 });
 
+describe("HomeworkInput.prefilled", () => {
+  const opened = (params: HomeworkInput.Params, touched: HomeworkInput.Draft = {}) =>
+    HomeworkInput.values(undefined, touched, HomeworkInput.prefilled(params, context));
+
+  it("opens the add sheet with the lesson's course and its next lesson's date, ready to save once titled", () => {
+    const values = opened({ courseId: "course-ma", dueOn: "2026-11-18" });
+
+    expect(values).toEqual({ ...filled, title: "" });
+    assert.isTrue(Option.isSome(HomeworkInput.decode({ ...values, title: "S. 112" }, context)));
+  });
+
+  it("lets what the student picked win over the params", () => {
+    expect(
+      opened({ courseId: "course-ma", dueOn: "2026-11-18" }, { courseId: "course-de" }).courseId,
+    ).toBe("course-de");
+  });
+
+  it.each([
+    ["a course not chosen this term", { courseId: "course-ph" }, { courseId: null, dueOn: null }],
+    ["a date that isn't one", { dueOn: "2026-13-40" }, { courseId: null, dueOn: null }],
+    ["a date already past", { dueOn: "2026-11-15" }, { courseId: null, dueOn: null }],
+    [
+      "one param twice",
+      { courseId: ["course-ma", "course-de"], dueOn: "2026-11-18" },
+      { courseId: null, dueOn: date("2026-11-18") },
+    ],
+  ])("leaves unpicked %s", (_, params, picked) => {
+    expect(HomeworkInput.prefilled(params, context)).toEqual(picked);
+  });
+
+  it("keeps a lesson's draft apart from the plain add sheet's and from each edit's", () => {
+    expect([
+      HomeworkInput.draftKey(undefined, {}),
+      HomeworkInput.draftKey(undefined, { courseId: "course-ma", dueOn: "2026-11-18" }),
+      HomeworkInput.draftKey("8f6a1c2e-4b1d-4c3e-9a7b-2d5e6f708192", { courseId: "course-ma" }),
+    ]).toEqual(["new", "new-course-ma", "8f6a1c2e-4b1d-4c3e-9a7b-2d5e6f708192"]);
+  });
+});
+
 describe("HomeworkInput.changes", () => {
   it("sends only the fields an edit changed, and null to remove the description", () => {
     const touched = { title: "Versuchsprotokoll, sauber", description: " " };

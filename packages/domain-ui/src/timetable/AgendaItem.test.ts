@@ -73,7 +73,7 @@ const day = (on: string, rows: ReadonlyArray<Timetable.Row<AgendaItem.Source>> =
 describe("AgendaItem", () => {
   it("dims a lesson that is over, counts down the running one, and leaves a later one as it is", () => {
     const word = (time: string) => {
-      const item = AgendaItem.lesson(lesson(), names, moment(wednesday, time));
+      const item = AgendaItem.lesson(lesson(), names, moment(wednesday, time), []);
 
       return item.kind === "lesson" ? [item.time, item.phase, item.remaining] : [];
     };
@@ -87,9 +87,72 @@ describe("AgendaItem", () => {
     ]);
   });
 
+  it("says Hausaufgabe offen on a lesson ahead whose course has homework due that day", () => {
+    const homework = [
+      { id: "h", courseId: "ma", dueOn: date(wednesday) },
+      { id: "g", courseId: "de", dueOn: date("2026-11-19") },
+    ];
+
+    const open = (source: Partial<AgendaItem.Source>, time: string) => {
+      const item = AgendaItem.lesson(lesson(source), names, moment(wednesday, time), homework);
+
+      return item.kind === "lesson" && item.homework === true;
+    };
+
+    expect([
+      open({}, "08:00"),
+      open({}, "10:30"),
+      open({}, "11:20"),
+      open({ courseId: Course.Id.make("de") }, "08:00"),
+      open({ courseId: Course.Id.make("de"), date: date("2026-11-19") }, "08:00"),
+    ]).toEqual([true, true, false, false, true]);
+  });
+
+  it("writes out a lesson's sheet: its day, the change with what it replaced, the phrase, and the next lesson", () => {
+    const sheet = (source: Partial<AgendaItem.Source>, next = Option.none<AgendaItem.Source>()) => {
+      const { when, note, off, phrase, due } = AgendaItem.detail(
+        lesson(source),
+        names,
+        next,
+        date(wednesday),
+      );
+
+      return { when, note, off, phrase, due };
+    };
+
+    expect(
+      sheet(
+        { teacherIds: [Teacher.Id.make("vos")], ...changed("Substitution", { teachers: ["bra"] }) },
+        Option.some(lesson({ date: date("2026-11-20"), start: at("08:00") })),
+      ),
+    ).toEqual({
+      when: "Mittwoch, 18. November · 09:50–11:20",
+      note: "Vertretung: Voss statt Brandt",
+      off: undefined,
+      phrase: undefined,
+      due: "Fällig zur nächsten Stunde: Fr, 20.11., 08:00",
+    });
+
+    expect([
+      sheet({ roomIds: [Room.Id.make("nw3")], ...changed("RoomChange", { rooms: ["nw1"] }) }).note,
+      sheet({ teacherIds: [], ...changed("Substitution", { teachers: ["bra"] }) }).note,
+      sheet(changed("Other", {}, "Exkursion")).phrase,
+      sheet(changed("Moved", {}, "Exkursion")).phrase,
+      sheet(changed("Cancelled", {}, "Klassenfahrt")).off,
+      sheet({}).due,
+    ]).toEqual([
+      "Raumänderung: NW3 statt NW1",
+      "Vertretung",
+      undefined,
+      "Exkursion",
+      "Entfall",
+      "Die nächste Stunde steht noch nicht im Plan.",
+    ]);
+  });
+
   it("names a change in the note, or beside the subject it strikes", () => {
     const word = (source: Partial<AgendaItem.Source>) => {
-      const item = AgendaItem.lesson(lesson(source), names, moment(wednesday, "08:00"));
+      const item = AgendaItem.lesson(lesson(source), names, moment(wednesday, "08:00"), []);
 
       return item.kind === "lesson" ? `${item.note ?? "-"} / ${item.off ?? "-"}` : "";
     };
@@ -123,7 +186,7 @@ describe("AgendaItem", () => {
 
   it("shows a teacher or room that changed beside the one before, and leaves out unknown ids", () => {
     const who = (source: Partial<AgendaItem.Source>) => {
-      const item = AgendaItem.lesson(lesson(source), names, moment(wednesday, "08:00"));
+      const item = AgendaItem.lesson(lesson(source), names, moment(wednesday, "08:00"), []);
 
       return item.kind === "lesson" ? { teacher: item.teacher, room: item.room } : {};
     };
@@ -153,7 +216,7 @@ describe("AgendaItem", () => {
 
   it("heads the card with the day it shows, and fills a free period", () => {
     const heading = (on: string) =>
-      AgendaItem.agenda(day(on), names, moment(wednesday, "16:00")).heading;
+      AgendaItem.agenda(day(on), names, moment(wednesday, "16:00"), []).heading;
 
     expect(
       [wednesday, "2026-11-19", "2026-11-23", "2026-11-25", "2027-01-04"].map(heading),
@@ -169,6 +232,7 @@ describe("AgendaItem", () => {
       day(wednesday, [Timetable.Row.Free({ start: at("11:40"), end: at("13:10") })]),
       names,
       moment(wednesday, "08:00"),
+      [],
     ).card?.items;
 
     expect(rows).toEqual([{ kind: "free", id: "free-42000000", time: "11:40–13:10" }]);
@@ -180,6 +244,7 @@ describe("AgendaItem", () => {
         Timetable.Shown.Unpublished({ date: date(on) }),
         names,
         moment(wednesday, "16:00"),
+        [],
       );
 
     expect(unpublished("2026-11-23")).toEqual({
@@ -204,6 +269,7 @@ describe("AgendaItem", () => {
         Timetable.Shown.Closed({ name, until: date(until), resumes: date(resumes), first }),
         names,
         moment(today, "09:00"),
+        [],
       );
 
     const resumesWith = lesson({ date: date("2026-11-02"), start: at("08:00") });
@@ -249,7 +315,9 @@ describe("AgendaItem", () => {
   });
 
   it("hides the card without a timetable and names today in the hero", () => {
-    expect(AgendaItem.agenda(Timetable.Shown.None(), names, moment(wednesday, "09:00"))).toEqual({
+    expect(
+      AgendaItem.agenda(Timetable.Shown.None(), names, moment(wednesday, "09:00"), []),
+    ).toEqual({
       heading: "Mittwoch, 18. November",
       card: undefined,
     });

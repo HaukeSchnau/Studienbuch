@@ -48,10 +48,56 @@ export const fromCurrent = (current: Current): Values => ({
   dueOn: current.dueOn,
 });
 
-/** The sheet's values: the homework as it is now, or empty, with what the student touched over it. */
-export const values = (current: Current | undefined, touched: Draft): Values => ({
-  ...(current === undefined ? empty : fromCurrent(current)),
+/** What a new homework starts from, when "Hausaufgabe eintragen" on a lesson opened the sheet. */
+export type Prefilled = Pick<Values, "courseId" | "dueOn">;
+
+/**
+ * The sheet's values: the homework as it is now, or a new one empty or `prefilled`, with what the
+ * student touched over it.
+ */
+export const values = (
+  current: Current | undefined,
+  touched: Draft,
+  prefilled?: Prefilled,
+): Values => ({
+  ...(current === undefined ? { ...empty, ...prefilled } : fromCurrent(current)),
   ...touched,
+});
+
+/** The add sheet's route params, as the router passes them on. */
+export interface Params {
+  readonly courseId?: string | ReadonlyArray<string> | undefined;
+  readonly dueOn?: string | ReadonlyArray<string> | undefined;
+}
+
+const decodeParam = Schema.decodeUnknownOption(Schema.String);
+const decodeDate = Schema.decodeUnknownOption(CivilTime.PlainDate);
+
+/**
+ * The draft the sheet keeps: an edit's under the homework's id, a new homework's under `new`, and
+ * one that "Hausaufgabe eintragen" started under `new-<course>`, so each opens again as it was left
+ * and a lesson's sheet never opens with another course's draft.
+ */
+export const draftKey = (id: string | undefined, params: Params): string =>
+  id ??
+  Option.match(decodeParam(params.courseId), {
+    onNone: () => "new",
+    onSome: (course) => `new-${course}`,
+  });
+
+/**
+ * What a new homework starts from by the sheet's route params: the course while it is offered, and
+ * the due date while the sheet offers it. A param that doesn't fit stays unpicked.
+ */
+export const prefilled = (params: Params, context: Omit<Context, "current">): Prefilled => ({
+  courseId: Option.getOrNull(
+    Option.filter(decodeParam(params.courseId), (id) => context.offered.includes(id)),
+  ),
+  dueOn: Option.getOrNull(
+    Option.filter(decodeDate(params.dueOn), (date) =>
+      Pickable.contains(dueDays(context.today, undefined), date),
+    ),
+  ),
 });
 
 /** An enrollment as the device holds it: the courses chosen in one term. */

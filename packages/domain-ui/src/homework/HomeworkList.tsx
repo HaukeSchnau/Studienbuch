@@ -31,7 +31,7 @@ export function HomeworkList({ listing, locked, onToggle, onOpen, onAdd }: Homew
   const entries: ReadonlyArray<Entry> =
     listing === undefined ? [] : [...listing.open, split, ...listing.done];
 
-  const shown = useLingeringOrder(entries, idOf, linger);
+  const shown = useLingeringOrder(entries, idOf, HomeworkItem.linger);
 
   const at = shown.indexOf(split);
 
@@ -89,9 +89,6 @@ type Entry = HomeworkItem.Item | typeof split;
 const idOf = (entry: Entry) => (entry === split ? split : entry.id);
 
 const isItem = (entry: Entry): entry is HomeworkItem.Item => entry !== split;
-
-// As long as on the panel.
-const linger = 1200;
 
 function Heading({ children }: { readonly children: string }) {
   const { color } = Theme.useTheme();

@@ -1,4 +1,4 @@
-import { CivilTime, type Notebook, Timetable } from "@stu/core";
+import { CivilTime, type HomeworkDates, type Notebook, Timetable } from "@stu/core";
 import { HomeworkItem } from "@stu/domain-ui/homework/HomeworkItem";
 import { AgendaItem } from "@stu/domain-ui/timetable/AgendaItem";
 import * as Option from "effect/Option";
@@ -39,14 +39,18 @@ export interface Agenda extends AgendaItem.Agenda {
   readonly stand: AgendaItem.Stand | undefined;
 }
 
-/** The day `Timetable.shown` picks at `now`, in words, with the Stand once it is old. */
+/**
+ * The day `Timetable.shown` picks at `now`, in words, with the Stand once it is old and the
+ * `homework` the device can read on its lessons.
+ */
 export const agenda = (
   held: TimetableState.Reading,
   now: number,
   disconnected: boolean,
+  homework: ReadonlyArray<HomeworkDates.OfCourse>,
 ): Agenda => {
   const moment = CivilTime.momentIn(now, held.timeZone);
-  const shown = AgendaItem.agenda(Timetable.shown(held.plan, moment), held.names, moment);
+  const shown = AgendaItem.agenda(Timetable.shown(held.plan, moment), held.names, moment, homework);
 
   const stand = Option.flatMap(held.observedAt, (observedAt) =>
     Timetable.staleSince(observedAt, now, held.timeZone),
@@ -88,7 +92,14 @@ export const overview = Atom.family((accountId: string) =>
         items: readable ? HomeworkItem.panel(value.homework, today) : undefined,
       })),
       agenda: Option.flatMap(Option.flatten(AsyncResult.value(timetable)), (held) =>
-        Option.map(AsyncResult.value(now), (millis) => agenda(held, millis, disconnected)),
+        Option.map(AsyncResult.value(now), (millis) =>
+          agenda(
+            held,
+            millis,
+            disconnected,
+            Option.match(reading, { onNone: () => [], onSome: (value) => value.homework }),
+          ),
+        ),
       ),
     });
   }),

@@ -46,6 +46,7 @@ const pairs = (palette: Tokens.Palette, scheme: Tokens.Scheme) =>
     ["danger on dangerTint", palette.danger, palette.dangerTint, body],
     ["warning on warningTint", palette.warning, palette.warningTint, body],
     ["noteInk on note", palette.noteInk, palette.note, body],
+    ["onHomework on homework", palette.onHomework, palette.homework, body],
     ...Object.entries(Tokens.subject).flatMap(([slot, colors]) => {
       const [text, tint] =
         scheme === "light" ? [colors.text, colors.tint] : [colors.textDark, colors.tintDark];

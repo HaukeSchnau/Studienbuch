@@ -1,9 +1,10 @@
 /**
  * A day's lessons as the Übersicht's card shows them, with the words around them: the hero's line,
- * a change's note, the free periods, what a closure says, and the Stand. The app builds them from
- * its rows through `Timetable`, and a page with demo data builds the items directly.
+ * a change's note, the free periods, what a closure says, and the Stand; and one lesson as its sheet
+ * shows it. The app builds them from its rows through `Timetable`, and a page with demo data builds
+ * the items directly.
  */
-import { CivilTime, type Subject, Timetable } from "@stu/core";
+import { CivilTime, HomeworkDates, type Subject, Timetable } from "@stu/core";
 import * as Option from "effect/Option";
 import * as PlainDateFns from "temporal-polyfill/fns/PlainDate";
 
@@ -19,6 +20,10 @@ export interface Named {
   /** "Brandt", struck through beside `now`. */
   readonly was?: string | undefined;
 }
+
+/** "Voss statt Brandt", as a screen reader says what a struck name shows. */
+export const spoken = (named: Named): string =>
+  named.was === undefined ? named.now : `${named.now || "niemand"} statt ${named.was}`;
 
 export type Phase = "past" | "now" | "later";
 
@@ -39,6 +44,8 @@ export type Item =
       readonly note?: string | undefined;
       /** The name is struck through, with this beside it: "Entfall", "Freisetzung". */
       readonly off?: string | undefined;
+      /** "Hausaufgabe offen": the course has open homework due that day, and the lesson is ahead. */
+      readonly homework?: boolean | undefined;
     }
   | { readonly kind: "free"; readonly id: string; readonly time: string };
 
@@ -112,8 +119,16 @@ const phases: Readonly<Record<Timetable.Phase, Phase>> = {
 const remaining = (minutes: number) =>
   `Noch ${String(minutes)} ${minutes === 1 ? "Minute" : "Minuten"}`;
 
-/** One lesson's row at `now`. */
-export const lesson = (source: Source, names: Names, now: CivilTime.Moment): Item => {
+/**
+ * One lesson's row at `now`, with the notebook's `homework` as the device can read it: none while
+ * the notebook is locked.
+ */
+export const lesson = (
+  source: Source,
+  names: Names,
+  now: CivilTime.Moment,
+  homework: ReadonlyArray<HomeworkDates.OfCourse>,
+): Item => {
   const phase = Timetable.phase(source, now);
   const change = Timetable.change(source);
 
@@ -132,6 +147,74 @@ export const lesson = (source: Source, names: Names, now: CivilTime.Moment): Ite
     off: Option.getOrUndefined(
       Option.filter(change, Timetable.Change.$is("Off")).pipe(Option.map(changeText)),
     ),
+    homework: phase !== "Over" && HomeworkDates.isOpenFor(homework, source.courseId, source.date),
+  };
+};
+
+/** One lesson as its sheet shows it. */
+export interface Detail {
+  readonly id: string;
+  readonly subject: string;
+  readonly mark: SubjectMark.Mark;
+  /** "Mittwoch, 18. November · 09:50–11:20" */
+  readonly when: string;
+  readonly teacher?: Named | undefined;
+  readonly room?: Named | undefined;
+  /** The yellow note with what it changed: "Vertretung: Voss statt Brandt". */
+  readonly note?: string | undefined;
+  /** The name is struck through, with this beside it: "Entfall", "Freisetzung". */
+  readonly off?: string | undefined;
+  /** The school's stock phrase about the change, where the note doesn't say it already. */
+  readonly phrase?: string | undefined;
+  /** Under "Hausaufgabe eintragen": "Fällig zur nächsten Stunde: Fr, 20.11., 08:00". */
+  readonly due: string;
+}
+
+/** ": Voss statt Brandt", for a note whose change replaced a teacher or a room. */
+const instead = (swapped: Named | undefined) =>
+  swapped?.was === undefined || swapped.now === "" ? "" : `: ${swapped.now} statt ${swapped.was}`;
+
+/** One lesson's sheet, with the course's `next` lesson (`Timetable.nextLesson`), today being `today`. */
+export const detail = (
+  source: Source,
+  names: Names,
+  next: Option.Option<Pick<Timetable.Timed, "date" | "start">>,
+  today: CivilTime.PlainDate,
+): Detail => {
+  const change = Timetable.change(source);
+  const teacher = named(source.teacherIds, source.change?.previousTeacherIds ?? [], names.teachers);
+  const room = named(source.roomIds, source.change?.previousRoomIds ?? [], names.rooms);
+  const word = Option.getOrUndefined(Option.map(change, changeText));
+  const phrase = source.change?.text;
+
+  return {
+    id: source.id,
+    ...SubjectMark.named(source.course, source.subject),
+    when: `${DateText.full(source.date, today)} · ${range(source.start, source.end)}`,
+    teacher,
+    room,
+    note: Option.getOrUndefined(
+      Option.filter(change, Timetable.Change.$is("Note")).pipe(
+        Option.map(
+          (note) =>
+            changeText(note) +
+            (note.kind === "RoomChange"
+              ? instead(room)
+              : note.kind === "Substitution" || note.kind === "Supervised"
+                ? instead(teacher)
+                : ""),
+        ),
+      ),
+    ),
+    off: Option.getOrUndefined(
+      Option.filter(change, Timetable.Change.$is("Off")).pipe(Option.map(changeText)),
+    ),
+    phrase: phrase === word ? undefined : phrase,
+    due: Option.match(next, {
+      onNone: () => "Die nächste Stunde steht noch nicht im Plan.",
+      onSome: (lesson) =>
+        `Fällig zur nächsten Stunde: ${DateText.short(lesson.date, today)}, ${DateText.time(lesson.start)}`,
+    }),
   };
 };
 
@@ -155,11 +238,12 @@ const onDay = (date: CivilTime.PlainDate, today: CivilTime.PlainDate) => {
 
 const holidays = /ferien$/iu;
 
-/** What the Übersicht shows of what `Timetable.shown` picked, at `now`. */
+/** What the Übersicht shows of what `Timetable.shown` picked, at `now`, with `lesson`'s homework. */
 export const agenda = (
   shown: Timetable.Shown<Source>,
   names: Names,
   now: CivilTime.Moment,
+  homework: ReadonlyArray<HomeworkDates.OfCourse>,
 ): Agenda =>
   Timetable.Shown.$match(shown, {
     Day: ({ date, rows }) => ({
@@ -167,7 +251,7 @@ export const agenda = (
       card: {
         items: rows.map(
           Timetable.Row.$match({
-            Lesson: ({ lesson: each }) => lesson(each, names, now),
+            Lesson: ({ lesson: each }) => lesson(each, names, now, homework),
             Free: ({ start, end }): Item => ({
               kind: "free",
               id: `free-${String(start)}`,

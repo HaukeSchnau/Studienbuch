@@ -9,8 +9,8 @@ export const unstable_settings = { anchor: "index" };
 export default function OverviewLayout() {
   const { color } = Theme.useTheme();
 
-  // The add and edit sheet. The phones present the system's sheet, which closes on a swipe down; the
-  // web keeps the page below and draws its own sheet over it (ui/Sheet.web.tsx).
+  // The lesson sheet and the add and edit sheet. The phones present the system's sheet, which closes
+  // on a swipe down; the web keeps the page below and draws its own sheet over it (ui/Sheet.web.tsx).
   const sheet = (title: string) =>
     Platform.OS === "web"
       ? {
@@ -43,6 +43,7 @@ export default function OverviewLayout() {
         name="hausaufgaben/[id]/index"
         options={{ title: "Hausaufgabe", headerShown: false }}
       />
+      <Stack.Screen name="stunden/[id]" options={sheet("Stunde")} />
       <Stack.Screen name="hausaufgaben/neu" options={sheet("Hausaufgabe hinzufügen")} />
       <Stack.Screen name="hausaufgaben/[id]/bearbeiten" options={sheet("Hausaufgabe bearbeiten")} />
     </Stack>

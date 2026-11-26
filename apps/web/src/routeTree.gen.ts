@@ -35,11 +35,12 @@ const ImpressumRoute = ImpressumRouteImport.update({
   path: "/impressum",
   getParentRoute: () => rootRouteImport,
 } as any);
-const DatenschutzIgsLilienthalAppRoute = DatenschutzIgsLilienthalAppRouteImport.update({
-  id: "/datenschutz_/igs-lilienthal-app",
-  path: "/datenschutz/igs-lilienthal-app",
-  getParentRoute: () => rootRouteImport,
-} as any);
+const DatenschutzIgsLilienthalAppRoute =
+  DatenschutzIgsLilienthalAppRouteImport.update({
+    id: "/datenschutz_/igs-lilienthal-app",
+    path: "/datenschutz/igs-lilienthal-app",
+    getParentRoute: () => rootRouteImport,
+  } as any);
 
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute;
@@ -65,9 +66,19 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: "/" | "/console" | "/datenschutz" | "/impressum" | "/datenschutz/igs-lilienthal-app";
+  fullPaths:
+    | "/"
+    | "/console"
+    | "/datenschutz"
+    | "/impressum"
+    | "/datenschutz/igs-lilienthal-app";
   fileRoutesByTo: FileRoutesByTo;
-  to: "/" | "/console" | "/datenschutz" | "/impressum" | "/datenschutz/igs-lilienthal-app";
+  to:
+    | "/"
+    | "/console"
+    | "/datenschutz"
+    | "/impressum"
+    | "/datenschutz/igs-lilienthal-app";
   id:
     | "__root__"
     | "/"
