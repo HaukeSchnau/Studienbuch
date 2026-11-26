@@ -1,6 +1,18 @@
-import { Files, Flake, Nix, On, Step, Task, cmd } from "@calder-ci/core";
+import {
+  Action,
+  Calder,
+  Files,
+  Flake,
+  Nix,
+  On,
+  PullRequest,
+  Secret,
+  Step,
+  Task,
+  cmd,
+} from "@calder-ci/core";
 import { Environments, Expo, Pnpm, Vitest } from "@calder-ci/std";
-import { Schema } from "effect";
+import { Effect, Option, Schema } from "effect";
 import { flake } from "./flake.ts";
 
 const shell = flake.devShells.ci;
@@ -172,6 +184,74 @@ const checks = [
   ...flakeChecks,
 ];
 
+/**
+ * The corpus gate (m2-import-corpus.md, section 6, "CI"): the import's numbers on the pinned private
+ * corpus against baseline.json. It needs the corpus's deploy key and age identity, so it runs in
+ * trusted runs only, and again only when the import, the recorded client, the harness or the pin
+ * changes. Its output and its comment hold aggregates, never corpus content.
+ */
+const importEval = Task.make("import-eval", {
+  shell: flake.devShells.corpus,
+  setup: install,
+  inputs: Files.union(
+    Files.imports([
+      "apps/server/src/import/corpus/main.ts",
+      "apps/server/src/import/evaluation/main.ts",
+    ]),
+    Files.of(
+      "apps/server/package.json",
+      "apps/server/src/import/corpus/pin.json",
+      "apps/server/src/import/evaluation/baseline.json",
+      ".calder/known_hosts",
+    ),
+  ),
+  secrets: {
+    CORPUS_DEPLOY_KEY: Secret.file("import-corpus-deploy-key"),
+    SOPS_AGE_KEY_FILE: Secret.file("import-corpus-age-identity"),
+  },
+  run: cmd`bash -c ${[
+    "set -euo pipefail",
+    // The deploy key alone, against git.schnau.dev's pinned host key.
+    'export GIT_SSH_COMMAND="ssh -F /dev/null -o IdentityAgent=none -o IdentitiesOnly=yes -i $CORPUS_DEPLOY_KEY -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$PWD/.calder/known_hosts -o GlobalKnownHostsFile=/dev/null"',
+    'result="$PWD/import-eval.json"',
+    'rm -f "$result"',
+    "cd apps/server",
+    "vp run corpus:fetch --pinned",
+    // Exit code 3 says numbers differ from the baseline: the step passes its result on, and the
+    // gate comments it and fails.
+    "status=0",
+    'vp run import:eval --corpus pinned --against baseline --comment "$result" || status=$?',
+    '[ "$status" -eq 0 ] || [ "$status" -eq 3 ]',
+  ].join("\n")}`,
+  value: {
+    path: "import-eval.json",
+    schema: Schema.Struct({ markdown: Schema.String, differences: Schema.Number }),
+  },
+}).pipe(Step.timeout("30 minutes"));
+
+class BaselineDiffers extends Calder.Failure<BaselineDiffers>("studienbuch")("BaselineDiffers", {
+  count: Schema.Number,
+}) {
+  override get message() {
+    const numbers = this.count === 1 ? "1 number differs" : `${this.count} numbers differ`;
+
+    return `${numbers} from baseline.json: fix the import, or update baseline.json in this commit with the reason`;
+  }
+}
+
+/** Comments the numbers on a pull request, and fails when any differs from the baseline. */
+const importEvalGate = Action.make(
+  "import-eval-gate",
+  { needs: { result: importEval } },
+  function* ({ result }) {
+    const pullRequest = yield* Effect.serviceOption(PullRequest);
+
+    if (Option.isSome(pullRequest)) yield* pullRequest.value.comment(result.markdown);
+
+    if (result.differences > 0) return yield* new BaselineDiffers({ count: result.differences });
+  },
+);
+
 // The native app, from the TestFlight and Play internal builds of every push to main that changes it.
 
 /**
@@ -217,6 +297,10 @@ const storeBuilds = (ready: Step.Any) => [
     keystore: "play-upload-keystore",
     password: "play-upload-password",
     serviceAccount: "play-service-account",
+    // Google refuses an automatic review while the live "IGS Lilienthal" record has a rejected
+    // change, and the flag keeps an internal upload from ever sending the Console's queued changes
+    // to review (D106). Play refuses the flag when changes go to review automatically.
+    changesNotSentForReview: true,
     after: [ready],
   }).pipe(Step.timeout("90 minutes")),
 ];
@@ -241,5 +325,10 @@ export default Environments.project({
   environments: { beta: { on: { push: "main" }, after: checks, then: storeBuilds } },
   nightly: "0 3 * * *",
   // A pull request shows its fingerprints, so a change to the native layer is visible before merging.
-  rules: [On.pullRequest([pnpmDeps, runtimeIos, runtimeAndroid]), On.push("main", [pnpmDeps])],
+  // The corpus gate runs where secrets reach: same-repo pull requests and pushes to main.
+  rules: [
+    On.pullRequest([pnpmDeps, runtimeIos, runtimeAndroid]),
+    On.preview([importEval, importEvalGate]),
+    On.push("main", [pnpmDeps, importEval, importEvalGate]),
+  ],
 });

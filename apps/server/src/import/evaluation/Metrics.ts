@@ -21,10 +21,12 @@ export interface TruthEntry {
   readonly rooms: ReadonlyArray<number>;
   readonly previousTeachers: ReadonlyArray<number>;
   readonly previousRooms: ReadonlyArray<number>;
+  /** Its subjects' codes as WebUntis writes them, such as `MA-E`. */
+  readonly subjects: ReadonlyArray<string>;
 }
 
 /** One of our lessons, in the truth's terms. */
-export interface Lesson extends Omit<TruthEntry, "ids"> {
+export interface Lesson extends Omit<TruthEntry, "ids" | "subjects"> {
   readonly id: string;
   readonly courseId: string;
   readonly kind: Lesson.ChangeKind | undefined;
@@ -323,9 +325,9 @@ export interface Exam {
 
 /**
  * Per exam: our exam has its date and time, is shown to exactly its students, and sits in a course
- * of its subject that one of its teachers teaches, so neither the same roster nor the same teacher
- * is enough. Per student and exam: the exams a student sees through the courses they take, against
- * the exam's students. A truth pair credits one shown exam only, so a doubled exam isn't precise.
+ * of its subject that one of its teachers teaches. Per student and exam: the exams a student sees
+ * through their courses, on days `sees` allows, against the exam's students. A truth pair credits
+ * one shown exam only, so a doubled exam isn't precise.
  */
 export const scoreExams = (
   truth: ReadonlyArray<TruthExam>,
@@ -333,9 +335,12 @@ export const scoreExams = (
   enrollments: ReadonlyMap<number, ReadonlySet<string>>,
   courseTeachers: ReadonlyMap<string, ReadonlySet<number>>,
   courseSubjects: ReadonlyMap<string, string | undefined>,
+  sees: (student: number, date: string) => boolean = () => true,
 ) => {
   const shownTo = (exam: Exam) =>
-    [...enrollments].flatMap(([student, courses]) => (courses.has(exam.courseId) ? [student] : []));
+    [...enrollments].flatMap(([student, courses]) =>
+      courses.has(exam.courseId) && sees(student, exam.date) ? [student] : [],
+    );
 
   const matched = Arr.sort(ours, SchoolImport.idOrder).map((exam) => {
     const [examId, ...more] = [...new Set(exam.examIds)];

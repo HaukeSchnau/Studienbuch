@@ -126,10 +126,11 @@ export type DateRange = typeof DateRange.Type;
 export const contains = (range: DateRange, date: PlainDate): boolean =>
   order(range.start, date) <= 0 && order(date, range.end) <= 0;
 
+const zoned = (epochMillis: number, timeZone: string) =>
+  InstantFns.toZonedDateTimeISO(InstantFns.fromEpochMilliseconds(epochMillis), timeZone);
+
 const dateInZone = (epochMillis: number, timeZone: string) =>
-  ZonedDateTimeFns.toPlainDate(
-    InstantFns.toZonedDateTimeISO(InstantFns.fromEpochMilliseconds(epochMillis), timeZone),
-  );
+  ZonedDateTimeFns.toPlainDate(zoned(epochMillis, timeZone));
 
 /** An IANA time zone that Temporal knows on this platform, such as `Europe/Berlin`. */
 export const TimeZone = Schema.String.check(
@@ -143,3 +144,20 @@ export type TimeZone = typeof TimeZone.Type;
 /** The calendar date at an instant in a time zone, such as today's from `Date.now()`. */
 export const dateIn = (epochMillis: number, timeZone: TimeZone): PlainDate =>
   dateInZone(epochMillis, timeZone);
+
+/** A moment as a school's clock shows it: the date, and the time of day as a lesson's `start`. */
+export interface Moment {
+  readonly date: PlainDate;
+  /** Milliseconds since midnight on the wall clock, as {@link TimeOfDay}. */
+  readonly time: number;
+}
+
+/** The date and the wall-clock time at an instant in a time zone, such as now at the school. */
+export const momentIn = (epochMillis: number, timeZone: TimeZone): Moment => {
+  const at = zoned(epochMillis, timeZone);
+
+  return {
+    date: ZonedDateTimeFns.toPlainDate(at),
+    time: ((at.hour * 60 + at.minute) * 60 + at.second) * 1000 + at.millisecond,
+  };
+};

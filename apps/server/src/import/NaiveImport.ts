@@ -15,6 +15,7 @@ import * as Order from "effect/Order";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 import { ImportIds } from "./ImportIds.ts";
+import { Plan } from "./Plan.ts";
 import { SchoolProfile } from "./profiles/SchoolProfile.ts";
 import { SchoolImport } from "./SchoolImport.ts";
 import { WebUntisEntry } from "./WebUntisEntry.ts";
@@ -162,18 +163,12 @@ export const layer = Layer.effect(SchoolImport.Service)(
       const previous = Option.getOrElse(input.previous, () => SchoolImport.empty);
       const first = CivilTime.format(window.start);
       const years = yield* client.schoolyears.list.pipe(Effect.mapError(failed("school years")));
+      const held = Plan.schoolYear(years, window);
 
-      const year = years.find(
-        ({ dateRange }) =>
-          dateRange.start.slice(0, 10) <= first && first <= dateRange.end.slice(0, 10),
-      );
+      if (Option.isNone(held)) return yield* failed(`no school year holds ${first}`)();
 
-      if (year === undefined) return yield* failed(`no school year holds ${first}`)();
-
-      const yearRange = {
-        start: year.dateRange.start.slice(0, 10),
-        end: year.dateRange.end.slice(0, 10),
-      };
+      const { year } = held.value;
+      const yearRange = { start: held.value.start, end: held.value.end };
 
       const yearDates = yield* Effect.all({
         start: decodeDate(yearRange.start),
@@ -208,36 +203,7 @@ export const layer = Layer.effect(SchoolImport.Service)(
       const gradeLevelOf = (name: string) =>
         SchoolProfile.gradeLevelRead(profile, profile.classify(name));
 
-      // A class read this school year stays read, so a directory that drops it can't make its
-      // lessons look gone: its view then fails, or its entries go unattributed. WebUntis gives
-      // classes new ids each year, so only this year's offerings and classes name them.
-      const termsOfYear = new Set(
-        previous.terms.flatMap(({ id, schoolYearId }) => (schoolYearId === yearId ? [id] : [])),
-      );
-
-      const ofYear = new Set<string>([
-        ...previous.offerings.flatMap(({ courseId, termId }) =>
-          termsOfYear.has(termId) ? [courseId] : [],
-        ),
-        ...previous.classes.flatMap(({ id, schoolYearId }) =>
-          schoolYearId === yearId ? [id] : [],
-        ),
-      ]);
-
-      const known = previous.links.flatMap((link) =>
-        ofYear.has(link.id)
-          ? link.refs.flatMap((ref) =>
-              ref._tag === "Resource" && ref.type === "CLASS" ? [ref.id] : [],
-            )
-          : [],
-      );
-
-      const classIds = Arr.dedupe([
-        ...classes.flatMap(({ id, shortName }) =>
-          Option.isSome(gradeLevelOf(shortName)) ? [id] : [],
-        ),
-        ...known,
-      ]).sort((a, b) => a - b);
+      const classIds = Plan.classes({ profile, previous, directory: classes, schoolYear: yearId });
 
       if (!Arr.isArrayNonEmpty(classIds))
         return yield* failed("the school has no classes to read")();
@@ -552,7 +518,15 @@ export const layer = Layer.effect(SchoolImport.Service)(
         lessons,
         closures,
         exams,
-        teachers: teachers.map(({ id, shortName }) => ({ id: teacherId(id), shortName })),
+        teachers: teachers.map(({ id, shortName, longName }) => {
+          const teacher = { id: teacherId(id), shortName };
+          const displayName = longName.trim();
+
+          // A long name that repeats the short one says nothing more.
+          return displayName === "" || displayName === shortName
+            ? teacher
+            : { ...teacher, displayName };
+        }),
         rooms: rooms.map(({ id, shortName }) => ({ id: roomId(id), name: shortName })),
         weeks: weeks.map(({ week }) => ({
           week,

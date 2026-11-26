@@ -116,7 +116,12 @@ export const ImportedExam = Schema.Struct({
   end: CivilTime.TimeOfDay,
 });
 
-export const ImportedTeacher = Schema.Struct({ id: Ids.Id, shortName: Schema.String });
+export const ImportedTeacher = Schema.Struct({
+  id: Ids.Id,
+  shortName: Schema.String,
+  /** WebUntis's long name, the surname, where it says more than the short name. */
+  displayName: Schema.optional(Schema.String),
+});
 
 export const ImportedRoom = Schema.Struct({ id: Ids.Id, name: Schema.String });
 

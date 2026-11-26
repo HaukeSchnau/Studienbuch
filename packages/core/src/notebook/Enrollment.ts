@@ -8,6 +8,7 @@ import * as Arr from "effect/Array";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
+import type { CivilTime } from "../civil-time/CivilTime.ts";
 import { Course } from "../school/Course.ts";
 import { CourseOffering } from "../school/CourseOffering.ts";
 import { School } from "../school/School.ts";
@@ -235,6 +236,25 @@ export const set = Sync.mutator("enrollment.set", {
       : tx.patch(Row, args.notebook, args.termId, row);
   }),
 });
+
+/**
+ * The courses a student takes on a date: those chosen for the term it falls in, or none while that
+ * term has no course choice yet. Outside every term, as before the school's terms arrived, every
+ * chosen course.
+ */
+export const chosenOn = <C extends string>(
+  enrollments: ReadonlyArray<{ readonly termId: string; readonly courseIds: ReadonlyArray<C> }>,
+  terms: ReadonlyArray<Tx.Entry<Term.Row>>,
+  date: CivilTime.PlainDate,
+): ReadonlyArray<C> =>
+  Option.match(Term.containing(terms, date), {
+    onNone: () => Arr.dedupe(enrollments.flatMap((enrollment) => enrollment.courseIds)),
+    onSome: (term) =>
+      Option.match(
+        Arr.findFirst(enrollments, (enrollment) => enrollment.termId === term.id),
+        { onNone: () => [], onSome: (enrollment) => enrollment.courseIds },
+      ),
+  });
 
 /** Whether any of the notebook's enrollments lists the course, in whichever term. */
 export const isChosen = (notebook: Notebook.Id, courseId: Course.Id) =>

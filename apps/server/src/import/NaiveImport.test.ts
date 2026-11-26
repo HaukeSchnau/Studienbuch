@@ -22,6 +22,11 @@ const withoutClass111 = planted(TinySchool.corpus, classes, (body) => {
 const thisWeek = { start: "2026-11-02", end: "2026-11-06" };
 const nextWeek = { start: "2026-11-09", end: "2026-11-13" };
 
+const laterWeeks = [
+  { start: "2026-11-16", end: "2026-11-20" },
+  { start: "2026-11-23", end: "2026-11-27" },
+];
+
 const lessonCovers = (result: SchoolImport.ImportResult) =>
   result.covers.filter(({ rows }) => rows === "lessons").map(({ start, end }) => ({ start, end }));
 
@@ -34,9 +39,8 @@ describe("NaiveImport", () => {
     Effect.gen(function* () {
       const { result, log } = yield* ImportTesting.naive(TinySchool.corpus);
 
-      // The capture ends on 15 November, so the third and fourth weeks fail as days past it, and
-      // its answers leave out weekends, which therefore delete nothing.
-      assert.deepStrictEqual(lessonCovers(result), [thisWeek, nextWeek]);
+      // Its answers leave out weekends, which therefore delete nothing.
+      assert.deepStrictEqual(lessonCovers(result), [thisWeek, nextWeek, ...laterWeeks]);
       assert.isFalse(SchoolImport.deletes(result, "lessons", "2026-11-07"));
       assert.deepStrictEqual(log.notCaptured, []);
     }),
@@ -55,7 +59,7 @@ describe("NaiveImport", () => {
 
       const { result } = yield* ImportTesting.naive(corpus);
 
-      assert.deepStrictEqual(lessonCovers(result), [nextWeek]);
+      assert.deepStrictEqual(lessonCovers(result), [nextWeek, ...laterWeeks]);
 
       // The day's entries are another class's, so none of them became a lesson of `11.1`'s.
       assert.isFalse(
@@ -76,7 +80,7 @@ describe("NaiveImport", () => {
 
       const { result } = yield* ImportTesting.naive(corpus);
 
-      assert.deepStrictEqual(lessonCovers(result), [nextWeek]);
+      assert.deepStrictEqual(lessonCovers(result), [nextWeek, ...laterWeeks]);
 
       assert.isFalse(
         result.lessons.some(
@@ -184,6 +188,38 @@ describe("NaiveImport", () => {
       assert.deepStrictEqual(log.notCaptured, []);
       assert.deepStrictEqual(lessonCovers(result)[0], thisWeek);
       assert.isFalse(result.classes.some(({ name }) => name === "8.2"));
+    }),
+  );
+
+  it.effect("names a teacher by the long name where it says more than the short one", () =>
+    Effect.gen(function* () {
+      // LB's long name repeats the short one, LC's is blank, LD's has spaces around it.
+      const longNames = new Map<unknown, string>([
+        ["LB", "LB"],
+        ["LC", " "],
+        ["LD", " Dornhecke "],
+      ]);
+
+      const corpus = planted(
+        TinySchool.corpus,
+        RecordedWebUntis.paths.filter(10, "TEACHER"),
+        (body) => {
+          for (const each of list(body.teachers)) {
+            const teacher = object(object(each).teacher);
+
+            teacher.longName = longNames.get(teacher.shortName) ?? teacher.longName ?? null;
+          }
+        },
+      );
+
+      const { result } = yield* ImportTesting.naive(corpus);
+
+      assert.deepStrictEqual(
+        result.teachers
+          .map(({ shortName, displayName }) => `${shortName}: ${displayName ?? "none"}`)
+          .slice(0, 4),
+        ["LA: Lehrkraft A", "LB: none", "LC: none", "LD: Dornhecke"],
+      );
     }),
   );
 

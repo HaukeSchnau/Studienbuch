@@ -5,6 +5,7 @@
  */
 import type { Subject } from "@stu/core";
 import type { Tokens } from "@stu/ui/Tokens";
+import * as Option from "effect/Option";
 
 import type { SubjectArt } from "./SubjectArt.ts";
 
@@ -137,3 +138,15 @@ export const ofCourse = (courseName: string): Mark =>
     undefined,
     courseName,
   );
+
+/**
+ * How a course shows: by its subject's name and mark, or by its own name where the school named no
+ * subject.
+ */
+export const named = (
+  course: string,
+  subject: Option.Option<Pick<Subject.Row, "name" | "shortName">>,
+) => ({
+  subject: Option.match(subject, { onNone: () => course, onSome: (s) => s.name }),
+  mark: Option.match(subject, { onNone: () => ofCourse(course), onSome: ofSubject }),
+});

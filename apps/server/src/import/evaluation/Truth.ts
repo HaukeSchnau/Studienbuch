@@ -4,7 +4,7 @@
  * the exams. It reads the corpus through the recorded client, as of the capture's end.
  */
 import type { WebUntisClient } from "@schnau/webuntis-api";
-import type { TimetableEntryDay } from "@schnau/webuntis-api/schemas";
+import type { Schoolyear, TimetableEntryDay } from "@schnau/webuntis-api/schemas";
 import { CivilTime } from "@stu/core";
 import * as Arr from "effect/Array";
 import type * as DateTime from "effect/DateTime";
@@ -13,6 +13,7 @@ import * as Option from "effect/Option";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 import { RecordedWebUntis } from "../../infra/webuntis/RecordedWebUntis.ts";
+import { CapturePlan } from "../corpus/CapturePlan.ts";
 import type { Corpus } from "../corpus/Corpus.ts";
 import { WebUntisEntry } from "../WebUntisEntry.ts";
 import type { Metrics } from "./Metrics.ts";
@@ -31,6 +32,8 @@ export interface View {
   readonly entries: ReadonlyArray<Metrics.TruthEntry>;
   /** The ISO weeks its timetable was read in. Only those weeks are measured for it. */
   readonly weeks: ReadonlySet<string>;
+  /** Days WebUntis hid from the capture's account. They hold no entries and aren't measured. */
+  readonly hidden: ReadonlySet<string>;
 }
 
 export interface Truth {
@@ -46,6 +49,15 @@ export interface Truth {
   readonly exams: ReadonlyArray<Metrics.TruthExam>;
   /** WebUntis's holidays and the labelled days without school. */
   readonly closures: ReadonlyArray<{ readonly start: string; readonly end: string }>;
+  /**
+   * Each captured school year's two halves, split at the capture plan's term boundary: a day's
+   * term when no case labels one.
+   */
+  readonly halves: ReadonlyArray<{
+    readonly id: string;
+    readonly start: string;
+    readonly end: string;
+  }>;
 }
 
 /** The truth is incomplete, so no number measured against it would mean anything. */
@@ -87,12 +99,20 @@ const readEntries = (
         Effect.flatMap((results) =>
           Effect.forEach(results, ({ resource, result }) =>
             // A school day WebUntis left out or wouldn't show, or explained with an error, is no
-            // evidence of an empty timetable.
+            // evidence of an empty timetable. A day it hid from the account is left out instead.
             Result.isSuccess(result) &&
             result.success.errors.length === 0 &&
-            result.success.days.every(WebUntisEntry.shown) &&
+            result.success.days.every(
+              (day) => WebUntisEntry.shown(day) || WebUntisEntry.hidden(day),
+            ) &&
             schoolDays.every((day) => result.success.days.some((each) => each.date.startsWith(day)))
-              ? Effect.succeed({ resource, days: result.success.days })
+              ? Effect.succeed({
+                  resource,
+                  days: result.success.days.filter(WebUntisEntry.shown),
+                  hidden: result.success.days
+                    .filter(WebUntisEntry.hidden)
+                    .map((day) => day.date.slice(0, 10)),
+                })
               : Effect.fail(new Incomplete({ read: `${type} ${resource} ${range.start}` })),
           ),
         ),
@@ -142,7 +162,11 @@ const readViews = Effect.fn("Truth.readViews")(function* (
           .getFilter({ resourceType, start, end })
           .pipe(Effect.mapError(incomplete(`${resourceType} directory ${year.id}`)));
 
-      const students = (yield* directory("STUDENT")).students.map((each) => each.student);
+      // The capture reads the upper school's students only, so only they have a truth.
+      const students = (yield* directory("STUDENT")).students
+        .filter(CapturePlan.upperSchool)
+        .map((each) => each.student);
+
       const teachers = (yield* directory("TEACHER")).teachers.map((each) => each.teacher);
       const rooms = (yield* directory("ROOM")).rooms.map((each) => each.room);
       const teacherIds = new Map(teachers.map(({ shortName, id }) => [shortName, id]));
@@ -167,6 +191,7 @@ const readViews = Effect.fn("Truth.readViews")(function* (
               rooms: idsOf(roomNames.current, roomIds),
               previousTeachers: idsOf(teacherNames.removed, teacherIds),
               previousRooms: idsOf(roomNames.removed, roomIds),
+              subjects: WebUntisEntry.names(entry, "SUBJECT").current,
             };
           }),
         );
@@ -188,7 +213,7 @@ const readViews = Effect.fn("Truth.readViews")(function* (
 
         // A resource read in several ranges is one view: its weeks of one range are no evidence
         // about another.
-        for (const { resource, days: timetable } of timetables) {
+        for (const { resource, days: timetable, hidden } of timetables) {
           const key = `${type} ${resource}`;
           const earlier = views.get(key);
 
@@ -206,6 +231,7 @@ const readViews = Effect.fn("Truth.readViews")(function* (
               ).values(),
             ],
             weeks: new Set([...(earlier?.weeks ?? []), ...weeks]),
+            hidden: new Set([...(earlier?.hidden ?? []), ...hidden]),
           });
         }
       }
@@ -220,8 +246,27 @@ const readViews = Effect.fn("Truth.readViews")(function* (
     ).values(),
   ];
 
-  return { views, read, parts, entries };
+  return { views, read, parts, entries, years };
 });
+
+const halvesOf = Effect.fn("Truth.halvesOf")(function* (
+  years: ReadonlyArray<Schoolyear>,
+  captured: ReadonlySet<number>,
+) {
+  const halves: Array<{ readonly id: string; readonly start: string; readonly end: string }> = [];
+
+  for (const year of years.filter(({ id }) => captured.has(id))) {
+    const boundary = CapturePlan.termBoundary(year);
+    const lastOfFirst = yield* encodeDate(CivilTime.addDays(yield* decodeDate(boundary), -1));
+
+    halves.push(
+      { id: `${year.name} 1`, start: year.dateRange.start.slice(0, 10), end: lastOfFirst },
+      { id: `${year.name} 2`, start: boundary, end: year.dateRange.end.slice(0, 10) },
+    );
+  }
+
+  return halves;
+}, Effect.orDie);
 
 /** What WebUntis showed at the capture's end. */
 export const build = Effect.fn("Truth.build")(function* (corpus: Corpus.Corpus) {
@@ -229,7 +274,7 @@ export const build = Effect.fn("Truth.build")(function* (corpus: Corpus.Corpus) 
     asOf: corpus.manifest.capturedAt,
   });
 
-  const { views, read, parts, entries } = yield* readViews(client, corpus.manifest.ranges);
+  const { views, read, parts, entries, years } = yield* readViews(client, corpus.manifest.ranges);
   const exams: Array<Metrics.TruthExam> = [];
 
   for (const { year, start, end } of parts) {
@@ -267,6 +312,7 @@ export const build = Effect.fn("Truth.build")(function* (corpus: Corpus.Corpus) 
       })),
       ...corpus.cases.closures,
     ],
+    halves: yield* halvesOf(years, new Set(parts.map(({ year }) => year))),
   } satisfies Truth;
 });
 

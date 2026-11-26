@@ -1,5 +1,10 @@
-import { assert, describe, it } from "@effect/vitest";
+import { assert, describe, expect, it } from "@effect/vitest";
+import * as Cron from "effect/Cron";
+import * as DateTime from "effect/DateTime";
+import * as Duration from "effect/Duration";
 import * as Option from "effect/Option";
+import { ImportRun } from "../ImportRun.ts";
+import { Lease } from "../Lease.ts";
 import { IgsLilienthal } from "./IgsLilienthal.ts";
 import { SchoolProfile } from "./SchoolProfile.ts";
 
@@ -55,4 +60,43 @@ describe("IgsLilienthal", () => {
   ])("reads '$text' as a stock phrase: $phrase", ({ text, phrase }) => {
     assert.deepStrictEqual(SchoolProfile.stockPhrase(IgsLilienthal.profile, text), phrase);
   });
+
+  // A normal day, and the two on which the clocks change.
+  it.each(["2026-11-02", "2026-03-29", "2026-10-25"])(
+    "reserves within the cap on %s, and every run ends before midnight",
+    (date) => {
+      const { school } = IgsLilienthal.profile;
+      const noon = DateTime.makeUnsafe(`${date}T12:00:00Z`);
+      const start = ImportRun.endOfDay(school, DateTime.subtract(noon, { days: 1 }));
+      const end = ImportRun.endOfDay(school, noon);
+
+      const runs = Object.values(IgsLilienthal.schedule).map((run) => {
+        const starts: Array<DateTime.Utc> = [];
+
+        for (const next of Cron.sequence(run.cron, DateTime.subtract(start, { seconds: 1 }))) {
+          const at = DateTime.makeUnsafe(next);
+
+          if (!DateTime.isLessThan(at, end)) break;
+
+          starts.push(at);
+        }
+
+        return { count: starts.length, maximum: run.maximum, last: starts.at(-1) };
+      });
+
+      const reserved = runs.reduce((sum, { count, maximum }) => sum + count * maximum, 0);
+
+      const lastEnd = runs.flatMap(({ last }) =>
+        last === undefined ? [] : [DateTime.addDuration(last, Lease.deadline)],
+      );
+
+      expect({
+        runs: runs.map(({ count }) => count),
+        fits: reserved <= ImportRun.dailyCap,
+        beforeMidnight: lastEnd.every((at) =>
+          DateTime.isLessThan(at, DateTime.subtractDuration(end, Duration.minutes(1))),
+        ),
+      }).toEqual({ runs: [96, 1], fits: true, beforeMidnight: true });
+    },
+  );
 });

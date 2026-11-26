@@ -30,6 +30,8 @@ import { Migrations } from "./infra/database/Migrations.ts";
 import { Jobs } from "./infra/jobs/Jobs.ts";
 import { Mail } from "./infra/mail/Mail.ts";
 import { Telemetry } from "./infra/telemetry/Telemetry.ts";
+import { ImportCommand } from "./import/ImportCommand.ts";
+import { ImportJob } from "./import/ImportJob.ts";
 import { Health } from "./routes/Health.ts";
 import { DevServers } from "./routes/DevServers.ts";
 import { Rpc } from "./routes/Rpc.ts";
@@ -88,7 +90,10 @@ const serve = Effect.gen(function* () {
   yield* Migrations.requireHead(yield* Migrations.Release);
 
   return yield* Layer.launch(
-    Layer.mergeAll(SyncServer.closeFirst.pipe(Layer.provide(http)), Jobs.layer),
+    Layer.mergeAll(
+      SyncServer.closeFirst.pipe(Layer.provide(http)),
+      Jobs.layer({ import: ImportJob.layer }),
+    ),
   );
 }).pipe(Effect.provide(withDatabase(Database.layer)));
 
@@ -154,6 +159,7 @@ const cli = Command.make("studienbuch-server", {}, () => serve).pipe(
           Command.withDescription("Prints what /api/health/ready reports"),
         ),
         AccessCommand.command.pipe(Command.provide(runtime)),
+        ImportCommand.command.pipe(Command.provide(runtime)),
         Seed.command.pipe(Command.provide(Layer.merge(runtime, DemoAccounts.seeding))),
       ]),
     ),

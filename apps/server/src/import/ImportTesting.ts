@@ -1,6 +1,7 @@
 /** The naive import on a recorded corpus, at a fixed time, for the import's own tests. */
 import { WebUntisClient } from "@schnau/webuntis-api";
 import { CivilTime, School } from "@stu/core";
+import * as Clock from "effect/Clock";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -53,3 +54,28 @@ export const naive = Effect.fn("ImportTesting.naive")(function* (
 
   return { result, log: yield* log };
 });
+
+/**
+ * Runs `effect` on the live clock moved to `at`, so it sees the invented school's dates and still
+ * sleeps in real time. A `TestClock` set that far ahead hangs the Postgres test layer.
+ */
+export const at =
+  (instant: DateTime.Utc) =>
+  <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+    Clock.clockWith((live) => {
+      const offset = DateTime.toEpochMillis(instant) - live.currentTimeMillisUnsafe();
+      const millis = () => live.currentTimeMillisUnsafe() + offset;
+      const nanos = () => live.currentTimeNanosUnsafe() + BigInt(offset) * 1_000_000n;
+
+      const moved: Clock.Clock = {
+        currentTimeMillisUnsafe: millis,
+        currentTimeMillis: Effect.sync(millis),
+        currentTimeNanosUnsafe: nanos,
+        currentTimeNanos: Effect.sync(nanos),
+        monotonicTimeNanosUnsafe: () => live.monotonicTimeNanosUnsafe(),
+        monotonicTimeNanos: live.monotonicTimeNanos,
+        sleep: (duration) => live.sleep(duration),
+      };
+
+      return Effect.provideService(effect, Clock.Clock, moved);
+    });

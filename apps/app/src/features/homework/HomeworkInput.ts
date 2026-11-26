@@ -1,8 +1,6 @@
-import { CivilTime, Course, Homework, Term } from "@stu/core";
-import type { Tx } from "@stu/sync";
+import { CivilTime, Course, Homework } from "@stu/core";
 import { Pickable } from "@stu/domain-ui/calendar/Pickable";
 import type { Values } from "@stu/domain-ui/homework/HomeworkForm";
-import * as Arr from "effect/Array";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 
@@ -62,28 +60,9 @@ export interface Chosen {
   readonly courseIds: ReadonlyArray<string>;
 }
 
-/**
- * The courses the sheet offers as Fach: those chosen for the term `today` falls in, or none while
- * that term has no course choice yet. Between terms, or before the school's terms arrived, every
- * chosen course, since `homework.create` accepts any. An edit keeps its own course (`choices`).
- */
-export const offered = (
-  enrollments: ReadonlyArray<Chosen>,
-  terms: ReadonlyArray<Tx.Entry<Term.Row>>,
-  today: CivilTime.PlainDate,
-): ReadonlyArray<string> =>
-  Option.match(Term.containing(terms, today), {
-    onNone: () => Arr.dedupe(enrollments.flatMap((enrollment) => enrollment.courseIds)),
-    onSome: (term) =>
-      Option.match(
-        Arr.findFirst(enrollments, (enrollment) => enrollment.termId === term.id),
-        { onNone: () => [], onSome: (enrollment) => enrollment.courseIds },
-      ),
-  });
-
 export interface Context {
   readonly today: CivilTime.PlainDate;
-  /** The course ids from `offered`. */
+  /** The course ids from `Enrollment.chosenOn` for `today`. */
   readonly offered: ReadonlyArray<string>;
   /**
    * When editing, the homework as it is. Its own course and due date stay valid, so homework of a

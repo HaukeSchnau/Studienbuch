@@ -16,6 +16,7 @@ import type { Corpus } from "../corpus/Corpus.ts";
 import type { SchoolProfile } from "../profiles/SchoolProfile.ts";
 import { Projection } from "../Projection.ts";
 import { SchoolImport } from "../SchoolImport.ts";
+import { CourseIdentity } from "./CourseIdentity.ts";
 import { Metrics } from "./Metrics.ts";
 import type { Report } from "./Report.ts";
 import { Students } from "./Students.ts";
@@ -145,10 +146,90 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
         return monday === undefined ? [] : [nightlyRun(monday)];
       });
 
-  const runs: Array<Effect.Success<ReturnType<typeof run>>> = [];
+  const inWeek = (week: string) => (date: string) => weekOf(date) === week;
+
+  // A student's courses are held for a term, as a Kurswahl would be: those of their entries in
+  // the term's first two full captured weeks, added ones aside. Only later weeks measure them.
+  // A day no case labels is in its school year's half.
+  const inTerm = (day: string) => (term: { readonly start: string; readonly end: string }) =>
+    term.start <= day && day <= term.end;
+
+  const termOf = (day: string) =>
+    (corpus.cases.terms.find(inTerm(day)) ?? truth.halves.find(inTerm(day)))?.id;
+
+  const openingWeeks = new Map(
+    [...new Set(truth.days.map(termOf))].map((term) => [
+      term,
+      new Set(
+        captured
+          .filter((week) => {
+            const weekDays = truth.days.filter(inWeek(week));
+
+            return weekDays.length === 5 && weekDays.every((day) => termOf(day) === term);
+          })
+          .slice(0, 2),
+      ),
+    ]),
+  );
+
+  const opening = (term: string | undefined) => openingWeeks.get(term) ?? new Set<string>();
+
+  const lastOpening = new Map(
+    [...openingWeeks].map(([term, weeksOfTerm]) => [term, [...weeksOfTerm].sort().at(-1)]),
+  );
+
+  const measuredEntries = truth.entries.filter((entry) => measuredDays.has(entry.date));
+
+  /**
+   * What a student can look up after a run: the lessons of the next seven days in the store,
+   * against what WebUntis showed when the run read them. Later changes are later runs' business.
+   */
+  const lookaheadOf = Effect.fnUntraced(function* (
+    now: DateTime.Utc,
+    store: ReadonlyMap<string, ReadonlyArray<Metrics.Lesson>>,
+  ) {
+    const dayIn = (days: number) =>
+      DateTime.formatIsoDate(DateTime.setZoneNamedUnsafe(DateTime.add(now, { days }), timeZone));
+
+    return Metrics.held(
+      yield* Truth.entriesAt(corpus, now, { start: dayIn(1), end: dayIn(7) }),
+      store,
+    );
+  });
+
+  // Each run is measured as it lands, and only the last store and each term's opening store are
+  // kept: a timeline's stores together need gigabytes.
+  const runs: Array<Pick<Effect.Success<ReturnType<typeof run>>, "day" | "failed" | "log">> = [];
+  const kept: Array<Metrics.Fraction> = [];
+  const ahead: Array<Metrics.Fraction> = [];
+  const openingStates = new Map<string | undefined, SchoolImport.ImportResult>();
+
+  let last: Option.Option<{
+    readonly state: SchoolImport.ImportResult;
+    readonly store: ReadonlyMap<string, ReadonlyArray<Metrics.Lesson>>;
+  }> = Option.none();
 
   for (const start of starts) {
-    runs.push(yield* run(start, Option.fromNullishOr(runs.at(-1)?.state)));
+    const { day, now, state, failed, log } = yield* run(
+      start,
+      Option.map(last, (each) => each.state),
+    );
+
+    const store = Metrics.byEntry(Metrics.lessonsOf(state));
+
+    if (Option.isSome(last)) {
+      kept.push(Metrics.courseIdsKept(measuredEntries, last.value.store, store));
+    }
+
+    if (measuredDays.has(day)) ahead.push(yield* lookaheadOf(now, store));
+
+    // What a student chose from: the store after the last run of the term's opening weeks.
+    for (const [term, week] of lastOpening) {
+      if (week !== undefined && weekOf(day) <= week) openingStates.set(term, state);
+    }
+
+    runs.push({ day, failed, log });
+    last = Option.some({ state, store });
   }
 
   // The first measured run, repeated: as a second run, with reversed reads and with failing reads.
@@ -168,47 +249,37 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
 
   if (gaps.length > 0) return yield* new NotCaptured({ reads: gaps });
 
-  const final = runs.at(-1)?.state ?? SchoolImport.empty;
+  const final = Option.match(last, {
+    onNone: () => SchoolImport.empty,
+    onSome: (each) => each.state,
+  });
+
   const ours = Metrics.lessonsOf(final);
   const index = Metrics.byEntry(ours);
-  const inWeek = (week: string) => (date: string) => weekOf(date) === week;
-
-  // A student's courses are held for a term, as a Kurswahl would be: those of their entries in
-  // the term's first two full captured weeks, added ones aside. Only later weeks measure them.
-  const termOf = (day: string) =>
-    corpus.cases.terms.find((term) => term.start <= day && day <= term.end)?.id;
-
-  const opening = (term: string | undefined) =>
-    new Set(
-      captured
-        .filter((week) => {
-          const weekDays = truth.days.filter(inWeek(week));
-
-          return weekDays.length === 5 && weekDays.every((day) => termOf(day) === term);
-        })
-        .slice(0, 2),
-    );
-
   const termOfWeek = (week: string) => termOf(truth.days.find(inWeek(week)) ?? "");
   const students = truth.views.filter((view) => view.type === "STUDENT");
 
   // What a student chose from: the store after the last run of the term's opening weeks. Later
   // runs never choose for them, so a course split or renamed after it shows as missing lessons.
-  const openings = new Map<string | undefined, ReadonlyArray<Metrics.Lesson>>();
+  const openings = new Map<
+    string | undefined,
+    {
+      readonly lessons: ReadonlyArray<Metrics.Lesson>;
+      readonly index: ReadonlyMap<string, ReadonlyArray<Metrics.Lesson>>;
+    }
+  >();
 
-  const openingLessons = (term: string | undefined) => {
-    const last = [...opening(term)].sort().at(-1);
+  const openingStore = (term: string | undefined) => {
+    const cached = openings.get(term);
 
-    const lessons =
-      openings.get(term) ??
-      Metrics.lessonsOf(
-        (last === undefined ? undefined : runs.findLast((each) => weekOf(each.day) <= last))
-          ?.state ?? SchoolImport.empty,
-      );
+    if (cached !== undefined) return cached;
 
-    openings.set(term, lessons);
+    const lessons = Metrics.lessonsOf(openingStates.get(term) ?? SchoolImport.empty);
+    const store = { lessons, index: Metrics.byEntry(lessons) };
 
-    return lessons;
+    openings.set(term, store);
+
+    return store;
   };
 
   const inOpening = (term: string | undefined) => (date: string) => opening(term).has(weekOf(date));
@@ -222,7 +293,7 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
       enrollments.get(key) ??
       Students.kurswahl(
         student.entries.filter((entry) => inOpening(term)(entry.date)),
-        Metrics.byEntry(openingLessons(term)),
+        openingStore(term).index,
       );
 
     enrollments.set(key, courses);
@@ -243,20 +314,29 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
     return openingWeeks.length === 2 && openingWeeks.every((each) => each < week);
   };
 
+  // A view's hidden days count on neither side, and a week of hidden days isn't measured.
+  const shownIn = (view: Truth.View, week: string) =>
+    truth.days.some((day) => inWeek(week)(day) && !view.hidden.has(day));
+
   const viewWeeks = (type: Truth.ViewType) =>
     truth.views
       .filter((view) => view.type === type)
       .flatMap((view) =>
         weeks
-          .filter((week) => view.weeks.has(week) && (type !== "STUDENT" || held(week)))
+          .filter(
+            (week) =>
+              view.weeks.has(week) && shownIn(view, week) && (type !== "STUDENT" || held(week)),
+          )
           .map((week) => {
             const courses =
               type === "STUDENT" ? enrollmentOf(view, termOfWeek(week)) : new Set<string>();
 
-            const mine = (lessonsIn.get(week) ?? []).filter((lesson) =>
-              type === "STUDENT"
-                ? courses.has(lesson.courseId)
-                : (type === "TEACHER" ? lesson.teachers : lesson.rooms).includes(view.id),
+            const mine = (lessonsIn.get(week) ?? []).filter(
+              (lesson) =>
+                !view.hidden.has(lesson.date) &&
+                (type === "STUDENT"
+                  ? courses.has(lesson.courseId)
+                  : (type === "TEACHER" ? lesson.teachers : lesson.rooms).includes(view.id)),
             );
 
             return {
@@ -273,14 +353,21 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
   const studentWeeks = viewWeeks("STUDENT");
   const heldTerms = [...new Set(weeks.filter(held).map(termOfWeek))];
 
-  // Each held term's Kurswahl, against the opening weeks it was taken from.
+  // Each held term's Kurswahl, against the opening weeks it was taken from. A student WebUntis
+  // hid all of them from made no choice the truth can see.
   const kurswahl = heldTerms.flatMap((term) =>
     students
-      .filter((student) => [...opening(term)].every((week) => student.weeks.has(week)))
+      .filter(
+        (student) =>
+          [...opening(term)].every((week) => student.weeks.has(week)) &&
+          truth.days.some((day) => inOpening(term)(day) && !student.hidden.has(day)),
+      )
       .map((student) =>
         Students.isExact(
           student.entries.filter((entry) => inOpening(term)(entry.date)),
-          openingLessons(term).filter((lesson) => inOpening(term)(lesson.date)),
+          openingStore(term).lessons.filter(
+            (lesson) => inOpening(term)(lesson.date) && !student.hidden.has(lesson.date),
+          ),
           enrollmentOf(student, term),
         ),
       ),
@@ -293,6 +380,33 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
       ),
       kurswahls: students.map((student) => enrollmentOf(student, term)),
     })),
+  );
+
+  // Real courses come from the rosters of the opening weeks, so a student WebUntis hid a day of
+  // them from would split their courses' rosters. Such a student counts in no roster that term.
+  const identity = CourseIdentity.combine(
+    [...openingWeeks].flatMap(([term, weeksOfTerm]) =>
+      weeksOfTerm.size === 2 && [...weeksOfTerm].every((week) => measured.has(week))
+        ? [
+            CourseIdentity.measure({
+              term: term ?? "",
+              attendance: students
+                .filter(
+                  (student) =>
+                    [...weeksOfTerm].every((week) => student.weeks.has(week)) &&
+                    !truth.days.some((day) => inOpening(term)(day) && student.hidden.has(day)),
+                )
+                .map((student) => ({
+                  student: student.name,
+                  entries: student.entries.filter((entry) => inOpening(term)(entry.date)),
+                })),
+              index: openingStore(term).index,
+              labels: corpus.cases.courses,
+              weekOf,
+            }),
+          ]
+        : [],
+    ),
   );
 
   // Lessons the projection keeps out of the publish, such as those of a course without an
@@ -367,46 +481,32 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
     ]),
   );
 
+  // An exam counts for the students the truth has, on a day their timetable shows: its roster is
+  // cut to them, and an exam with none of them left isn't measured.
+  const studentViews = new Map(students.map((student) => [student.id, student]));
+
+  const sees = (student: number, date: string) => {
+    const view = studentViews.get(student);
+
+    return view !== undefined && view.weeks.has(weekOf(date)) && !view.hidden.has(date);
+  };
+
   const examsByTerm = [...new Set(days.map(termOf))].map((term) =>
     Metrics.scoreExams(
-      truth.exams.filter((exam) => measuredDays.has(exam.date) && termOf(exam.date) === term),
+      truth.exams
+        .filter((exam) => measuredDays.has(exam.date) && termOf(exam.date) === term)
+        .map((exam) => ({
+          ...exam,
+          students: exam.students.filter((student) => sees(student, exam.date)),
+        }))
+        .filter((exam) => exam.students.length > 0),
       final.exams
         .filter((exam) => measuredDays.has(exam.date) && termOf(exam.date) === term)
         .map((exam) => ({ ...exam, examIds: examRefs.get(exam.id) ?? [] })),
       new Map(students.map((student) => [student.id, enrollmentOf(student, term)])),
       courseTeachers,
       courseSubjects,
-    ),
-  );
-
-  const stores = runs.map((each) => Metrics.byEntry(Metrics.lessonsOf(each.state)));
-  const measuredEntries = truth.entries.filter((entry) => measuredDays.has(entry.date));
-
-  const kept = Metrics.sum(
-    stores
-      .slice(1)
-      .map((after, position) =>
-        Metrics.courseIdsKept(measuredEntries, stores[position] ?? new Map(), after),
-      ),
-  );
-
-  // What a student can look up after each run: the lessons of the next seven days in the store,
-  // against what WebUntis showed when the run read them. Later changes are later runs' business.
-  const lookahead = Metrics.sum(
-    yield* Effect.forEach(
-      runs.flatMap((each, position) => (measuredDays.has(each.day) ? [{ each, position }] : [])),
-      Effect.fnUntraced(function* ({ each, position }) {
-        const { now } = each;
-
-        const dayIn = (days: number) =>
-          DateTime.formatIsoDate(
-            DateTime.setZoneNamedUnsafe(DateTime.add(now, { days }), timeZone),
-          );
-
-        const entries = yield* Truth.entriesAt(corpus, now, { start: dayIn(1), end: dayIn(7) });
-
-        return Metrics.held(entries, stores[position] ?? new Map());
-      }),
+      sees,
     ),
   );
 
@@ -422,6 +522,7 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
     },
     kurswahl: Metrics.fraction(kurswahl.filter(Boolean).length, kurswahl.length),
     ghostCourses,
+    courseIdentity: identity.counts,
     changes: changes.score,
     courses: courses.score,
     closures: Metrics.scoreClosures(days, closedIn(truth.closures), closedIn(final.closures)),
@@ -432,9 +533,13 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
       precision: Metrics.sum(examsByTerm.map((each) => each.students.precision)),
     },
     weekLabels: Metrics.fraction(labelsRight.length, labelled.length),
-    courseIdsKept: kept,
-    lookahead,
+    courseIdsKept: Metrics.sum(kept),
+    lookahead: Metrics.sum(ahead),
     runs: { total: runs.length, failed: runs.filter((each) => each.failed).length },
+    hiddenDays: truth.views.reduce(
+      (count, view) => count + [...view.hidden].filter((day) => measuredDays.has(day)).length,
+      0,
+    ),
     invariants: {
       // A failing-reads rerun in which no read failed tested nothing, so it counts as failed.
       failedRuns: [
@@ -477,5 +582,6 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
           (a.week < b.week ? -1 : 1),
       )
       .slice(0, 10),
+    courseCases: identity.cases,
   } satisfies Report.Evaluation;
 });

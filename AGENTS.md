@@ -16,7 +16,7 @@ Most users are minors. Grades, absences, homework, signatures, photos and the di
 
 ### 3. Three platforms
 
-iOS, Android and the web are one Expo app. A feature works on all three, or the PR says why not. The landing page shows the app's screens with demo data, drawn today by stand-ins in `apps/web/src/domain-ui/app/` rather than the app's own components.
+iOS, Android and the web are one Expo app. A feature works on all three, or the PR says why not. The landing page shows the app's screens with demo data. The Übersicht's card is the app's own `AgendaCard` from `packages/domain-ui`; the other screens are still stand-ins in `apps/web/src/domain-ui/app/`.
 
 ### 4. Long-term maintainability
 
@@ -79,7 +79,7 @@ The domain. UI copy is German, code is English:
 ## The five ways to hurt yourself
 
 1. **Killing by pattern.** Kill only a PID you captured at spawn, or the owner of your port from `ss -H -ltnp` after confirming `/proc/<pid>/cwd` is your worktree. Your own agent process has this worktree's path in its argv, and the host runs other agents' dev servers.
-2. **Logging the school out of WebUntis.** Two logins with one WebUntis account log each other out, and beta's import will use the school's account. Develop and test the import against the anonymized corpus. A live login needs Hauke's go, and once beta imports, its import paused first. Accounts: webuntis-api's live tests and the M2 corpus capture share one IGS account; legacy production (studienbuch.app) never logs into WebUntis, and beta has no account yet, so a capture and a live test must never overlap.
+2. **Logging the school out of WebUntis.** Two logins with one WebUntis account log each other out, and beta's import will use the school's account. Develop and test the import against the anonymized corpus. A live login needs Hauke's go, and once beta imports, its import paused first: `ssh srv-2 sudo -n fleet console studienbuch-beta import pause --by <you>` returns once no run reads, and `import resume --by <you>` ends it after the login. The import pauses itself after a refused password or two lost sessions in a row; `import status` says so, and `import resume --by import` ends that pause. Accounts: webuntis-api's live tests and the M2 corpus capture share one IGS account; legacy production (studienbuch.app) never logs into WebUntis, and beta has no account yet, so a capture and a live test must never overlap.
 3. **Baking in an origin.** One web build serves every preview, beta and later prod. `EXPO_PUBLIC_API_URL` exists for native builds only, set for the store builds in `.calder/ci.ts`.
 4. **Leaking plaintext.** Content of encrypted tables exists in plaintext only on devices. Logs, spans, error messages, the command log, Postgres, dumps and the blob store carry ids, tags and ciphertext. Real names and real student data stay out of fixtures, logs and the repository.
 5. **Changing srv-2 by hand.** Previews, beta, their databases and the app stores change only through the pipeline (Calder and the Alchemy stack). Reading status and logs is fine. Anything that writes needs Hauke's go at the time.
@@ -115,7 +115,7 @@ devenv on localhost is the dev environment, one instance per worktree ([ADR 0006
 An empty database is a bad test.
 
 - The demo school: `prepare` seeds it deterministically when `STUDIENBUCH_DEMO_SCHOOL=seed`, with personas: two students, and later a teacher and a parent. On dev instances and previews, the welcome and sign-in screens show "Anmelden als Lena" and "Anmelden als Tom", which sign in without a password. The server decides: the app shows them when `System.info` names a development or preview server, and `Demo.signIn` refuses on every other. On beta the personas sign in with the demo password only.
-- The import runs against an anonymized WebUntis corpus that lives outside this public repository. Real WebUntis data stays out of the tree. `vp run import:eval` in `apps/server` measures an import against a corpus; by default it uses TinySchool, an invented school in the tree that every pull request runs on.
+- The import runs against an anonymized WebUntis corpus that lives outside this public repository. Real WebUntis data stays out of the tree. `vp run import:eval` in `apps/server` measures an import against a corpus; by default it uses TinySchool, an invented school in the tree that every pull request runs on. CI's `import-eval` step also measures every import change on the pinned real corpus against `baseline.json`, which `calder check` can't read, so before pushing an import change run `vp run corpus:fetch --pinned` and `vp run import:eval --corpus pinned --against baseline` there. A change that moves a number updates `baseline.json` in the same commit (`--json src/import/evaluation/baseline.json`).
 - E2E tests create their own school per run, so they can run against previews and beta without a reset.
 
 ## Verifying

@@ -1,5 +1,6 @@
 /** IGS Lilienthal, the first school: its upper school is grades 11 to 13. */
 import { School } from "@stu/core";
+import * as Cron from "effect/Cron";
 import { SchoolProfile } from "./SchoolProfile.ts";
 
 export * as IgsLilienthal from "./IgsLilienthal.ts";
@@ -54,4 +55,24 @@ export const profile: SchoolProfile.SchoolProfile = {
     "Aufsicht",
     "Exkursion",
   ],
+  // Go 2 (m2-import-path.md, "What needs Hauke") turns it on, in a reviewed pull request.
+  publish: false,
+};
+
+/**
+ * Every ten minutes from 06:00 to 21:50, and nightly at 05:30. A run sends 17 requests (a login
+ * of four, eight reads, five class views) and keeps the rest of its 26 for retries: 2,522 a day
+ * of the cap's 3,000, and none near midnight, where a reservation's requests stop.
+ */
+export const schedule: SchoolProfile.Schedule = {
+  daytime: {
+    cron: Cron.parseUnsafe("*/10 6-21 * * *", profile.school.timeZone),
+    nightly: false,
+    maximum: 26,
+  },
+  nightly: {
+    cron: Cron.parseUnsafe("30 5 * * *", profile.school.timeZone),
+    nightly: true,
+    maximum: 26,
+  },
 };

@@ -1,4 +1,5 @@
 import * as ClusterCron from "effect/cluster/ClusterCron";
+import type * as Sharding from "effect/cluster/Sharding";
 import * as SingleRunner from "effect/cluster/SingleRunner";
 import * as Config from "effect/Config";
 import * as Cron from "effect/Cron";
@@ -10,7 +11,7 @@ import { Database } from "../database/Database.ts";
 import { Schema as Tables } from "../database/Schema.ts";
 
 /** Every job the server knows. */
-export const Name = Schema.Literals(["heartbeat"]);
+export const Name = Schema.Literals(["heartbeat", "import"]);
 
 export type Name = typeof Name.Type;
 
@@ -24,7 +25,8 @@ export const enabled = Config.Literal("none", "STUDIENBUCH_JOBS").pipe(
   Config.withDefault(Name.literals),
 );
 
-const recordRun = Effect.fn("Jobs.recordRun")(function* (name: Name) {
+/** Notes that `name` ran now, for readiness. */
+export const recordRun = Effect.fn("Jobs.recordRun")(function* (name: Name) {
   const db = yield* Database.Drizzle;
   const lastRunAt = DateTime.toDateUtc(yield* DateTime.now);
   yield* db
@@ -41,27 +43,35 @@ export const lastRuns = Effect.gen(function* () {
   return new Map(rows.map((row) => [row.name, DateTime.fromDateUnsafe(row.lastRunAt)]));
 });
 
-const jobs = {
-  // Proves the cluster modules on the real host before sync and import jobs depend on them.
-  heartbeat: ClusterCron.make({
-    name: "heartbeat",
-    cron: Cron.parseUnsafe("* * * * *"),
-    execute: recordRun("heartbeat"),
-  }),
-} satisfies Record<Name, ReturnType<typeof ClusterCron.make>>;
+// Proves the cluster modules on the real host before sync and import jobs depend on them.
+const heartbeat = ClusterCron.make({
+  name: "heartbeat",
+  cron: Cron.parseUnsafe("* * * * *"),
+  execute: recordRun("heartbeat"),
+});
+
+/**
+ * The jobs of the server's domain directories by name, each a layer of crons. infra can't import
+ * them, so `main.ts` hands them over.
+ */
+export type Domain<E, R> = {
+  readonly [N in Exclude<Name, "heartbeat">]: Layer.Layer<never, E, Sharding.Sharding | R>;
+};
 
 /**
  * Runs the enabled jobs through `ClusterCron` on a single-node cluster in Postgres, so runs never
  * overlap across processes. Effect creates and migrates its `cluster_*` tables itself.
  */
-export const layer = Layer.unwrap(
-  Effect.map(enabled, (names) => {
-    const [first, ...rest] = names.map((name) => jobs[name]);
+export const layer = <E, R>(domain: Domain<E, R>) =>
+  Layer.unwrap(
+    Effect.map(enabled, (names) => {
+      const jobs = { heartbeat, ...domain };
+      const [first, ...rest] = names.map((name) => jobs[name]);
 
-    return first === undefined
-      ? Layer.empty
-      : Layer.mergeAll(first, ...rest).pipe(Layer.provide(SingleRunner.layer()));
-  }),
-);
+      return first === undefined
+        ? Layer.empty
+        : Layer.mergeAll(first, ...rest).pipe(Layer.provide(SingleRunner.layer()));
+    }),
+  );
 
 export * as Jobs from "./Jobs.ts";

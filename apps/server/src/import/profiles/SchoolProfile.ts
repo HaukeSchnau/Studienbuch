@@ -4,6 +4,7 @@
  * texts use. A school's profile is a module of its own, such as `IgsLilienthal.ts`.
  */
 import type { School } from "@stu/core";
+import type * as Cron from "effect/Cron";
 import * as Data from "effect/Data";
 import * as Option from "effect/Option";
 
@@ -33,6 +34,27 @@ export interface SchoolProfile {
    * space's readers chose the course themselves and free text can name a student.
    */
   readonly stockPhrases: ReadonlyArray<string>;
+  /**
+   * Whether a run writes the school's rows. Without it a run reads, stores and imports, and keeps
+   * its checkpoint, so the first publish starts from ids and removals that have held for weeks.
+   */
+  readonly publish: boolean;
+}
+
+/** One kind of a school's import runs. */
+export interface Run {
+  /** When it starts, in the school's time zone. */
+  readonly cron: Cron.Cron;
+  /** The nightly run, which alone creates courses and offerings. */
+  readonly nightly: boolean;
+  /** The most requests it may send, logins and retries included, reserved before the first. */
+  readonly maximum: number;
+}
+
+/** When a school's import runs: through the day, and once a night. */
+export interface Schedule {
+  readonly daytime: Run;
+  readonly nightly: Run;
 }
 
 /** The grade level of a class whose lessons the import reads, if it reads them. */
