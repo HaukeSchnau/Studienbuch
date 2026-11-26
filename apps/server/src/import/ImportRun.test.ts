@@ -38,13 +38,18 @@ type Client = WebUntisClient["Service"];
 
 type Batch = Client["timetable"]["getEntriesForResources"];
 
-/** A connection that answers from the recording as WebUntis did on the morning of 2 November. */
-const recorded = (corpus: Corpus.Corpus, change: (client: Client) => Client = (client) => client) =>
-  Layer.effect(WebUntisClient)(
-    Effect.map(RecordedWebUntis.make(corpus.reads, { asOf: morning }), ({ client }) =>
-      change(client),
-    ),
-  );
+/**
+ * A connection that answers from the recording as WebUntis did on the morning of 2 November. It
+ * sends no request, so it has none for the gate.
+ */
+const recorded =
+  (corpus: Corpus.Corpus, change: (client: Client) => Client = (client) => client) =>
+  () =>
+    Layer.effect(WebUntisClient)(
+      Effect.map(RecordedWebUntis.make(corpus.reads, { asOf: morning }), ({ client }) =>
+        change(client),
+      ),
+    );
 
 const withBatch =
   (batch: (client: Client) => Batch) =>
@@ -238,11 +243,11 @@ describe.skipIf(Postgres18.socket === null)("ImportRun on PostgreSQL 18", () => 
             first: ["Published", 64, []],
             again: {},
             later: { ImportStatus: { written: 1, removed: 0 } },
-            // School years, app data, time grid, four directories, exams and three class views.
+            // A recording sends no request; the live connection's runs count theirs.
             runs: [
-              { outcome: "Published", sent: 11 },
-              { outcome: "Published", sent: 11 },
-              { outcome: "Published", sent: 11 },
+              { outcome: "Published", sent: 0 },
+              { outcome: "Published", sent: 0 },
+              { outcome: "Published", sent: 0 },
             ],
             // WebUntis leaves out weekends, so the window's last Sunday counts as covered.
             status: Option.some(["2026-11-02T05:31", "2026-11-29"]),
@@ -557,9 +562,10 @@ describe.skipIf(Postgres18.socket === null)("ImportRun on PostgreSQL 18", () => 
         yield* Deferred.await(holding);
         const clock = yield* TestClock.make();
 
-        const source = Layer.effect(WebUntisClient)(
-          Effect.andThen(Ref.set(connected, true), Effect.die("a connection")),
-        );
+        const source = () =>
+          Layer.effect(WebUntisClient)(
+            Effect.andThen(Ref.set(connected, true), Effect.die("a connection")),
+          );
 
         const run = yield* Effect.forkChild(
           ImportRun.run(options(school, { source })).pipe(
@@ -910,24 +916,57 @@ describe.skipIf(Postgres18.socket === null)("ImportRun on PostgreSQL 18", () => 
 });
 
 describe("ImportRun", () => {
-  it.effect("admits no request past the reservation or the lease's deadline", () =>
+  it.effect("admits no request past the reservation, the deadline or a lost session", () =>
     Effect.gen(function* () {
       const until = DateTime.makeUnsafe(60_000);
-      const { admit, sent } = yield* ImportRun.dispatch(2, until);
-      yield* admit;
-      yield* admit;
-      const over = yield* Effect.flip(admit);
+      const { gate, sent } = yield* ImportRun.dispatch(2, until);
+      yield* gate.admit;
+      yield* gate.admit;
+      const over = yield* Effect.flip(gate.admit);
       const late = yield* ImportRun.dispatch(5, until);
       yield* TestClock.adjust("1 minute");
-      const past = yield* Effect.flip(late.admit);
+      const past = yield* Effect.flip(late.gate.admit);
+      const lost = yield* ImportRun.dispatch(5, DateTime.makeUnsafe(120_000));
+      yield* lost.gate.admit;
+      yield* lost.gate.lose;
+      const after = yield* Effect.flip(lost.gate.admit);
 
-      expect([yield* sent, over._tag, past._tag]).toEqual([
+      expect([yield* sent, over._tag, past._tag, after._tag, yield* lost.sent]).toEqual([
         2,
         "ImportRun.OverReservation",
         "ImportRun.PastDeadline",
+        "ImportRun.SessionLost",
+        1,
       ]);
     }),
   );
+
+  it("sends until the lease ends or the school's day does, also on the days the clocks change", () => {
+    const school = TinySchool.profile.school;
+
+    const until = (startedAt: string, leaseUntil: string) =>
+      DateTime.formatIso(
+        ImportRun.sendsUntil(
+          school,
+          DateTime.makeUnsafe(startedAt),
+          DateTime.makeUnsafe(leaseUntil),
+        ),
+      );
+
+    expect([
+      until("2026-11-02T12:00:00Z", "2026-11-02T12:05:00Z"),
+      until("2026-11-02T22:58:00Z", "2026-11-02T23:03:00Z"),
+      until("2026-11-02T23:00:00Z", "2026-11-02T23:05:00Z"),
+      until("2026-03-29T21:58:00Z", "2026-03-29T22:03:00Z"),
+      until("2026-10-25T22:58:00Z", "2026-10-25T23:03:00Z"),
+    ]).toEqual([
+      "2026-11-02T12:05:00.000Z",
+      "2026-11-02T23:00:00.000Z",
+      "2026-11-02T23:05:00.000Z",
+      "2026-03-29T22:00:00.000Z",
+      "2026-10-25T23:00:00.000Z",
+    ]);
+  });
 
   it("covers from today to the last day read, stepping over weekends", () => {
     const window = {

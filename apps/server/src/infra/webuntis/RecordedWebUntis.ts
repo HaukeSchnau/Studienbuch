@@ -128,7 +128,7 @@ const reverseDeep = (value: Schema.Json): Schema.Json => {
 const later = (a: Version, b: Version) => DateTime.isLessThan(b.observedAt, a.observedAt);
 
 /** The version that answers for `day`, or for the whole read when it takes no range. */
-const pick = (read: Read, asOf: DateTime.Utc, day?: string): Option.Option<Version> => {
+export const pick = (read: Read, asOf: DateTime.Utc, day?: string): Option.Option<Version> => {
   const covering = read.versions.filter(
     (version) =>
       day === undefined ||

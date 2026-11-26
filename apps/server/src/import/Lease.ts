@@ -107,15 +107,30 @@ export const claim = Effect.fn("Lease.claim")(
   Effect.catchTags({ SqlError: Effect.die }),
 );
 
-/** Clears the lease if `owner`'s claim still holds it, and leaves a later claim's alone. */
-export const release = Effect.fn("Lease.release")(function* (school: School.Id, owner: string) {
-  const sql = yield* SqlClient.SqlClient;
+/**
+ * Clears the lease if `owner`'s claim still holds it, and leaves a later claim's alone. When the
+ * row stays locked or the database fails, the lease passes at its deadline instead, and the run
+ * that ends doesn't wait for it, so its cron's next slot comes on time.
+ */
+export const release = Effect.fn("Lease.release")(
+  function* (school: School.Id, owner: string) {
+    const sql = yield* SqlClient.SqlClient;
 
-  yield* sql`
-      update import_school set lease_until = null, lease_owner = null
-      where school_id = ${school} and lease_owner = ${owner}::uuid
-    `;
-}, Effect.orDie);
+    yield* sql.withTransaction(
+      Effect.andThen(
+        sql`set local lock_timeout = '2s'`,
+        sql`
+          update import_school set lease_until = null, lease_owner = null
+          where school_id = ${school} and lease_owner = ${owner}::uuid
+        `,
+      ),
+    );
+  },
+  // Also a rollback on a dead connection, which dies: the run's outcome and pause still follow.
+  Effect.catchCause(() =>
+    Effect.logWarning("A run's lease couldn't be cleared, so it passes at its deadline"),
+  ),
+);
 
 const passed = (until: Date | null, now: DateTime.Utc) =>
   until === null || !DateTime.isLessThan(now, DateTime.fromDateUnsafe(until));
