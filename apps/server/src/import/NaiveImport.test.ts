@@ -168,13 +168,27 @@ describe("NaiveImport", () => {
     }),
   );
 
-  it.effect("keeps parallel groups' courses in a run whose reads show no parallel meeting", () =>
+  // Only the nightly run creates courses, so only it decides that a family has parallel groups.
+  it.effect.each([
+    {
+      name: "keeps parallel groups' courses in a daytime run whose reads show no parallel meeting",
+      // Monday's first group is cancelled now, so no two groups meet as planned in the window.
+      night: withSecondMaE(false),
+      day: withSecondMaE(true),
+      courses: ["MA-E/12/LB", "MA-E/12/LC"],
+    },
+    {
+      name: "keeps a family's course in a daytime run that first shows its parallel groups",
+      night: TinySchool.corpus,
+      day: withSecondMaE(false),
+      courses: ["MA-E/12"],
+    },
+  ])("$name", ({ night, day, courses }) =>
     Effect.gen(function* () {
-      const nightly = yield* ImportTesting.naive(withSecondMaE(false));
+      const nightly = yield* ImportTesting.naive(night);
       const previous = SchoolImport.apply(SchoolImport.empty, nightly.result);
 
-      // Monday's first group is cancelled now, so no two groups meet as planned in the window.
-      const { result } = yield* ImportTesting.naive(withSecondMaE(true), {
+      const { result } = yield* ImportTesting.naive(day, {
         previous,
         nightly: false,
         now: ImportTesting.noon,
@@ -189,7 +203,7 @@ describe("NaiveImport", () => {
           ).sort(),
           unattributed: result.unattributed.filter(({ date }) => date === "2026-11-02"),
         },
-        { courses: [course("MA-E/12/LB"), course("MA-E/12/LC")].sort(), unattributed: [] },
+        { courses: courses.map(course).sort(), unattributed: [] },
       );
     }),
   );

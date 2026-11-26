@@ -295,6 +295,8 @@ export const layer = Layer.effect(SchoolImport.Service)(
         if (nightly && term !== undefined) {
           const offeringId = CourseOffering.idFor(id, term.id);
 
+          // An offering can't name classes for one grade only, so a course of a class and a whole
+          // grade is offered to every class of both grades.
           for (const { group, gradeLevel } of read) {
             const lasting = profile.classify(group)._tag === "Lasting";
 
@@ -321,6 +323,9 @@ export const layer = Layer.effect(SchoolImport.Service)(
 
       const seen: Array<Seen> = [];
 
+      // A Kopplung's entry is in the view of each of its classes, and one lesson of its course.
+      const copies = new Set<string>();
+
       /**
        * Keeps the entry of `group`'s view until every week is read, since which course it is of
        * depends on the others, or says the read can't count as complete.
@@ -344,24 +349,27 @@ export const layer = Layer.effect(SchoolImport.Service)(
         if (group === undefined) unattributedEntry(date, ids);
         else {
           const subject = Option.fromUndefinedOr(WebUntisEntry.names(entry, "SUBJECT").current[0]);
+          const ofFamily = CourseKey.familyOf(subject, entry, group);
+          const copy = `${ofFamily.family}\n${date}\n${ids.join("+")}`;
 
-          seen.push({
-            entry,
-            date,
-            ids,
-            start: start.value,
-            end: end.value,
-            subject,
-            ...CourseKey.familyOf(subject, entry, group),
-            teachers: WebUntisEntry.names(entry, "TEACHER").planned,
-          });
+          if (!copies.has(copy)) {
+            copies.add(copy);
+
+            seen.push({
+              entry,
+              date,
+              ids,
+              start: start.value,
+              end: end.value,
+              subject,
+              ...ofFamily,
+              teachers: WebUntisEntry.names(entry, "TEACHER").planned,
+            });
+          }
         }
 
         return true;
       };
-
-      // A Kopplung's entry is in the view of each of its classes, and one lesson of its course.
-      const claimed = new Set<string>();
 
       /** Adds the row of an entry `seen` holds to the lesson of its course in its slot. */
       const addRow = (
@@ -374,12 +382,6 @@ export const layer = Layer.effect(SchoolImport.Service)(
         if (Option.isNone(course)) return unattributedEntry(date, ids);
 
         const id = ImportIds.lesson(school, course.value, date, start);
-        const claim = `${id} ${ids.join("+")}`;
-
-        if (claimed.has(claim)) return;
-
-        claimed.add(claim);
-
         const teacherNames = WebUntisEntry.names(entry, "TEACHER");
         const roomNames = WebUntisEntry.names(entry, "ROOM");
         const status = WebUntisEntry.status(entry);
@@ -485,11 +487,12 @@ export const layer = Layer.effect(SchoolImport.Service)(
         }
       }
 
-      // Which families meet in parallel groups shows only across the whole window.
+      // Which families meet in parallel groups shows only across the whole window. Only the nightly
+      // run, which alone creates courses, splits a family; a daytime run keeps the courses it knows.
       const courseKey = CourseKey.resolver(
         CourseKey.parallel(
           seen.flatMap(({ family, grouped, date, start, teachers, entry }) =>
-            grouped
+            nightly && grouped
               ? [
                   {
                     family,
