@@ -75,15 +75,15 @@ const decodeDate = Schema.decodeUnknownOption(CivilTime.PlainDate);
 
 /**
  * The draft the sheet keeps: an edit's under the homework's id, a new homework's under `new`, and
- * one that "Hausaufgabe eintragen" started under `new-<course>`, so each opens again as it was left
- * and a lesson's sheet never opens with another course's draft.
+ * one that "Hausaufgabe eintragen" started under its course and due date, so each opens again as it
+ * was left and a lesson's sheet never opens with what was picked for another lesson.
  */
 export const draftKey = (id: string | undefined, params: Params): string =>
   id ??
-  Option.match(decodeParam(params.courseId), {
-    onNone: () => "new",
-    onSome: (course) => `new-${course}`,
-  });
+  [
+    "new",
+    ...[params.courseId, params.dueOn].flatMap((param) => Option.toArray(decodeParam(param))),
+  ].join("-");
 
 /**
  * What a new homework starts from by the sheet's route params: the course while it is offered, and

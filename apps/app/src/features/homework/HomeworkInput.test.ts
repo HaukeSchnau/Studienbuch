@@ -101,12 +101,20 @@ describe("HomeworkInput.prefilled", () => {
     expect(HomeworkInput.prefilled(params, context)).toEqual(picked);
   });
 
-  it("keeps a lesson's draft apart from the plain add sheet's and from each edit's", () => {
+  it("keeps a lesson's draft apart from another lesson's, the plain add sheet's and each edit's", () => {
     expect([
       HomeworkInput.draftKey(undefined, {}),
       HomeworkInput.draftKey(undefined, { courseId: "course-ma", dueOn: "2026-11-18" }),
+      HomeworkInput.draftKey(undefined, { courseId: "course-ma", dueOn: "2026-11-20" }),
+      HomeworkInput.draftKey(undefined, { courseId: "course-ma" }),
       HomeworkInput.draftKey("8f6a1c2e-4b1d-4c3e-9a7b-2d5e6f708192", { courseId: "course-ma" }),
-    ]).toEqual(["new", "new-course-ma", "8f6a1c2e-4b1d-4c3e-9a7b-2d5e6f708192"]);
+    ]).toEqual([
+      "new",
+      "new-course-ma-2026-11-18",
+      "new-course-ma-2026-11-20",
+      "new-course-ma",
+      "8f6a1c2e-4b1d-4c3e-9a7b-2d5e6f708192",
+    ]);
   });
 });
 

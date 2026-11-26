@@ -119,6 +119,23 @@ const phases: Readonly<Record<Timetable.Phase, Phase>> = {
 const remaining = (minutes: number) =>
   `Noch ${String(minutes)} ${minutes === 1 ? "Minute" : "Minuten"}`;
 
+/** What a lesson's row and its sheet both show: subject, teacher, room, and its change. */
+const facts = (source: Source, names: Names) => {
+  const change = Timetable.change(source);
+
+  return {
+    id: source.id,
+    ...SubjectMark.named(source.course, source.subject),
+    teacher: named(source.teacherIds, source.change?.previousTeacherIds ?? [], names.teachers),
+    room: named(source.roomIds, source.change?.previousRoomIds ?? [], names.rooms),
+    /** The change that gets a note, which each view words. */
+    note: Option.filter(change, Timetable.Change.$is("Note")),
+    off: Option.getOrUndefined(
+      Option.filter(change, Timetable.Change.$is("Off")).pipe(Option.map(changeText)),
+    ),
+  };
+};
+
 /**
  * One lesson's row at `now`, with the notebook's `homework` as the device can read it: none while
  * the notebook is locked.
@@ -130,23 +147,15 @@ export const lesson = (
   homework: ReadonlyArray<HomeworkDates.OfCourse>,
 ): Item => {
   const phase = Timetable.phase(source, now);
-  const change = Timetable.change(source);
+  const shared = facts(source, names);
 
   return {
     kind: "lesson",
-    id: source.id,
+    ...shared,
     time: range(source.start, source.end),
-    ...SubjectMark.named(source.course, source.subject),
-    teacher: named(source.teacherIds, source.change?.previousTeacherIds ?? [], names.teachers),
-    room: named(source.roomIds, source.change?.previousRoomIds ?? [], names.rooms),
     phase: phases[phase],
     remaining: phase === "Running" ? remaining(Timetable.minutesLeft(source, now)) : undefined,
-    note: Option.getOrUndefined(
-      Option.filter(change, Timetable.Change.$is("Note")).pipe(Option.map(changeText)),
-    ),
-    off: Option.getOrUndefined(
-      Option.filter(change, Timetable.Change.$is("Off")).pipe(Option.map(changeText)),
-    ),
+    note: Option.getOrUndefined(Option.map(shared.note, changeText)),
     homework: phase !== "Over" && HomeworkDates.isOpenFor(homework, source.courseId, source.date),
   };
 };
@@ -181,35 +190,30 @@ export const detail = (
   next: Option.Option<Pick<Timetable.Timed, "date" | "start">>,
   today: CivilTime.PlainDate,
 ): Detail => {
-  const change = Timetable.change(source);
-  const teacher = named(source.teacherIds, source.change?.previousTeacherIds ?? [], names.teachers);
-  const room = named(source.roomIds, source.change?.previousRoomIds ?? [], names.rooms);
-  const word = Option.getOrUndefined(Option.map(change, changeText));
+  const shared = facts(source, names);
+  const { teacher, room, off } = shared;
   const phrase = source.change?.text;
 
+  const note = Option.map(
+    shared.note,
+    (change) =>
+      changeText(change) +
+      (change.kind === "RoomChange"
+        ? instead(room)
+        : change.kind === "Substitution" || change.kind === "Supervised"
+          ? instead(teacher)
+          : ""),
+  );
+
   return {
-    id: source.id,
-    ...SubjectMark.named(source.course, source.subject),
+    ...shared,
     when: `${DateText.full(source.date, today)} · ${range(source.start, source.end)}`,
-    teacher,
-    room,
-    note: Option.getOrUndefined(
-      Option.filter(change, Timetable.Change.$is("Note")).pipe(
-        Option.map(
-          (note) =>
-            changeText(note) +
-            (note.kind === "RoomChange"
-              ? instead(room)
-              : note.kind === "Substitution" || note.kind === "Supervised"
-                ? instead(teacher)
-                : ""),
-        ),
-      ),
-    ),
-    off: Option.getOrUndefined(
-      Option.filter(change, Timetable.Change.$is("Off")).pipe(Option.map(changeText)),
-    ),
-    phrase: phrase === word ? undefined : phrase,
+    note: Option.getOrUndefined(note),
+    // Not where the note or the struck name says it already, as `Other` does.
+    phrase:
+      phrase === off || Option.exists(shared.note, (change) => change.text === phrase)
+        ? undefined
+        : phrase,
     due: Option.match(next, {
       onNone: () => "Die nächste Stunde steht noch nicht im Plan.",
       onSome: (lesson) =>
