@@ -18,7 +18,6 @@ import * as Ref from "effect/Ref";
 import * as SqlClient from "effect/sql/SqlClient";
 import * as TestClock from "effect/testing/TestClock";
 import { Deployment } from "../infra/config/Deployment.ts";
-import { DatabaseTesting } from "../infra/database/DatabaseTesting.ts";
 import { RecordedWebUntis } from "../infra/webuntis/RecordedWebUntis.ts";
 import { WebUntisTesting } from "../infra/webuntis/WebUntisTesting.ts";
 import { SchoolTesting } from "../school/SchoolTesting.ts";
@@ -324,18 +323,18 @@ describe.skipIf(Postgres18.socket === null)("ImportJob on PostgreSQL 18", () => 
           ),
         );
 
-        // The release waits for the row; its connection then ends under it.
-        yield* DatabaseTesting.someoneWaits;
-        yield* sql`
-          select pg_terminate_backend(pid) from pg_stat_activity
+        // The release waits for the row, and its connection ends while it waits.
+        const ended = yield* sql<{ readonly ended: boolean }>`
+          select pg_terminate_backend(pid) as ended from pg_stat_activity
           where datname = current_database() and wait_event_type = 'Lock'
-        `;
+            and query like '%update import_school set lease_until = null%'
+        `.pipe(Effect.repeat({ until: (rows) => rows.some(({ ended }) => ended) }));
 
         const ran = yield* Fiber.join(run);
         yield* Deferred.succeed(unlock, undefined);
         yield* Fiber.join(holder);
 
-        expect(ran.outcome).toEqual(Option.some("SessionLost"));
+        expect([ran.outcome, ended.length]).toEqual([Option.some("SessionLost"), 1]);
       }),
     );
 
