@@ -16,6 +16,7 @@ import type { Corpus } from "../corpus/Corpus.ts";
 import type { SchoolProfile } from "../profiles/SchoolProfile.ts";
 import { Projection } from "../Projection.ts";
 import { SchoolImport } from "../SchoolImport.ts";
+import { CourseIdentity } from "./CourseIdentity.ts";
 import { Metrics } from "./Metrics.ts";
 import type { Report } from "./Report.ts";
 import { Students } from "./Students.ts";
@@ -381,6 +382,33 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
     })),
   );
 
+  // Real courses come from the rosters of the opening weeks, so a student WebUntis hid a day of
+  // them from would split their courses' rosters. Such a student counts in no roster that term.
+  const identity = CourseIdentity.combine(
+    [...openingWeeks].flatMap(([term, weeksOfTerm]) =>
+      weeksOfTerm.size === 2 && [...weeksOfTerm].every((week) => measured.has(week))
+        ? [
+            CourseIdentity.measure({
+              term: term ?? "",
+              attendance: students
+                .filter(
+                  (student) =>
+                    [...weeksOfTerm].every((week) => student.weeks.has(week)) &&
+                    !truth.days.some((day) => inOpening(term)(day) && student.hidden.has(day)),
+                )
+                .map((student) => ({
+                  student: student.name,
+                  entries: student.entries.filter((entry) => inOpening(term)(entry.date)),
+                })),
+              index: openingStore(term).index,
+              labels: corpus.cases.courses,
+              weekOf,
+            }),
+          ]
+        : [],
+    ),
+  );
+
   // Lessons the projection keeps out of the publish, such as those of a course without an
   // offering: the store holds them, and no student could ever see them.
   const { data } = Projection.project({
@@ -494,6 +522,7 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
     },
     kurswahl: Metrics.fraction(kurswahl.filter(Boolean).length, kurswahl.length),
     ghostCourses,
+    courseIdentity: identity.counts,
     changes: changes.score,
     courses: courses.score,
     closures: Metrics.scoreClosures(days, closedIn(truth.closures), closedIn(final.closures)),
@@ -553,5 +582,6 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
           (a.week < b.week ? -1 : 1),
       )
       .slice(0, 10),
+    courseCases: identity.cases,
   } satisfies Report.Evaluation;
 });

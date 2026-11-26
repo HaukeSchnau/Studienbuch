@@ -1,7 +1,8 @@
 /**
  * The corpus gate's numbers (m2-import-corpus.md, section 6, "CI"): every aggregate of a weekly and
  * a timeline evaluation of the pinned corpus. `baseline.json` is public, so it holds aggregates
- * only, never names, tokens or course codes.
+ * only, never names. Subjects key their counts by their codes as the corpus holds them: where the
+ * pseudonymizer replaced a name in a code, the key holds its keyed token.
  */
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";

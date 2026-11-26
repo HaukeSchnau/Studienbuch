@@ -151,14 +151,14 @@ const evaluate = Effect.fn("ImportEval.evaluate")(function* (flags: {
     });
   }
 
-  // A gate's output goes to CI's logs, so it holds aggregates only: no worst weeks.
-  const { worst: _, ...weekly } = yield* run(false);
-  const { worst: __, ...timeline } = yield* run(true);
+  // A gate's output goes to CI's logs, so it holds aggregates only: no worst weeks or courses.
+  const weekly = Report.aggregates(yield* run(false));
+  const timeline = Report.aggregates(yield* run(true));
   const measured: Baseline.Numbers = { corpus: corpus.manifest.id, weekly, timeline };
 
-  yield* Console.log(Report.format({ ...weekly, worst: [] }));
+  yield* Console.log(Report.format({ ...weekly, worst: [], courseCases: [] }));
   yield* Console.log("");
-  yield* Console.log(Report.format({ ...timeline, worst: [] }));
+  yield* Console.log(Report.format({ ...timeline, worst: [], courseCases: [] }));
 
   const file =
     flags.against.value === "baseline"

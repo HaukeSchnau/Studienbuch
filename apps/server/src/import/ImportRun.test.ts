@@ -235,7 +235,7 @@ describe.skipIf(Postgres18.socket === null)("ImportRun on PostgreSQL 18", () => 
             ]),
           }).toEqual({
             // Four weeks of the invented school's lessons, and nothing the plan didn't read.
-            first: ["Published", 52, []],
+            first: ["Published", 64, []],
             again: {},
             later: { ImportStatus: { written: 1, removed: 0 } },
             // School years, app data, time grid, four directories, exams and three class views.
@@ -278,7 +278,7 @@ describe.skipIf(Postgres18.socket === null)("ImportRun on PostgreSQL 18", () => 
             // The reads that answered are stored: the store is a log.
             failed: ["Incomplete", { [tag]: 1 }, true],
             before: { rows: [], checkpoint: { revision: 0, previous: "", pending: "[]" } },
-            complete: ["Published", 52],
+            complete: ["Published", 64],
           });
         }),
     );
@@ -457,7 +457,7 @@ describe.skipIf(Postgres18.socket === null)("ImportRun on PostgreSQL 18", () => 
         }).toEqual({
           daytime: ["Published", 1],
           courses: [0, 0],
-          choice: 5,
+          choice: 6,
           kept: true,
           // The daytime run covers nothing past the day it couldn't attribute an entry of, and
           // the days the nightly run covered still stand.

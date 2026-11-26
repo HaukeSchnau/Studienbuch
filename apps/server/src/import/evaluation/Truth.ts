@@ -191,6 +191,7 @@ const readViews = Effect.fn("Truth.readViews")(function* (
               rooms: idsOf(roomNames.current, roomIds),
               previousTeachers: idsOf(teacherNames.removed, teacherIds),
               previousRooms: idsOf(roomNames.removed, roomIds),
+              subjects: WebUntisEntry.names(entry, "SUBJECT").current,
             };
           }),
         );
