@@ -358,13 +358,18 @@ function Note({ text, style }: { readonly text: string; readonly style: StylePro
 }
 
 /**
- * "Voss Brandt · A101" with the old value struck after the new one, on one line from 768 points
- * on, so a narrow column clips the old value first.
+ * "Voss Brandt · A101" on one line from 768 points on: what changed first, its new value before
+ * the struck old one, so a narrow column clips what didn't change.
  */
 function WideDetails({ cell }: { readonly cell: WeekItem.Cell }) {
-  const parts = [cell.teacher, cell.room].flatMap((named, index) =>
-    named === undefined ? [] : [{ named, key: index === 0 ? "teacher" : "room" }],
-  );
+  const parts = [
+    { named: cell.teacher, key: "teacher" },
+    { named: cell.room, key: "room" },
+  ].flatMap(({ named, key }) => (named === undefined ? [] : [{ named, key }]));
+
+  // A room change leads only when the teacher stayed.
+  const ordered =
+    cell.room?.was !== undefined && cell.teacher?.was === undefined ? [...parts].reverse() : parts;
 
   return (
     <Text
@@ -374,7 +379,7 @@ function WideDetails({ cell }: { readonly cell: WeekItem.Cell }) {
       ellipsizeMode="clip"
       style={[styles.soft, styles.onFill]}
     >
-      {parts.map(({ named, key }, index) => (
+      {ordered.map(({ named, key }, index) => (
         <Text key={key} variant="footnote" maxFontSizeMultiplier={maxScale} style={styles.onFill}>
           {index === 0 ? null : " · "}
           {named.was === undefined ? (
