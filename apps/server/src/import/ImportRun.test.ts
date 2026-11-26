@@ -11,6 +11,7 @@ import * as Exit from "effect/Exit";
 import * as Fiber from "effect/Fiber";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import * as Ref from "effect/Ref";
 import * as Result from "effect/Result";
 import * as SqlClient from "effect/sql/SqlClient";
 import * as TestClock from "effect/testing/TestClock";
@@ -526,6 +527,63 @@ describe.skipIf(Postgres18.socket === null)("ImportRun on PostgreSQL 18", () => 
           rows: yield* published(school),
           revision: (yield* checkpoint(school))?.revision,
         }).toEqual({ outcome: "Superseded", rows, revision: 2 });
+      }),
+    );
+
+    it.effect("a run whose reservation waits past its lease reads nothing and times out", () =>
+      Effect.gen(function* () {
+        const sql = yield* SqlClient.SqlClient;
+        const school = School.Id.make("tiny-late");
+        const holding = yield* Deferred.make<void>();
+        const release = yield* Deferred.make<void>();
+        const connected = yield* Ref.make(false);
+
+        // Another reservation keeps the budget's lock, as a slow commit would.
+        const other = yield* Effect.forkChild(
+          sql.withTransaction(
+            ImportRun.reserve({
+              school,
+              date: ImportTesting.today,
+              nightly: false,
+              maximum: 1,
+              startedAt: morning,
+            }).pipe(
+              Effect.tap(() => Deferred.succeed(holding, undefined)),
+              Effect.tap(() => Deferred.await(release)),
+            ),
+          ),
+        );
+
+        yield* Deferred.await(holding);
+        const clock = yield* TestClock.make();
+
+        const source = Layer.effect(WebUntisClient)(
+          Effect.andThen(Ref.set(connected, true), Effect.die("a connection")),
+        );
+
+        const run = yield* Effect.forkChild(
+          ImportRun.run(options(school, { source })).pipe(
+            ImportTesting.at(morning),
+            Effect.provideService(Clock.Clock, clock),
+          ),
+        );
+
+        yield* DatabaseTesting.someoneWaits;
+        yield* clock.adjust("6 minutes");
+        yield* Deferred.succeed(release, undefined);
+        yield* Fiber.join(other);
+        const ran = yield* Fiber.join(run);
+
+        const rows = yield* sql<{ readonly outcome: string | null; readonly sent: number }>`
+          select outcome, sent from import_run
+          where id = ${Option.getOrElse(ran.run, () => "")}::uuid
+        `;
+
+        expect({ outcome: ran.outcome, rows, connected: yield* Ref.get(connected) }).toEqual({
+          outcome: "TimedOut",
+          rows: [{ outcome: "TimedOut", sent: 0 }],
+          connected: false,
+        });
       }),
     );
 

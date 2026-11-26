@@ -535,6 +535,9 @@ const leased = Effect.fn("ImportRun.leased")(function* (
     ({ date }) => date < today,
   );
 
+  // A lease that passed meanwhile, also during the wait for the reservation, opens no connection.
+  if (!DateTime.isLessThan(yield* DateTime.now, lease.until)) return "TimedOut" as const;
+
   const snapshot = yield* WebUntisClient.use((client) =>
     readSnapshot({ client, admit: requests.admit, profile, previous: known, window }),
   ).pipe(
@@ -694,7 +697,7 @@ export const run = Effect.fn("ImportRun.run")(function* (options: Options) {
   return yield* Effect.gen(function* () {
     const startedAt = yield* DateTime.now;
 
-    // A wait here can outlast the lease, and then the run sends nothing and can't commit.
+    // A wait here can outlast the lease, and then the run reads nothing.
     const reservation = yield* reserve({
       school,
       date: School.today(options.profile.school, DateTime.toEpochMillis(startedAt)),
@@ -714,15 +717,13 @@ export const run = Effect.fn("ImportRun.run")(function* (options: Options) {
     const requests = yield* dispatch(options.maximum, lease.until);
     const report = yield* Ref.make(emptyReport);
 
-    const remaining = Duration.max(
-      DateTime.distance(yield* DateTime.now, lease.until),
-      Duration.zero,
-    );
-
     const exit = yield* Effect.exit(
       leased(options, lease, reservation.id, requests, report).pipe(
         Effect.timeoutOrElse({
-          duration: remaining,
+          duration: Duration.max(
+            DateTime.distance(yield* DateTime.now, lease.until),
+            Duration.zero,
+          ),
           orElse: () => Effect.succeed("TimedOut" as const),
         }),
       ),

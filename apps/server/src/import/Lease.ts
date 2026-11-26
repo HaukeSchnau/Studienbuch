@@ -149,12 +149,14 @@ export const pause = Effect.fn("Lease.pause")(
 
     // Each look reads the pause and the lease from one row: once its owner resumed, the pause it
     // waits for is gone. A lease ends by its deadline at the latest, so this ends in five minutes.
+    // The clock is read first, so a lease that passed by then had passed when the row was read.
     const look = Effect.gen(function* () {
+      const now = yield* DateTime.now;
       const current = yield* state(school);
 
       if (current?.pausedBy !== by) return yield* new NotPausedBy({ by });
 
-      return passed(current.leaseUntil, yield* DateTime.now);
+      return passed(current.leaseUntil, now);
     });
 
     yield* look.pipe(
