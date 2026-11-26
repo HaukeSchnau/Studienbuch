@@ -167,7 +167,7 @@ const seeding = Layer.mergeAll(
 
 describe.skipIf(Postgres18.socket === null)("Seed on PostgreSQL 18", () => {
   layer(seeding)((it) => {
-    it.effect("a second seed writes only a new Stand, so no other row or key record moves", () =>
+    it.effect("a second seed that week writes only a new Stand, so nothing else moves", () =>
       Effect.gen(function* () {
         yield* seedWith(reviewPassword);
         const first = yield* state;
@@ -181,10 +181,11 @@ describe.skipIf(Postgres18.socket === null)("Seed on PostgreSQL 18", () => {
           rows: each.rows.filter(({ tbl }) => tbl !== "ImportStatus"),
         });
 
+        const school = (each: typeof first) =>
+          each.spaces.find(({ kind }) => kind === "school")?.version;
+
         expect(stand(second)).toEqual(stand(first));
-        expect(second.rows.filter(({ tbl }) => tbl === "ImportStatus")).not.toEqual(
-          first.rows.filter(({ tbl }) => tbl === "ImportStatus"),
-        );
+        expect(school(second)).toBe(Number(school(first)) + 1);
       }),
     );
 

@@ -249,8 +249,11 @@ export const shown = <A extends Timed>(plan: Plan<A>, now: CivilTime.Moment): Sh
     const monday = CivilTime.addDays(date, 1 - CivilTime.dayOfWeek(date));
     const sunday = CivilTime.addDays(monday, 6);
 
-    const week = plan.lessons.filter((lesson) =>
-      CivilTime.contains({ start: monday, end: sunday }, lesson.date),
+    const week = plan.lessons.filter(
+      (lesson) =>
+        CivilTime.contains({ start: monday, end: sunday }, lesson.date) &&
+        covered(lesson.date) &&
+        Option.isNone(closureOn(lesson.date)),
     );
 
     return Shown.Day({ date, rows: day(on(date), week) });

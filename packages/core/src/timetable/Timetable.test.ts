@@ -355,6 +355,19 @@ describe("Timetable.shown", () => {
       shown: "Day 2026-11-18: en 07:15-08:00, free 08:00-08:45, free 08:45-09:30, bi 09:45-10:30",
     },
     {
+      name: "no free period at a start only lessons after the last day published use",
+      plan: plan({
+        lessons: [
+          lesson("2026-11-18 08:00-09:30 de"),
+          lesson("2026-11-18 11:40-13:10 bi"),
+          lesson("2026-11-19 09:50-11:20 ma"),
+        ],
+        coveredUntil: date("2026-11-18"),
+      }),
+      now: moment("2026-11-18", "07:30"),
+      shown: "Day 2026-11-18: de 08:00-09:30, bi 11:40-13:10",
+    },
+    {
       name: "the closure, though the device still holds a lesson of it",
       plan: plan({
         lessons: [lesson("2026-11-18 09:50-11:20 ma"), lesson("2026-11-19 08:00-09:30 ku")],
