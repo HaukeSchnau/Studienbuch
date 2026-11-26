@@ -36,7 +36,8 @@ const CourseCase = Schema.Struct({
       ),
     }),
   ),
-  ourCourses: Schema.Array(Schema.Struct({ id: Schema.String, name: Schema.String })),
+  /** Our courses' ids. */
+  ourCourses: Schema.Array(Schema.String),
 });
 
 const View = Schema.Struct({
@@ -209,7 +210,7 @@ const listed = <A>(values: ReadonlyArray<A>, shown: number, line: (value: A) => 
 /** A case's courses, then each real course's students and where its entries went. */
 const caseLines = (each: Evaluation["courseCases"][number]) => [
   `    ${each.kind} ${each.subject} in ${each.term}, ${each.looksLike}: ${each.ourCourses
-    .map((course, i) => `${i} ${course.id.slice(0, 8)} ${course.name}`)
+    .map((course, i) => `${i} ${course}`)
     .join(", ")}`,
   ...each.realCourses.flatMap((real) => [
     `      ${real.students.length} students: ${listed(real.students, 4, String).join(" ")}`,

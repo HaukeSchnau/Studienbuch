@@ -273,7 +273,7 @@ describe("Evaluator", () => {
           {
             kind: "merged",
             subject: "DE",
-            looksLike: "nested",
+            looksLike: "overlapping",
             ours: 1,
             students: [["S8"], ["S8"]],
           },

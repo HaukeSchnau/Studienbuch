@@ -101,17 +101,11 @@
     },
     "ghostCourses": 39,
     "courseIdentity": {
-      "realCourses": 374,
-      "split": 41,
-      "ourCourses": 393,
-      "merged": 16,
+      "realCourses": 376,
+      "split": 42,
+      "ourCourses": 388,
+      "merged": 18,
       "subjects": {
-        "(none)": {
-          "realCourses": 2,
-          "split": 1,
-          "ourCourses": 5,
-          "merged": 0
-        },
         "Biologie": {
           "realCourses": 8,
           "split": 2,
@@ -227,10 +221,10 @@
           "merged": 0
         },
         "MA": {
-          "realCourses": 9,
+          "realCourses": 10,
           "split": 0,
           "ourCourses": 7,
-          "merged": 0
+          "merged": 1
         },
         "MA1": {
           "realCourses": 1,
@@ -269,10 +263,10 @@
           "merged": 0
         },
         "PW1": {
-          "realCourses": 4,
+          "realCourses": 5,
           "split": 0,
           "ourCourses": 3,
-          "merged": 0
+          "merged": 1
         },
         "PW23": {
           "realCourses": 6,
@@ -323,8 +317,8 @@
           "merged": 0
         },
         "Tutorium": {
-          "realCourses": 8,
-          "split": 8,
+          "realCourses": 10,
+          "split": 10,
           "ourCourses": 9,
           "merged": 9
         },
@@ -764,17 +758,11 @@
     },
     "ghostCourses": 39,
     "courseIdentity": {
-      "realCourses": 374,
-      "split": 41,
-      "ourCourses": 393,
-      "merged": 16,
+      "realCourses": 376,
+      "split": 42,
+      "ourCourses": 388,
+      "merged": 18,
       "subjects": {
-        "(none)": {
-          "realCourses": 2,
-          "split": 1,
-          "ourCourses": 5,
-          "merged": 0
-        },
         "Biologie": {
           "realCourses": 8,
           "split": 2,
@@ -890,10 +878,10 @@
           "merged": 0
         },
         "MA": {
-          "realCourses": 9,
+          "realCourses": 10,
           "split": 0,
           "ourCourses": 7,
-          "merged": 0
+          "merged": 1
         },
         "MA1": {
           "realCourses": 1,
@@ -932,10 +920,10 @@
           "merged": 0
         },
         "PW1": {
-          "realCourses": 4,
+          "realCourses": 5,
           "split": 0,
           "ourCourses": 3,
-          "merged": 0
+          "merged": 1
         },
         "PW23": {
           "realCourses": 6,
@@ -986,8 +974,8 @@
           "merged": 0
         },
         "Tutorium": {
-          "realCourses": 8,
-          "split": 8,
+          "realCourses": 10,
+          "split": 10,
           "ourCourses": 9,
           "merged": 9
         },

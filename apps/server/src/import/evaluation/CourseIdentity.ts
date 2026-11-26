@@ -6,11 +6,12 @@
  */
 import * as Arr from "effect/Array";
 import * as Order from "effect/Order";
+import { Tokens } from "../corpus/Tokens.ts";
 import { Metrics } from "./Metrics.ts";
 
 export * as CourseIdentity from "./CourseIdentity.ts";
 
-/** One student's entries in a term's opening weeks, on days WebUntis showed them. */
+/** One student's entries in a term's opening weeks, on days WebUntis showed them. An entry without a subject is no course's. */
 export interface Attendance {
   /** The student's token. */
   readonly student: string;
@@ -50,7 +51,7 @@ export interface Case {
       readonly courses: ReadonlyArray<number>;
     }>;
   }>;
-  readonly ourCourses: ReadonlyArray<{ readonly id: string; readonly name: string }>;
+  readonly ourCourses: ReadonlyArray<string>;
 }
 
 export interface Measured {
@@ -59,13 +60,10 @@ export interface Measured {
   readonly cases: ReadonlyArray<Case>;
 }
 
-const noSubject = "(none)";
-
 const keyOf = (entry: { readonly date: string; readonly ids: ReadonlyArray<number> }) =>
   `${entry.date} ${entry.ids.join("+")}`;
 
-const subjectOf = (entry: Metrics.TruthEntry) =>
-  entry.subjects.length === 0 ? noSubject : entry.subjects.join("+");
+const subjectOf = (entry: Metrics.TruthEntry) => entry.subjects.join("+");
 
 const sorted = (values: Iterable<string>) => Arr.sort(Arr.dedupe(values), Order.String);
 
@@ -89,7 +87,10 @@ const looksLikeMerged = (groups: ReadonlyArray<ReadonlySet<string>>): LooksLike 
   const pairs = groups.flatMap((a, i) => groups.slice(i + 1).map((b) => [a, b] as const));
   const shared = (a: ReadonlySet<string>, b: ReadonlySet<string>) => [...a].filter((s) => b.has(s));
 
-  if (pairs.some(([a, b]) => [a, b].some((x) => shared(a, b).length === x.size))) return "nested";
+  const within = (a: ReadonlySet<string>, b: ReadonlySet<string>) =>
+    a.size < b.size && shared(a, b).length === a.size;
+
+  if (pairs.some(([a, b]) => within(a, b) || within(b, a))) return "nested";
 
   return pairs.every(([a, b]) => shared(a, b).length === 0) ? "disjoint" : "overlapping";
 };
@@ -100,14 +101,16 @@ export const measure = (input: {
   readonly attendance: ReadonlyArray<Attendance>;
   readonly index: ReadonlyMap<string, ReadonlyArray<Metrics.Lesson>>;
   readonly labels: ReadonlyArray<Metrics.LabelledCourse>;
-  /** Our courses' names, by id. */
-  readonly names: ReadonlyMap<string, string>;
+  /** The ISO week of a date, such as `2026-W45`. */
+  readonly weekOf: (date: string) => string;
 }): Measured => {
   // Each entry once, with the students it is shown to. An added entry is no course's.
   const shown = new Map<string, { entry: Metrics.TruthEntry; students: Set<string> }>();
 
   for (const { student, entries } of input.attendance) {
-    for (const entry of entries.filter(({ status }) => status !== "Added")) {
+    for (const entry of entries.filter(
+      (each) => each.status !== "Added" && each.subjects.length > 0,
+    )) {
       const known = shown.get(keyOf(entry)) ?? { entry, students: new Set<string>() };
 
       known.students.add(student);
@@ -121,6 +124,7 @@ export const measure = (input: {
       entry,
       students,
       subject: subjectOf(entry),
+      week: input.weekOf(entry.date),
       // Subject codes can hold spaces, tokens can't, and neither holds a line break.
       group: `${subjectOf(entry)}\n${sorted(students).join(" ")}`,
       courses: sorted(Metrics.enrollment([entry], input.index)),
@@ -188,20 +192,37 @@ export const measure = (input: {
 
   for (const members of whole) join(members.map((row) => row.key));
 
-  // A student takes one course of a subject at a time, so two rosters of a subject that share
-  // more than half of each one's students are one course whose roster changed between the
-  // opening weeks. A group within a larger one, or a parallel group, stays apart.
-  const oneCourse = (a: Row, b: Row) => {
-    if (a.subject !== b.subject) return false;
+  // A student takes one course of a subject at a time, so two rosters of a subject that meet in
+  // different opening weeks and share more than half of each one's students are one course whose
+  // roster changed in between. A label that tells them apart wins.
+  const oneCourse = (a: ReadonlyArray<Row>, b: ReadonlyArray<Row>) => {
+    const [first, other] = [a[0], b[0]];
 
-    const shared = [...a.students].filter((student) => b.students.has(student)).length;
+    if (first === undefined || other === undefined || first.subject !== other.subject) return false;
 
-    return shared * 2 > a.students.size && shared * 2 > b.students.size;
+    const weeks = new Set(a.map((row) => row.week));
+    const shared = [...first.students].filter((student) => other.students.has(student)).length;
+
+    return (
+      b.every((row) => !weeks.has(row.week)) &&
+      shared * 2 > first.students.size &&
+      shared * 2 > other.students.size
+    );
   };
 
-  for (const [i, [a]] of whole.entries()) {
-    for (const [b] of whole.slice(i + 1)) {
-      if (a !== undefined && b !== undefined && oneCourse(a, b)) join([a.key, b.key]);
+  const different = labelled.flatMap((label) => (label.same ? [] : [label.keys]));
+
+  const apart = (a: string, b: string) =>
+    different.some(
+      (named) =>
+        named.some((key) => find(key) === find(a)) && named.some((key) => find(key) === find(b)),
+    );
+
+  for (const [i, a] of whole.entries()) {
+    for (const b of whole.slice(i + 1)) {
+      const [x, y] = [a[0]?.key ?? "", b[0]?.key ?? ""];
+
+      if (oneCourse(a, b) && !apart(x, y)) join([x, y]);
     }
   }
 
@@ -250,8 +271,6 @@ export const measure = (input: {
     }
   }
 
-  const name = (id: string) => ({ id, name: input.names.get(id) ?? "" });
-
   const splitCases = realCourses.flatMap((real): ReadonlyArray<Case> =>
     real.courses.length < 2
       ? []
@@ -270,7 +289,7 @@ export const measure = (input: {
                 })),
               },
             ],
-            ourCourses: real.courses.map(name),
+            ourCourses: real.courses,
           },
         ],
   );
@@ -290,7 +309,7 @@ export const measure = (input: {
                 .filter((row) => row.courses.includes(course))
                 .map((row) => ({ entry: row.key, courses: [0] })),
             })),
-            ourCourses: [name(course)],
+            ourCourses: [course],
           },
         ],
   );
@@ -321,12 +340,17 @@ const worstFirst = Order.combineAll<Case>([
   Order.mapInput(Order.String, (each) => each.realCourses[0]?.entries[0]?.entry ?? ""),
 ]);
 
-/** Every term's counts added up, by subject in code order, and each subject's `worst` cases. */
+/**
+ * Every term's counts added up, by subject in code order, and each subject's `worst` cases. The
+ * counts are public, so a person's token in a subject's code becomes its kind.
+ */
 export const combine = (terms: ReadonlyArray<Measured>, worst = 5) => {
   const bySubject = new Map<string, Counts>();
 
   for (const term of terms) {
-    for (const [subject, counts] of term.subjects) {
+    for (const [code, counts] of term.subjects) {
+      const subject = Tokens.withoutPeople(code);
+
       bySubject.set(subject, add(bySubject.get(subject) ?? zero, counts));
     }
   }

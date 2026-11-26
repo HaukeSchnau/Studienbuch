@@ -402,12 +402,7 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
                 })),
               index: openingStore(term).index,
               labels: corpus.cases.courses,
-              names: new Map(
-                (openingStates.get(term) ?? SchoolImport.empty).courses.map(({ id, name }) => [
-                  id,
-                  name,
-                ]),
-              ),
+              weekOf,
             }),
           ]
         : [],

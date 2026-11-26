@@ -55,7 +55,7 @@ const measure = (
     })),
     index: Metrics.byEntry(lessons),
     labels,
-    names: new Map(),
+    weekOf: (date) => (date < nextMonday ? "2026-W45" : "2026-W46"),
   });
 
 const counts = (realCourses: number, split: number, ourCourses: number, merged: number) => ({
@@ -82,6 +82,14 @@ describe("CourseIdentity.measure", () => {
     {
       name: "a group within a larger one, as a Kopplung shows it, is a course of its own",
       attendance: { S1: [e1, e2], S2: [e1, e2], S3: [e1], S4: [e1] },
+      lessons: [lesson("ma", e1), lesson("ma", e2)],
+      total: counts(2, 0, 1, 1),
+      looks: ["merged MA nested"],
+    },
+    {
+      // A roster change between the opening weeks would join them.
+      name: "most of a course's students in a group of their own the same week",
+      attendance: { S1: [e1, e2], S2: [e1, e2], S3: [e1, e2], S4: [e1] },
       lessons: [lesson("ma", e1), lesson("ma", e2)],
       total: counts(2, 0, 1, 1),
       looks: ["merged MA nested"],
@@ -115,9 +123,9 @@ describe("CourseIdentity.measure", () => {
       looks: ["split MA spread"],
     },
     {
-      name: "an added entry, which is no course's",
-      attendance: { S1: [entry(monday, 1, "MA", "Added"), e2] },
-      lessons: [lesson("ma-a", e1), lesson("ma-b", e2)],
+      name: "an added entry and one without a subject, which are no course's",
+      attendance: { S1: [entry(monday, 1, "MA", "Added"), { ...e3, subjects: [] }, e2] },
+      lessons: [lesson("ma-a", e1), lesson("ma-b", e2), lesson("ma-c", e3)],
       total: counts(1, 0, 1, 0),
       looks: [],
     },
@@ -152,11 +160,11 @@ describe("CourseIdentity.measure", () => {
 
     assert.deepStrictEqual(
       measured.cases.map(({ subject, looksLike }) => `${subject} ${looksLike}`),
-      ["MA+PH nested"],
+      ["MA+PH overlapping"],
     );
   });
 
-  // Each row without its label would be one real course of S1 and S2, or of S1, and no error.
+  // Without its label, each row has no error.
   it.each([
     {
       // Two simultaneous rows of one course, one group each.
@@ -174,12 +182,31 @@ describe("CourseIdentity.measure", () => {
       label: { id: "two", same: false, entries: [e1, e2] },
       total: counts(2, 0, 1, 1),
     },
+    {
+      name: "keeps apart two rosters a roster change would join",
+      attendance: { S1: [e1, e3], S2: [e1, e3], S3: [e1] },
+      lessons: [lesson("ma", e1), lesson("ma", e3)],
+      label: { id: "two", same: false, entries: [e1, e3] },
+      total: counts(2, 0, 1, 1),
+    },
   ])("a label $name", ({ attendance, lessons, label, total }) => {
     assert.deepStrictEqual(measure(attendance, lessons, [label]).total, total);
   });
 });
 
 describe("CourseIdentity.combine", () => {
+  it("publishes a subject's code without a person's token in it", () => {
+    const code = "BI-TQ4M7KZA";
+
+    const measured = measure({ S1: [entry(monday, 1, code)] }, [
+      lesson("bi", entry(monday, 1, code)),
+    ]);
+
+    assert.deepStrictEqual(Object.keys(CourseIdentity.combine([measured]).counts.subjects), [
+      "BI-T*",
+    ]);
+  });
+
   it("adds up terms and keeps each subject's worst cases, most pieces first", () => {
     const twoPieces = measure({ S1: [e1] }, [lesson("a", e1), lesson("b", e1)], [], "summer");
 
