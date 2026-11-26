@@ -42,9 +42,10 @@ const maEStart = 41_400_000;
 
 /**
  * The invented school with a second row of `MA-E` in `12` on Monday of W45, at the first group's
- * time under teacher `LB` in `R102`, and the first group's row cancelled when `cancelled`.
+ * time under teacher `LB` in `R102`, or no teacher when `teacher` is false, and the first group's
+ * row cancelled when `cancelled`.
  */
-const withSecondMaE = (cancelled: boolean) =>
+const withSecondMaE = (cancelled: boolean, teacher = true) =>
   planted(TinySchool.corpus, entriesOf(112), (body) => {
     const day = dayOf(body, "2026-11-02");
     const entries = list(day.gridEntries);
@@ -54,6 +55,8 @@ const withSecondMaE = (cancelled: boolean) =>
     second.ids = [9001];
     object(object(list(second.position1)[0]).current).shortName = "LB";
     object(object(list(second.position3)[0]).current).shortName = "R102";
+
+    if (!teacher) second.position1 = null;
 
     if (cancelled) first.status = "CANCELLED";
 
@@ -137,9 +140,22 @@ describe("NaiveImport", () => {
         },
       ],
     },
-  ])("$name", ({ cancelled, lessons }) =>
+    {
+      name: "makes a row without a teacher next to a group's row in one slot one lesson",
+      cancelled: false,
+      teacher: false,
+      lessons: [
+        {
+          courseId: course("MA-E/12"),
+          teachers: [203],
+          rooms: [302, 303],
+          entries: [[1104], [9001]],
+        },
+      ],
+    },
+  ])("$name", ({ cancelled, teacher, lessons }) =>
     Effect.gen(function* () {
-      const { result } = yield* ImportTesting.naive(withSecondMaE(cancelled));
+      const { result } = yield* ImportTesting.naive(withSecondMaE(cancelled, teacher));
 
       const byCourse = (a: { courseId: string }, b: { courseId: string }) =>
         a.courseId.localeCompare(b.courseId);

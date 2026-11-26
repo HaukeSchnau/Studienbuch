@@ -53,13 +53,14 @@ export interface Meeting {
 
 /**
  * The families whose groups meet in parallel: two entries as planned, at the same start on the
- * same day, under different teachers. A cancelled lesson next to its replacement is no such pair.
+ * same day, under different teachers. A cancelled lesson next to its replacement is no such pair,
+ * and neither is a row without a teacher next to one with a teacher.
  */
 export const parallel = (meetings: Iterable<Meeting>): ReadonlySet<string> => {
   const slots = new Map<string, { family: string; teachers: Set<string> }>();
 
   for (const meeting of meetings) {
-    if (!meeting.regular) continue;
+    if (!meeting.regular || meeting.teachers.length === 0) continue;
 
     const slot = `${meeting.family}\n${meeting.date}\n${meeting.start}`;
     const teachers = sorted(meeting.teachers).join("+");
