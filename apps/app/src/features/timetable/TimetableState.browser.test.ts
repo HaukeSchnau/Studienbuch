@@ -47,6 +47,7 @@ const seed = Effect.gen(function* () {
       ('nb-lena', 'Notebook', 'nb-lena', 1, '{"schoolId":"demo"}'),
       ('demo', 'School', 'demo', 1, '{"name":"Demo-Gymnasium","timeZone":"Europe/Berlin"}'),
       ('demo', 'Term', 'winter', 1, '{"schoolYearId":"y","name":"Winter","dates":{"start":"2026-08-01","end":"2027-01-31"}}'),
+      ('demo', 'WeekLabel', '2027-W05', 1, '{"label":"A"}'),
       ('demo', 'Term', 'summer', 1, '{"schoolYearId":"y","name":"Sommer","dates":{"start":"2027-02-01","end":"2027-07-31"}}'),
       ('nb-lena', 'Enrollment', 'winter', 1, '{"termId":"winter","gradeLevel":11,"courseIds":["c-ma","c-sp"]}'),
       ('nb-lena', 'Enrollment', 'summer', 1, '{"termId":"summer","gradeLevel":11,"courseIds":["c-ma"]}'),
@@ -58,7 +59,7 @@ const seed = Effect.gen(function* () {
 });
 
 it.effect(
-  "reads the lessons of the courses chosen for each lesson's term, and one lesson whole",
+  "reads the lessons of the courses chosen for each lesson's term, the week labels, and one lesson whole",
   () =>
     Effect.gen(function* () {
       const registry = AtomRegistry.make();
@@ -93,13 +94,19 @@ it.effect(
       );
 
       expect(
-        Option.map(held, (reading) =>
-          Arr.sort(
+        Option.map(held, (reading) => ({
+          lessons: Arr.sort(
             reading.plan.lessons.map(({ id }) => id),
             Order.String,
           ),
-        ),
-      ).toEqual(Option.some(["ma-summer", "ma-summer-2", "sp-winter"]));
+          weekLabels: [...reading.weekLabels],
+        })),
+      ).toEqual(
+        Option.some({
+          lessons: ["ma-summer", "ma-summer-2", "sp-winter"],
+          weekLabels: [["2027-W05", "A"]],
+        }),
+      );
 
       // The sheet opens a double period whole, and a dropped course's lesson not at all.
       expect(Option.map(opened, ({ lesson }) => [lesson.id, lesson.end / 3_600_000])).toEqual(

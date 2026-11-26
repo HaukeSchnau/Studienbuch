@@ -34,6 +34,10 @@ export function AppTabs() {
         />
         <NativeTabs.Trigger.Label>Übersicht</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="(woche)">
+        <NativeTabs.Trigger.Icon sf="calendar" md="calendar_today" />
+        <NativeTabs.Trigger.Label>Meine Woche</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="(profil)">
         <NativeTabs.Trigger.Icon
           sf={{ default: "person", selected: "person.fill" }}

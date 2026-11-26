@@ -242,8 +242,9 @@ export const type = {
   callout: { size: 16, line: 22, weight: "400", ios: "callout" },
   subhead: { size: 15, line: 20, weight: "500", ios: "subheadline" },
   footnote: { size: 13, line: 18, weight: "600", ios: "footnote" },
-  // Week grid cells only.
+  // Week grid cells only: the subject, and the teacher and room under it.
   caption: { size: 12, line: 16, weight: "700", ios: "caption1", maxScale: 1.3 },
+  caption2: { size: 11, line: 14, weight: "600", ios: "caption2", maxScale: 1.3 },
   figure: { size: 34, line: 38, weight: "700", ios: "largeTitle" },
 } as const;
 
@@ -256,6 +257,8 @@ export const layout = {
   minTarget: 48,
   wideBreakpoint: 768,
   contentMaxWidth: 720,
+  // Meine Woche's grid, whose cells need the room for full names and details (m2-5-week.md).
+  weekMaxWidth: 960,
   weekGridListAtFontScale: 1.35,
 } as const;
 

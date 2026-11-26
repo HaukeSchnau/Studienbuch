@@ -16,6 +16,8 @@ import appIcon from "../../../assets/icon.png";
 // Each tab's glyph on a 24-point grid, outlined and filled when selected, as the phones' symbols are.
 const glyphs = {
   house: "M4 10.4 12 4l8 6.4V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z",
+  calendar:
+    "M5 5.5h14a1 1 0 0 1 1 1V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6.5a1 1 0 0 1 1-1zM4 10h16M8.5 3.5v4M15.5 3.5v4",
   person: "M12 3.5a4 4 0 1 1 0 8a4 4 0 0 1 0-8zM4.5 20c.8-3.8 3.7-6.5 7.5-6.5s6.7 2.7 7.5 6.5z",
 };
 
@@ -45,6 +47,9 @@ export function AppTabs() {
       ) : null}
       <TabTrigger name="(uebersicht)" href="/" asChild>
         <TabItem label="Übersicht" glyph={glyphs.house} wide={wide} />
+      </TabTrigger>
+      <TabTrigger name="(woche)" href="/woche" asChild>
+        <TabItem label="Meine Woche" glyph={glyphs.calendar} wide={wide} />
       </TabTrigger>
       <TabTrigger name="(profil)" href="/profil" asChild>
         <TabItem label="Profil" glyph={glyphs.person} wide={wide} />

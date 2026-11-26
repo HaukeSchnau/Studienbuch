@@ -5,7 +5,15 @@
  * same rows under the same ids. Names are invented.
  */
 import { Demo } from "@stu/api/Demo";
-import { CivilTime, type Course, type Lesson, Notebook, School, type Term } from "@stu/core";
+import {
+  CivilTime,
+  type Course,
+  type Lesson,
+  Notebook,
+  School,
+  type Term,
+  Timetable,
+} from "@stu/core";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
@@ -141,16 +149,9 @@ const changes: ReadonlyArray<{
 
 const encodeDate = Schema.encodeEffect(CivilTime.PlainDate);
 
-/** The Monday of the school week that holds `date`, or of the next one on a weekend. */
-const mondayOf = (around: CivilTime.PlainDate) => {
-  const weekday = CivilTime.dayOfWeek(around);
-
-  return CivilTime.addDays(around, weekday <= 5 ? 1 - weekday : 8 - weekday);
-};
-
 /** The lessons of the school week that holds `date`, or of the next one on a weekend, by course. */
 const week = Effect.fn("DemoSchool.week")(function* (around: CivilTime.PlainDate) {
-  const monday = mondayOf(around);
+  const monday = Timetable.schoolWeek(around);
   const lessons: Record<string, Record<string, EncodedLesson>> = {};
 
   for (const [day, plan] of timetable.entries()) {
@@ -190,11 +191,14 @@ export const today = Schools.today(school);
 
 /**
  * The school's rows for the school year that holds `date`, with both terms offering every course,
- * the lessons of its school week, and a Stand read now that covers the week.
+ * the lessons of its school week with its A or B, a Stand read now that covers the week, and three
+ * days off in the week after, which a seed in a later week moves along.
  */
 export const data = Effect.fn("DemoSchool.data")(function* (date: CivilTime.PlainDate) {
   const simple = yield* Schools.simple({ id, school, today: date, gradeLevel, subjects });
   const rooms = [...Object.values(staff).map(({ room }) => room), otherRoom];
+  const monday = Timetable.schoolWeek(date);
+  const weekId = CivilTime.isoWeek(monday);
 
   return {
     ...simple,
@@ -207,10 +211,23 @@ export const data = Effect.fn("DemoSchool.data")(function* (date: CivilTime.Plai
         ]),
       ),
       rooms: Object.fromEntries(rooms.map((room) => [roomId(room), { name: room }])),
+      // Odd ISO weeks are A-weeks.
+      weekLabels: { [weekId]: { label: Number(weekId.slice(-2)) % 2 === 1 ? "A" : "B" } },
+      closures: {
+        "demo-ferien": {
+          name: "Ferien",
+          dates: [
+            {
+              start: yield* encodeDate(CivilTime.addDays(monday, 9)),
+              end: yield* encodeDate(CivilTime.addDays(monday, 11)),
+            },
+          ],
+        },
+      },
       lessons: yield* week(date),
       importStatus: {
         observedAt: DateTime.formatIso(yield* DateTime.now),
-        coveredUntil: yield* encodeDate(CivilTime.addDays(mondayOf(date), 4)),
+        coveredUntil: yield* encodeDate(CivilTime.addDays(monday, 4)),
       },
     } satisfies Schools.Data,
   };

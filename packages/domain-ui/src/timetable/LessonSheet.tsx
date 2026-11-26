@@ -12,6 +12,7 @@ import { SubjectMarker } from "../subject/SubjectMarker.tsx";
 import { AgendaItem } from "./AgendaItem.ts";
 import { ChangeNote } from "./ChangeNote.tsx";
 import { NamedText } from "./NamedText.tsx";
+import { Spoken } from "./Spoken.ts";
 
 export interface LessonSheetProps {
   readonly lesson: AgendaItem.Detail;
@@ -136,7 +137,7 @@ function Fact({
   return (
     <View
       accessible
-      accessibilityLabel={`${label}: ${AgendaItem.spoken(named)}`}
+      accessibilityLabel={`${label}: ${Spoken.named(named)}`}
       style={[styles.fact, { borderTopColor: color.hairline }]}
     >
       <Text variant="callout" style={{ color: color.inkSoft }}>

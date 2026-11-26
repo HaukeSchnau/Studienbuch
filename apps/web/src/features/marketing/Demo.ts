@@ -1,13 +1,13 @@
 import type { SubjectArt } from "@stu/domain-ui/subject/SubjectArt";
 import { SubjectMark } from "@stu/domain-ui/subject/SubjectMark";
 import type { AgendaItem } from "@stu/domain-ui/timetable/AgendaItem";
+import type { WeekItem } from "@stu/domain-ui/timetable/WeekItem";
 import type { Tokens } from "@stu/ui/Tokens";
 import { useReducer } from "react";
 
 import type { Exam } from "#/domain-ui/app/GradesCard.tsx";
 import type { Homework } from "#/domain-ui/app/HomeworkCard.tsx";
 import type { AbsenceEntry } from "#/domain-ui/app/AbsenceCard.tsx";
-import type { WeekCell, WeekDay } from "#/domain-ui/app/WeekGrid.tsx";
 
 // The landing page's demo data: Wednesday 28 October 2026 at 10:31, KW 44, as in the design mocks.
 // Names are invented.
@@ -199,125 +199,163 @@ export const absences: ReadonlyArray<AbsenceEntry> = [
   { id: "ab-15", date: "Do, 15.10.", hours: 2, reason: undefined, excused: false },
 ];
 
-export const periods = ["08:00", "09:45", "11:30", "13:50", "15:15"] as const;
+const at = (hour: number, minute: number) => (hour * 60 + minute) * 60_000;
+
+const hhmm = (time: number) => {
+  const minutes = time / 60_000;
+
+  return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+};
+
+/** The school day's periods, as today's agenda has them. */
+const periods = [
+  [at(8, 0), at(9, 30)],
+  [at(9, 45), at(11, 15)],
+  [at(11, 30), at(13, 0)],
+  [at(13, 50), at(15, 15)],
+  [at(15, 15), at(16, 45)],
+] as const;
 
 interface Week {
   readonly number: number;
   /** IGS alternates A and B weeks. */
   readonly kind: "A-Woche" | "B-Woche";
-  readonly days: ReadonlyArray<WeekDay>;
-  readonly today: string | undefined;
-  readonly cells: ReadonlyArray<WeekCell>;
+  /** "26.–30. Oktober" */
+  readonly dates: string;
+  readonly grid: WeekItem.Week;
 }
 
-const day = (id: string, name: string, date: string): WeekDay => ({ id, name, date });
-
 const subjects = {
-  Mathe: ["blue", "BRA"],
-  Bio: ["green", "YIL"],
-  Deutsch: ["rust", "ALB"],
-  Englisch: ["violet", "OKA"],
-  Chemie: ["teal", "KOW"],
-  Spanisch: ["magenta", "ORT"],
-  PoWi: ["slate", "NGU"],
-  "Gesch.": ["amber", "HAR"],
-  Sport: ["red", "BER"],
-  Seminar: ["olive", "LIN"],
-} as const satisfies Record<string, readonly [Tokens.SubjectSlot, string]>;
+  Mathe: ["Mathematik", "MA", "Brandt", "R 2.14"],
+  Bio: ["Biologie", "BI", "Yilmaz", "R 0.12"],
+  Deutsch: ["Deutsch", "DE", "Albers", "R 1.07"],
+  Englisch: ["Englisch", "EN", "Oka", "R 1.12"],
+  Chemie: ["Chemie", "CH", "Kowalski", "R 0.14"],
+  Spanisch: ["Spanisch", "SN", "Ortega", "R 1.15"],
+  PoWi: ["Politik-Wirtschaft", "PW", "Nguyen", "R 2.03"],
+  "Gesch.": ["Geschichte", "GE", "Hartmann", "R 2.10"],
+  Sport: ["Sport", "SP", "Berger", "Halle"],
+  Seminar: ["Seminarfach", "SF", "Lindner", "R 1.20"],
+} as const;
 
 type Subject = keyof typeof subjects;
 
-/** One day's periods; `null` is a free period. */
+const weekdays = ["Mo", "Di", "Mi", "Do", "Fr"] as const;
+
+const longWeekdays = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"] as const;
+
+/** Monday to Friday from the day of the month `monday`, with `today` as an index. */
+const days = (monday: number, today?: number): ReadonlyArray<WeekItem.Day> =>
+  weekdays.map((short, index) => ({
+    id: short,
+    short,
+    long: longWeekdays[index] ?? "",
+    date: `${String(monday + index)}.`,
+    today: index === today,
+  }));
+
+// Wednesday 10:31 of the current week.
+const now = { day: 2, time: at(10, 31) };
+
+/** One day's periods; `null` is a free period. `changes` are by period. */
 const cells = (
-  dayId: string,
+  day: number,
   plan: ReadonlyArray<Subject | null>,
-  changes: Readonly<
-    Partial<Record<number, { change: "Vertretung" | "Entfall"; teacher?: string }>>
-  > = {},
+  current: boolean,
+  changes: Readonly<Partial<Record<number, Partial<WeekItem.Cell>>>> = {},
 ) =>
-  plan.flatMap((subject, period): ReadonlyArray<WeekCell> => {
-    if (subject === null) return [];
-    const [slot, teacher] = subjects[subject];
-    const change = changes[period];
+  plan.flatMap((subject, period): ReadonlyArray<WeekItem.Cell> => {
+    const [start, end] = periods[period] ?? [0, 0];
+
+    if (subject === null || end === 0) return [];
+
+    const [name, shortName, teacher, room] = subjects[subject];
+
+    const phase =
+      !current || day > now.day || (day === now.day && start > now.time)
+        ? "later"
+        : day < now.day || end <= now.time
+          ? "past"
+          : "now";
 
     return [
       {
-        id: `${dayId}-${String(period)}`,
-        day: dayId,
-        period,
-        subject,
-        slot,
-        teacher: change?.teacher ?? teacher,
-        change: change?.change,
+        kind: "lesson",
+        id: `${String(day)}-${String(period)}`,
+        day,
+        start,
+        end,
+        lane: 0,
+        lanes: 1,
+        time: `${hhmm(start)}–${hhmm(end)}`,
+        subject: name,
+        short: subject,
+        mark: SubjectMark.ofSubject({ name, shortName }),
+        teacher: { now: teacher },
+        room: { now: room },
+        phase,
+        ...changes[period],
       },
     ];
   });
+
+const hours = { start: at(8, 0), end: at(16, 45), labels: periods.map(([start]) => start) };
 
 export const weeks: ReadonlyArray<Week> = [
   {
     number: 43,
     kind: "A-Woche",
-    days: [
-      day("mo", "Mo", "19."),
-      day("di", "Di", "20."),
-      day("mi", "Mi", "21."),
-      day("do", "Do", "22."),
-      day("fr", "Fr", "23."),
-    ],
-    today: undefined,
-    cells: [
-      ...cells("mo", ["Mathe", "Englisch", "Deutsch", "Spanisch", null]),
-      ...cells("di", ["Bio", "Chemie", "PoWi", "Sport", "Seminar"]),
-      ...cells("mi", ["Mathe", "Deutsch", "Englisch", "Gesch.", null]),
-      ...cells("do", ["Deutsch", "Spanisch", "Chemie", null, null]),
-      ...cells("fr", ["Englisch", "Mathe", "Gesch.", "PoWi", "Sport"]),
-    ],
+    dates: "19.–23. Oktober",
+    grid: {
+      days: days(19),
+      hours: undefined,
+      cells: [],
+      spans: [
+        { kind: "closure", from: 0, to: 4, name: "Herbstferien", until: "bis Sa, 24. Oktober" },
+      ],
+    },
   },
   {
     number: 44,
     kind: "B-Woche",
-    days: [
-      day("mo", "Mo", "26."),
-      day("di", "Di", "27."),
-      day("mi", "Mi", "28."),
-      day("do", "Do", "29."),
-      day("fr", "Fr", "30."),
-    ],
-    today: "mi",
-    cells: [
-      ...cells("mo", ["Mathe", "Englisch", "Deutsch", "Gesch.", "Seminar"]),
-      ...cells("di", ["Bio", "Chemie", "PoWi", "Sport", null]),
-      ...cells("mi", ["Mathe", "Deutsch", "Englisch", null, "Bio"], {
-        2: { change: "Vertretung", teacher: "WEN" },
-        4: { change: "Entfall" },
-      }),
-      ...cells("do", ["Deutsch", "Spanisch", "Chemie", "Bio", null]),
-      ...cells("fr", ["Englisch", "Mathe", "Gesch.", "PoWi", null]),
-    ],
+    dates: "26.–30. Oktober",
+    grid: {
+      days: days(26, now.day),
+      hours,
+      cells: [
+        ...cells(0, ["Mathe", "Englisch", "Deutsch", "Gesch.", "Seminar"], true),
+        ...cells(1, ["Bio", "Chemie", "PoWi", "Sport", null], true),
+        ...cells(2, ["Mathe", "Deutsch", "Englisch", null, "Bio"], true, {
+          2: { teacher: { now: "Wendt", was: "Oka" }, note: "Vertretung" },
+          4: { off: "Entfall" },
+        }),
+        ...cells(3, ["Deutsch", "Spanisch", "Chemie", "Bio", null], true, {
+          1: { room: { now: "R 2.01", was: "R 1.15" }, note: "Raumänderung" },
+        }),
+        ...cells(4, ["Englisch", "Mathe", "Gesch.", "PoWi", null], true),
+      ],
+      spans: [],
+      now,
+    },
   },
   {
     number: 45,
     kind: "A-Woche",
-    days: [
-      day("mo", "Mo", "2."),
-      day("di", "Di", "3."),
-      day("mi", "Mi", "4."),
-      day("do", "Do", "5."),
-      day("fr", "Fr", "6."),
-    ],
-    today: undefined,
-    cells: [
-      ...cells("mo", ["Mathe", "Englisch", "Deutsch", "Spanisch", null]),
-      ...cells("di", ["Bio", "Chemie", "PoWi", "Sport", "Seminar"]),
-      ...cells("mi", ["Mathe", "Deutsch", "Englisch", "Gesch.", null]),
-      ...cells("do", ["Deutsch", "Spanisch", "Chemie", null, null]),
-      ...cells("fr", ["Englisch", "Mathe", "Gesch.", "PoWi", "Sport"]),
-    ],
+    dates: "2.–6. November",
+    grid: {
+      days: days(2),
+      hours,
+      cells: [
+        ...cells(0, ["Mathe", "Englisch", "Deutsch", "Spanisch", null], false),
+        ...cells(1, ["Bio", "Chemie", "PoWi", "Sport", "Seminar"], false),
+        ...cells(2, ["Mathe", "Deutsch", "Englisch", "Gesch.", null], false),
+        ...cells(3, ["Deutsch", "Spanisch", "Chemie", null, null], false),
+        ...cells(4, ["Englisch", "Mathe", "Gesch.", "PoWi", "Sport"], false),
+      ],
+      spans: [],
+    },
   },
 ];
-
-/** 10:31 is 46 minutes into the 09:45 period of 90 minutes. */
-export const now = { period: 1, fraction: 46 / 90 };
 
 /** The drifting strip: subject stickers from the app on their course colour. */
 export const strip: ReadonlyArray<{

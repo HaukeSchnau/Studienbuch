@@ -16,7 +16,7 @@ Most users are minors. Grades, absences, homework, signatures, photos and the di
 
 ### 3. Three platforms
 
-iOS, Android and the web are one Expo app. A feature works on all three, or the PR says why not. The landing page shows the app's screens with demo data. The Übersicht's card is the app's own `AgendaCard` from `packages/domain-ui`; the other screens are still stand-ins in `apps/web/src/domain-ui/app/`.
+iOS, Android and the web are one Expo app. A feature works on all three, or the PR says why not. The landing page shows the app's screens with demo data. The Übersicht's card and the week are the app's own `AgendaCard` and `WeekGrid` from `packages/domain-ui`; the other screens are still stand-ins in `apps/web/src/domain-ui/app/`.
 
 ### 4. Long-term maintainability
 

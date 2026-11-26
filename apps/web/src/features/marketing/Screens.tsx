@@ -1,5 +1,6 @@
 import { SubjectSticker } from "@stu/domain-ui/subject/SubjectSticker";
 import { AgendaCard } from "@stu/domain-ui/timetable/AgendaCard";
+import { WeekGrid } from "@stu/domain-ui/timetable/WeekGrid";
 import { Hero, type HeroProps } from "@stu/ui/Hero";
 import { Pill } from "@stu/ui/Pill";
 import { Theme } from "@stu/ui/Theme";
@@ -8,7 +9,6 @@ import { StyleSheet, View } from "react-native";
 
 import { AbsenceCard } from "#/domain-ui/app/AbsenceCard.tsx";
 import { type Exam, GradesCard } from "#/domain-ui/app/GradesCard.tsx";
-import { WeekGrid } from "#/domain-ui/app/WeekGrid.tsx";
 
 import { Demo } from "./Demo.ts";
 
@@ -88,7 +88,7 @@ export function CourseScreen({
   );
 }
 
-/** Meine Woche, with the arrows between weeks and "Heute" back to this one. */
+/** Meine Woche, with the arrows between weeks and "Heute" back to this one from another. */
 export function WeekScreen({ week, onShow }: { week: number; onShow: (week: number) => void }) {
   const shown = Demo.weeks[week] ?? Demo.weeks[Demo.currentWeek];
 
@@ -107,24 +107,21 @@ export function WeekScreen({ week, onShow }: { week: number; onShow: (week: numb
   return (
     <PhoneScreen
       chips={[`KW ${String(shown.number)}`, shown.kind]}
+      subtitle={shown.dates}
       title="Meine Woche"
       toolbar={{
         end: (
           <>
             {arrow(-1, "Vorige Woche")}
-            <Pill label="Heute" onPress={() => onShow(Demo.currentWeek)} />
+            {week === Demo.currentWeek ? null : (
+              <Pill label="Heute" onPress={() => onShow(Demo.currentWeek)} />
+            )}
             {arrow(1, "Nächste Woche")}
           </>
         ),
       }}
     >
-      <WeekGrid
-        cells={shown.cells}
-        days={shown.days}
-        now={shown.today === undefined ? undefined : Demo.now}
-        periods={Demo.periods}
-        today={shown.today}
-      />
+      <WeekGrid week={shown.grid} wide={false} />
     </PhoneScreen>
   );
 }
