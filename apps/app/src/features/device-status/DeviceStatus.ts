@@ -1,11 +1,12 @@
 import { CivilTime, School } from "@stu/core";
 import { SyncClient } from "@stu/sync/client";
 import * as Clock from "effect/Clock";
-import * as Duration from "effect/Duration";
+import * as Cron from "effect/Cron";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Atom from "effect/reactivity/Atom";
+import * as Schedule from "effect/Schedule";
 import * as Stream from "effect/Stream";
 
 import { AccountEngine } from "../../infra/runtime/AccountEngine.ts";
@@ -22,16 +23,25 @@ export * as DeviceStatus from "./DeviceStatus.ts";
 
 const runtime = Atom.family((accountId: string) => Atom.runtime(AccountEngine.app(accountId)));
 
+const everyMinute = Cron.make({ minutes: [], hours: [], days: [], months: [], weekdays: [] });
+
+/** The device's clock in epoch milliseconds, read at once and then as each minute begins. */
+const minutes = Stream.concat(
+  Stream.make(undefined),
+  Stream.fromSchedule(Schedule.cron(everyMinute)),
+).pipe(Stream.mapEffect(() => Clock.currentTimeMillis));
+
+/** Now, read again as each minute begins, so "Noch 50 Minuten" counts down on the minute. */
+export const now = Atom.make(minutes);
+
 /**
- * Today at the school, read again every minute, so "Bis morgen" turns into "Heute fällig" at
- * midnight on a screen that stays open.
+ * Today at the school, read again as each minute begins, so "Bis morgen" turns into "Heute fällig"
+ * at midnight on a screen that stays open.
  */
 export const today = Atom.family((timeZone: CivilTime.TimeZone) =>
   Atom.make(
-    Stream.tick(Duration.minutes(1)).pipe(
-      Stream.mapEffect(() =>
-        Effect.map(Clock.currentTimeMillis, (now) => School.today({ timeZone }, now)),
-      ),
+    minutes.pipe(
+      Stream.map((millis) => School.today({ timeZone }, millis)),
       Stream.changesWith((a, b) => CivilTime.order(a, b) === 0),
     ),
   ),

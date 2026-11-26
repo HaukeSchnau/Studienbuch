@@ -1,0 +1,2 @@
+DROP VIEW `Teacher`;--> statement-breakpoint
+CREATE VIEW `Teacher` AS select space, id, data ->> '$."shortName"' as "shortName", data ->> '$."displayName"' as "displayName" from sync_row_view where tbl = 'Teacher';

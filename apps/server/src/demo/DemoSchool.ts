@@ -6,6 +6,7 @@
  */
 import { Demo } from "@stu/api/Demo";
 import { CivilTime, type Course, type Lesson, Notebook, School, type Term } from "@stu/core";
+import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import { Schools } from "../school/Schools.ts";
@@ -39,22 +40,27 @@ const course = (subject: SubjectId) => Schools.simpleCourse(subject);
 
 type EncodedLesson = Schema.Struct.Encoded<(typeof Lesson.Row)["fields"]>;
 
-/** Who teaches each subject, by short name, and where. */
-const staff: Readonly<Record<SubjectId, { readonly teacher: string; readonly room: string }>> = {
-  ma: { teacher: "BRA", room: "A101" },
-  de: { teacher: "KLE", room: "A102" },
-  en: { teacher: "HOF", room: "A103" },
-  bi: { teacher: "WIN", room: "NW1" },
-  ch: { teacher: "LOR", room: "NW2" },
-  ge: { teacher: "SEI", room: "B201" },
-  pw: { teacher: "MAR", room: "B202" },
-  ku: { teacher: "FEL", room: "Kunstraum" },
-  mu: { teacher: "OST", room: "Musikraum" },
-  sp: { teacher: "DRE", room: "Sporthalle" },
+/** Who teaches each subject, by short name and surname, and where. */
+const staff: Readonly<
+  Record<SubjectId, { readonly teacher: string; readonly name: string; readonly room: string }>
+> = {
+  ma: { teacher: "BRA", name: "Brandt", room: "A101" },
+  de: { teacher: "KLE", name: "Klein", room: "A102" },
+  en: { teacher: "HOF", name: "Hoffmann", room: "A103" },
+  bi: { teacher: "WIN", name: "Winter", room: "NW1" },
+  ch: { teacher: "LOR", name: "Lorenz", room: "NW2" },
+  ge: { teacher: "SEI", name: "Seidel", room: "B201" },
+  pw: { teacher: "MAR", name: "Martens", room: "B202" },
+  ku: { teacher: "FEL", name: "Feldmann", room: "Kunstraum" },
+  mu: { teacher: "OST", name: "Ostermann", room: "Musikraum" },
+  sp: { teacher: "DRE", name: "Dreyer", room: "Sporthalle" },
 };
 
 /** Who stands in for a teacher. */
-const substitute = "VOS";
+const substitute = { teacher: "VOS", name: "Voss" };
+
+/** Where a lesson moves to for a day. */
+const otherRoom = "NW3";
 
 const teacherId = (shortName: string) => shortName.toLowerCase();
 
@@ -62,37 +68,58 @@ const roomId = (name: string) => name.toLowerCase();
 
 const at = (hour: number, minute: number) => (hour * 60 + minute) * 60_000;
 
-/** The school day's three blocks. */
+/** The school day's three blocks, and a single period after lunch. */
 const blocks = [
   { start: at(8, 0), end: at(9, 30) },
   { start: at(9, 50), end: at(11, 20) },
   { start: at(11, 40), end: at(13, 10) },
+  { start: at(13, 50), end: at(14, 35) },
 ];
 
 /**
  * Monday to Friday, the subjects of each block. Lena's and Tom's own courses share a block, so each
- * of them has a full week.
+ * of them has a full week, with a single period on Tuesday and a free period on Friday.
  */
 const timetable: ReadonlyArray<ReadonlyArray<ReadonlyArray<SubjectId>>> = [
   [["ma"], ["de"], ["bi", "ch"]],
-  [["en"], ["ge", "pw"], ["sp"]],
+  [["en"], ["ge", "pw"], ["sp"], ["de"]],
   [["de"], ["ma"], ["ku", "mu"]],
   [["bi", "ch"], ["en"], ["ge", "pw"]],
-  [["ma"], ["ku", "mu"], ["sp"]],
+  [["ma"], [], ["ku", "mu"]],
 ];
 
-/** What changes in the week: a substitute in Wednesday's Mathematik, and Thursday's Englisch is off. */
+/**
+ * What changes in the week: Monday's Biologie moves to another room, a substitute takes
+ * Wednesday's Mathematik, and Thursday's Englisch is off.
+ */
 const changes: ReadonlyArray<{
   readonly day: number;
   readonly block: number;
   readonly change: (lesson: EncodedLesson) => typeof lesson;
 }> = [
   {
+    day: 0,
+    block: 2,
+    change: (lesson) =>
+      lesson.courseId === course("bi")
+        ? {
+            ...lesson,
+            roomIds: [roomId(otherRoom)],
+            status: "Changed",
+            change: {
+              kind: "RoomChange",
+              previousTeacherIds: [],
+              previousRoomIds: lesson.roomIds,
+            },
+          }
+        : lesson,
+  },
+  {
     day: 2,
     block: 1,
     change: (lesson) => ({
       ...lesson,
-      teacherIds: [teacherId(substitute)],
+      teacherIds: [teacherId(substitute.teacher)],
       status: "Changed",
       change: {
         kind: "Substitution",
@@ -114,10 +141,16 @@ const changes: ReadonlyArray<{
 
 const encodeDate = Schema.encodeEffect(CivilTime.PlainDate);
 
+/** The Monday of the school week that holds `date`, or of the next one on a weekend. */
+const mondayOf = (around: CivilTime.PlainDate) => {
+  const weekday = CivilTime.dayOfWeek(around);
+
+  return CivilTime.addDays(around, weekday <= 5 ? 1 - weekday : 8 - weekday);
+};
+
 /** The lessons of the school week that holds `date`, or of the next one on a weekend, by course. */
 const week = Effect.fn("DemoSchool.week")(function* (around: CivilTime.PlainDate) {
-  const weekday = CivilTime.dayOfWeek(around);
-  const monday = CivilTime.addDays(around, weekday <= 5 ? 1 - weekday : 8 - weekday);
+  const monday = mondayOf(around);
   const lessons: Record<string, Record<string, EncodedLesson>> = {};
 
   for (const [day, plan] of timetable.entries()) {
@@ -157,26 +190,31 @@ export const today = Schools.today(school);
 
 /**
  * The school's rows for the school year that holds `date`, with both terms offering every course,
- * and the lessons of its school week.
+ * the lessons of its school week, and a Stand read now that covers the week.
  */
 export const data = Effect.fn("DemoSchool.data")(function* (date: CivilTime.PlainDate) {
   const simple = yield* Schools.simple({ id, school, today: date, gradeLevel, subjects });
-  const shortNames = [...Object.values(staff).map(({ teacher }) => teacher), substitute];
+  const rooms = [...Object.values(staff).map(({ room }) => room), otherRoom];
 
   return {
     ...simple,
     data: {
       ...simple.data,
       teachers: Object.fromEntries(
-        shortNames.map((name) => [teacherId(name), { shortName: name }]),
+        [...Object.values(staff), substitute].map(({ teacher, name }) => [
+          teacherId(teacher),
+          { shortName: teacher, displayName: name },
+        ]),
       ),
-      rooms: Object.fromEntries(
-        Object.values(staff).map(({ room }) => [roomId(room), { name: room }]),
-      ),
+      rooms: Object.fromEntries(rooms.map((room) => [roomId(room), { name: room }])),
       lessons: yield* week(date),
+      importStatus: {
+        observedAt: DateTime.formatIso(yield* DateTime.now),
+        coveredUntil: yield* encodeDate(CivilTime.addDays(mondayOf(date), 4)),
+      },
     } satisfies Schools.Data,
   };
-});
+}, Effect.orDie);
 
 export interface Persona {
   readonly account: string;

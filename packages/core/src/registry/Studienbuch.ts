@@ -26,7 +26,7 @@ import { WeekLabel } from "../school/WeekLabel.ts";
 
 export * as Studienbuch from "./Studienbuch.ts";
 
-export const version = 4;
+export const version = 5;
 
 export const tables = [
   School.Row,

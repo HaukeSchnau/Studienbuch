@@ -1,8 +1,9 @@
 import type { SubjectArt } from "@stu/domain-ui/subject/SubjectArt";
+import { SubjectMark } from "@stu/domain-ui/subject/SubjectMark";
+import type { AgendaItem } from "@stu/domain-ui/timetable/AgendaItem";
 import type { Tokens } from "@stu/ui/Tokens";
 import { useReducer } from "react";
 
-import type { AgendaRow } from "#/domain-ui/app/AgendaCard.tsx";
 import type { Exam } from "#/domain-ui/app/GradesCard.tsx";
 import type { Homework } from "#/domain-ui/app/HomeworkCard.tsx";
 import type { AbsenceEntry } from "#/domain-ui/app/AbsenceCard.tsx";
@@ -111,47 +112,51 @@ export const confirmedAverage = (exams: ReadonlyArray<Exam>) => {
     : Math.round(confirmed.reduce((sum, exam) => sum + exam.points, 0) / confirmed.length);
 };
 
-/** Today's agenda. Lesson ids are course ids, so a lesson opens its course. */
-export const today: ReadonlyArray<AgendaRow> = [
+/** Today's agenda at 10:31, as the app words it. Lesson ids are course ids, so a lesson opens its course. */
+export const today: ReadonlyArray<AgendaItem.Item> = [
   {
     kind: "lesson",
     id: "ma",
-    time: "08:00",
+    time: "08:00–09:30",
     subject: "Mathematik",
-    slot: "blue",
-    detail: "Hr. Brandt, R 2.14",
+    mark: SubjectMark.ofSubject({ name: "Mathematik", shortName: "MA" }),
+    teacher: { now: "Brandt" },
+    room: { now: "R 2.14" },
     phase: "past",
   },
   {
     kind: "lesson",
     id: "de",
-    time: "09:45",
+    time: "09:45–11:15",
     subject: "Deutsch",
-    slot: "rust",
-    detail: "Fr. Albers, R 1.07",
+    mark: SubjectMark.ofSubject({ name: "Deutsch", shortName: "DE" }),
+    teacher: { now: "Albers" },
+    room: { now: "R 1.07" },
     phase: "now",
-    remaining: "Noch 34 Minuten",
+    remaining: "Noch 44 Minuten",
   },
   {
     kind: "lesson",
     id: "en",
-    time: "11:30",
+    time: "11:30–13:00",
     subject: "Englisch",
-    slot: "violet",
-    detail: "Hr. Wendt",
+    mark: SubjectMark.ofSubject({ name: "Englisch", shortName: "EN" }),
+    teacher: { now: "Wendt", was: "Oka" },
+    room: { now: "R 1.12" },
     phase: "later",
-    change: "Vertretung",
+    note: "Vertretung",
   },
-  { kind: "free", id: "free", time: "13:50" },
+  { kind: "free", id: "free", time: "13:50–15:15" },
   {
     kind: "lesson",
     id: "bi",
-    time: "15:15",
+    time: "15:15–16:45",
     subject: "Biologie",
-    slot: "green",
-    detail: "Hr. Yilmaz, R 0.12",
+    mark: SubjectMark.ofSubject({ name: "Biologie", shortName: "BI" }),
+    teacher: { now: "Yilmaz" },
+    room: { now: "R 0.12" },
     phase: "later",
-    change: "Entfall",
+    off: "Entfall",
   },
 ];
 

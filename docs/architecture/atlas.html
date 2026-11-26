@@ -958,10 +958,11 @@ DIAGRAMS.app = {
     { id: "r-check", x: 835, y: 42, w: 120, h: 70, t: "(check)", s: "passkey-test" },
     { id: "r-lab", x: 970, y: 42, w: 150, h: 70, t: "dev/sync-lab", s: "web, dev and\npreview only" },
 
-    { id: "f-account", x: 40, y: 184, w: 150, h: 72, t: "account", s: "gates, sign-in, sign-up\nsign-out" },
-    { id: "f-keys", x: 205, y: 184, w: 150, h: 72, t: "keys", s: "NotebookKeys, unlock\nNotfallkarte" },
-    { id: "f-onb", x: 370, y: 184, w: 145, h: 72, t: "onboarding", s: "first start: name\nJahrgang, Kurse" },
-    { id: "f-over", x: 530, y: 184, w: 105, h: 72, t: "overview", s: "Übersicht and\nits panel" },
+    { id: "f-account", x: 40, y: 184, w: 135, h: 72, t: "account", s: "gates, sign-in, sign-up\nsign-out" },
+    { id: "f-keys", x: 185, y: 184, w: 135, h: 72, t: "keys", s: "NotebookKeys, unlock\nNotfallkarte" },
+    { id: "f-onb", x: 330, y: 184, w: 125, h: 72, t: "onboarding", s: "first start: name\nJahrgang, Kurse" },
+    { id: "f-over", x: 465, y: 184, w: 95, h: 72, t: "overview", s: "Übersicht, its\ncard and panel" },
+    { id: "f-tt", x: 568, y: 184, w: 70, h: 72, t: "timetable", s: "the day's\nlessons" },
     { id: "f-prof", x: 643, y: 184, w: 64, h: 72, t: "profile", s: "Profil" },
     { id: "f-diag", x: 715, y: 184, w: 88, h: 72, t: "diagnostics", s: "self tests" },
     { id: "f-dev", x: 810, y: 184, w: 110, h: 72, t: "device-status", s: "today, key\nand connection" },
@@ -974,9 +975,9 @@ DIAGRAMS.app = {
     { id: "a-sync", x: 238, y: 456, w: 180, h: 80, t: "SyncClient", s: "mutate, live queries\noutbox, refusals", k: "wire" },
     { id: "a-transport", x: 434, y: 456, w: 180, h: 80, t: "WebSocketTransport", s: "ticket, then socket\nto /api/sync", k: "wire" },
 
-    { id: "a-atoms", x: 670, y: 312, w: 220, h: 96, t: "Atoms", s: "AccountState, KeysState,\nDeviceStatus, HomeworkState,\nOnboarding-, OverviewState", k: "wire" },
+    { id: "a-atoms", x: 670, y: 312, w: 220, h: 96, t: "Atoms", s: "AccountState, KeysState,\nDeviceStatus, HomeworkState,\nOnboarding-, Overview-,\nTimetableState", k: "wire" },
     { id: "a-ui", x: 910, y: 312, w: 220, h: 96, t: "packages/ui, src/ui", s: "tokens, PanelScreen, RouteLink;\nAppTabs, useConfirm, Sheet\nwith .web.tsx twins" },
-    { id: "a-dui", x: 670, y: 440, w: 220, h: 70, t: "packages/domain-ui", s: "HomeworkPanel, -List, -Detail,\n-Form, stickers, RefusalCard, Due" },
+    { id: "a-dui", x: 670, y: 440, w: 220, h: 70, t: "packages/domain-ui", s: "HomeworkPanel, -List, -Detail,\n-Form, AgendaCard, stickers,\nRefusalCard, Due" },
     { id: "a-core", x: 910, y: 440, w: 220, h: 70, t: "packages/core", s: "Studienbuch.schema, mutators", k: "read" },
 
     { id: "i-sqlite", x: 40, y: 624, w: 205, h: 70, t: "SQLite", s: "native: SQLCipher, key in keychain\nweb: wa-sqlite worker in OPFS", k: "infra" },
@@ -998,12 +999,13 @@ DIAGRAMS.app = {
     { a: "r-tabs", b: "f-prof", as: "b", bs: "t", ao: -30, bo: 0 },
     { a: "r-tabs", b: "f-diag", as: "b", bs: "t", ao: 50, bo: 0 },
     { a: "r-tabs", b: "f-hw", as: "b", bs: "t", ao: 70, via: [[802, 146], [1082, 146]], bo: 0 },
-    { a: "r-check", b: "f-account", as: "b", bs: "t", ao: -40, bo: 45, via: [[855, 138], [170, 138]] },
+    { a: "r-check", b: "f-account", as: "b", bs: "t", ao: -40, bo: 45, via: [[855, 138], [162.5, 138]] },
     { a: "r-lab", b: "f-lab" },
-    { a: "f-account", b: "a-atoms", as: "b", bs: "t", via: [[115, 284], [720, 284]], bo: -60 },
-    { a: "f-keys", b: "a-atoms", as: "b", bs: "t", via: [[280, 280], [760, 280]], bo: -20 },
-    { a: "f-onb", b: "a-atoms", as: "b", bs: "t", via: [[442, 276], [800, 276]], bo: 20 },
+    { a: "f-account", b: "a-atoms", as: "b", bs: "t", via: [[107.5, 284], [720, 284]], bo: -60 },
+    { a: "f-keys", b: "a-atoms", as: "b", bs: "t", via: [[252.5, 280], [760, 280]], bo: -20 },
+    { a: "f-onb", b: "a-atoms", as: "b", bs: "t", via: [[392.5, 276], [800, 276]], bo: 20 },
     { a: "f-over", b: "a-atoms", as: "b", bs: "t", ao: 35, bo: -80 },
+    { a: "f-tt", b: "a-atoms", as: "b", bs: "t", ao: 0, bo: -100, ey: 270 },
     { a: "f-prof", b: "a-atoms", as: "b", bs: "t", ao: 0, bo: -40 },
     { a: "f-dev", b: "a-atoms", as: "b", bs: "t", ao: -10, bo: 75 },
     { a: "f-hw", b: "a-atoms", as: "b", bs: "t", via: [[1082, 294], [870, 294]], bo: 90 },
@@ -1017,8 +1019,8 @@ DIAGRAMS.app = {
     { a: "a-acct", b: "i-sqlite", as: "b", bs: "t", ao: -40, bo: 0 },
     { a: "a-acct", b: "i-keychain", as: "b", bs: "t", ao: 40, bo: -40 },
     { a: "a-devlayers", b: "i-keychain", as: "l", bs: "t", via: [[28, 367], [28, 606], [380, 606]] },
-    { a: "f-keys", b: "i-passkeys", as: "b", bs: "t", ao: 60, via: [[340, 292], [656, 292], [656, 600], [580, 600]] },
-    { a: "a-ui", b: "f-over", as: "t", bs: "b", ao: 0, via: [[1020, 280], [620, 280]], k: "dash" },
+    { a: "f-keys", b: "i-passkeys", as: "b", bs: "t", ao: 60, via: [[312.5, 292], [656, 292], [656, 600], [580, 600]] },
+    { a: "a-ui", b: "f-over", as: "t", bs: "b", ao: 0, via: [[1020, 280], [550, 280]], k: "dash" },
     { a: "a-dui", b: "a-ui", k: "dash" },
   ],
 };
@@ -1423,7 +1425,7 @@ const INFO = {
 
   webapp: { t: "Browser at /app", k: "plain", d: ["The same Expo app exported for the web, served by the server under <code>/app</code> as a single-page app. SQLite runs as wa-sqlite in a worker on OPFS, one tab owns a device's database, and a service worker lets it start offline.", "It always calls its own origin, so one build serves every preview and beta."], f: ["apps/app/src/infra/sqlite/database.web.ts", "apps/app/public/sw.js", "apps/server/src/routes/WebBuilds.ts"], a: [14, 16, 5] },
 
-  site: { t: "Landing page and console", k: "plain", d: ["TanStack Start pages, prerendered: the landing page, Impressum, Datenschutz and the console SPA under <code>/console</code>.", "Today the console shows the server's revision and, on dev and previews, the captured mail. The landing page draws its app screens with stand-in components in <code>apps/web/src/domain-ui/app/</code>, not yet with the app's own."], f: ["apps/web/src/routes/index.tsx", "apps/web/src/routes/console.tsx", "apps/web/src/features/marketing/Screens.tsx"], a: [3] },
+  site: { t: "Landing page and console", k: "plain", d: ["TanStack Start pages, prerendered: the landing page, Impressum, Datenschutz and the console SPA under <code>/console</code>.", "Today the console shows the server's revision and, on dev and previews, the captured mail. The landing page's Übersicht card is the app's own <code>AgendaCard</code>; its week, grades, absence and homework cards are still stand-ins in <code>apps/web/src/domain-ui/app/</code>."], f: ["apps/web/src/routes/index.tsx", "apps/web/src/routes/console.tsx", "apps/web/src/features/marketing/Screens.tsx"], a: [3] },
 
   stores: { t: "TestFlight and Play internal", k: "plain", d: ["Builds for testers, with <code>EXPO_PUBLIC_API_URL</code> of beta. Internal testers get each TestFlight build without Apple's beta review.", "The store release train for production is M5.4."], f: [".calder/ci.ts"] },
 
@@ -1462,17 +1464,17 @@ const INFO = {
   /* repo */
   "p-app": { t: "apps/app", d: ["The Expo app for iOS, Android and the web. Routes in <code>src/app</code>, one directory per domain area in <code>src/features</code>, and everything that exists because of a technology in <code>src/infra</code>.", "It may import every package except the sync server and the server app."], f: ["apps/app/package.json", "apps/app/src/app/_layout.tsx"], a: [13, 15, 16] },
 
-  "p-web": { t: "apps/web", d: ["The landing page, legal pages and the operator console, on TanStack Start. It must not import <code>@stu/sync</code>: sync belongs to the Expo app.", "The landing page draws the app's stickers from <code>packages/domain-ui</code>, so a subject looks the same on the page and in the app."], f: ["apps/web/package.json", "apps/web/src/router.tsx"], a: [3] },
+  "p-web": { t: "apps/web", d: ["The landing page, legal pages and the operator console, on TanStack Start. It must not import <code>@stu/sync</code>: sync belongs to the Expo app.", "The landing page draws the app's stickers and the Übersicht's <code>AgendaCard</code> from <code>packages/domain-ui</code> with its own demo rows, so they look the same on the page and in the app. Its other app screens are still stand-ins in <code>apps/web/src/domain-ui/app/</code>."], f: ["apps/web/package.json", "apps/web/src/router.tsx"], a: [3] },
 
   "p-server": { t: "apps/server", d: ["The one server process: HTTP routes, RPC handlers, Better Auth, Drizzle schema and migrations, jobs and the CLI commands. No Expo or React Native package may load here."], f: ["apps/server/src/main.ts", "apps/server/package.json"], a: [3, 4, 11, 12] },
 
-  "p-domainui": { t: "packages/domain-ui", d: ["Dumb components and helpers shared by the app and the landing page: rows and callbacks in. Today that is the home's homework panel and its cards, the full list's rows, a homework's page, the add sheet's form with its month picker, the refusal card, subject colors, the stickers for subjects, grade kinds and states, refusal sentences and date text. The landing page takes its stickers from here. It may not read SQLite or the sync engine."], f: ["packages/domain-ui/src/homework/HomeworkPanel.tsx", "packages/domain-ui/src/homework/HomeworkList.tsx", "packages/domain-ui/src/homework/HomeworkForm.tsx", "packages/domain-ui/src/homework/HomeworkItem.ts", "packages/domain-ui/src/subject/SubjectMark.ts", "packages/domain-ui/src/subject/SubjectArt.ts", "packages/domain-ui/src/refusal/RefusalText.ts", "packages/domain-ui/src/homework/Due.ts"] },
+  "p-domainui": { t: "packages/domain-ui", d: ["Dumb components and helpers shared by the app and the landing page: rows and callbacks in. Today that is the Übersicht's day card (<code>AgendaCard</code>, worded by <code>AgendaItem</code>), the home's homework panel and its cards, the full list's rows, a homework's page, the add sheet's form with its month picker, the refusal card, subject colors, the stickers for subjects, grade kinds and states, refusal sentences and date text. The landing page takes its stickers from here. It may not read SQLite or the sync engine."], f: ["packages/domain-ui/src/homework/HomeworkPanel.tsx", "packages/domain-ui/src/homework/HomeworkList.tsx", "packages/domain-ui/src/homework/HomeworkForm.tsx", "packages/domain-ui/src/homework/HomeworkItem.ts", "packages/domain-ui/src/subject/SubjectMark.ts", "packages/domain-ui/src/subject/SubjectArt.ts", "packages/domain-ui/src/refusal/RefusalText.ts", "packages/domain-ui/src/homework/Due.ts", "packages/domain-ui/src/timetable/AgendaCard.tsx", "packages/domain-ui/src/timetable/AgendaItem.ts"] },
 
   "p-ui": { t: "packages/ui", d: ["The design system: tokens in light and dark, Nunito, line icons for actions, the sticker style (<code>Sticker.ts</code>: palette, white die-cut edge, shadow) and domain-free components, several with a <code>.web.tsx</code> twin. It knows no domain type, so it may import none of core, sync, e2ee, api or domain-ui.", "Its hooks keep lists usable while rows change: <code>useLingeringOrder</code> leaves a ticked item in place for a moment, and <code>useKeptFocus</code> gives the keyboard's focus back to a box that moved (web only; the native file does nothing).", "Every checkbox and choice is built on <code>Checkable</code>, which answers Space on the web as react-native-web doesn't for these roles; <code>studienbuch/no-raw-checkable</code> keeps the roles there."], f: ["packages/ui/src/Tokens.ts", "packages/ui/src/Theme.ts", "packages/ui/src/Sticker.ts", "packages/ui/src/useLingeringOrder.ts", "packages/ui/src/useKeptFocus.web.ts", "packages/ui/src/Checkable.tsx"], a: [15] },
 
   "p-api": { t: "packages/api", d: ["Effect RPC groups and their schemas outside sync: System, Access, Keys, Demo, Dev and Mail. Handlers live in apps/server, so this package may not import <code>RpcServer</code> or a platform package."], f: ["packages/api/src/Api.ts", "packages/api/src/Keys.ts", "packages/api/src/Access.ts"] },
 
-  "p-core": { t: "packages/core", k: "read", d: ["The domain: row tables, mutators, membership rules, the School row's rule fields, refusal tags and civil time. <code>Studienbuch.RefusalTag</code> is every tag a command can end with, the engine's included, so the refusal sentences cover each one. It also holds the school rules the app and the server share: today at the school (<code>School.today</code>), the usual school year and its halves (<code>SchoolYear.around</code>), which class and courses a choice may name (<code>Enrollment.classFits</code>, <code>Enrollment.courses</code>), and which elective groups still need a course (<code>Enrollment.groups</code>, <code>Enrollment.unanswered</code>, from the offerings' <code>groupKey</code> and <code>choiceRequired</code>). Mutators run on devices and, for readable tables, again on the server, so core imports no UI, platform API, SQL client, sync engine, clock or randomness.", "<code>Studienbuch.schema</code> collects 11 tables and 6 mutators at schema version 3."], f: ["packages/core/src/registry/Studienbuch.ts", "packages/core/src/homework/Homework.ts", "packages/core/src/notebook/Enrollment.ts", "packages/core/src/school/School.ts"], a: [1, 17] },
+  "p-core": { t: "packages/core", k: "read", d: ["The domain: row tables, mutators, membership rules, the School row's rule fields, refusal tags and civil time. <code>Studienbuch.RefusalTag</code> is every tag a command can end with, the engine's included, so the refusal sentences cover each one. It also holds the school rules the app and the server share: today at the school (<code>School.today</code>), the usual school year and its halves (<code>SchoolYear.around</code>), which class and courses a choice may name (<code>Enrollment.classFits</code>, <code>Enrollment.courses</code>), which elective groups still need a course (<code>Enrollment.groups</code>, <code>Enrollment.unanswered</code>, from the offerings' <code>groupKey</code> and <code>choiceRequired</code>), and the timetable's rules (<code>Timetable</code>: the day the Übersicht shows, phases, double periods as one block, free periods, a change's note, and when the Stand is old). Mutators run on devices and, for readable tables, again on the server, so core imports no UI, platform API, SQL client, sync engine, clock or randomness.", "<code>Studienbuch.schema</code> collects 17 tables and 6 mutators at schema version 5."], f: ["packages/core/src/registry/Studienbuch.ts", "packages/core/src/homework/Homework.ts", "packages/core/src/notebook/Enrollment.ts", "packages/core/src/school/School.ts", "packages/core/src/timetable/Timetable.ts"], a: [1, 17] },
 
   "p-plat": { t: "What core never imports", k: "stop", d: ["React, React Native, Expo, <code>node:*</code>, SQL clients, e2ee, api, the sync client, server, Lab and conformance suite, and <code>Clock</code>, <code>Random</code> and <code>Crypto</code> from Effect. Nor does it read <code>DateTime.now</code> or the host's time zone, sleep, or take randomness from <code>crypto</code>. Ids and timestamps reach a mutator as arguments, so a replay gives the same result on every device and on the server."], f: ["tools/oxlint/studienbuch/boundaries/packages.ts", "tools/oxlint/studienbuch/rules/no-ambient-clock-or-random.ts"] },
 
@@ -1509,7 +1511,9 @@ const INFO = {
 
   "f-onb": { t: "features/onboarding", d: ["The first start, in the Flutter app's order: name and volljährig go to the encrypted profile, Jahrgang, Klasse and Kurse to the readable course choice that the server checks again. The course step builds and checks that choice with core's <code>Enrollment</code> rules: a group such as Kunst and Musik shows as one choice, a required one holds Fertig back until it is answered, and a class answered for another Jahrgang drops out, so it sends only a choice the server accepts. Drafts live in the account's own database."], f: ["apps/app/src/features/onboarding/Onboarding.ts", "apps/app/src/features/onboarding/OnboardingState.ts"] },
 
-  "f-over": { t: "features/overview", d: ["Übersicht, with \"Moin, Lena!\" in the hero and the homework panel below it: what is due, ticked in place, \"Alle\" for the full list and \"+\" for a new one, refusals with their reason, and an offline chip while changes wait.", "<code>OverviewState</code> adds the greeting and the panel's cards to homework's <code>HomeworkState.screen</code>, so the screen only draws. It depends on homework and device-status, never the other way."], f: ["apps/app/src/features/overview/OverviewScreen.tsx", "apps/app/src/features/overview/OverviewState.ts"] },
+  "f-over": { t: "features/overview", d: ["Übersicht, with \"Moin, Lena!\" and \"Das steht heute an:\" in the hero, the day's lessons on its band, and the homework panel below: what is due, ticked in place, \"Alle\" for the full list and \"+\" for a new one, refusals with their reason, and an offline chip while changes wait.", "<code>OverviewState</code> adds the greeting, the day's card with its Stand, and the panel's cards to homework's <code>HomeworkState.screen</code>, so the screen only draws. It depends on homework, timetable and device-status, never the other way."], f: ["apps/app/src/features/overview/OverviewScreen.tsx", "apps/app/src/features/overview/OverviewState.ts"] },
+
+  "f-tt": { t: "features/timetable", d: ["<code>TimetableState</code> reads the school's timetable from the device: the lessons from this week's Monday on with their courses and subjects, and the school's teachers, rooms, closures and Stand. A teacher shows by <code>displayName</code>, else the short name. Which day to show and how to word it are <code>Timetable</code>'s in core and <code>AgendaItem</code>'s in domain-ui."], f: ["apps/app/src/features/timetable/TimetableState.ts"] },
 
   "f-prof": { t: "features/profile", d: ["Profil, D83's slim profile: the name, Jahrgang, Klasse and school the device holds, read from onboarding's reading, then the Notizbuch-Schlüssel row, the way to the diagnostics, Abmelden and Konto löschen. A fact the device doesn't hold stays out."], f: ["apps/app/src/features/profile/ProfileScreen.tsx", "apps/app/src/features/profile/Profile.ts"] },
 
