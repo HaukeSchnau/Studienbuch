@@ -11,6 +11,7 @@ import {
   type ViewStyle,
 } from "react-native";
 
+import { DateText } from "../calendar/DateText.ts";
 import type { AgendaItem } from "./AgendaItem.ts";
 import { Spoken } from "./Spoken.ts";
 import { StandFoot } from "./StandFoot.tsx";
@@ -34,10 +35,8 @@ const minute = 60_000;
 // Cells grow with the text size up to this, as their text does, so a single period keeps two lines.
 const { maxScale } = Tokens.type.caption;
 
-// A cell's lines under its top padding: the subject, then teacher and room.
+// A cell's padding above its subject.
 const cellTop = 3;
-const nameLine = Tokens.type.caption.line;
-const detailLine = Tokens.type.caption2.line;
 
 // A week without lessons still draws its closures and unpublished days this tall.
 const emptyHeight = 280;
@@ -57,7 +56,8 @@ export function WeekGrid({ week, wide, stand, onOpen }: WeekGridProps) {
   const { color } = Theme.useTheme();
   const scale = Math.min(Math.max(useWindowDimensions().fontScale, 1), maxScale);
   const columns = week.days.length;
-  const gutter = wide ? 52 : 36;
+  // Wide enough for "08:00" at the text's scale.
+  const gutter = (wide ? 52 : 36) * scale;
   const hours = week.hours;
 
   const y = (time: number) => (hours === undefined ? 0 : ((time - hours.start) / minute) * scale);
@@ -100,7 +100,7 @@ export function WeekGrid({ week, wide, stand, onOpen }: WeekGridProps) {
               weight="semibold"
               style={[styles.label, { top: edge + y(time) - 8, color: color.inkSoft }]}
             >
-              {clock(time)}
+              {DateText.time(time)}
             </Text>
           ))}
         </View>
@@ -178,13 +178,6 @@ export function WeekGrid({ week, wide, stand, onOpen }: WeekGridProps) {
   );
 }
 
-/** "08:00" */
-const clock = (time: number) => {
-  const minutes = Math.floor(time / minute);
-
-  return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
-};
-
 /** The labels that don't run into the one above, when a lesson starts minutes after another. */
 const labels = (times: ReadonlyArray<number>, y: (time: number) => number) => {
   const kept: Array<number> = [];
@@ -236,8 +229,9 @@ function LessonCell({
         ? (changedRoom ? cell.room?.now : cell.teacher?.now) || cell.note
         : cell.note;
 
-  // A tall cell has room for the note over its changed line or under its lines. A short one writes
-  // it in its second line, unless from 768 points on the details line already shows the change.
+  // On a phone a tall cell writes the note in place of its changed line, so the text above places
+  // it at any text size; from 768 points on it goes under the lines. A short cell writes it in its
+  // second line, unless from 768 points on the details line already shows the change.
   const rows: ReadonlyArray<Row> = off
     ? [{ kind: "text", key: "off", text: cell.off ?? "" }]
     : wide
@@ -246,23 +240,21 @@ function LessonCell({
         : [{ kind: "note", text: note }]
       : tall
         ? [
-            {
-              kind: "text",
-              key: "teacher",
-              text: changed === "teacher" ? "" : (cell.teacher?.now ?? ""),
-            },
-            { kind: "text", key: "room", text: changedRoom ? "" : (cell.room?.now ?? "") },
+            changed === "teacher" && note !== undefined
+              ? { kind: "note", text: note }
+              : { kind: "text", key: "teacher", text: cell.teacher?.now ?? "" },
+            changedRoom && note !== undefined
+              ? { kind: "note", text: note }
+              : { kind: "text", key: "room", text: cell.room?.now ?? "" },
           ]
         : note === undefined
           ? [{ kind: "text", key: "room", text: cell.room?.now ?? "" }]
           : [{ kind: "note", text: note }];
 
   const floating =
-    !tall || off || note === undefined
+    !tall || off || note === undefined || (!wide && changed !== undefined)
       ? undefined
-      : !wide && changed !== undefined
-        ? [styles.noteOn, { top: cellTop + nameLine + (changedRoom ? detailLine : 0) - 1 }]
-        : styles.noteLow;
+      : styles.noteLow;
 
   const content = (
     <>
@@ -498,7 +490,6 @@ const styles = StyleSheet.create({
     transform: [{ rotate: "-4deg" }],
     boxShadow: "0 2px 5px rgba(32, 55, 85, 0.22)",
   },
-  noteOn: { left: 1 },
   noteLow: { right: -4, bottom: 6 },
   noteInLine: { alignSelf: "flex-start", marginTop: 1, marginLeft: -3 },
   homework: {
