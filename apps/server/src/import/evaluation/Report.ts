@@ -4,12 +4,40 @@
  */
 import * as Schema from "effect/Schema";
 import * as Struct from "effect/Struct";
+import { CourseIdentity } from "./CourseIdentity.ts";
 
 export * as Report from "./Report.ts";
 
 export const Fraction = Schema.Struct({ right: Schema.Int, of: Schema.Int });
 
 export type Fraction = typeof Fraction.Type;
+
+const Identity = Schema.Struct({
+  realCourses: Schema.Int,
+  /** Real courses whose entries are in more than one of our courses. */
+  split: Schema.Int,
+  ourCourses: Schema.Int,
+  /** Our courses that cover entries of more than one real course. */
+  merged: Schema.Int,
+});
+
+const CourseCase = Schema.Struct({
+  kind: Schema.Literals(["split", "merged"]),
+  term: Schema.String,
+  subject: Schema.String,
+  looksLike: Schema.Literals(CourseIdentity.looksLike),
+  realCourses: Schema.Array(
+    Schema.Struct({
+      /** Tokens. */
+      students: Schema.Array(Schema.String),
+      /** Each entry's date and WebUntis ids, and the indexes of `ourCourses` that cover it. */
+      entries: Schema.Array(
+        Schema.Struct({ entry: Schema.String, courses: Schema.Array(Schema.Int) }),
+      ),
+    }),
+  ),
+  ourCourses: Schema.Array(Schema.Struct({ id: Schema.String, name: Schema.String })),
+});
 
 const View = Schema.Struct({
   /** Weeks exactly right: every entry covered once, every lesson needed, every attribute right. */
@@ -34,6 +62,15 @@ export const Evaluation = Schema.Struct({
   kurswahl: Fraction,
   /** Courses with lessons in the scored weeks that no student's Kurswahl names. */
   ghostCourses: Schema.Int,
+  /**
+   * In each term whose opening weeks are measured: real courses, each a subject and the students
+   * its entries are shown to, and our courses in the store the Kurswahl is taken from. In total
+   * and by subject; a merge of several subjects counts in each.
+   */
+  courseIdentity: Schema.Struct({
+    ...Identity.fields,
+    subjects: Schema.Record(Schema.String, Identity),
+  }),
   changes: Fraction,
   /** Labelled entries that belong to one course, or to different ones. */
   courses: Fraction,
@@ -79,14 +116,20 @@ export const Evaluation = Schema.Struct({
       wrong: Schema.Int,
     }),
   ),
+  /** Each subject's worst splits and merges, most pieces first. */
+  courseCases: Schema.Array(CourseCase),
 });
 
 export type Evaluation = typeof Evaluation.Type;
 
 export const Json = Schema.fromJsonString(Evaluation, { space: 2 });
 
-/** Every number of an evaluation: all but the worst weeks, which name students' tokens. */
-export const Aggregates = Evaluation.mapFields(Struct.omit(["worst"]));
+const cases = ["worst", "courseCases"] as const;
+
+/** Every number of an evaluation: all but the worst weeks and cases, which name students' tokens. */
+export const Aggregates = Evaluation.mapFields(Struct.omit(cases));
+
+export const aggregates = (report: Evaluation): Aggregates => Struct.omit(report, cases);
 
 export type Aggregates = typeof Aggregates.Type;
 
@@ -132,12 +175,54 @@ const sentences = (report: Aggregates) => [
   `${report.runs.failed} of ${report.runs.total} runs failed; they made ${report.reads.requests} requests, ${report.reads.outOfRange} for days outside the capture, and ${report.reads.decodeFailures} bodies didn't decode.`,
   `${report.invariants.danglingCourses} lessons and exams name a course the store lacks; the projection keeps ${report.invariants.unpublishedLessons} out of the publish.`,
   `${report.ghostCourses} courses have lessons no student chose.`,
+  `Course identity: ${report.courseIdentity.split} of ${report.courseIdentity.realCourses} real courses are split over several of ours, and ${report.courseIdentity.merged} of ${report.courseIdentity.ourCourses} of ours join several real courses.`,
   `WebUntis hid ${report.hiddenDays} days of views from the capture's account; they aren't measured.`,
   `Repeating the first run: ${report.invariants.failedRuns} failed, a second run changed ${report.invariants.secondRunChanges} rows, reversed reads ${report.invariants.reversedReadChanges}, ${report.invariants.injectedFailures} failed reads ${report.invariants.failedReadChanges}.`,
   `Labelled cases passing: ${report.passingCases.length === 0 ? "none" : report.passingCases.join(", ")}`,
 ];
 
-/** The headline numbers first, then the rest and the worst weeks. */
+const count = (value: number) => String(value).padStart(4);
+
+/** The subjects we split or merge courses of. */
+const bySubject = (report: Aggregates) => {
+  const failing = Object.entries(report.courseIdentity.subjects).filter(
+    ([, counts]) => counts.split + counts.merged > 0,
+  );
+
+  return failing.length === 0
+    ? []
+    : [
+        "",
+        "  Subjects whose real courses we split, and whose courses of ours merge real ones:",
+        ...failing.map(
+          ([subject, counts]) =>
+            `    ${subject.padEnd(20)} ${count(counts.split)} of ${count(counts.realCourses)} split  ${count(counts.merged)} of ${count(counts.ourCourses)} merged`,
+        ),
+      ];
+};
+
+const listed = <A>(values: ReadonlyArray<A>, shown: number, line: (value: A) => string) => [
+  ...values.slice(0, shown).map(line),
+  ...(values.length > shown ? [`and ${values.length - shown} more`] : []),
+];
+
+/** A case's courses, then each real course's students and where its entries went. */
+const caseLines = (each: Evaluation["courseCases"][number]) => [
+  `    ${each.kind} ${each.subject} in ${each.term}, ${each.looksLike}: ${each.ourCourses
+    .map((course, i) => `${i} ${course.id.slice(0, 8)} ${course.name}`)
+    .join(", ")}`,
+  ...each.realCourses.flatMap((real) => [
+    `      ${real.students.length} students: ${listed(real.students, 4, String).join(" ")}`,
+    ...listed(
+      real.entries,
+      6,
+      ({ entry, courses }) =>
+        `${entry} in ${courses.length === 0 ? "none" : courses.join(" and ")}`,
+    ).map((line) => `        ${line}`),
+  ]),
+];
+
+/** The headline numbers first, then the rest and the worst weeks and courses. */
 export const format = (report: Evaluation) =>
   [
     `${report.import} on ${report.corpus}, ${report.mode}, ${report.weeks.join(", ")}`,
@@ -150,6 +235,10 @@ export const format = (report: Evaluation) =>
     ]),
     "",
     ...sentences(report).map((sentence) => `  ${sentence}`),
+    ...bySubject(report),
+    ...(report.courseCases.length === 0
+      ? []
+      : ["", "  Worst courses per subject:", ...report.courseCases.flatMap(caseLines)]),
     ...(report.worst.length === 0
       ? []
       : [

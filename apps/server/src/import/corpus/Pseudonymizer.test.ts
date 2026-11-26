@@ -231,7 +231,20 @@ describe("Pseudonymizer", () => {
           importLayer: NaiveImport.layer,
           weeks: Option.none(),
           timeline: true,
-        }).pipe(Effect.map(({ worst, ...numbers }) => ({ ...numbers, worst: worst.length })));
+        }).pipe(
+          // The worst weeks and courses name students by their tokens, which differ.
+          Effect.map(({ worst, courseCases, ...numbers }) => ({
+            ...numbers,
+            worst: worst.length,
+            courseCases: courseCases.map((each) => ({
+              ...each,
+              realCourses: each.realCourses.map((real) => ({
+                ...real,
+                students: real.students.length,
+              })),
+            })),
+          })),
+        );
 
       const { corpus } = yield* Pseudonymizer.corpus(key, TinySchool.corpus);
 

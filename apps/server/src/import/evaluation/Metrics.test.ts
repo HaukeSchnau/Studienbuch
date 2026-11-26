@@ -16,6 +16,7 @@ const entry = (
   rooms: [301],
   previousTeachers: [],
   previousRooms: [],
+  subjects: ["MA"],
   ...changes,
 });
 

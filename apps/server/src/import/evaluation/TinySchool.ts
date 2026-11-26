@@ -63,7 +63,8 @@ const ma23 = resource(404, "MA23", "Mathematik 23");
 const ph = resource(405, "PH", "Physik");
 const ch = resource(406, "CH", "Chemie");
 const inf = resource(407, "INF", "Informatik");
-const subjects = [de, en, maE, ma23, ph, ch, inf];
+const bi = resource(408, "BI", "Biologie");
+const subjects = [de, en, maE, ma23, ph, ch, inf, bi];
 
 const student = (number: number, schoolClass: Resource) => ({
   ...resource(500 + number, `S${number}`, `Schüler ${number}`),
@@ -192,6 +193,28 @@ const plan: ReadonlyArray<Slot> = [
     classes: [c12],
     students: [s4, s5],
   },
+  // Case: `BI` is one course of S2 and S3 that WebUntis books as two lessons, Tuesday's under
+  // `11.1` and Friday's under `12`. A course of each class splits it, and its students choose both.
+  {
+    weekday: 2,
+    block: 1,
+    subject: bi,
+    teacher: la,
+    room: r101,
+    classes: [c11],
+    students: [s2, s3],
+  },
+  {
+    weekday: 5,
+    block: 2,
+    subject: bi,
+    teacher: la,
+    room: r101,
+    classes: [c12],
+    students: [s2, s3],
+  },
+  // Case: S8 takes two `DE` courses, which only a label tells apart from one.
+  { weekday: 2, block: 3, subject: de, teacher: la, room: r101, classes: [c13], students: [s8] },
 ];
 
 // Case: the weeks after the autumn break, 2026-W44 to W48, alternate from A, against ISO parity,
@@ -625,6 +648,14 @@ export const corpus: Corpus.Corpus = {
         entries: [
           { date: "2026-10-26", ids: idsOn("2026-10-26", 2) },
           { date: "2026-10-27", ids: idsOn("2026-10-27", 3) },
+        ],
+      },
+      {
+        id: "de-two-courses",
+        same: false,
+        entries: [
+          { date: "2026-10-29", ids: idsOn("2026-10-29", 8) },
+          { date: "2026-10-27", ids: idsOn("2026-10-27", 15) },
         ],
       },
       {
