@@ -1,5 +1,5 @@
 import {
-  type CivilTime,
+  CivilTime,
   Closure,
   Course,
   Enrollment,
@@ -11,11 +11,12 @@ import {
   Subject,
   Teacher,
   Term,
-  type Timetable,
+  Timetable,
 } from "@stu/core";
 import type { AgendaItem } from "@stu/domain-ui/timetable/AgendaItem";
 import { DeviceDatabase, DeviceSchema, SyncQuery } from "@stu/sync/client";
-import { gte } from "drizzle-orm";
+import { eq, gte } from "drizzle-orm";
+import * as Arr from "effect/Array";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
@@ -25,9 +26,9 @@ import * as Struct from "effect/Struct";
 import { AccountEngine } from "../../infra/runtime/AccountEngine.ts";
 import { Schema as Device } from "../../infra/sqlite/Schema.ts";
 
-// The school's timetable as the device holds it, for the Übersicht's card: the student's lessons
-// from this week's Monday on with their courses, and the school's teachers, rooms, closures and
-// Stand.
+// The school's timetable as the device holds it, for the Übersicht's card and the lesson sheet: the
+// student's lessons from a date on with their courses, and the school's teachers, rooms, closures
+// and Stand.
 
 export * as TimetableState from "./TimetableState.ts";
 
@@ -140,25 +141,66 @@ const read = Effect.fn("TimetableState.read")(function* (from: string) {
   });
 });
 
+const tables = [
+  Notebook.Row,
+  School.Row,
+  Course.Row,
+  Subject.Row,
+  Teacher.Row,
+  Room.Row,
+  Closure.Row,
+  ImportStatus.Row,
+  Lesson.Row,
+  Term.Row,
+  Enrollment.Row,
+];
+
 /** The timetable from a date on, again whenever a table it reads changes. */
 export const query = SyncQuery.read({
-  tables: [
-    Notebook.Row,
-    School.Row,
-    Course.Row,
-    Subject.Row,
-    Teacher.Row,
-    Room.Row,
-    Closure.Row,
-    ImportStatus.Row,
-    Lesson.Row,
-    Term.Row,
-    Enrollment.Row,
-  ],
+  tables,
   run: (from: string) => read(from).pipe(Effect.catchTags({ SchemaError: Effect.die })),
 });
 
 /** The account's timetable from a date on, such as `2026-11-16`. `None` without a notebook. */
 export const reading = Atom.family((accountId: string) =>
   SyncQuery.family(runtime(accountId), query),
+);
+
+/** One lesson the device holds, with the timetable from its day on. */
+export interface Held {
+  readonly reading: Reading;
+  /** With the other half of its double period, as the card shows it (`Timetable.blocks`). */
+  readonly lesson: AgendaItem.Source;
+}
+
+/** The lesson `id` and the timetable from its day on, `None` once it is gone or not chosen. */
+const readLesson = Effect.fn("TimetableState.readLesson")(function* (id: string) {
+  const db = yield* DeviceDatabase.make;
+
+  const [row] = yield* Effect.flatMap(
+    db.select().from(Device.Lesson).where(eq(Device.Lesson.id, id)),
+    decode.lesson,
+  );
+
+  if (row === undefined) return Option.none<Held>();
+
+  const held = yield* read(CivilTime.format(row.date));
+
+  return Option.flatMap(held, (reading) =>
+    Arr.findFirst(Timetable.blocks(reading.plan.lessons), (lesson) => lesson.id === id).pipe(
+      Option.orElse(() => Arr.findFirst(reading.plan.lessons, (lesson) => lesson.id === id)),
+      Option.map((lesson) => ({ reading, lesson })),
+    ),
+  );
+});
+
+/** One lesson by its id, again whenever a table it reads changes. */
+export const lessonQuery = SyncQuery.read({
+  tables,
+  run: (id: string) => readLesson(id).pipe(Effect.catchTags({ SchemaError: Effect.die })),
+});
+
+/** The account's lesson by its id, as the lesson sheet shows it. */
+export const lesson = Atom.family((accountId: string) =>
+  SyncQuery.family(runtime(accountId), lessonQuery),
 );

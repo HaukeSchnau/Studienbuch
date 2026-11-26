@@ -17,12 +17,12 @@ import { TimetableState } from "./TimetableState.ts";
 
 const accountId = "timetable-lena";
 
-const lesson = (courseId: string, date: string) =>
+const lesson = (courseId: string, date: string, start = 8) =>
   JSON.stringify({
     courseId,
     date,
-    start: 8 * 3_600_000,
-    end: 9.5 * 3_600_000,
+    start: start * 3_600_000,
+    end: (start + 1.5) * 3_600_000,
     teacherIds: [],
     roomIds: [],
     status: "Regular",
@@ -52,41 +52,59 @@ const seed = Effect.gen(function* () {
       ('nb-lena', 'Enrollment', 'summer', 1, '{"termId":"summer","gradeLevel":11,"courseIds":["c-ma"]}'),
       ('c-sp', 'Lesson', 'sp-winter', 1, ${lesson("c-sp", "2027-01-29")}),
       ('c-sp', 'Lesson', 'sp-summer', 1, ${lesson("c-sp", "2027-02-01")}),
-      ('c-ma', 'Lesson', 'ma-summer', 1, ${lesson("c-ma", "2027-02-01")})
+      ('c-ma', 'Lesson', 'ma-summer', 1, ${lesson("c-ma", "2027-02-01")}),
+      ('c-ma', 'Lesson', 'ma-summer-2', 1, ${lesson("c-ma", "2027-02-01", 9.5)})
   `;
 });
 
-it.effect("reads the lessons of the courses chosen for each lesson's term", () =>
-  Effect.gen(function* () {
-    const registry = AtomRegistry.make();
-    yield* Effect.addFinalizer(() => Effect.sync(() => registry.dispose()));
+it.effect(
+  "reads the lessons of the courses chosen for each lesson's term, and one lesson whole",
+  () =>
+    Effect.gen(function* () {
+      const registry = AtomRegistry.make();
+      yield* Effect.addFinalizer(() => Effect.sync(() => registry.dispose()));
 
-    // Signed in on a public computer, so the engine keeps its data in memory.
-    yield* AtomRegistry.getResult(
-      registry,
-      Atom.runtime(AccountEngine.device).atom(
-        Effect.flatMap(SessionStore.Service, (store) =>
-          store.signedIn({ accountId, token: Redacted.make("token"), demo: false }, true),
+      // Signed in on a public computer, so the engine keeps its data in memory.
+      yield* AtomRegistry.getResult(
+        registry,
+        Atom.runtime(AccountEngine.device).atom(
+          Effect.flatMap(SessionStore.Service, (store) =>
+            store.signedIn({ accountId, token: Redacted.make("token"), demo: false }, true),
+          ),
         ),
-      ),
-    );
+      );
 
-    const runtime = Atom.runtime(AccountEngine.app(accountId));
-    registry.mount(runtime);
+      const runtime = Atom.runtime(AccountEngine.app(accountId));
+      registry.mount(runtime);
 
-    const held = yield* AtomRegistry.getResult(
-      registry,
-      runtime.atom(Effect.andThen(seed, TimetableState.query.run("2027-01-25"))),
-      { suspendOnWaiting: true },
-    );
-
-    expect(
-      Option.map(held, (reading) =>
-        Arr.sort(
-          reading.plan.lessons.map(({ id }) => id),
-          Order.String,
+      const [held, opened, dropped] = yield* AtomRegistry.getResult(
+        registry,
+        runtime.atom(
+          Effect.andThen(
+            seed,
+            Effect.all([
+              TimetableState.query.run("2027-01-25"),
+              TimetableState.lessonQuery.run("ma-summer"),
+              TimetableState.lessonQuery.run("sp-summer"),
+            ]),
+          ),
         ),
-      ),
-    ).toEqual(Option.some(["ma-summer", "sp-winter"]));
-  }).pipe(Effect.scoped),
+        { suspendOnWaiting: true },
+      );
+
+      expect(
+        Option.map(held, (reading) =>
+          Arr.sort(
+            reading.plan.lessons.map(({ id }) => id),
+            Order.String,
+          ),
+        ),
+      ).toEqual(Option.some(["ma-summer", "ma-summer-2", "sp-winter"]));
+
+      // The sheet opens a double period whole, and a dropped course's lesson not at all.
+      expect(Option.map(opened, ({ lesson }) => [lesson.id, lesson.end / 3_600_000])).toEqual(
+        Option.some(["ma-summer", 11]),
+      );
+      expect(dropped).toEqual(Option.none());
+    }).pipe(Effect.scoped),
 );

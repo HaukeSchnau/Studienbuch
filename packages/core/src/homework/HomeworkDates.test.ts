@@ -61,4 +61,16 @@ describe("HomeworkDates", () => {
       "2027-10-29",
     ]);
   });
+
+  it.each([
+    { name: "open, of the course, due that day", course: "ma", dueOn: "2026-10-30", open: true },
+    { name: "done", course: "ma", dueOn: "2026-10-30", doneOn: "2026-10-29", open: false },
+    { name: "of another course", course: "de", dueOn: "2026-10-30", open: false },
+    { name: "due the day before", course: "ma", dueOn: "2026-10-29", open: false },
+    { name: "due the day after", course: "ma", dueOn: "2026-10-31", open: false },
+  ])("says Mathematik on 30 October has homework open for one $name: $open", (row) => {
+    const each = { ...homework("x", row.dueOn, row.doneOn), courseId: row.course };
+
+    expect(HomeworkDates.isOpenFor([each], "ma", date("2026-10-30"))).toBe(row.open);
+  });
 });

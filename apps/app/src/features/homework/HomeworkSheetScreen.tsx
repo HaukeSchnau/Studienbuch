@@ -23,29 +23,36 @@ import { HomeworkRoutes } from "./HomeworkRoutes.ts";
 import { HomeworkState } from "./HomeworkState.ts";
 
 /**
- * The add sheet, and with an id the same sheet filled in to edit (D69). What the student types
- * stays in a draft until it is saved or "Abbrechen" drops it, so a sheet closed by mistake or an
- * app the system ended opens again as it was. "Speichern" closes it once this device saved.
+ * The add sheet, and with an id the same sheet filled in to edit (D69). "Hausaufgabe eintragen" on
+ * a lesson opens it with the course and due date chosen (`HomeworkRoutes.addFor`). What the student
+ * types stays in a draft until it is saved or "Abbrechen" drops it, so a sheet closed by mistake or
+ * an app the system ended opens again as it was. "Speichern" closes it once this device saved.
  */
 export function HomeworkSheetScreen() {
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { id, ...params } = useLocalSearchParams<{
+    id?: string;
+    courseId?: string;
+    dueOn?: string;
+  }>();
 
   return Option.match(KeysState.useAccountId(), {
     onNone: () => null,
-    onSome: (accountId) => <AccountSheet accountId={accountId} id={id} />,
+    onSome: (accountId) => <AccountSheet accountId={accountId} id={id} params={params} />,
   });
 }
 
 function AccountSheet({
   accountId,
   id,
+  params,
 }: {
   readonly accountId: string;
   readonly id: string | undefined;
+  readonly params: HomeworkInput.Params;
 }) {
   const router = useRouter();
   const navigation = useNavigation();
-  const key = id ?? "new";
+  const key = HomeworkInput.draftKey(id, params);
   const status = useAtomValue(HomeworkState.screen(accountId));
   const [draft, setDraft] = useAtom(HomeworkState.draft(accountId)(key));
   const [saved, reset] = useAtom(HomeworkState.save(accountId));
@@ -108,15 +115,16 @@ function AccountSheet({
 
   const current: HomeworkInput.Current | undefined = stored;
   const touched = draft.value;
-  const values = HomeworkInput.values(current, touched);
-
   const choices = HomeworkState.choices(reading.value, today, current?.courseId);
+  const offered = choices.map((choice) => choice.id);
 
-  const valid = HomeworkInput.decode(values, {
-    today,
-    offered: choices.map((choice) => choice.id),
+  const values = HomeworkInput.values(
     current,
-  });
+    touched,
+    HomeworkInput.prefilled(params, { today, offered }),
+  );
+
+  const valid = HomeworkInput.decode(values, { today, offered, current });
 
   const problem = Option.map(
     Option.filter(AsyncResult.error(saved), Schema.is(HomeworkState.Unsaved)),

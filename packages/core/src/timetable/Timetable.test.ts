@@ -407,6 +407,71 @@ describe("Timetable.shown", () => {
   });
 });
 
+describe("Timetable.nextLesson", () => {
+  const friday = (more: Partial<Timetable.Timed> = {}) => [
+    ...week.filter(({ id }) => id !== "2026-11-20 08:00-09:30 ma"),
+    lesson("2026-11-20 08:00-09:30 ma", more),
+    lesson("2026-11-23 08:00-09:30 ma"),
+  ];
+
+  const nextWeek = { coveredUntil: date("2026-11-27") };
+
+  it.each([
+    {
+      name: "the course's next lesson",
+      plan: plan(),
+      next: "2026-11-20 08:00-09:30 ma",
+    },
+    {
+      name: "one on a later day, not a lesson later the same day",
+      plan: plan({ lessons: [...week, lesson("2026-11-18 13:50-14:35 ma")] }),
+      next: "2026-11-20 08:00-09:30 ma",
+    },
+    {
+      name: "past a cancelled lesson",
+      plan: plan({ lessons: friday(cancelled), ...nextWeek }),
+      next: "2026-11-23 08:00-09:30 ma",
+    },
+    {
+      name: "past a released one",
+      plan: plan({
+        lessons: friday({
+          status: "Changed",
+          change: { kind: "Released", previousTeacherIds: [], previousRoomIds: [] },
+        }),
+        ...nextWeek,
+      }),
+      next: "2026-11-23 08:00-09:30 ma",
+    },
+    {
+      name: "past a closure",
+      plan: plan({
+        lessons: friday(),
+        closures: [
+          {
+            name: "Brückentag",
+            dates: [{ start: date("2026-11-20"), end: date("2026-11-20") }],
+          },
+        ],
+        ...nextWeek,
+      }),
+      next: "2026-11-23 08:00-09:30 ma",
+    },
+    {
+      name: "none past the last day published",
+      plan: plan({ lessons: friday(cancelled) }),
+      next: "none",
+    },
+  ])("finds $name", ({ plan: held, next }) => {
+    expect(
+      Option.match(Timetable.nextLesson(held, Course.Id.make("ma"), date("2026-11-18")), {
+        onNone: () => "none",
+        onSome: ({ id }) => id,
+      }),
+    ).toBe(next);
+  });
+});
+
 describe("Timetable.staleSince", () => {
   const zone = School.defaultTimeZone;
   // 18 November 2026 in Berlin is UTC+1.

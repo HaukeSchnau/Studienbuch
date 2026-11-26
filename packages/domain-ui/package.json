@@ -20,7 +20,8 @@
     "./subject/SubjectMark": "./src/subject/SubjectMark.ts",
     "./subject/SubjectSticker": "./src/subject/SubjectSticker.tsx",
     "./timetable/AgendaCard": "./src/timetable/AgendaCard.tsx",
-    "./timetable/AgendaItem": "./src/timetable/AgendaItem.ts"
+    "./timetable/AgendaItem": "./src/timetable/AgendaItem.ts",
+    "./timetable/LessonSheet": "./src/timetable/LessonSheet.tsx"
   },
   "dependencies": {
     "@stu/core": "workspace:*",

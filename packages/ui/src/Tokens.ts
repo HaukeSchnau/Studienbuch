@@ -47,6 +47,9 @@ const light = {
   // The darker wave across the panel, legacy's AufgabenClipper (the panel under 10 % black). It
   // reaches the panel's bottom, so it is also the colour below it.
   panelFold: "#3572C3",
+  // Navy, the homework panel's colour on a card: the "Hausaufgabe offen" pill on a lesson.
+  homework: "#203755",
+  onHomework: "#FFFFFF",
   // The decorative blobs, drawn at 45 % opacity. Landing page, onboarding and empty states only.
   blobGreen: "#6DB868",
   blobBlue: "#76A6E5",
@@ -90,6 +93,8 @@ const dark = {
   panelDue: "#FF9C9C",
   panelSoft: "#A9B9CF",
   panelFold: "#163051",
+  homework: "#2A6FC7",
+  onHomework: "#FFFFFF",
   blobGreen: "#1F5A1B",
   blobBlue: "#1E4170",
   fieldFill: "rgba(255, 255, 255, 0.07)",

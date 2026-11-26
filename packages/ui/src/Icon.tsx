@@ -42,6 +42,10 @@ const glyphs = {
   key: stroked(
     "M4.5 15.5a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0-7 0M10.5 13 19 4.5M16 7.5l2.5 2.5M18.5 5l2 2",
   ),
+  /** An open book, for homework. */
+  book: stroked(
+    "M12 6.5C9.8 5 7.2 4.6 4.5 5.3v13c2.7-.7 5.3-.3 7.5 1.2 2.2-1.5 4.8-1.9 7.5-1.2v-13c-2.7-.7-5.3-.3-7.5 1.2zM12 6.5v13",
+  ),
   /** A pulse line, for how this device runs. */
   pulse: stroked("M3 12h4l2.5-6 5 12 2.5-6h4"),
 };

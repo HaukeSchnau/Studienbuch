@@ -272,8 +272,8 @@ export const choices = (
 const draftKey = (key: string) => `homework-touched-${key}`;
 
 /**
- * What the student touched in the sheet for a new homework (`"new"`) or one homework's edit (its id),
- * kept across a restart until it is saved or dropped (`HomeworkInput.Draft`).
+ * What the student touched in the sheet under its `HomeworkInput.draftKey`, kept across a restart
+ * until it is saved or dropped (`HomeworkInput.Draft`).
  */
 export const draft = Atom.family((accountId: string) =>
   Atom.family((key: string) =>

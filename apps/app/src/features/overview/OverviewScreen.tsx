@@ -16,13 +16,14 @@ import { HomeworkRoutes } from "../homework/HomeworkRoutes.ts";
 import { HomeworkState } from "../homework/HomeworkState.ts";
 import { OfflineChip } from "../device-status/OfflineChip.tsx";
 import { KeysState } from "../keys/KeysState.ts";
+import { TimetableRoutes } from "../timetable/TimetableRoutes.ts";
 import { OverviewState } from "./OverviewState.ts";
 
 /**
  * "Übersicht", the Flutter app's home: "Moin, Lena!" and "Das steht heute an:" in the green hero,
- * the day's lessons on its band, and the blue homework panel below. Without a timetable the hero
- * names today's date and the card stays away. A refused change waits as a card on the band until
- * the student picks what happens to it.
+ * the day's lessons on its band, each opening its lesson sheet, and the blue homework panel below.
+ * Without a timetable the hero names today's date and the card stays away. A refused change waits
+ * as a card on the band until the student picks what happens to it.
  */
 export function OverviewScreen() {
   return Option.match(KeysState.useAccountId(), {
@@ -83,6 +84,7 @@ function AccountOverview({ accountId }: { readonly accountId: string }) {
             items={card.items}
             notice={card.notice}
             stand={Option.getOrUndefined(agenda)?.stand}
+            onOpen={(id) => router.push(TimetableRoutes.lesson(id))}
           />
         )}
         {Option.match(reading, {

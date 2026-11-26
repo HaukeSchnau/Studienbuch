@@ -6,7 +6,9 @@ import { Tokens } from "@stu/ui/Tokens";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { SubjectMarker } from "../subject/SubjectMarker.tsx";
-import type { AgendaItem } from "./AgendaItem.ts";
+import { AgendaItem } from "./AgendaItem.ts";
+import { ChangeNote } from "./ChangeNote.tsx";
+import { NamedText } from "./NamedText.tsx";
 
 export interface AgendaCardProps {
   readonly items: ReadonlyArray<AgendaItem.Item>;
@@ -20,8 +22,8 @@ export interface AgendaCardProps {
 
 /**
  * Legacy's "Das steht heute an:" card: a row per lesson with its subject's marker, past lessons
- * dimmed with a tick, the running one green with the minutes left, a yellow note on a change, and
- * Entfall struck through in red (D76).
+ * dimmed with a tick, the running one green with the minutes left, a yellow note on a change,
+ * Entfall struck through in red (D76), and a navy pill on a lesson with homework due.
  */
 export function AgendaCard({ items, notice, stand, onOpen }: AgendaCardProps) {
   const { color } = Theme.useTheme();
@@ -88,11 +90,7 @@ export function AgendaCard({ items, notice, stand, onOpen }: AgendaCardProps) {
 
 type LessonItem = Extract<AgendaItem.Item, { readonly kind: "lesson" }>;
 
-/** "Voss statt Brandt", as a screen reader says what the struck name shows. */
-const spoken = (named: AgendaItem.Named | undefined) =>
-  named === undefined
-    ? []
-    : [named.was === undefined ? named.now : `${named.now || "niemand"} statt ${named.was}`];
+const homeworkOpen = "Hausaufgabe offen";
 
 const labelOf = (lesson: LessonItem) =>
   [
@@ -100,31 +98,13 @@ const labelOf = (lesson: LessonItem) =>
     lesson.time.replace("–", " bis "),
     ...(lesson.off === undefined ? [] : [lesson.off]),
     ...(lesson.note === undefined ? [] : [lesson.note]),
-    ...spoken(lesson.teacher),
-    ...spoken(lesson.room),
+    ...[lesson.teacher, lesson.room].flatMap((named) =>
+      named === undefined ? [] : [AgendaItem.spoken(named)],
+    ),
+    ...(lesson.homework === true ? [homeworkOpen] : []),
     ...(lesson.phase === "past" ? ["vorbei"] : []),
     ...(lesson.remaining === undefined ? [] : [lesson.remaining]),
   ].join(", ");
-
-/** A teacher or room, the old one struck through before the new one in bold. */
-function NamedText({ named }: { readonly named: AgendaItem.Named }) {
-  const { color } = Theme.useTheme();
-
-  if (named.was === undefined) return named.now;
-
-  return (
-    <>
-      <Text variant="subhead" style={[styles.struck, { textDecorationColor: color.danger }]}>
-        {named.was}
-      </Text>
-      {named.now === "" ? null : (
-        <Text variant="subhead" weight="bold" style={{ color: color.ink }}>
-          {` ${named.now}`}
-        </Text>
-      )}
-    </>
-  );
-}
 
 function Lesson({
   lesson,
@@ -186,20 +166,21 @@ function Lesson({
             ))}
           </Text>
         )}
+        {lesson.homework === true ? (
+          <View style={[styles.pill, { backgroundColor: color.homework }]}>
+            <Icon name="book" color={color.onHomework} size={14} />
+            <Text variant="caption" weight="bold" style={{ color: color.onHomework }}>
+              {homeworkOpen}
+            </Text>
+          </View>
+        ) : null}
       </View>
       {past ? (
         <Icon color={color.accent} name="check" />
       ) : onOpen === undefined ? null : (
         <Icon color={color.inkSoft} name="chevron" />
       )}
-      {lesson.note === undefined ? null : (
-        <View style={[styles.note, { backgroundColor: color.note }]}>
-          <Text variant="footnote" weight="bold" style={{ color: color.noteInk }}>
-            {lesson.note}
-          </Text>
-          <View style={[styles.fold, { borderTopColor: color.noteFold }]} />
-        </View>
-      )}
+      {lesson.note === undefined ? null : <ChangeNote text={lesson.note} style={styles.note} />}
     </>
   );
 
@@ -256,26 +237,18 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: Tokens.space.sm,
     right: 46,
-    paddingHorizontal: 9,
-    paddingTop: Tokens.space.xs,
-    paddingBottom: 5,
-    borderTopLeftRadius: 2,
-    borderTopRightRadius: 2,
-    borderBottomLeftRadius: 2,
-    borderBottomRightRadius: 9,
     transform: [{ rotate: "-3deg" }],
-    boxShadow: "0 2px 5px rgba(32, 55, 85, 0.22)",
   },
-  // The note's turned-up corner: the top left half of a square in its bottom right corner.
-  fold: {
-    position: "absolute",
-    right: 0,
-    bottom: 0,
-    width: 0,
-    height: 0,
-    borderTopWidth: 9,
-    borderRightWidth: 9,
-    borderRightColor: "transparent",
+  pill: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 5,
+    marginTop: Tokens.space.xs,
+    paddingLeft: 7,
+    paddingRight: 9,
+    paddingVertical: 3,
+    borderRadius: Tokens.radius.pill,
   },
   notice: {
     gap: Tokens.space.xs,

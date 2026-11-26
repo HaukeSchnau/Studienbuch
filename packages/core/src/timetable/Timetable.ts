@@ -213,6 +213,22 @@ export interface Plan<A extends Timed> {
 // A closure can't last longer than this, so the search for a school day ends.
 const searchDays = 400;
 
+/** The closure that holds `date`, with the last day of its range. */
+const closureOn = (plan: Plan<Timed>, date: CivilTime.PlainDate) =>
+  Arr.findFirst(plan.closures, (closure) =>
+    Arr.findFirst(closure.dates, (range) => CivilTime.contains(range, date)).pipe(
+      Option.map((range) => ({ name: closure.name, until: range.end })),
+    ),
+  );
+
+/** The school has published `date`: on or before `coveredUntil`, or any date without a Stand. */
+const covered = (plan: Plan<Timed>, date: CivilTime.PlainDate) =>
+  plan.coveredUntil === undefined || CivilTime.order(date, plan.coveredUntil) <= 0;
+
+/** A date whose lessons count: published and outside closures. */
+const counts = (plan: Plan<Timed>, date: CivilTime.PlainDate) =>
+  covered(plan, date) && Option.isNone(closureOn(plan, date));
+
 /**
  * The day the Übersicht shows at `now`. Inside a closure, the closure. Else today while one of its
  * lessons that is not off hasn't ended, or before its first lesson even when all are off. Else the
@@ -223,18 +239,8 @@ export const shown = <A extends Timed>(plan: Plan<A>, now: CivilTime.Moment): Sh
   const lessons = blocks(plan.lessons);
   const on = (date: CivilTime.PlainDate) => lessons.filter((lesson) => sameDate(lesson.date, date));
 
-  const closureOn = (date: CivilTime.PlainDate) =>
-    Arr.findFirst(plan.closures, (closure) =>
-      Arr.findFirst(closure.dates, (range) => CivilTime.contains(range, date)).pipe(
-        Option.map((range) => ({ name: closure.name, until: range.end })),
-      ),
-    );
-
-  const covered = (date: CivilTime.PlainDate) =>
-    plan.coveredUntil === undefined || CivilTime.order(date, plan.coveredUntil) <= 0;
-
   const isSchoolDay = (date: CivilTime.PlainDate) =>
-    Option.isNone(closureOn(date)) &&
+    Option.isNone(closureOn(plan, date)) &&
     (CivilTime.dayOfWeek(date) <= 5 || lessons.some((lesson) => sameDate(lesson.date, date)));
 
   /** The first school day from `date` on, `date` itself included. */
@@ -252,28 +258,27 @@ export const shown = <A extends Timed>(plan: Plan<A>, now: CivilTime.Moment): Sh
     const week = plan.lessons.filter(
       (lesson) =>
         CivilTime.contains({ start: monday, end: sunday }, lesson.date) &&
-        covered(lesson.date) &&
-        Option.isNone(closureOn(lesson.date)),
+        counts(plan, lesson.date),
     );
 
     return Shown.Day({ date, rows: day(on(date), week) });
   };
 
-  const closed = closureOn(now.date);
+  const closure = closureOn(plan, now.date);
 
-  if (Option.isSome(closed)) {
-    const resumes = schoolDayFrom(CivilTime.addDays(closed.value.until, 1));
+  if (Option.isSome(closure)) {
+    const resumes = schoolDayFrom(CivilTime.addDays(closure.value.until, 1));
 
     return Shown.Closed({
-      ...closed.value,
+      ...closure.value,
       resumes,
-      first: covered(resumes)
+      first: covered(plan, resumes)
         ? Arr.findFirst(on(resumes), (lesson) => !isOff(lesson))
         : Option.none(),
     });
   }
 
-  const today = covered(now.date) ? on(now.date) : [];
+  const today = covered(plan, now.date) ? on(now.date) : [];
   const firstStart = Math.min(...today.map((lesson) => lesson.start));
 
   if (
@@ -285,10 +290,7 @@ export const shown = <A extends Timed>(plan: Plan<A>, now: CivilTime.Moment): Sh
 
   const next = Arr.findFirst(
     lessons,
-    (lesson) =>
-      CivilTime.order(lesson.date, now.date) > 0 &&
-      covered(lesson.date) &&
-      Option.isNone(closureOn(lesson.date)),
+    (lesson) => CivilTime.order(lesson.date, now.date) > 0 && counts(plan, lesson.date),
   );
 
   if (Option.isSome(next)) return dayOf(next.value.date);
@@ -303,6 +305,25 @@ export const shown = <A extends Timed>(plan: Plan<A>, now: CivilTime.Moment): Sh
     date: schoolDayFrom(CivilTime.order(afterCovered, ahead) > 0 ? afterCovered : ahead),
   });
 };
+
+/**
+ * The course's first lesson on a day after `after` that takes place: not off, outside closures,
+ * and published. That is when homework given on `after` is due. `None` while the device holds none,
+ * as before the school publishes the next week.
+ */
+export const nextLesson = <A extends Timed>(
+  plan: Plan<A>,
+  course: string,
+  after: CivilTime.PlainDate,
+): Option.Option<A> =>
+  Arr.findFirst(
+    Arr.sort(plan.lessons, byTime),
+    (lesson) =>
+      lesson.courseId === course &&
+      CivilTime.order(lesson.date, after) > 0 &&
+      !isOff(lesson) &&
+      counts(plan, lesson.date),
+  );
 
 /** Once the import read this long ago, the Stand says so. */
 export const staleAfter = 60 * minute;

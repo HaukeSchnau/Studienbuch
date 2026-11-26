@@ -30,6 +30,12 @@ export interface Item {
   readonly waiting: boolean;
 }
 
+/**
+ * How long a ticked homework stays in its place, in milliseconds, for its pen stroke and a second
+ * thought, before it moves to where its list sorts it (`useLingeringOrder`).
+ */
+export const linger = 1200;
+
 /** What the panel and the list say while the device has no key to the notebook. */
 export const locked = {
   title: "Dein Notizbuch ist gesperrt",

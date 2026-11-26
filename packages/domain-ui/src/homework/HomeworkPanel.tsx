@@ -62,7 +62,7 @@ export function HomeworkPanel({
   // The panel spans the screen in the app, and a phone's frame on the landing page.
   const width = layout?.width ?? screen.width;
   const wide = width >= Tokens.layout.wideBreakpoint;
-  const shown = useLingeringOrder(items ?? [], (item) => item.id, linger);
+  const shown = useLingeringOrder(items ?? [], (item) => item.id, HomeworkItem.linger);
 
   return (
     <View onLayout={onLayout} style={[styles.panel, { backgroundColor: color.panel }, style]}>
@@ -134,10 +134,6 @@ export function HomeworkPanel({
  */
 const columns = (items: ReadonlyArray<HomeworkItem.Item>) =>
   Arr.chunksOf(items, items.length < 4 ? 1 : 2);
-
-// A ticked card stays in its place this long, for its pen stroke and a second thought, before it
-// moves to the done ones at the end.
-const linger = 1200;
 
 const onPanel = "#FFFFFF";
 
