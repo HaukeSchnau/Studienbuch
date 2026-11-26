@@ -62,11 +62,13 @@ export const screen = Atom.family((accountId: string) =>
       if (Option.isNone(current) || Option.isNone(now)) return Option.none();
 
       const { today, offline, disconnected } = current.value;
+
       // Empty while the notebook is locked, as on the Übersicht.
       const homework = Option.match(current.value.reading, {
         onNone: () => [],
         onSome: (value) => value.homework,
       });
+
       const opening = Timetable.schoolWeek(today);
       const monday = Option.getOrElse(CivilTime.mondayOf(requested), () => opening);
       const opened = get(TimetableState.reading(accountId)(CivilTime.format(opening)));

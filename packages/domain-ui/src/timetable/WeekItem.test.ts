@@ -87,7 +87,12 @@ describe("WeekItem.week", () => {
       ],
     },
   ])("$name", ({ plan, spans }) => {
-    const shown = WeekItem.week(Timetable.week(plan, monday), names, moment("2026-11-16", "10:00"));
+    const shown = WeekItem.week(
+      Timetable.week(plan, monday),
+      names,
+      moment("2026-11-16", "10:00"),
+      [],
+    );
 
     expect(
       shown.spans.map((span) =>
@@ -114,7 +119,9 @@ describe("WeekItem.week", () => {
       line: undefined,
     },
   ])("draws the line at now $name", ({ now, plan: given, line }) => {
-    expect(WeekItem.week(Timetable.week(given ?? plan(), monday), names, now).now).toEqual(line);
+    expect(WeekItem.week(Timetable.week(given ?? plan(), monday), names, now, []).now).toEqual(
+      line,
+    );
   });
 
   it("writes a cell's subject short, or the course's name without a subject", () => {
@@ -130,12 +137,29 @@ describe("WeekItem.week", () => {
       ),
       names,
       moment("2026-11-16", "10:00"),
+      [],
     );
 
     expect(shown.cells.map((cell) => [cell.subject, cell.short])).toEqual([
       ["Mathematik", "Mathe"],
       ["AST-1", "AST-1"],
     ]);
+  });
+
+  it("marks a lesson ahead whose course has homework due that day, in the grid and the day list", () => {
+    const homework = [{ id: "h", courseId: "ma", dueOn: date("2026-11-18") }];
+    const now = moment("2026-11-16", "10:00");
+    const shown = Timetable.week(plan(), monday);
+
+    expect(WeekItem.week(shown, names, now, homework).cells.map((cell) => cell.homework)).toEqual([
+      false,
+      true,
+    ]);
+    expect(
+      WeekItem.day(shown, 2, names, now, homework).items.map(
+        (item) => item.kind === "lesson" && item.homework,
+      ),
+    ).toEqual([true]);
   });
 });
 

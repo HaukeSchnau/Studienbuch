@@ -9,7 +9,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { HomeworkItem } from "../homework/HomeworkItem.ts";
 import { HomeworkRow } from "../homework/HomeworkRow.tsx";
 import { SubjectMarker } from "../subject/SubjectMarker.tsx";
-import { AgendaItem } from "./AgendaItem.ts";
+import type { AgendaItem } from "./AgendaItem.ts";
 import { ChangeNote } from "./ChangeNote.tsx";
 import { NamedText } from "./NamedText.tsx";
 import { Spoken } from "./Spoken.ts";
