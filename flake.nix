@@ -1,14 +1,14 @@
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    nix-infra-modules = {
-      url = "github:HaukeSchnau/nix-infra-modules/b365d13637b9dc83c397df542b5112a50ac8cbb9";
+    projects-sdk = {
+      url = "github:HaukeSchnau/projects-sdk/v0.1.0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
   outputs =
-    { nixpkgs, nix-infra-modules, ... }:
+    { nixpkgs, projects-sdk, ... }:
     let
       inherit (nixpkgs) lib;
       forEach = systems: f: lib.genAttrs systems (system: f nixpkgs.legacyPackages.${system});
@@ -16,7 +16,7 @@
         "aarch64-linux"
         "x86_64-linux"
       ];
-      sdk = nix-infra-modules;
+      sdk = projects-sdk;
       toolchain = pkgs: import ./nix/toolchain.nix { inherit pkgs sdk; };
       # The release is JavaScript without native code (ADR 0005). It is built once, on x86_64, and
       # every host runs that bundle with its own Node, so each system's checks test that pairing.

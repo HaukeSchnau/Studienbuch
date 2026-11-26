@@ -1433,7 +1433,7 @@ const INFO = {
 
   caddy: { t: "Caddy", k: "wire", d: ["srv-2's front door. It terminates TLS and proxies each hostname to the loopback port of its service. Preview routes answer 403 to anyone outside the Tailnet.", "The routes come from the service controller through infra's agent-service route sources."], a: [6, 7] },
 
-  ctrl: { t: "Service controller", k: "infra", d: ["The Fleet service controller from nix-infra-modules, on srv-2. Calder's Alchemy deploy declares a <code>Fleet.Service</code>, and the controller turns it into a systemd unit <code>fleet-service@&lt;name&gt;</code> with a dynamic user, a loopback port, <code>DATABASE_URL</code> and secrets as files under <code>/run/fleet</code>.", "Studienbuch's grant: 4 services, 4 GB."], f: ["deploy/platform/fleet.ts", "deploy/alchemy.run.ts"], a: [6] },
+  ctrl: { t: "Service controller", k: "infra", d: ["The Fleet service controller from projects-sdk, on srv-2. Calder's Alchemy deploy declares a <code>Fleet.Service</code>, and the controller turns it into a systemd unit <code>fleet-service@&lt;name&gt;</code> with a dynamic user, a loopback port, <code>DATABASE_URL</code> and secrets as files under <code>/run/fleet</code>.", "Studienbuch's grant: 4 services, 4 GB."], f: ["deploy/platform/fleet.ts", "deploy/alchemy.run.ts"], a: [6] },
 
   beta: { t: "studienbuch-beta", k: "plain", d: ["One Node 26 process runs the whole product: the landing page, the console, the web app, RPC, auth and sync, from one architecture-independent bundle. It gets 1 GB.", "It sends real mail and holds the demo school with a review password. Its import reads IGS's WebUntis on schedule and publishes nothing yet."], f: ["apps/server/src/main.ts", "nix/bundle.nix"], a: [3, 4, 5] },
 
