@@ -8,7 +8,7 @@ import viteReact from "@vitejs/plugin-react";
 import { defineConfig, type Plugin, type ViteBuilder } from "vite-plus";
 
 // Pages prerendered to `<path>/index.html`. Everything under `/console` is served from the shell.
-const pages = ["/", "/impressum", "/datenschutz"];
+const pages = ["/", "/impressum", "/datenschutz", "/datenschutz/igs-lilienthal-app"];
 const shell = "/_shell";
 const prerendered = [...pages.map((path) => NodePath.join(path, "index.html")), `${shell}.html`];
 
