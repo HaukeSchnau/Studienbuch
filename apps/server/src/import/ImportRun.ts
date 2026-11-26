@@ -3,7 +3,7 @@
  * and the school's rows with the checkpoint in one transaction, or nothing. It records its outcome
  * and never fails. What it records names reads by kind and failures by tag, never a body or a name.
  */
-import { WebUntisClient, type WebUntisError } from "@schnau/webuntis-api";
+import { type ConfigurationError, WebUntisClient, type WebUntisError } from "@schnau/webuntis-api";
 import {
   AppDataSchema,
   ExamsSchema,
@@ -24,6 +24,7 @@ import * as Ref from "effect/Ref";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
+import type { LiveWebUntis } from "../infra/webuntis/LiveWebUntis.ts";
 import { RecordedWebUntis } from "../infra/webuntis/RecordedWebUntis.ts";
 import { Schools } from "../school/Schools.ts";
 import { Policy } from "./corpus/Policy.ts";
@@ -53,8 +54,14 @@ export interface Options {
   readonly nightly: boolean;
   /** The most requests the run may send, reserved before its first. */
   readonly maximum: number;
-  /** A connection to WebUntis for this run alone, built once its requests are reserved. */
-  readonly source: Layer.Layer<WebUntisClient, WebUntisError>;
+  /**
+   * A connection to WebUntis for this run alone, built once its requests are reserved. It sends
+   * each request through `gate`, which refuses it past the reservation, the deadline or a lost
+   * session.
+   */
+  readonly source: (
+    gate: LiveWebUntis.Gate<Refused>,
+  ) => Layer.Layer<WebUntisClient, WebUntisError | ConfigurationError>;
 }
 
 export const Outcome = Schema.Literals([
@@ -64,6 +71,13 @@ export const Outcome = Schema.Literals([
   "Dark",
   /** A read failed, so the run published nothing. */
   "Incomplete",
+  /**
+   * WebUntis ended the session, or the run would have had to log in again: someone else may use
+   * the account. Nothing was sent after it, and nothing published.
+   */
+  "SessionLost",
+  /** WebUntis refused the password. Nothing was published. */
+  "CredentialsRefused",
   /** Another run's checkpoint landed first, so this one rolled back. */
   "Superseded",
   /** The lease's deadline came first. */
@@ -136,11 +150,26 @@ export class OverReservation extends Schema.TaggedError<
   { readonly brand: unique symbol }
 >()("ImportRun.OverReservation", {}) {}
 
-/** A request after the lease's deadline, refused before it was sent. */
+/** A request after the lease's deadline or the reservation's day, refused before it was sent. */
 export class PastDeadline extends Schema.TaggedError<
   PastDeadline,
   { readonly brand: unique symbol }
 >()("ImportRun.PastDeadline", {}) {}
+
+/** A request after the session was lost, refused before it was sent. */
+export class SessionLost extends Schema.TaggedError<
+  SessionLost,
+  { readonly brand: unique symbol }
+>()("ImportRun.SessionLost", {}) {}
+
+/** Why a request stayed unsent. */
+export type Refused = OverReservation | PastDeadline | SessionLost;
+
+/** The plan has more views than the reservation has requests left, so none of them is read. */
+class PlanTooLarge extends Schema.TaggedError<PlanTooLarge, { readonly brand: unique symbol }>()(
+  "ImportRun.PlanTooLarge",
+  {},
+) {}
 
 /** Another run's checkpoint landed after this run read its own. */
 class Superseded extends Schema.TaggedError<Superseded, { readonly brand: unique symbol }>()(
@@ -161,16 +190,19 @@ class ReadFailed extends Schema.TaggedError<ReadFailed, { readonly brand: unique
 ) {}
 
 /**
- * Admits one request at a time while the run is within its reservation and before its lease's
- * deadline, and counts what it admitted. Every request is checked before it is sent.
+ * Admits one request at a time while the run is within its reservation, before `until` and while
+ * its session holds, and counts what it admitted. Every request is checked before it is sent.
  */
 export const dispatch = Effect.fn("ImportRun.dispatch")(function* (
   reserved: number,
   until: DateTime.Utc,
 ) {
   const sent = yield* Ref.make(0);
+  const lost = yield* Ref.make(false);
 
   const admit = Effect.gen(function* () {
+    if (yield* Ref.get(lost)) return yield* new SessionLost();
+
     if (!DateTime.isLessThan(yield* DateTime.now, until)) return yield* new PastDeadline();
 
     const admitted = yield* Ref.modify(sent, (count) =>
@@ -180,8 +212,28 @@ export const dispatch = Effect.fn("ImportRun.dispatch")(function* (
     if (!admitted) return yield* new OverReservation();
   });
 
-  return { admit, sent: Ref.get(sent) };
+  return {
+    gate: { admit, lose: Ref.set(lost, true) } satisfies LiveWebUntis.Gate<Refused>,
+    lost: Ref.get(lost),
+    sent: Ref.get(sent),
+  };
 });
+
+/**
+ * When the school's date at `instant` ends. A run's reservation counts against that date, so its
+ * requests stop there.
+ */
+export const endOfDay = (school: School.Row, instant: DateTime.Utc) =>
+  DateTime.toUtc(
+    DateTime.startOf(
+      DateTime.add(DateTime.makeZonedUnsafe(instant, { timeZone: school.timeZone }), { days: 1 }),
+      "day",
+    ),
+  );
+
+/** Until when a run that started at `startedAt` may send: its lease's end, or its day's. */
+export const sendsUntil = (school: School.Row, startedAt: DateTime.Utc, leaseUntil: DateTime.Utc) =>
+  DateTime.min(leaseUntil, endOfDay(school, startedAt));
 
 interface Tagged {
   readonly _tag: string;
@@ -268,18 +320,19 @@ const directories = [
 ] as const satisfies ReadonlyArray<TimetableResourceType>;
 
 /**
- * Reads the plan's views for the window, each request admitted by `admit`, and returns every read
- * that answered, as JSON, and every one that didn't, by kind and tag. A read the plan depends on,
- * such as the school years, ends the reading when it fails.
+ * Reads the plan's views for the window and returns every read that answered, as JSON, and every
+ * one that didn't, by kind and tag. A read the plan depends on, such as the school years, ends the
+ * reading when it fails, and so do more class views than `left` requests.
  */
 const readSnapshot = Effect.fn("ImportRun.readSnapshot")(function* (input: {
   readonly client: WebUntisClient["Service"];
-  readonly admit: Effect.Effect<void, OverReservation | PastDeadline>;
+  /** Requests the reservation has left. */
+  readonly left: Effect.Effect<number>;
   readonly profile: SchoolProfile.SchoolProfile;
   readonly previous: SchoolImport.ImportResult;
   readonly window: CivilTime.DateRange;
 }) {
-  const { client, admit, profile, previous } = input;
+  const { client, profile, previous } = input;
   const reads: Array<SourceStore.Read> = [];
   const failures: Array<{ readonly read: string; readonly tag: string }> = [];
 
@@ -289,8 +342,7 @@ const readSnapshot = Effect.fn("ImportRun.readSnapshot")(function* (input: {
     toJson: (value: A) => Effect.Effect<Schema.Json, E2>,
     range?: SourceStore.Read["range"],
   ) =>
-    admit.pipe(
-      Effect.andThen(request),
+    request.pipe(
       Effect.flatMap((value) => Effect.map(toJson(value), (body) => ({ value, body }))),
       Effect.matchEffect({
         onFailure: (error) =>
@@ -345,6 +397,13 @@ const readSnapshot = Effect.fn("ImportRun.readSnapshot")(function* (input: {
     directory: classes.value.classes.map((each) => each.class),
     schoolYear: ImportIds.schoolYear(yearStart.value),
   });
+
+  // Each view takes a request at least, so a plan larger than what is left can't complete.
+  if (views.length > (yield* input.left)) {
+    failures.push({ read: "plan", tag: new PlanTooLarge()._tag });
+
+    return done;
+  }
 
   yield* Effect.forEach(
     views,
@@ -510,10 +569,7 @@ const leased = Effect.fn("ImportRun.leased")(function* (
   options: Options,
   lease: Lease.Claim,
   run: string,
-  requests: {
-    readonly admit: Effect.Effect<void, OverReservation | PastDeadline>;
-    readonly sent: Effect.Effect<number>;
-  },
+  requests: Effect.Success<ReturnType<typeof dispatch>>,
   report: Ref.Ref<Report>,
 ) {
   const sql = yield* SqlClient.SqlClient;
@@ -538,10 +594,12 @@ const leased = Effect.fn("ImportRun.leased")(function* (
   // A lease that passed meanwhile, also during the wait for the reservation, opens no connection.
   if (!DateTime.isLessThan(yield* DateTime.now, lease.until)) return "TimedOut" as const;
 
+  const left = Effect.map(requests.sent, (sent) => options.maximum - sent);
+
   const snapshot = yield* WebUntisClient.use((client) =>
-    readSnapshot({ client, admit: requests.admit, profile, previous: known, window }),
+    readSnapshot({ client, left, profile, previous: known, window }),
   ).pipe(
-    Effect.provide(options.source),
+    Effect.provide(options.source(requests.gate)),
     Effect.catch((error) =>
       Effect.succeed({ reads: [], failures: [{ read: "connect", tag: tagOf(error) }] }),
     ),
@@ -592,6 +650,13 @@ const leased = Effect.fn("ImportRun.leased")(function* (
     versionsStored,
     versionsPruned,
   }));
+
+  // A lost session ends the run whatever a view already in flight returned.
+  if (failures.some(({ tag }) => tag === "InvalidCredentials")) {
+    return "CredentialsRefused" as const;
+  }
+
+  if (yield* requests.lost) return "SessionLost" as const;
 
   if (failures.length > 0) return "Incomplete" as const;
 
@@ -714,7 +779,12 @@ export const run = Effect.fn("ImportRun.run")(function* (options: Options) {
       } satisfies Ran;
     }
 
-    const requests = yield* dispatch(options.maximum, lease.until);
+    // The reservation counts against the school's date, so its requests end with that date.
+    const requests = yield* dispatch(
+      options.maximum,
+      sendsUntil(options.profile.school, startedAt, lease.until),
+    );
+
     const report = yield* Ref.make(emptyReport);
 
     const exit = yield* Effect.exit(
