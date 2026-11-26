@@ -199,6 +199,9 @@ export const holdSpaces = Effect.fn("Schools.holdSpaces")(function* (
     : sql`select pg_advisory_xact_lock_shared(hashtextextended(${key}, 0))`;
 });
 
+/** Rows a publish wrote and removed, by table, summed over spaces. */
+export type Written = { readonly [table: string]: SyncWriter.Reconciled };
+
 /**
  * Makes the school's spaces hold `data` in one transaction, creating those it lacks. Rows `data`
  * lacks stay unless `removals` names them, and the same data again writes nothing. It locks the
@@ -209,9 +212,22 @@ export const publish = Effect.fn("Schools.publish")(function* (data: Data, remov
   const sql = yield* SqlClient.SqlClient;
   const spaces = yield* Spaces.Service;
   const writer = yield* SyncWriter.Service;
+  const written: Record<string, SyncWriter.Reconciled> = {};
+
+  const count = (table: Sync.Any) => (reconciled: SyncWriter.Reconciled) =>
+    Effect.sync(() => {
+      const before = written[table.name];
+
+      written[table.name] = {
+        written: (before?.written ?? 0) + reconciled.written,
+        removed: (before?.removed ?? 0) + reconciled.removed,
+      };
+    });
 
   const write = <T extends Sync.Any>(table: T, rows: Rows<T>) =>
-    Effect.flatMap(entries(table, rows), (decoded) => writer.reconcile(data.id, table, decoded));
+    Effect.flatMap(entries(table, rows), (decoded) =>
+      writer.reconcile(data.id, table, decoded).pipe(Effect.tap(count(table))),
+    );
 
   const courses = new Map(
     yield* Effect.forEach(Object.keys(data.courses), (course) =>
@@ -282,9 +298,11 @@ export const publish = Effect.fn("Schools.publish")(function* (data: Data, remov
         removals,
       );
 
-      yield* writer.reconcile(data.id, Closure.Row, closures.rows, {
-        covers: ({ id }) => closures.gone.has(id),
-      });
+      yield* writer
+        .reconcile(data.id, Closure.Row, closures.rows, {
+          covers: ({ id }) => closures.gone.has(id),
+        })
+        .pipe(Effect.tap(count(Closure.Row)));
 
       yield* spaces.createMany(
         Course.Space,
@@ -302,12 +320,14 @@ export const publish = Effect.fn("Schools.publish")(function* (data: Data, remov
 
       // Every course's space, also one whose lessons are now none.
       for (const [course, space] of reconciled) {
-        yield* writer.reconcile(space, Lesson.Row, lessons.get(course) ?? [], {
-          covers: removals.lesson,
-        });
+        yield* writer
+          .reconcile(space, Lesson.Row, lessons.get(course) ?? [], { covers: removals.lesson })
+          .pipe(Effect.tap(count(Lesson.Row)));
       }
     }),
   );
+
+  return written satisfies Written;
   // The data is the caller's own constant or the import's checked records.
 }, Effect.orDie);
 
@@ -317,6 +337,13 @@ const encode = {
   schoolYear: Schema.encodeEffect(Schema.Struct(SchoolYear.Row.fields)),
   term: Schema.encodeEffect(Schema.Struct(Term.Row.fields)),
 };
+
+/** The school's published Stand, if it has one. */
+export const importStatus = Effect.fn("Schools.importStatus")(function* (school: School.Id) {
+  return yield* reading(
+    Effect.flatMap(Tx.Service, (read) => read.get(ImportStatus.Row, school, school)),
+  );
+}, Effect.orDie);
 
 /** Today at the school, by the clock. */
 export const today = (school: Pick<School.Row, "timeZone">) =>

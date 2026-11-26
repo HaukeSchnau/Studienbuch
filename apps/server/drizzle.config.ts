@@ -11,6 +11,7 @@ export default defineConfig({
     "./src/demo/DemoTables.ts",
     "./src/keys/KeyTables.ts",
     "./src/account/DeletionTables.ts",
+    "./src/import/source/SourceTables.ts",
     "../../packages/sync/src/server/Tables.ts",
   ],
   out: "./migrations",

@@ -33,6 +33,11 @@ export interface SchoolProfile {
    * space's readers chose the course themselves and free text can name a student.
    */
   readonly stockPhrases: ReadonlyArray<string>;
+  /**
+   * Whether a run writes the school's rows. Without it a run reads, stores and imports, and keeps
+   * its checkpoint, so the first publish starts from ids and removals that have held for weeks.
+   */
+  readonly publish: boolean;
 }
 
 /** The grade level of a class whose lessons the import reads, if it reads them. */
