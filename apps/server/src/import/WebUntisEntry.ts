@@ -10,25 +10,32 @@ export * as WebUntisEntry from "./WebUntisEntry.ts";
 
 const sortedUnique = (values: ReadonlyArray<string>) => [...new Set(values)].sort();
 
-/** The short names of the entry's resources of one type: what it has now, and what a change removed. */
+/**
+ * The short names of the entry's resources of one type: what it has now, what a change removed,
+ * and what the plan has, which is the current ones a change didn't add and the removed ones.
+ */
 export const names = (entry: TimetableEntry, type: string) => {
   const positions = [entry.position1, entry.position2, entry.position3, entry.position4].flatMap(
     (position) => position ?? [],
   );
 
+  const current = positions.flatMap(({ current }) =>
+    current !== null && current.type === type && current.status !== "REMOVED" ? [current] : [],
+  );
+
+  const removed = sortedUnique(
+    positions.flatMap(({ removed }) =>
+      removed !== null && removed.type === type ? [removed.shortName] : [],
+    ),
+  );
+
   return {
-    current: sortedUnique(
-      positions.flatMap(({ current }) =>
-        current !== null && current.type === type && current.status !== "REMOVED"
-          ? [current.shortName]
-          : [],
-      ),
-    ),
-    removed: sortedUnique(
-      positions.flatMap(({ removed }) =>
-        removed !== null && removed.type === type ? [removed.shortName] : [],
-      ),
-    ),
+    current: sortedUnique(current.map(({ shortName }) => shortName)),
+    removed,
+    planned: sortedUnique([
+      ...current.flatMap(({ status, shortName }) => (status === "ADDED" ? [] : [shortName])),
+      ...removed,
+    ]),
   };
 };
 
