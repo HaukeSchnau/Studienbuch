@@ -53,6 +53,13 @@
           }
           // import ./nix/shell-env.nix { inherit pkgs; }
         );
+        # import-eval fetches the private corpus with git over SSH, which srv-2's system profile lacks.
+        corpus = pkgs.mkShellNoCC {
+          packages = builtins.attrValues (toolchain pkgs) ++ [
+            pkgs.git
+            pkgs.openssh
+          ];
+        };
       });
     };
 }

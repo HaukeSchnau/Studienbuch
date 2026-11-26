@@ -1,4 +1,9 @@
 import type { WebUntisClient } from "@schnau/webuntis-api";
+import {
+  ExamsSchema,
+  TimetableEntriesSchema,
+  TimetableFilterSchema,
+} from "@schnau/webuntis-api/schemas";
 import { assert, describe, it } from "@effect/vitest";
 import { Course, School } from "@stu/core";
 import * as DateTime from "effect/DateTime";
@@ -19,6 +24,39 @@ const of = (right: number, total: number) => ({ right, of: total });
 
 const encodeJson = Schema.encodeEffect(Schema.fromJsonString(Schema.Json));
 const decodeJson = Schema.decodeEffect(Schema.fromJsonString(Schema.Json));
+const decodeFilter = Schema.decodeUnknownEffect(TimetableFilterSchema);
+const encodeFilter = Schema.encodeEffect(Schema.toCodecJson(TimetableFilterSchema));
+const decodeEntries = Schema.decodeUnknownEffect(Schema.toCodecJson(TimetableEntriesSchema));
+const decodeExams = Schema.decodeUnknownEffect(Schema.toCodecJson(ExamsSchema));
+const encodeExams = Schema.encodeEffect(Schema.toCodecJson(ExamsSchema));
+
+/** TinySchool with `days` of one student's timetable hidden from the capture's account. */
+const hiding = (student: number, days: ReadonlyArray<string>) =>
+  Effect.gen(function* () {
+    const path = RecordedWebUntis.paths.entries(10, "STUDENT", student);
+    const hidden = new Set(days);
+
+    const versions = yield* Effect.forEach(
+      TinySchool.corpus.reads.get(path)?.versions ?? [],
+      (version) =>
+        Effect.map(decodeEntries(version.body), (body) => ({
+          ...version,
+          body: {
+            ...body,
+            days: body.days.map((day) =>
+              hidden.has(day.date.slice(0, 10))
+                ? { ...day, status: "NOT_ALLOWED_FOR_RESOURCE", gridEntries: [] }
+                : day,
+            ),
+          },
+        })),
+    );
+
+    return {
+      ...TinySchool.corpus,
+      reads: new Map([...TinySchool.corpus.reads, [path, { versions }]]),
+    };
+  });
 
 const evaluate = (
   importLayer: Layer.Layer<SchoolImport.Service, never, WebUntisClient>,
@@ -87,6 +125,7 @@ const both = {
   examStudents: { recall: of(2, 2), precision: of(2, 4) },
   // ISO parity makes W44 a B-week; the school restarted the count after the autumn break.
   weekLabels: of(0, 2),
+  hiddenDays: 0,
   invariants: {
     failedRuns: 0,
     danglingCourses: 0,
@@ -455,6 +494,186 @@ describe("Evaluator", () => {
       });
 
       assert.deepStrictEqual(lookahead, of(35, 35));
+    }),
+  );
+
+  it.effect("scores only the students whose timetables a capture reads", () =>
+    Effect.gen(function* () {
+      const path = RecordedWebUntis.paths.filter(10, "STUDENT");
+      const [version] = TinySchool.corpus.reads.get(path)?.versions ?? [];
+      const body = yield* decodeFilter(version?.body);
+
+      // A grade 10 student, whose timetable the capture never reads, who also sits the exam.
+      const lowerSchool = {
+        ...TinySchool.corpus,
+        reads: new Map([
+          ...TinySchool.corpus.reads,
+          [
+            path,
+            {
+              versions: [
+                {
+                  observedAt: version?.observedAt ?? DateTime.makeUnsafe(0),
+                  body: yield* encodeFilter({
+                    ...body,
+                    students: [
+                      ...body.students,
+                      {
+                        student: { id: 599, shortName: "S99", longName: "S99", displayName: "S99" },
+                        classes: [
+                          {
+                            class: {
+                              id: 110,
+                              shortName: "10.1",
+                              longName: "10.1",
+                              displayName: "10.1",
+                            },
+                            dateRange: { start: "2026-08-13", end: "2027-07-07" },
+                            department: null,
+                          },
+                        ],
+                        assignmentGroups: [],
+                        imageUrl: null,
+                      },
+                    ],
+                  }),
+                },
+              ],
+            },
+          ],
+        ]),
+      };
+
+      const examsPath = RecordedWebUntis.paths.exams(10);
+      const [examsVersion] = TinySchool.corpus.reads.get(examsPath)?.versions ?? [];
+      const exams = yield* decodeExams(examsVersion?.body);
+
+      const sitting = exams.exams.map((exam) => ({
+        ...exam,
+        students: exam.students.flatMap((student) =>
+          student.id === 504
+            ? [
+                student,
+                { ...student, id: 599, shortName: "S99", longName: "S99", displayName: "S99" },
+              ]
+            : [student],
+        ),
+      }));
+
+      lowerSchool.reads.set(examsPath, {
+        versions: [
+          {
+            observedAt: examsVersion?.observedAt ?? DateTime.makeUnsafe(0),
+            body: yield* encodeExams({ ...exams, exams: sitting }),
+          },
+        ],
+      });
+
+      const { worst: _, ...whole } = yield* evaluate(NaiveImport.layer);
+
+      const { worst: __, ...withLowerSchool } = yield* evaluate(
+        NaiveImport.layer,
+        false,
+        lowerSchool,
+      );
+
+      assert.deepStrictEqual(withLowerSchool, whole);
+    }),
+  );
+
+  // WebUntis hides a student's days from the capture's account from some date on. W46 is the one
+  // week students are scored in. On its Wednesday S1 has two entries, and naive shows S1 three
+  // lessons: both, and the joint INF lesson a second time, S1's only error that week.
+  it.effect.each([
+    {
+      name: "a day",
+      days: ["2026-11-11"],
+      // Neither the entries nor the extra lesson count, so S1's week is now exactly right.
+      student: {
+        weeks: of(4, 8),
+        recall: of(26, 26),
+        precision: of(26, 31),
+        attributes: of(26, 26),
+      },
+    },
+    {
+      name: "the whole week",
+      days: ["2026-11-09", "2026-11-10", "2026-11-11", "2026-11-12", "2026-11-13"],
+      student: {
+        weeks: of(3, 7),
+        recall: of(23, 23),
+        precision: of(23, 28),
+        attributes: of(23, 23),
+      },
+    },
+  ])(
+    "measures nothing on $name a student's timetable hides, and doesn't fail",
+    ({ days, student }) =>
+      Effect.gen(function* () {
+        const corpus = yield* hiding(501, days);
+
+        const { worst: _, ...whole } = yield* evaluate(NaiveImport.layer);
+
+        const { worst: __, ...report } = yield* evaluate(NaiveImport.layer, false, corpus);
+
+        assert.deepStrictEqual(report, {
+          ...whole,
+          views: { ...whole.views, student },
+          hiddenDays: days.length,
+        });
+      }),
+  );
+
+  // A Kurswahl or an exam WebUntis hid counts on neither side.
+  it.effect.each([
+    {
+      name: "a student's opening weeks",
+      student: 501,
+      days: [
+        "2026-10-26",
+        "2026-10-27",
+        "2026-10-28",
+        "2026-10-29",
+        "2026-10-30",
+        "2026-11-02",
+        "2026-11-03",
+        "2026-11-04",
+        "2026-11-05",
+        "2026-11-06",
+      ],
+      // S1 is no longer counted, where an empty choice from nothing used to be exactly right.
+      expected: {
+        kurswahl: of(3, 7),
+        exams: of(0, 1),
+        examStudents: { recall: of(2, 2), precision: of(2, 4) },
+        hiddenDays: 10,
+      },
+    },
+    {
+      name: "the day of a student's exam",
+      student: 504,
+      days: ["2026-11-05"],
+      // S4 leaves the exam's roster and the students it is shown to.
+      expected: {
+        kurswahl: of(3, 8),
+        exams: of(0, 1),
+        examStudents: { recall: of(1, 1), precision: of(1, 3) },
+        hiddenDays: 1,
+      },
+    },
+  ])("doesn't count what WebUntis hid on $name", ({ student, days, expected }) =>
+    Effect.gen(function* () {
+      const report = yield* evaluate(NaiveImport.layer, false, yield* hiding(student, days));
+
+      assert.deepStrictEqual(
+        {
+          kurswahl: report.kurswahl,
+          exams: report.exams,
+          examStudents: report.examStudents,
+          hiddenDays: report.hiddenDays,
+        },
+        expected,
+      );
     }),
   );
 

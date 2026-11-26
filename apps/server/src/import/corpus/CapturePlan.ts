@@ -13,7 +13,10 @@ import type {
 } from "@schnau/webuntis-api/schemas";
 import { CivilTime } from "@stu/core";
 import * as Effect from "effect/Effect";
+import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
+import { IgsLilienthal } from "../profiles/IgsLilienthal.ts";
+import { SchoolProfile } from "../profiles/SchoolProfile.ts";
 
 export * as CapturePlan from "./CapturePlan.ts";
 
@@ -32,10 +35,18 @@ export const chunkDays = 28;
 export const aheadDays = 56;
 
 /**
- * IGS's upper school, grades 11 to 13, by the leading number of a class's name, such as `11.2`
- * or `12`. M2.3 moves conventions like this behind `SchoolConventions`.
+ * Whether a capture reads this student's timetable: one of their classes is in a grade level the
+ * school's profile imports, IGS's upper school. The harness scores the same students.
  */
-const upperSchool = /^(?:11|12|13)(?!\d)/u;
+export const upperSchool = ({ classes }: TimetableFilter["students"][number]) =>
+  classes.some(({ class: each }) =>
+    Option.isSome(
+      SchoolProfile.gradeLevelRead(
+        IgsLilienthal.profile,
+        IgsLilienthal.profile.classify(each.shortName),
+      ),
+    ),
+  );
 
 /** School years, the app data and the time grid. */
 const masterReads = 3;
@@ -89,6 +100,12 @@ const monday = Effect.fn("CapturePlan.monday")(function* (date: string) {
 
   return yield* encodeDate(CivilTime.addDays(plain, 1 - CivilTime.dayOfWeek(plain)));
 });
+
+/**
+ * The first day of a school year's second term: 1 February at IGS. The harness holds a student's
+ * courses for each term that no case labels.
+ */
+export const termBoundary = (year: Schoolyear) => `${day(year.dateRange.end).slice(0, 4)}-02-01`;
 
 const earlier = (a: string, b: string) => (a <= b ? a : b);
 const later = (a: string, b: string) => (a >= b ? a : b);
@@ -159,7 +176,7 @@ const previousWindows = Effect.fn("CapturePlan.previousWindows")(function* (
   holidays: ReadonlyArray<Holiday>,
 ) {
   const end = day(year.dateRange.end);
-  const termBoundary = `${end.slice(0, 4)}-02-01`;
+  const boundary = termBoundary(year);
 
   const byWeek = new Map<string, number>();
 
@@ -184,8 +201,8 @@ const previousWindows = Effect.fn("CapturePlan.previousWindows")(function* (
 
   return [
     {
-      start: yield* addDays(termBoundary, -14),
-      end: yield* addDays(termBoundary, 13),
+      start: yield* addDays(boundary, -14),
+      end: yield* addDays(boundary, 13),
       why: "two weeks either side of the term boundary",
     },
     ...(yield* Effect.forEach(examWeeks, ([week, count]) =>
@@ -214,9 +231,7 @@ const resourcesOf = (filters: Directory["filters"]) => ({
   TEACHER: filters.TEACHER.teachers.map(({ teacher }) => teacher.id),
   SUBJECT: filters.SUBJECT.subjects.map(({ subject }) => subject.id),
   ROOM: filters.ROOM.rooms.map(({ room }) => room.id),
-  STUDENT: filters.STUDENT.students
-    .filter(({ classes }) => classes.some(({ class: each }) => upperSchool.test(each.shortName)))
-    .map(({ student }) => student.id),
+  STUDENT: filters.STUDENT.students.filter(upperSchool).map(({ student }) => student.id),
 });
 
 export const make = Effect.fn("CapturePlan.make")(function* (input: {
