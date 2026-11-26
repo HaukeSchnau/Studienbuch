@@ -1,5 +1,5 @@
 import { assert, describe, expect, it } from "@effect/vitest";
-import { CivilTime, SchoolYear, type Term } from "@stu/core";
+import { CivilTime } from "@stu/core";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 
@@ -25,15 +25,6 @@ const current: HomeworkInput.Current = {
   description: "Mit Skizze",
   dueOn: date("2026-11-09"),
 };
-
-const term = (id: string, start: string, end: string) => ({
-  id,
-  row: {
-    schoolYearId: SchoolYear.Id.make("year-2026"),
-    name: id,
-    dates: { start: date(start), end: date(end) },
-  } satisfies Term.Row,
-});
 
 describe("HomeworkInput.decode", () => {
   it("decodes a filled sheet, with a blank description as none", () => {
@@ -132,39 +123,5 @@ describe("HomeworkInput.unchangedSince", () => {
     ["picked another date", { ...submitted, dueOn: date("2026-11-21") }],
   ])("keeps the draft when the student %s", (_, now) => {
     assert.isFalse(HomeworkInput.unchangedSince(submitted, now));
-  });
-});
-
-describe("HomeworkInput.offered", () => {
-  const terms = [
-    term("winter", "2026-08-01", "2027-01-31"),
-    term("summer", "2027-02-01", "2027-07-31"),
-  ];
-
-  const enrollments = [
-    { termId: "summer", courseIds: ["course-ch"] },
-    { termId: "winter", courseIds: ["course-ma", "course-de"] },
-  ];
-
-  it("offers the courses chosen for today's term", () => {
-    assert.deepStrictEqual(HomeworkInput.offered(enrollments, terms, today), [
-      "course-ma",
-      "course-de",
-    ]);
-  });
-
-  it("offers none when today's term has no course choice, not another term's courses", () => {
-    assert.deepStrictEqual(
-      HomeworkInput.offered([{ termId: "summer", courseIds: ["course-ch"] }], terms, today),
-      [],
-    );
-  });
-
-  it("offers every chosen course when today falls in no term", () => {
-    assert.deepStrictEqual(HomeworkInput.offered(enrollments, terms, date("2027-08-20")), [
-      "course-ch",
-      "course-ma",
-      "course-de",
-    ]);
   });
 });

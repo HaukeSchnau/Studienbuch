@@ -7,6 +7,7 @@ import * as Layer from "effect/Layer";
 import * as Redacted from "effect/Redacted";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
+import * as TestClock from "effect/testing/TestClock";
 import { Deployment } from "../infra/config/Deployment.ts";
 import { AccessCodes } from "../school/AccessCodes.ts";
 import { SchoolTesting } from "../school/SchoolTesting.ts";
@@ -166,13 +167,24 @@ const seeding = Layer.mergeAll(
 
 describe.skipIf(Postgres18.socket === null)("Seed on PostgreSQL 18", () => {
   layer(seeding)((it) => {
-    it.effect("a second seed writes nothing, so no space's version or key record moves", () =>
+    it.effect("a second seed writes only a new Stand, so no other row or key record moves", () =>
       Effect.gen(function* () {
         yield* seedWith(reviewPassword);
         const first = yield* state;
+        yield* TestClock.adjust("1 hour");
         yield* seedWith(reviewPassword);
+        const second = yield* state;
 
-        expect(yield* state).toEqual(first);
+        const stand = (each: typeof first) => ({
+          ...each,
+          spaces: each.spaces.filter(({ kind }) => kind !== "school"),
+          rows: each.rows.filter(({ tbl }) => tbl !== "ImportStatus"),
+        });
+
+        expect(stand(second)).toEqual(stand(first));
+        expect(second.rows.filter(({ tbl }) => tbl === "ImportStatus")).not.toEqual(
+          first.rows.filter(({ tbl }) => tbl === "ImportStatus"),
+        );
       }),
     );
 

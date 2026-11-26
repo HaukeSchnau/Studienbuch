@@ -252,7 +252,7 @@ export const dismiss = Atom.family((accountId: string) =>
 );
 
 /**
- * The courses the sheet offers as Fach on `today` (`HomeworkInput.offered`), by subject name, and
+ * The courses the sheet offers as Fach on `today` (`Enrollment.chosenOn`), by subject name, and
  * `kept`, the course of the homework being edited, even when it is no longer chosen.
  */
 export const choices = (
@@ -260,7 +260,7 @@ export const choices = (
   today: CivilTime.PlainDate,
   kept?: string,
 ): ReadonlyArray<CourseChoice> => {
-  const offered = HomeworkInput.offered(reading.enrollments, reading.terms, today);
+  const offered = Enrollment.chosenOn(reading.enrollments, reading.terms, today);
   const ids = kept === undefined || offered.includes(kept) ? offered : [...offered, kept];
 
   return ids

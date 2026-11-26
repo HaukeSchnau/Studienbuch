@@ -1,7 +1,8 @@
 /**
  * The demo seed: the demo school for the current school year, and Lena and Tom with their first key
  * records, admitted with their courses for today's term and their notebooks' encrypted content. `prepare` runs it when
- * `STUDIENBUCH_DEMO_SCHOOL=seed`, and `console demo seed` on request. A second run writes nothing.
+ * `STUDIENBUCH_DEMO_SCHOOL=seed`, and `console demo seed` on request. A second run writes nothing
+ * but a new Stand, read at the time of the run.
  */
 import { Demo } from "@stu/api/Demo";
 import { Dev } from "@stu/api/Dev";

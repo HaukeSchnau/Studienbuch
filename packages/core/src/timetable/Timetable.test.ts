@@ -329,6 +329,49 @@ describe("Timetable.shown", () => {
       shown: "Closed Weihnachtsferien until 2027-01-09, resumes 2027-01-11 with nothing known",
     },
     {
+      name: "a free period at a single period's start, though the week joins it into a double",
+      plan: plan({
+        lessons: [
+          lesson("2026-11-16 08:00-08:45 ma"),
+          lesson("2026-11-16 08:50-09:35 ma"),
+          lesson("2026-11-17 08:00-08:45 de"),
+          lesson("2026-11-17 09:40-10:25 en"),
+        ],
+      }),
+      now: moment("2026-11-17", "07:30"),
+      shown: "Day 2026-11-17: de 08:00-08:45, free 08:50-09:35, en 09:40-10:25",
+    },
+    {
+      name: "free periods that end at the next start, so none overlaps another",
+      plan: plan({
+        lessons: [
+          lesson("2026-11-16 08:00-09:30 ma"),
+          lesson("2026-11-17 08:45-09:30 de"),
+          lesson("2026-11-18 07:15-08:00 en"),
+          lesson("2026-11-18 09:45-10:30 bi"),
+        ],
+      }),
+      now: moment("2026-11-18", "07:00"),
+      shown: "Day 2026-11-18: en 07:15-08:00, free 08:00-08:45, free 08:45-09:30, bi 09:45-10:30",
+    },
+    {
+      name: "the closure, though the device still holds a lesson of it",
+      plan: plan({
+        lessons: [lesson("2026-11-18 09:50-11:20 ma"), lesson("2026-11-19 08:00-09:30 ku")],
+        closures: [
+          { name: "Studientag", dates: [{ start: date("2026-11-18"), end: date("2026-11-18") }] },
+        ],
+      }),
+      now: moment("2026-11-18", "08:00"),
+      shown: "Closed Studientag until 2026-11-18, resumes 2026-11-19 with ku",
+    },
+    {
+      name: "today after the last day published, though the device still holds a lesson of it",
+      plan: plan({ lessons: [...week, lesson("2026-11-23 08:00-09:30 ma")] }),
+      now: moment("2026-11-23", "07:00"),
+      shown: "Unpublished 2026-11-23",
+    },
+    {
       name: "the first school day after the last one published",
       plan: plan({ lessons: [...week, lesson("2026-11-23 08:00-09:30 ma")] }),
       now: moment("2026-11-20", "16:00"),

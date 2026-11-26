@@ -2,6 +2,7 @@ import {
   type CivilTime,
   Closure,
   Course,
+  Enrollment,
   ImportStatus,
   Lesson,
   Notebook,
@@ -9,6 +10,7 @@ import {
   School,
   Subject,
   Teacher,
+  Term,
   type Timetable,
 } from "@stu/core";
 import type { AgendaItem } from "@stu/domain-ui/timetable/AgendaItem";
@@ -18,12 +20,14 @@ import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Atom from "effect/reactivity/Atom";
+import * as Struct from "effect/Struct";
 
 import { AccountEngine } from "../../infra/runtime/AccountEngine.ts";
 import { Schema as Device } from "../../infra/sqlite/Schema.ts";
 
-// The school's timetable as the device holds it, for the Übersicht's card: the lessons from this
-// week's Monday on with their courses, and the school's teachers, rooms, closures and Stand.
+// The school's timetable as the device holds it, for the Übersicht's card: the student's lessons
+// from this week's Monday on with their courses, and the school's teachers, rooms, closures and
+// Stand.
 
 export * as TimetableState from "./TimetableState.ts";
 
@@ -49,12 +53,15 @@ const decode = {
   closure: DeviceSchema.decodeView(Closure.Row),
   status: DeviceSchema.decodeView(ImportStatus.Row),
   lesson: DeviceSchema.decodeView(Lesson.Row),
+  term: DeviceSchema.decodeView(Term.Row),
+  enrollment: DeviceSchema.decodeView(Enrollment.Row),
 };
 
 /**
- * Every lesson on the device is the student's: it receives only the Course spaces of its notebook's
- * course choice. So lessons are read by date alone, from `from` on (as `CivilTime.format` writes
- * it), and the school's other rows whole, as a school holds a few hundred of them at most.
+ * The device receives the Course spaces of every course its notebook ever chose
+ * (`Enrollment.courseMembership`), so a lesson counts only when its course is chosen for the term
+ * of its date. Lessons are read from `from` on (as `CivilTime.format` writes it), and the school's
+ * other rows whole, as a school holds a few hundred of them at most.
  */
 const read = Effect.fn("TimetableState.read")(function* (from: string) {
   const db = yield* DeviceDatabase.make;
@@ -94,12 +101,24 @@ const read = Effect.fn("TimetableState.read")(function* (from: string) {
     decode.lesson,
   );
 
+  const terms = inSchool(yield* Effect.flatMap(db.select().from(Device.Term), decode.term)).map(
+    (row) => ({ id: row.id, row: Struct.omit(row, ["space", "id"]) }),
+  );
+
+  const enrollments = (yield* Effect.flatMap(
+    db.select().from(Device.Enrollment),
+    decode.enrollment,
+  )).filter((row) => row.space === notebook.id);
+
+  const chosen = (lesson: Lesson.Row) =>
+    Enrollment.chosenOn(enrollments, terms, lesson.date).includes(lesson.courseId);
+
   const named = new Map(courses.map((course) => [course.id, course]));
 
   return Option.some<Reading>({
     timeZone: school?.timeZone ?? School.defaultTimeZone,
     plan: {
-      lessons: lessons.map((lesson) => {
+      lessons: lessons.filter(chosen).map((lesson) => {
         const course = named.get(lesson.courseId);
 
         return {
@@ -133,6 +152,8 @@ export const query = SyncQuery.read({
     Closure.Row,
     ImportStatus.Row,
     Lesson.Row,
+    Term.Row,
+    Enrollment.Row,
   ],
   run: (from: string) => read(from).pipe(Effect.catchTags({ SchemaError: Effect.die })),
 });

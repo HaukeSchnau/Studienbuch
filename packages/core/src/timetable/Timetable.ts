@@ -136,9 +136,9 @@ interface RowDefinition extends Data.TaggedEnum.WithGenerics<1> {
 export const Row = Data.taggedEnum<RowDefinition>();
 
 /**
- * A day's lessons in order, with a free period at each time the week's lessons start that this
- * day leaves empty between its first and its last lesson. A long lunch break starts no lesson, so
- * it is never a free period. Both lists are `blocks`.
+ * The day's `blocks` in order, with a free period at each start of the `week`'s published lessons
+ * (halves of double periods too) that the day leaves empty between its first and last lesson, up
+ * to the next start. A long lunch break starts no lesson, so it is never a free period.
  */
 export const day = <A extends Timed>(
   lessons: ReadonlyArray<A>,
@@ -150,18 +150,20 @@ export const day = <A extends Timed>(
 
   if (first === undefined || last === undefined) return [];
 
-  const starts = Arr.dedupe(week.map((lesson) => lesson.start)).filter(
+  const starts = Arr.sort(Arr.dedupe(week.map((lesson) => lesson.start)), Order.Number);
+
+  const empty = starts.filter(
     (start) =>
       start > first.start &&
       start < last.start &&
       !sorted.some((lesson) => lesson.start <= start && start < lesson.end),
   );
 
-  const free = starts.map((start): Row<A> => {
-    const next = sorted.find((lesson) => lesson.start > start)?.start ?? last.start;
+  const free = empty.map((start): Row<A> => {
+    const next = [...sorted.map((lesson) => lesson.start), ...starts].filter((at) => at > start);
     const ends = week.flatMap((lesson) => (lesson.start === start ? [lesson.end] : []));
 
-    return Row.Free({ start, end: Math.min(next, ...ends) });
+    return Row.Free({ start, end: Math.min(...next, ...ends) });
   });
 
   const rows: ReadonlyArray<Row<A>> = [
@@ -212,9 +214,10 @@ export interface Plan<A extends Timed> {
 const searchDays = 400;
 
 /**
- * The day the Übersicht shows at `now`. Today while one of its lessons that is not off hasn't
- * ended, or before its first lesson even when all are off. Inside a closure, the closure. Else the
+ * The day the Übersicht shows at `now`. Inside a closure, the closure. Else today while one of its
+ * lessons that is not off hasn't ended, or before its first lesson even when all are off. Else the
  * next date outside closures with a lesson, up to `coveredUntil`, or the first school day after it.
+ * A lesson the device still holds for a closure or after `coveredUntil` never shows.
  */
 export const shown = <A extends Timed>(plan: Plan<A>, now: CivilTime.Moment): Shown<A> => {
   const lessons = blocks(plan.lessons);
@@ -246,22 +249,12 @@ export const shown = <A extends Timed>(plan: Plan<A>, now: CivilTime.Moment): Sh
     const monday = CivilTime.addDays(date, 1 - CivilTime.dayOfWeek(date));
     const sunday = CivilTime.addDays(monday, 6);
 
-    const week = lessons.filter((lesson) =>
+    const week = plan.lessons.filter((lesson) =>
       CivilTime.contains({ start: monday, end: sunday }, lesson.date),
     );
 
     return Shown.Day({ date, rows: day(on(date), week) });
   };
-
-  const today = on(now.date);
-  const firstStart = Math.min(...today.map((lesson) => lesson.start));
-
-  if (
-    today.some((lesson) => lesson.end > now.time && !isOff(lesson)) ||
-    (today.length > 0 && now.time < firstStart)
-  ) {
-    return dayOf(now.date);
-  }
 
   const closed = closureOn(now.date);
 
@@ -275,6 +268,16 @@ export const shown = <A extends Timed>(plan: Plan<A>, now: CivilTime.Moment): Sh
         ? Arr.findFirst(on(resumes), (lesson) => !isOff(lesson))
         : Option.none(),
     });
+  }
+
+  const today = covered(now.date) ? on(now.date) : [];
+  const firstStart = Math.min(...today.map((lesson) => lesson.start));
+
+  if (
+    today.some((lesson) => lesson.end > now.time && !isOff(lesson)) ||
+    (today.length > 0 && now.time < firstStart)
+  ) {
+    return dayOf(now.date);
   }
 
   const next = Arr.findFirst(
