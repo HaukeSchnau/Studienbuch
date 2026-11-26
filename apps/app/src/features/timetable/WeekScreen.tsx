@@ -1,4 +1,4 @@
-import { useAtomValue } from "@effect/atom-react";
+import { useAtomMount, useAtomValue } from "@effect/atom-react";
 import { AgendaCard } from "@stu/domain-ui/timetable/AgendaCard";
 import { DaySwitch } from "@stu/domain-ui/timetable/DaySwitch";
 import { WeekGrid } from "@stu/domain-ui/timetable/WeekGrid";
@@ -39,6 +39,9 @@ function AccountWeek({ accountId }: { readonly accountId: string }) {
   // The shown week and the list's day live in the address: `?kw=2026-W48&tag=2026-11-26`.
   const { kw = "", tag } = useLocalSearchParams<{ kw?: string; tag?: string }>();
   const screen = useAtomValue(WeekState.screen(accountId)(kw));
+  // The week it opens on stays read while the student browses, so stepping to another week never
+  // drops the hero, and the focus on its arrows, for a fresh read.
+  useAtomMount(WeekState.screen(accountId)(""));
 
   const show = (week: string | undefined) => router.setParams({ kw: week, tag: undefined });
 
@@ -52,7 +55,7 @@ function AccountWeek({ accountId }: { readonly accountId: string }) {
   const large = Tokens.layout.weekGridListAtFontScale;
   // Large text switches the grid to a day list. The web has no font scale, but zooming narrows
   // the window by the same factor, so a phone's browser at 135 % lists too.
-  const list = fontScale >= large || width < Tokens.layout.phoneWidth / large;
+  const list = fontScale >= large || Math.round(width * large) <= Tokens.layout.phoneWidth;
 
   return (
     <HeroScreen

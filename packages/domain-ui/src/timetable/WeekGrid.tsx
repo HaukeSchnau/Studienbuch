@@ -2,7 +2,14 @@ import { Card } from "@stu/ui/Card";
 import { Text } from "@stu/ui/Text";
 import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
-import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
+import {
+  Pressable,
+  type StyleProp,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+  type ViewStyle,
+} from "react-native";
 
 import type { AgendaItem } from "./AgendaItem.ts";
 import { Spoken } from "./Spoken.ts";
@@ -201,7 +208,7 @@ function LessonCell({
   readonly cell: WeekItem.Cell;
   readonly day: string;
   readonly wide: boolean;
-  /** Room for three lines on a phone, or two and the note under them from 768 points on. */
+  /** Room for three lines on a phone, or two and a note under them from 768 points on. */
   readonly tall: boolean;
   readonly onOpen: ((id: string) => void) | undefined;
 }) {
@@ -211,7 +218,7 @@ function LessonCell({
   const ink = off ? color.danger : "#FFFFFF";
   const name = wide ? cell.subject : cell.short;
 
-  // On a phone, the note covers the line that changed and says its new value.
+  // Which of the cell's details the change replaced, if either.
   const changed =
     cell.teacher?.was === undefined
       ? cell.room?.was === undefined
@@ -219,30 +226,43 @@ function LessonCell({
         : "room"
       : "teacher";
 
-  const lines: ReadonlyArray<{ readonly key: string; readonly text: string }> = off
-    ? [{ key: "off", text: cell.off ?? "" }]
-    : wide
-      ? []
-      : tall
-        ? [
-            { key: "teacher", text: changed === "teacher" ? "" : (cell.teacher?.now ?? "") },
-            { key: "room", text: changed === "room" ? "" : (cell.room?.now ?? "") },
-          ]
-        : [
-            changed === "teacher"
-              ? { key: "teacher", text: "" }
-              : { key: "room", text: changed === "room" ? "" : (cell.room?.now ?? "") },
-          ];
+  const changedRoom = changed === "room";
 
+  // On a phone the note says the new teacher or room; from 768 points on the details line does.
   const note =
     cell.note === undefined
       ? undefined
-      : wide || changed === undefined
-        ? { text: cell.note, line: undefined }
-        : {
-            text: (changed === "teacher" ? cell.teacher?.now : cell.room?.now) ?? cell.note,
-            line: lines.findIndex(({ key }) => key === changed) + 1,
-          };
+      : !wide && changed !== undefined
+        ? (changedRoom ? cell.room?.now : cell.teacher?.now) || cell.note
+        : cell.note;
+
+  // A tall cell has room for the note over its changed line or under its lines. A short one writes
+  // it in its second line, unless from 768 points on the details line already shows the change.
+  const rows: ReadonlyArray<Row> = off
+    ? [{ kind: "text", key: "off", text: cell.off ?? "" }]
+    : wide
+      ? tall || note === undefined || changed !== undefined
+        ? [{ kind: "details" }]
+        : [{ kind: "note", text: note }]
+      : tall
+        ? [
+            {
+              kind: "text",
+              key: "teacher",
+              text: changed === "teacher" ? "" : (cell.teacher?.now ?? ""),
+            },
+            { kind: "text", key: "room", text: changedRoom ? "" : (cell.room?.now ?? "") },
+          ]
+        : note === undefined
+          ? [{ kind: "text", key: "room", text: cell.room?.now ?? "" }]
+          : [{ kind: "note", text: note }];
+
+  const floating =
+    !tall || off || note === undefined
+      ? undefined
+      : !wide && changed !== undefined
+        ? [styles.noteOn, { top: cellTop + nameLine + (changedRoom ? detailLine : 0) - 1 }]
+        : styles.noteLow;
 
   const content = (
     <>
@@ -267,41 +287,27 @@ function LessonCell({
         >
           {name}
         </Text>
-        {wide && !off ? <WideDetails cell={cell} /> : null}
-        {lines.map((line) => (
-          <Text
-            key={line.key}
-            variant="caption2"
-            maxFontSizeMultiplier={maxScale}
-            numberOfLines={1}
-            ellipsizeMode="clip"
-            style={[styles.soft, { color: ink }]}
-          >
-            {line.text === "" ? " " : line.text}
-          </Text>
-        ))}
+        {rows.map((row) =>
+          row.kind === "details" ? (
+            <WideDetails key="details" cell={cell} />
+          ) : row.kind === "note" ? (
+            <Note key="note" text={row.text} style={styles.noteInLine} />
+          ) : (
+            <Text
+              key={row.key}
+              variant="caption2"
+              maxFontSizeMultiplier={maxScale}
+              numberOfLines={1}
+              ellipsizeMode="clip"
+              style={[styles.soft, { color: ink }]}
+            >
+              {row.text === "" ? " " : row.text}
+            </Text>
+          ),
+        )}
       </View>
-      {note === undefined ? null : (
-        <View
-          style={[
-            styles.note,
-            note.line === undefined
-              ? tall
-                ? styles.noteLow
-                : styles.noteCorner
-              : [styles.noteOn, { top: cellTop + nameLine + (note.line - 1) * detailLine - 1 }],
-            { backgroundColor: color.note },
-          ]}
-        >
-          <Text
-            variant="caption"
-            maxFontSizeMultiplier={maxScale}
-            numberOfLines={1}
-            style={{ color: color.noteInk }}
-          >
-            {note.text}
-          </Text>
-        </View>
+      {floating === undefined || note === undefined ? null : (
+        <Note text={note} style={[styles.note, floating]} />
       )}
       {cell.homework === true ? (
         <View
@@ -327,7 +333,34 @@ function LessonCell({
   );
 }
 
-/** "Voss Brandt · A101" with the old values struck, on one line from 768 points on. */
+/** A line of a cell under its subject. */
+type Row =
+  | { readonly kind: "text"; readonly key: string; readonly text: string }
+  | { readonly kind: "details" }
+  | { readonly kind: "note"; readonly text: string };
+
+/** The yellow note of a change (D76), stuck on the cell or written in its line. */
+function Note({ text, style }: { readonly text: string; readonly style: StyleProp<ViewStyle> }) {
+  const { color } = Theme.useTheme();
+
+  return (
+    <View style={[styles.notePaper, { backgroundColor: color.note }, style]}>
+      <Text
+        variant="caption"
+        maxFontSizeMultiplier={maxScale}
+        numberOfLines={1}
+        style={{ color: color.noteInk }}
+      >
+        {text}
+      </Text>
+    </View>
+  );
+}
+
+/**
+ * "Voss Brandt · A101" with the old value struck after the new one, on one line from 768 points
+ * on, so a narrow column clips the old value first.
+ */
 function WideDetails({ cell }: { readonly cell: WeekItem.Cell }) {
   const parts = [cell.teacher, cell.room].flatMap((named, index) =>
     named === undefined ? [] : [{ named, key: index === 0 ? "teacher" : "room" }],
@@ -348,13 +381,6 @@ function WideDetails({ cell }: { readonly cell: WeekItem.Cell }) {
             named.now
           ) : (
             <>
-              <Text
-                variant="footnote"
-                maxFontSizeMultiplier={maxScale}
-                style={[styles.onFill, styles.struck, styles.was]}
-              >
-                {named.was}
-              </Text>
               {named.now === "" ? null : (
                 <Text
                   variant="footnote"
@@ -362,9 +388,16 @@ function WideDetails({ cell }: { readonly cell: WeekItem.Cell }) {
                   maxFontSizeMultiplier={maxScale}
                   style={styles.onFill}
                 >
-                  {` ${named.now}`}
+                  {`${named.now} `}
                 </Text>
               )}
+              <Text
+                variant="footnote"
+                maxFontSizeMultiplier={maxScale}
+                style={[styles.onFill, styles.struck, styles.was]}
+              >
+                {named.was}
+              </Text>
             </>
           )}
         </Text>
@@ -449,8 +482,8 @@ const styles = StyleSheet.create({
   soft: { opacity: 0.92 },
   onFill: { color: "#FFFFFF" },
   was: { opacity: 0.75 },
-  note: {
-    position: "absolute",
+  note: { position: "absolute" },
+  notePaper: {
     paddingHorizontal: 6,
     paddingBottom: 1,
     borderTopLeftRadius: 2,
@@ -462,8 +495,7 @@ const styles = StyleSheet.create({
   },
   noteOn: { left: 1 },
   noteLow: { right: -4, bottom: 6 },
-  // A single period has no room under its lines, so the note sticks to its corner.
-  noteCorner: { right: -4, top: -8 },
+  noteInLine: { alignSelf: "flex-start", marginTop: 1, marginLeft: -3 },
   homework: {
     position: "absolute",
     top: -3,
