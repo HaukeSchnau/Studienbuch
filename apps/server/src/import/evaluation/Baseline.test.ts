@@ -11,6 +11,7 @@ const measured = {
     views: { student: { recall: { right: 28, of: 28 } } },
     passingCases: ["cancellation", "free-day"],
     hiddenDays: 0,
+    runs: [{ total: 2, failed: 0 }],
   },
 };
 
@@ -30,10 +31,28 @@ describe("Baseline", () => {
     {
       name: "a case that passes now",
       committed: { ...measured, weekly: { ...measured.weekly, passingCases: ["cancellation"] } },
+      expected: [{ number: "weekly.passingCases.1", baseline: "nothing", measured: '"free-day"' }],
+    },
+    {
+      name: "nothing in a list of objects whose fields come in another order",
+      committed: { ...measured, weekly: { ...measured.weekly, runs: [{ failed: 0, total: 2 }] } },
+      expected: [],
+    },
+    {
+      name: "a field that moved inside a list",
+      committed: { ...measured, weekly: { ...measured.weekly, runs: [{ total: 2, failed: 1 }] } },
+      expected: [{ number: "weekly.runs.0.failed", baseline: "1", measured: "0" }],
+    },
+    {
+      name: "a list written as an object with numbered fields",
+      committed: {
+        ...measured,
+        weekly: { ...measured.weekly, passingCases: { 0: "cancellation", 1: "free-day" } },
+      },
       expected: [
         {
           number: "weekly.passingCases",
-          baseline: '["cancellation"]',
+          baseline: '{"0":"cancellation","1":"free-day"}',
           measured: '["cancellation","free-day"]',
         },
       ],
@@ -42,7 +61,11 @@ describe("Baseline", () => {
       name: "a number the file lacks, and one it still has",
       committed: {
         corpus: "capture",
-        weekly: { views: measured.weekly.views, passingCases: measured.weekly.passingCases },
+        weekly: {
+          views: measured.weekly.views,
+          passingCases: measured.weekly.passingCases,
+          runs: measured.weekly.runs,
+        },
         retired: 4,
       },
       expected: [
@@ -76,7 +99,11 @@ describe("Baseline", () => {
       name: "a number moved to a key that spells its path",
       committed: {
         corpus: "capture",
-        weekly: { views: measured.weekly.views, passingCases: measured.weekly.passingCases },
+        weekly: {
+          views: measured.weekly.views,
+          passingCases: measured.weekly.passingCases,
+          runs: measured.weekly.runs,
+        },
         "weekly.hiddenDays": 0,
       },
       expected: [
@@ -97,10 +124,11 @@ describe("Baseline", () => {
       },
       expected: [
         {
-          number: "weekly.passingCases",
-          baseline: '["cancellation\\", \\"free-day"]',
-          measured: '["cancellation","free-day"]',
+          number: "weekly.passingCases.0",
+          baseline: '"cancellation\\", \\"free-day"',
+          measured: '"cancellation"',
         },
+        { number: "weekly.passingCases.1", baseline: "nothing", measured: '"free-day"' },
       ],
     },
     {

@@ -20,7 +20,10 @@ export type Numbers = typeof Numbers.Type;
 
 export const Json = Schema.fromJsonString(Numbers, { space: 2 });
 
-/** One number that differs, by its path in the file, such as `weekly.views.student.recall`. */
+/**
+ * One number that differs, by its path in the file, such as `weekly.views.student.recall` or
+ * `weekly.passingCases.0`.
+ */
 export interface Difference {
   readonly number: string;
   readonly baseline: string;
@@ -48,27 +51,37 @@ const describe = (value: Schema.Json | undefined) => {
     : Option.getOrElse(encodeJson(value), () => "not JSON");
 };
 
-/** An object's own fields, so a field one side lacks is never read from a prototype. */
-const fieldsOf = (value: Schema.Json | undefined) =>
-  value !== undefined && !isList(value) && isObject(value) && !isFraction(value)
-    ? new Map(Object.entries(value))
+/**
+ * A list's elements by index, or an object's own fields, so a field one side lacks is never read
+ * from a prototype. The kind keeps a list from equalling an object with numbered fields.
+ */
+const partsOf = (value: Schema.Json | undefined) => {
+  if (value === undefined) return undefined;
+
+  if (isList(value))
+    return { kind: "list", parts: new Map(value.map((each, i) => [`${i}`, each])) };
+
+  return isObject(value) && !isFraction(value)
+    ? { kind: "object", parts: new Map(Object.entries(value)) }
     : undefined;
+};
 
 /**
- * Walks the committed file and what was measured side by side, field by field, so a number the
- * file lacks, an old one it still has, or one in another place shows up as a difference too.
+ * Walks the committed file and what was measured side by side, field by field and element by
+ * element, so a number the file lacks, an old one it still has, or one in another place shows up
+ * as a difference too.
  */
 const compare = (
   baseline: Schema.Json | undefined,
   measured: Schema.Json | undefined,
   path: ReadonlyArray<string>,
 ): ReadonlyArray<Difference> => {
-  const was = fieldsOf(baseline);
-  const is = fieldsOf(measured);
+  const was = partsOf(baseline);
+  const is = partsOf(measured);
 
-  if (was !== undefined && is !== undefined) {
-    return [...new Set([...was.keys(), ...is.keys()])].flatMap((key) =>
-      compare(was.get(key), is.get(key), [...path, key]),
+  if (was !== undefined && is !== undefined && was.kind === is.kind) {
+    return [...new Set([...was.parts.keys(), ...is.parts.keys()])].flatMap((key) =>
+      compare(was.parts.get(key), is.parts.get(key), [...path, key]),
     );
   }
 
