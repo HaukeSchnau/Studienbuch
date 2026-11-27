@@ -142,6 +142,12 @@ export function Datenschutz() {
           IP-Adressen speichern wir dabei nicht.
         </li>
         <li>
+          Öffnet ein Gerät die Schlüsselsicherung Ihres Kontos, mit einem Passkey oder der
+          Notfallkarte, speichern wir den Zeitpunkt und das Verfahren, bei einem Passkey auch dessen
+          Kennung. Damit begrenzen wir diese Öffnungen auf 20 am Tag, und auf Ihre Anfrage können
+          wir nachvollziehen, ob es Öffnungen gab, die Sie nicht selbst vorgenommen haben.
+        </li>
+        <li>
           beim Versand von Konto-E-Mails die Empfängeradresse, den Nachrichteninhalt und technische
           Zustellinformationen
         </li>
@@ -271,12 +277,14 @@ export function Datenschutz() {
       <p>
         Konten und die zugehörigen Zugangsdaten speichern wir, solange das Konto besteht.
         Abgelaufene Sitzungen sowie Bestätigungs- und Wiederherstellungstoken löscht der Server
-        stündlich. Ihr Konto können Sie jederzeit in der App löschen. Geräte, die bei der Löschung
-        noch angemeldet sind, löschen ihre Kopie, sobald sie sich wieder verbinden. Auf anderen
-        Geräten bleiben Ihre Einträge, bis Sie dort die App oder die Websitedaten löschen.
-        Datensicherungen bewahren wir bis zu 35&nbsp;Tage auf, Server-Protokolle bis zu
-        10&nbsp;Tage. Mit einem Konto löschen wir auch die Sicherungen seiner Schlüssel. In den
-        Datensicherungen bleiben sie, solange wir diese aufbewahren (bis zu 35&nbsp;Tage).
+        stündlich. Diese Einträge zu Öffnungen der Schlüsselsicherung löschen wir nach
+        12&nbsp;Monaten; löschen Sie Ihr Konto, löschen wir sie mit ihm. Ihr Konto können Sie
+        jederzeit in der App löschen. Geräte, die bei der Löschung noch angemeldet sind, löschen
+        ihre Kopie, sobald sie sich wieder verbinden. Auf anderen Geräten bleiben Ihre Einträge, bis
+        Sie dort die App oder die Websitedaten löschen. Datensicherungen bewahren wir bis zu
+        35&nbsp;Tage auf, Server-Protokolle bis zu 10&nbsp;Tage. Mit einem Konto löschen wir auch
+        die Sicherungen seiner Schlüssel. In den Datensicherungen bleiben sie, solange wir diese
+        aufbewahren (bis zu 35&nbsp;Tage).
       </p>
 
       <h2>6. Ihre Rechte</h2>
