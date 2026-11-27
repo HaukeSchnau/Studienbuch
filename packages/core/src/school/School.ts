@@ -52,11 +52,25 @@ export type Row = Sync.Row<typeof Row>;
  */
 export const defaultTimeZone = CivilTime.TimeZone.make("Europe/Berlin");
 
+/** Now at a school: the date and the wall-clock time its clocks show, and the instant they show it. */
+export interface Now extends CivilTime.Moment {
+  /** In epoch milliseconds. */
+  readonly instant: number;
+  /** The school's, which places other instants on its clock, such as the import's last read. */
+  readonly timeZone: CivilTime.TimeZone;
+}
+
 /**
- * The date at the school at the instant `now`, in epoch milliseconds, which the caller reads from
- * its clock. A device that holds no school row yet counts in {@link defaultTimeZone}.
+ * Now at the school at the instant `instant`, in epoch milliseconds, which the caller reads from its
+ * clock. The date moves on at midnight on the school's clock, whatever zone the device is in. A
+ * device that holds no school row yet counts in {@link defaultTimeZone}.
  */
-export const today = (
-  school: Pick<Row, "timeZone"> | undefined,
-  now: number,
-): CivilTime.PlainDate => CivilTime.dateIn(now, school?.timeZone ?? defaultTimeZone);
+export const now = (school: Pick<Row, "timeZone"> | undefined, instant: number): Now => {
+  const timeZone = school?.timeZone ?? defaultTimeZone;
+
+  return { ...CivilTime.momentIn(instant, timeZone), instant, timeZone };
+};
+
+/** The date at the school at the instant `instant` (`now`). */
+export const today = (school: Pick<Row, "timeZone"> | undefined, instant: number) =>
+  now(school, instant).date;

@@ -635,7 +635,6 @@ describe("Timetable.schoolWeek", () => {
 });
 
 describe("Timetable.staleSince", () => {
-  const zone = School.defaultTimeZone;
   // 18 November 2026 in Berlin is UTC+1.
   const berlin = (day: string, time: string) => Date.parse(`${day}T${time}:00+01:00`);
 
@@ -672,7 +671,7 @@ describe("Timetable.staleSince", () => {
     },
   ])("$name", ({ read, now, stale }) => {
     expect(
-      Option.match(Timetable.staleSince(read, now, zone), {
+      Option.match(Timetable.staleSince(read, School.now(undefined, now)), {
         onNone: () => "fresh",
         onSome: ({ date, time }) => `${CivilTime.format(date)} ${clock(time)}`,
       }),

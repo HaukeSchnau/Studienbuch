@@ -1,8 +1,7 @@
 /**
  * The timetable as the screens read it: the day the Übersicht shows, the week Meine Woche shows,
  * where a lesson stands at a moment, free periods, double periods as one block, what changed, and
- * when the Stand is old. Core reads no clock, so the caller passes the school's moment
- * (`CivilTime.momentIn`).
+ * when the Stand is old. Core reads no clock, so the caller passes now at the school (`School.now`).
  */
 import * as Arr from "effect/Array";
 import * as Data from "effect/Data";
@@ -12,6 +11,7 @@ import * as Order from "effect/Order";
 import { CivilTime } from "../civil-time/CivilTime.ts";
 import type { Closure } from "../school/Closure.ts";
 import type { Lesson } from "../school/Lesson.ts";
+import type { School } from "../school/School.ts";
 
 export * as Timetable from "./Timetable.ts";
 
@@ -477,16 +477,10 @@ const awake = { from: (6 * 60 + 30) * minute, until: 22 * 60 * minute };
 
 /**
  * When the import last read the school's timetable, as the school's clock showed it, once that is
- * more than an hour ago at a time the import runs. `None` while the Stand is fresh, and at night.
+ * more than an hour before `now` at a time the import runs. `None` while the Stand is fresh, and at
+ * night.
  */
-export const staleSince = (
-  observedAt: number,
-  now: number,
-  timeZone: CivilTime.TimeZone,
-): Option.Option<CivilTime.Moment> => {
-  const time = CivilTime.momentIn(now, timeZone).time;
-
-  return now - observedAt > staleAfter && time >= awake.from && time < awake.until
-    ? Option.some(CivilTime.momentIn(observedAt, timeZone))
+export const staleSince = (observedAt: number, now: School.Now): Option.Option<CivilTime.Moment> =>
+  now.instant - observedAt > staleAfter && now.time >= awake.from && now.time < awake.until
+    ? Option.some(CivilTime.momentIn(observedAt, now.timeZone))
     : Option.none();
-};

@@ -1,5 +1,5 @@
 import { assert, it } from "@effect/vitest";
-import { CivilTime, Course, Homework, Notebook, School } from "@stu/core";
+import { CivilTime, Course, Homework, Notebook } from "@stu/core";
 import { Refusal } from "@stu/sync";
 import { SyncClient } from "@stu/sync/client";
 import * as Effect from "effect/Effect";
@@ -32,7 +32,6 @@ const encodeNotMember = Schema.encodeSync(Refusal.NotMember);
 /** What a device held before its notebook locked: one homework and one refused new one. */
 const held: HomeworkState.Reading = {
   notebook,
-  timeZone: School.defaultTimeZone,
   homework: [
     {
       id: "1b4e28ba-2fa1-41d2-883f-0016d3cca427",

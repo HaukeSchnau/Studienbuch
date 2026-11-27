@@ -1,5 +1,6 @@
-import { CivilTime, School } from "@stu/core";
-import { SyncClient } from "@stu/sync/client";
+import { CivilTime, Notebook, School } from "@stu/core";
+import { DeviceDatabase, DeviceSchema, SyncClient, SyncQuery } from "@stu/sync/client";
+import { eq } from "drizzle-orm";
 import * as Clock from "effect/Clock";
 import * as Cron from "effect/Cron";
 import * as Effect from "effect/Effect";
@@ -10,14 +11,15 @@ import * as Schedule from "effect/Schedule";
 import * as Stream from "effect/Stream";
 
 import { AccountEngine } from "../../infra/runtime/AccountEngine.ts";
+import { Schema as Device } from "../../infra/sqlite/Schema.ts";
 import { Account } from "../account/Account.ts";
 import { AccountState } from "../account/AccountState.ts";
 import { KeysState } from "../keys/KeysState.ts";
 import { NotebookKeys } from "../keys/NotebookKeys.ts";
 import { Offline } from "./Offline.ts";
 
-// What every screen of the account shows around its content: today at the school, whether the
-// device holds the notebook's key, and whether it is offline with changes waiting.
+// What every screen of the account shows around its content: today and now at the school, whether
+// the device holds the notebook's key, and whether it is offline with changes waiting.
 
 export * as DeviceStatus from "./DeviceStatus.ts";
 
@@ -31,18 +33,61 @@ const minutes = Stream.concat(
   Stream.fromSchedule(Schedule.cron(everyMinute)),
 ).pipe(Stream.mapEffect(() => Clock.currentTimeMillis));
 
-/** Now, read again as each minute begins, so "Noch 50 Minuten" counts down on the minute. */
-export const now = Atom.make(minutes);
+/** The one clock every account's `now` and `today` read, so they move on together. */
+const clock = Atom.make(minutes);
+
+const decode = {
+  notebook: DeviceSchema.decodeView(Notebook.Row),
+  school: DeviceSchema.decodeView(School.Row),
+};
+
+/** The row of the notebook's school, which holds its time zone. `None` without either. */
+const readSchool = Effect.gen(function* () {
+  const db = yield* DeviceDatabase.make;
+  const [notebook] = yield* Effect.flatMap(db.select().from(Device.Notebook), decode.notebook);
+
+  if (notebook === undefined) return Option.none<School.Row>();
+
+  const [school] = yield* Effect.flatMap(
+    db.select().from(Device.School).where(eq(Device.School.space, notebook.schoolId)),
+    decode.school,
+  );
+
+  return Option.fromUndefinedOr(school);
+});
+
+const schoolQuery = SyncQuery.read({
+  tables: [Notebook.Row, School.Row],
+  run: () => readSchool.pipe(Effect.catchTags({ SchemaError: Effect.die })),
+});
+
+const school = Atom.family((accountId: string) =>
+  SyncQuery.family(runtime(accountId), schoolQuery)(),
+);
 
 /**
- * Today at the school, read again as each minute begins, so "Bis morgen" turns into "Heute fällig"
- * at midnight on a screen that stays open.
+ * Now at the account's school (`School.now`), read again as each minute begins, so "Noch 50
+ * Minuten" counts down on the minute. Until the device has read the school's row, it counts as
+ * `School.now` does without one. `None` until the clock is read.
  */
-export const today = Atom.family((timeZone: CivilTime.TimeZone) =>
-  Atom.make(
-    minutes.pipe(
-      Stream.map((millis) => School.today({ timeZone }, millis)),
-      Stream.changesWith((a, b) => CivilTime.order(a, b) === 0),
+export const now = Atom.family((accountId: string) =>
+  Atom.make((get): Option.Option<School.Now> => {
+    const row = Option.flatten(AsyncResult.value(get(school(accountId))));
+
+    return Option.map(AsyncResult.value(get(clock)), (instant) =>
+      School.now(Option.getOrUndefined(row), instant),
+    );
+  }),
+);
+
+/**
+ * Today at the account's school, from `now`. It changes only at the school's midnight, so a screen
+ * that shows only dates draws again then, and "Bis morgen" turns into "Heute fällig".
+ */
+export const today = Atom.family((accountId: string) =>
+  Atom.make((get) => Option.map(get(now(accountId)), (at) => at.date)).pipe(
+    Atom.withEquality(
+      Option.makeEquivalence<CivilTime.PlainDate>((a, b) => CivilTime.order(a, b) === 0),
     ),
   ),
 );

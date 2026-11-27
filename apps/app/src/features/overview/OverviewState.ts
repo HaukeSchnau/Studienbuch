@@ -1,4 +1,4 @@
-import { CivilTime, type HomeworkDates, type Notebook, Timetable } from "@stu/core";
+import { CivilTime, type HomeworkDates, type Notebook, type School, Timetable } from "@stu/core";
 import { HomeworkItem } from "@stu/domain-ui/homework/HomeworkItem";
 import { AgendaItem } from "@stu/domain-ui/timetable/AgendaItem";
 import * as Option from "effect/Option";
@@ -45,19 +45,18 @@ export interface Agenda extends AgendaItem.Agenda {
  */
 export const agenda = (
   held: TimetableState.Reading,
-  now: number,
+  now: School.Now,
   disconnected: boolean,
   homework: ReadonlyArray<HomeworkDates.OfCourse>,
 ): Agenda => {
-  const moment = CivilTime.momentIn(now, held.timeZone);
-  const shown = AgendaItem.agenda(Timetable.shown(held.plan, moment), held.names, moment, homework);
+  const shown = AgendaItem.agenda(Timetable.shown(held.plan, now), held.names, now, homework);
 
   return {
     ...shown,
     stand:
       shown.card === undefined
         ? undefined
-        : AgendaItem.staleStand(held.observedAt, now, held.timeZone, disconnected),
+        : AgendaItem.staleStand(held.observedAt, now, disconnected),
   };
 };
 
@@ -70,9 +69,9 @@ export const overview = Atom.family((accountId: string) =>
   Atom.make((get): Option.Option<Overview> => {
     const name = Onboarding.greeting(get(OnboardingState.reading(accountId)));
     const current = get(HomeworkState.screen(accountId));
-    const now = get(DeviceStatus.now);
+    const now = get(DeviceStatus.now(accountId));
 
-    if (Option.isNone(name) || Option.isNone(current) || AsyncResult.isInitial(now)) {
+    if (Option.isNone(name) || Option.isNone(current) || Option.isNone(now)) {
       return Option.none();
     }
 
@@ -90,14 +89,12 @@ export const overview = Atom.family((accountId: string) =>
         notebook: value.notebook,
         items: readable ? HomeworkItem.panel(value.homework, today) : undefined,
       })),
-      agenda: Option.flatMap(Option.flatten(AsyncResult.value(timetable)), (held) =>
-        Option.map(AsyncResult.value(now), (millis) =>
-          agenda(
-            held,
-            millis,
-            disconnected,
-            Option.match(reading, { onNone: () => [], onSome: (value) => value.homework }),
-          ),
+      agenda: Option.map(Option.flatten(AsyncResult.value(timetable)), (held) =>
+        agenda(
+          held,
+          now.value,
+          disconnected,
+          Option.match(reading, { onNone: () => [], onSome: (value) => value.homework }),
         ),
       ),
     });
