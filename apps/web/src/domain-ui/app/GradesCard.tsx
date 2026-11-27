@@ -1,9 +1,13 @@
+import { GradeMarker } from "@stu/domain-ui/grade/GradeMarker";
+import { StatusSticker } from "@stu/domain-ui/status/StatusSticker";
 import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
 import { Card } from "@stu/ui/Card";
-import { Icon } from "@stu/ui/Icon";
 import { Text } from "@stu/ui/Text";
-import { Image, Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
+
+/** The size of the grade kinds' markers. */
+const marker = 64;
 
 export interface Exam {
   readonly id: string;
@@ -15,8 +19,6 @@ export interface Exam {
   readonly parents: boolean;
 }
 
-const art = { oral: "/art/muendl.svg", written: "/art/schriftl.svg" } as const;
-
 /**
  * Stand-in for the course page's grade card ("Deine Noten", variant B) until M1 builds it in
  * packages/domain-ui. `average` is the mean of the confirmed exams, which the caller computes.
@@ -26,9 +28,12 @@ export function GradesCard({
   oral,
   average,
   exams,
+  slot,
   onSign,
 }: {
   oral: { readonly points: number; readonly date: string; readonly confirmed: boolean };
+  /** The course's colour, behind the grade kinds. */
+  slot: Tokens.SubjectSlot;
   average: number | undefined;
   exams: ReadonlyArray<Exam>;
   onSign?: (id: string) => void;
@@ -41,14 +46,16 @@ export function GradesCard({
         Deine Noten
       </Text>
       <Summary
-        art={art.oral}
+        kind="Oral"
+        slot={slot}
         caption={`Mündliche Note, Stand ${oral.date}`}
         confirmed={oral.confirmed}
         points={oral.points}
       />
       <View style={[styles.divider, { backgroundColor: color.hairline }]} />
       <Summary
-        art={art.written}
+        kind="Written"
+        slot={slot}
         caption="Schnitt der bestätigten Klausuren"
         confirmed={false}
         points={average}
@@ -63,12 +70,14 @@ export function GradesCard({
 }
 
 function Summary({
-  art,
+  kind,
+  slot,
   points,
   caption,
   confirmed,
 }: {
-  art: string;
+  kind: "Oral" | "Written";
+  slot: Tokens.SubjectSlot;
   points: number | undefined;
   caption: string;
   confirmed: boolean;
@@ -77,8 +86,7 @@ function Summary({
 
   return (
     <View style={styles.summary}>
-      {/* `defaultSource` makes react-native-web render the image while prerendering. */}
-      <Image defaultSource={{ uri: art }} source={{ uri: art }} style={styles.art} />
+      <GradeMarker kind={kind} slot={slot} size={marker} />
       <View style={styles.grow}>
         <Text variant="figure">
           {points ?? "–"}
@@ -98,7 +106,7 @@ function Confirmed() {
 
   return (
     <View style={styles.status}>
-      <Icon color={color.accent} name="checkBadge" size={16} />
+      <StatusSticker status="confirmed" size={20} />
       <Text variant="footnote" style={{ color: color.accent }}>
         bestätigt
       </Text>
@@ -132,7 +140,11 @@ function ExamTile({ exam, onSign }: { exam: Exam; onSign: ((id: string) => void)
         {confirmed ? null : (
           <>
             <View style={styles.signers}>
-              <Signer done={exam.teacher} label="Lehrkraft" />
+              <Signer
+                done={exam.teacher}
+                label="Lehrkraft"
+                unseen={exam.teacher ? "hat unterschrieben" : "fehlt"}
+              />
               <Signer done={exam.parents} label="Eltern fehlen" />
             </View>
             {onSign === undefined ? null : (
@@ -157,19 +169,20 @@ function ExamTile({ exam, onSign }: { exam: Exam; onSign: ((id: string) => void)
   );
 }
 
-function Signer({ done, label }: { done: boolean; label: string }) {
+/**
+ * One signature's state. The sticker is hidden from screen readers, so `unseen` says the state in
+ * words only they read, when `label` doesn't.
+ */
+function Signer({ done, label, unseen }: { done: boolean; label: string; unseen?: string }) {
   const { color } = Theme.useTheme();
-  const tone = done ? color.accent : color.warning;
+  const tone = done ? color.accent : color.danger;
 
   return (
     <View style={styles.signer}>
-      {done ? (
-        <Icon color={tone} name="check" size={16} />
-      ) : (
-        <Icon color={tone} name="openBadge" size={14} />
-      )}
+      <StatusSticker status={done ? "confirmed" : "missing"} size={20} />
       <Text variant="footnote" style={{ color: tone }}>
         {label}
+        {unseen === undefined ? null : <span className="visually-hidden"> {unseen}</span>}
       </Text>
     </View>
   );
@@ -178,7 +191,6 @@ function Signer({ done, label }: { done: boolean; label: string }) {
 const styles = StyleSheet.create({
   card: { padding: Tokens.layout.cardPadding, gap: Tokens.space.lg },
   summary: { flexDirection: "row", alignItems: "center", gap: Tokens.space.lg },
-  art: { width: 56, height: 56 },
   grow: { flex: 1 },
   divider: { height: StyleSheet.hairlineWidth },
   status: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: Tokens.space.xs },
@@ -190,9 +202,9 @@ const styles = StyleSheet.create({
     paddingVertical: Tokens.space.md,
     paddingHorizontal: Tokens.space.lg,
   },
-  // Wide enough that the exam titles start on the same line as the texts beside the art above:
-  // tile padding + points + gap = art + gap.
-  points: { width: 44 },
+  // Wide enough that the exam titles start on the same line as the texts beside the markers above:
+  // tile padding + points + gap = marker + gap.
+  points: { width: marker - Tokens.space.md },
   tileHeader: { flexDirection: "row", alignItems: "flex-start", gap: Tokens.space.sm },
   signers: { flexDirection: "row", gap: Tokens.space.lg, marginTop: Tokens.space.sm },
   signer: { flexDirection: "row", alignItems: "center", gap: Tokens.space.xs },

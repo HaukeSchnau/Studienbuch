@@ -8,11 +8,15 @@ import { Keys } from "@stu/api/Keys";
 import { Notebook } from "@stu/core";
 import { AccountKey, CryptoSuite, SpaceKey, Wrapper } from "@stu/e2ee";
 import { Protocol } from "@stu/sync";
+import * as Crypto from "effect/Crypto";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
+import { CardLogins } from "../auth/CardLogins.ts";
+import { AccountLock } from "../account/AccountLock.ts";
+import { FreshSignIn } from "../auth/FreshSignIn.ts";
 
 export * as KeyStore from "./KeyStore.ts";
 
@@ -171,6 +175,94 @@ const insertWrapper = Effect.fn("KeyStore.insertWrapper")(function* (
   `;
 });
 
+/**
+ * Deletes the account's code wrappers of any other card than the statement's, with their seals,
+ * and remembers their public keys as retired. The same card saved twice derives the same public
+ * key, so its other wrappers stay.
+ */
+const retireOtherCards = Effect.fn("KeyStore.retireOtherCards")(function* (
+  account: string,
+  statement: Wrapper.Statement,
+) {
+  const sql = yield* SqlClient.SqlClient;
+
+  const codes = yield* sql<{
+    readonly id: string;
+    readonly statement: typeof statementJson.Encoded;
+  }>`
+    select id, statement from key_wrapper
+    where account_id = ${account} and kind = ${statement.kind} and id <> ${statement.id}
+  `;
+
+  const retired: Array<string> = [];
+
+  for (const code of codes) {
+    if (!sameBytes((yield* decodeStatement(code.statement)).publicKey, statement.publicKey)) {
+      retired.push(code.id);
+    }
+  }
+
+  if (retired.length === 0) return;
+
+  const keys = yield* sql<{ readonly statement: typeof statementJson.Encoded }>`
+    delete from key_wrapper where account_id = ${account} and id in ${sql.in(retired)}
+    returning statement
+  `;
+
+  for (const { statement: retiredStatement } of keys) {
+    const digest = yield* cardDigest(yield* decodeStatement(retiredStatement));
+
+    yield* sql`
+      insert into retired_card (account_id, digest) values (${account}, ${digest})
+      on conflict (account_id, digest) do nothing
+    `;
+  }
+});
+
+/** What `retired_card` keeps of a card: the SHA-256 of its wrapper's public key. */
+const cardDigest = Effect.fn("KeyStore.cardDigest")(function* (statement: Wrapper.Statement) {
+  const crypto = yield* Crypto.Crypto;
+
+  return yield* Effect.orDie(crypto.digest("SHA-256", statement.publicKey));
+});
+
+/** Whether a newer card retired the statement's card, which then never comes back. */
+const isRetired = Effect.fn("KeyStore.isRetired")(function* (
+  account: string,
+  statement: Wrapper.Statement,
+) {
+  const sql = yield* SqlClient.SqlClient;
+
+  const [row] = yield* sql`
+    select 1 from retired_card
+    where account_id = ${account} and digest = ${yield* cardDigest(statement)}
+  `;
+
+  return row !== undefined;
+});
+
+/**
+ * Makes the card of an account without an address its only card: its login signs in, and the old
+ * card's login and wrappers go. Answers the sessions that ended with the old card.
+ */
+const replaceCard = Effect.fn("KeyStore.replaceCard")(function* (
+  account: string,
+  session: string,
+  statement: Wrapper.Statement,
+  login: Option.Option<string>,
+) {
+  const replaced = Option.isNone(login)
+    ? Option.none<ReadonlyArray<string>>()
+    : yield* CardLogins.replace(account, login.value, session);
+
+  // The app one release back sends no login, and knows no newer reason than `statement`.
+  if (Option.isNone(replaced)) return yield* new Keys.Invalid({ reason: "statement" });
+
+  yield* retireOtherCards(account, statement);
+
+  return replaced.value;
+});
+
 const boxJson = Schema.toCodecJson(SpaceKey.KeyBox);
 
 /**
@@ -218,9 +310,9 @@ export interface First {
 }
 
 /**
- * Publishes generation 0 of an account's chain in the caller's transaction, with its first wrapper
- * when given. The same keys again change nothing (the demo seed runs on every deploy, and WebKit
- * signs with fresh randomness); other keys, or a wrapper after generation 0, are `ChainExists`.
+ * Publishes generation 0 of an account's chain in one transaction, with its first wrapper when
+ * given. The same keys again change nothing (the demo seed runs on every deploy, and WebKit signs
+ * with fresh randomness); other keys, or a wrapper after generation 0, are `ChainExists`.
  */
 export const publishFirst = Effect.fn("KeyStore.publishFirst")(function* (
   account: string,
@@ -243,40 +335,51 @@ export const publishFirst = Effect.fn("KeyStore.publishFirst")(function* (
     }
   }
 
-  const [held] = yield* sql`
-    select 1 from account_key where account_id = ${account} and generation = 0
-  `;
+  return yield* sql.withTransaction(
+    Effect.gen(function* () {
+      if (!(yield* AccountLock.hold(account, "share"))) return yield* new Keys.SignedOut();
 
-  // Checked before anything is written, because the demo seed calls this outside a transaction.
-  if (held === undefined && !(yield* sealedBy(account, record))) return yield* new Keys.KeysLost();
+      const [held] = yield* sql`
+        select 1 from account_key where account_id = ${account} and generation = 0
+      `;
 
-  // A concurrent first publish of the same account waits here for the other to commit.
-  yield* sql`
-    insert into account_key (account_id, generation, record)
-    values (${account}, 0, ${yield* recordText(record)})
-    on conflict (account_id, generation) do nothing
-  `;
+      if (held === undefined && !(yield* sealedBy(account, record))) {
+        return yield* new Keys.KeysLost();
+      }
 
-  const stored = yield* sql<{
-    readonly generation: number;
-    readonly record: typeof recordJson.Encoded;
-  }>`
-    select generation, record from account_key where account_id = ${account}
-    order by generation
-  `;
+      // A concurrent first publish of the same account waits here for the other to commit.
+      yield* sql`
+        insert into account_key (account_id, generation, record)
+        values (${account}, 0, ${yield* recordText(record)})
+        on conflict (account_id, generation) do nothing
+      `;
 
-  const [zero] = stored;
+      const stored = yield* sql<{
+        readonly generation: number;
+        readonly record: typeof recordJson.Encoded;
+      }>`
+        select generation, record from account_key where account_id = ${account}
+        order by generation
+      `;
 
-  if (zero === undefined) return yield* Effect.die("A key record vanished inside its transaction");
+      const [zero] = stored;
 
-  if (!sameRecord(yield* decodeRecord(zero.record), record)) return yield* new Keys.ChainExists();
+      if (zero === undefined) {
+        return yield* Effect.die("A key record vanished inside its transaction");
+      }
 
-  if (Option.isSome(first)) {
-    // A wrapper endorsed by generation 0 after a renewal would hold a root key nobody uses.
-    if (stored.length > 1) return yield* new Keys.ChainExists();
+      if (!sameRecord(yield* decodeRecord(zero.record), record)) {
+        return yield* new Keys.ChainExists();
+      }
 
-    yield* insertWrapper(account, first.value.wrapper, first.value.session);
-  }
+      if (Option.isSome(first)) {
+        // A wrapper endorsed by generation 0 after a renewal would hold a root key nobody uses.
+        if (stored.length > 1) return yield* new Keys.ChainExists();
+
+        yield* insertWrapper(account, first.value.wrapper, first.value.session);
+      }
+    }),
+  );
 });
 
 /** The account's key records, oldest generation first. */
@@ -290,35 +393,23 @@ const records = Effect.fn("KeyStore.records")(function* (account: string) {
   return yield* Effect.forEach(rows, (row) => decodeRecord(row.record));
 });
 
-/** The account's newest key record, locked until the transaction ends, so key changes queue. */
+/** The account's newest key record, locked for update (`AccountLock.newestKey`), so key changes queue. */
 const lockNewest = Effect.fn("KeyStore.lockNewest")(function* (account: string) {
-  const sql = yield* SqlClient.SqlClient;
+  const stored = yield* AccountLock.newestKey(account, "update");
 
-  const [row] = yield* sql<{ readonly record: typeof recordJson.Encoded }>`
-    select record from account_key where account_id = ${account}
-    order by generation desc limit 1
-    for update
-  `;
-
-  return row === undefined ? Option.none() : Option.some(yield* decodeRecord(row.record));
+  return Option.isNone(stored) ? Option.none() : Option.some(yield* decodeRecord(stored.value));
 });
 
 /**
- * The account's newest key record, held for share until the transaction ends. A renewal that locks
- * it later waits for that transaction, and one that commits while this read is under way goes
- * unseen. M3's rotate must re-read the newest generation after taking its lock, and lock spaces
- * before `account_key` in the order a Seal does, or the two deadlock.
+ * The account's newest key record, held for share until the transaction ends (`AccountLock`). A
+ * renewal that locks it later waits for that transaction, and one that commits while this read is
+ * under way goes unseen. M3's rotate must re-read the newest generation after taking its lock, and
+ * lock spaces before `account_key` in the order a Seal does, or the two deadlock.
  */
 export const newest = Effect.fn("KeyStore.newest")(function* (account: string) {
-  const sql = yield* SqlClient.SqlClient;
+  const stored = yield* AccountLock.newestKey(account, "share");
 
-  const [row] = yield* sql<{ readonly record: typeof recordJson.Encoded }>`
-    select record from account_key where account_id = ${account}
-    order by generation desc limit 1
-    for share
-  `;
-
-  return row === undefined ? Option.none() : Option.some(yield* decodeRecord(row.record));
+  return Option.isNone(stored) ? Option.none() : Option.some(yield* decodeRecord(stored.value));
 });
 
 /** What `Keys.state` answers: the chain and every wrapper's statement. */
@@ -346,27 +437,35 @@ export const state = Effect.fn("KeyStore.state")(function* (account: string) {
 });
 
 /**
- * Adds a wrapper at the newest generation. A passkey or Notfallkarte needs the session to be at
- * most `Keys.freshSignInMinutes` old, so a thief with an unlocked phone can't quietly add one.
+ * Adds a wrapper at the newest generation, and answers the other sessions a new card ended. A
+ * passkey or Notfallkarte needs the session to be at most `Keys.freshSignInMinutes` old, so a thief
+ * with an unlocked phone can't quietly add one. A new card makes the old one useless.
  */
 export const addWrapper = Effect.fn("KeyStore.addWrapper")(function* (
   account: string,
   session: string,
   wrapper: Keys.Sealed,
+  login: Option.Option<string>,
 ) {
   const sql = yield* SqlClient.SqlClient;
   const { statement } = wrapper;
 
   return yield* sql.withTransaction(
     Effect.gen(function* () {
-      if (statement.kind !== Wrapper.kindByte.device) {
-        const [fresh] = yield* sql`
-          select 1 from auth_session
-          where id = ${session} and "userId" = ${account}
-            and "createdAt" > now() - make_interval(mins => ${Keys.freshSignInMinutes})
-        `;
+      // An email account's card never signs in, so only an account without an address replaces its
+      // card's login, and takes its logins for update up front.
+      const replacing =
+        statement.kind === Wrapper.kindByte.code && !(yield* CardLogins.hasAddress(account));
 
-        if (fresh === undefined) return yield* new Keys.NotFresh();
+      if (!(yield* AccountLock.hold(account, replacing ? "update" : "share"))) {
+        return yield* new Keys.SignedOut();
+      }
+
+      if (
+        statement.kind !== Wrapper.kindByte.device &&
+        !(yield* FreshSignIn.isFresh(account, session))
+      ) {
+        return yield* new Keys.NotFresh();
       }
 
       const newest = yield* lockNewest(account);
@@ -393,7 +492,24 @@ export const addWrapper = Effect.fn("KeyStore.addWrapper")(function* (
         if (count >= Keys.wrappersPerPasskey) return yield* new Keys.Invalid({ reason: "limit" });
       }
 
+      // A device that resends a card after a lost answer, when another device replaced it since,
+      // finds it retired. "statement" is what the app one release back knows.
+      if (statement.kind === Wrapper.kindByte.code && (yield* isRetired(account, statement))) {
+        return yield* new Keys.Invalid({ reason: "statement" });
+      }
+
+      // A new card retires the old one for every account, and replaces its login only when the
+      // account has no address.
+      const ended: ReadonlyArray<string> =
+        statement.kind !== Wrapper.kindByte.code
+          ? []
+          : replacing
+            ? yield* replaceCard(account, session, statement, login)
+            : yield* Effect.as(retireOtherCards(account, statement), []);
+
       yield* insertWrapper(account, wrapper, session);
+
+      return ended;
     }),
   );
 });
@@ -413,6 +529,8 @@ export const fetchSeals = Effect.fn("KeyStore.fetchSeals")(function* (
 
   return yield* sql.withTransaction(
     Effect.gen(function* () {
+      if (!(yield* AccountLock.hold(account, "share"))) return yield* new Keys.SignedOut();
+
       const newest = yield* lockNewest(account);
 
       if (Option.isNone(newest)) return new Keys.Seals({ records: [], wrappers: [] });

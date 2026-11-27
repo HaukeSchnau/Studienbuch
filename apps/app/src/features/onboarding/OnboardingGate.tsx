@@ -1,17 +1,19 @@
-import { useAtomValue } from "@effect/atom-react";
+import { useAtomMount, useAtomValue } from "@effect/atom-react";
 import * as Option from "effect/Option";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import type { ReactNode } from "react";
 
 import { KeysState } from "../keys/KeysState.ts";
 import { NotebookKeys } from "../keys/NotebookKeys.ts";
+import { CardTrouble, SaveCardScreen } from "../keys/SaveCardScreen.tsx";
 import { Onboarding } from "./Onboarding.ts";
 import { OnboardingScreen } from "./OnboardingScreen.tsx";
 import { OnboardingState } from "./OnboardingState.ts";
 
 /**
  * The tabs, unless the student hasn't finished the first start (`Onboarding.next`): then the first
- * start in their place. Only an unlocked device can read the encrypted name, so a locked one shows
+ * start in their place. A new account without an address saves its Notfallkarte before anything
+ * else, locked or not. Only an unlocked device can read the encrypted name, so a locked one shows
  * the tabs with AccountNotice's way to unlock, and an account without a school shows them too.
  */
 export function OnboardingGate({ children }: { readonly children: ReactNode }) {
@@ -32,6 +34,21 @@ function Gate({
 }) {
   const status = useAtomValue(KeysState.status(accountId));
   const reading = useAtomValue(OnboardingState.reading(accountId));
+  const pending = useAtomValue(KeysState.pendingCard(accountId));
+
+  // The first start's last step outlives its screen here, and goes with the account at sign-out.
+  useAtomMount(OnboardingState.finish(accountId));
+
+  if (AsyncResult.isInitial(pending)) return null;
+
+  // The device couldn't keep or read a new card: the first start waits until it can.
+  if (AsyncResult.isFailure(pending)) return <CardTrouble accountId={accountId} />;
+
+  // A card the student saved already, as one typed to sign in, waits for the server without a step,
+  // and so does a new one the server may not hold yet.
+  const card = Option.filter(pending.value, (each) => each.unsaved && !each.replacing);
+
+  if (Option.isSome(card)) return <SaveCardScreen accountId={accountId} card={card.value} />;
 
   const unlocked = NotebookKeys.unlocked(status);
 

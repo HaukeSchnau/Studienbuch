@@ -134,6 +134,11 @@ export default defineConfig({
       // https://github.com/Effect-TS/tsgo/blob/main/docs/rules/strict-effect-provide.md
       "effecttsgo/strict-effect-provide": "off",
 
+      // Half the calls without `catch` drop the failure at once (`Effect.option`, `orElseSucceed`),
+      // where a typed error would go unread. The rest need error types designed with their callers.
+      // https://github.com/Effect-TS/tsgo/blob/main/docs/rules/effect-try-without-catch.md
+      "effecttsgo/effect-try-without-catch": "off",
+
       // `typescript/no-unsafe-type-assertion` already rejects narrowing casts, so a comment on a
       // safe upcast adds friction without safety.
       // https://github.com/dmmulroy/anti-slop/blob/13909c9/src/rules/require-safety-comment-for-type-assertion.ts
@@ -224,6 +229,10 @@ export default defineConfig({
           "effecttsgo/prefer-effect-string": "off",
           // https://github.com/Effect-TS/tsgo/blob/main/docs/rules/prefer-effect-record.md
           "effecttsgo/prefer-effect-record": "off",
+          // Plain functions use JSON on purpose: CanonicalJson defines the sync contract's bytes, and
+          // map keys and conformance cases are JSON text. `global-json-in-effect` covers Effect code.
+          // https://github.com/Effect-TS/tsgo/blob/main/docs/rules/global-json.md
+          "effecttsgo/global-json": "off",
         },
       },
       {

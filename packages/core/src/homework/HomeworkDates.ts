@@ -54,3 +54,24 @@ export const dueDates = (today: CivilTime.PlainDate): CivilTime.DateRange => ({
   start: today,
   end: CivilDate.addDays(today, 365),
 });
+
+/** A homework with its course, which the timetable's rules read. */
+export interface OfCourse extends Listed {
+  readonly courseId: string;
+}
+
+/**
+ * Whether one of `homework` is open, of `course` and due on `date`, so that the course's lesson on
+ * that day says "Hausaufgabe offen".
+ */
+export const isOpenFor = (
+  homework: ReadonlyArray<OfCourse>,
+  course: string,
+  date: CivilTime.PlainDate,
+): boolean =>
+  homework.some(
+    (each) =>
+      each.courseId === course &&
+      each.doneOn === undefined &&
+      CivilDate.order(each.dueOn, date) === 0,
+  );

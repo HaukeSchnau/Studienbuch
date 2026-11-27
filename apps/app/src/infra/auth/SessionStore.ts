@@ -18,6 +18,14 @@ import { AuthApi } from "./AuthApi.ts";
 
 export * as SessionStore from "./SessionStore.ts";
 
+/** The device's one attempt (`Account.attempt`). */
+export interface Attempt {
+  /** Whether a sign-in, sign-up or sign-out that may change the account runs. */
+  readonly running: boolean;
+  /** Grows at each sign-out, which supersedes an attempt that began before it (`Account.keep`). */
+  readonly generation: number;
+}
+
 /**
  * The signed-in account. `token` is `None` once the server ended the session: the account and its
  * data stay on the device until it signs in again or signs out.
@@ -25,7 +33,10 @@ export * as SessionStore from "./SessionStore.ts";
 export interface Signed {
   readonly accountId: string;
   readonly token: Option.Option<Redacted.Redacted>;
-  /** Signed in with a password at a demo account's address, as a persona (`Demo.isDemoSignIn`). */
+  /**
+   * Signed in as a persona: with a password at a demo account's address (`Demo.isDemoSignIn`), or
+   * with "Anmelden als" (`Account.signInAsPersona`).
+   */
   readonly demo: boolean;
   /** `Device.PublicComputer` for the account, fixed while the device holds it. */
   readonly publicComputer: boolean;
@@ -46,14 +57,34 @@ export class Service extends Context.Service<
       publicComputer: boolean,
     ) => Effect.Effect<void, Keychain.Unavailable>;
     /**
-     * The server ended the session. The device stops using the token until the account signs in
-     * again. The stored token stays, so after a restart the server says so once more.
+     * The server ended the session of `token`. The device stops using it until the account signs
+     * in again; a newer token from a sign-in since stays. The stored token stays, so after a
+     * restart the server says so once more.
      */
-    readonly ended: Effect.Effect<void>;
-    /** Forgets the account, at sign-out. */
-    readonly forget: Effect.Effect<void, Keychain.Unavailable>;
+    readonly ended: (token: Redacted.Redacted) => Effect.Effect<void>;
+    /** Forgets the account, at sign-out, and answers its token for the server to end. */
+    readonly forget: Effect.Effect<Option.Option<Redacted.Redacted>, Keychain.Unavailable>;
+    /**
+     * The device's one attempt. It sits here, in the device's layers, so the sign-in screens and
+     * an account's own steps share it.
+     */
+    readonly attempt: SubscriptionRef.SubscriptionRef<Attempt>;
   }
 >()("SessionStore.Service") {}
+
+/**
+ * Whether `accountId` keeps its session and secrets in memory only: as the device holds it
+ * already, else as `chosen` for an account it doesn't hold yet.
+ */
+export const publicComputerFor = (
+  held: Option.Option<Signed>,
+  accountId: string,
+  chosen: boolean,
+) =>
+  Option.match(
+    Option.filter(held, (signed) => signed.accountId === accountId),
+    { onNone: () => chosen, onSome: (signed) => signed.publicComputer },
+  );
 
 export const layer = Layer.effect(Service)(
   Effect.gen(function* () {
@@ -70,23 +101,21 @@ export const layer = Layer.effect(Service)(
     );
 
     const ref = yield* SubscriptionRef.make(stored);
+    const attempt = yield* SubscriptionRef.make<Attempt>({ running: false, generation: 0 });
 
     return {
+      attempt,
       current: SubscriptionRef.get(ref),
       changes: SubscriptionRef.changes(ref),
       signedIn: Effect.fn("SessionStore.signedIn")(function* (
         { accountId, token, demo }: DeviceSessions.Session,
         chosen: boolean,
       ) {
-        const held = Option.filter(
+        const publicComputer = publicComputerFor(
           yield* SubscriptionRef.get(ref),
-          (signed) => signed.accountId === accountId,
+          accountId,
+          chosen,
         );
-
-        const publicComputer = Option.match(held, {
-          onNone: () => chosen,
-          onSome: (signed) => signed.publicComputer,
-        });
 
         if (!publicComputer) yield* sessions.set({ accountId, token, demo });
 
@@ -95,16 +124,22 @@ export const layer = Layer.effect(Service)(
           Option.some({ accountId, token: Option.some(token), demo, publicComputer }),
         );
       }),
-      ended: SubscriptionRef.update(
-        ref,
-        Option.map((signed) => ({ ...signed, token: Option.none() })),
-      ),
+      ended: (gone) =>
+        SubscriptionRef.update(
+          ref,
+          Option.map((signed) =>
+            sameToken(signed.token, Option.some(gone))
+              ? { ...signed, token: Option.none() }
+              : signed,
+          ),
+        ),
       forget: Effect.flatMap(SubscriptionRef.get(ref), (current) =>
         Option.match(current, {
-          onNone: () => Effect.void,
-          onSome: ({ accountId, publicComputer }) =>
+          onNone: () => Effect.succeed(Option.none<Redacted.Redacted>()),
+          onSome: ({ accountId, publicComputer, token }) =>
             (publicComputer ? Effect.void : sessions.remove(accountId)).pipe(
               Effect.andThen(SubscriptionRef.set(ref, Option.none())),
+              Effect.as(token),
             ),
         }),
       ),
@@ -144,7 +179,7 @@ export const session = (accountId: string) =>
               onSome: (bearer) =>
                 api.session(bearer).pipe(
                   Effect.flatMap(
-                    Option.match({ onNone: () => store.ended, onSome: () => Effect.void }),
+                    Option.match({ onNone: () => store.ended(bearer), onSome: () => Effect.void }),
                   ),
                   // Offline or a server hiccup proves nothing about the session.
                   Effect.catchTags({

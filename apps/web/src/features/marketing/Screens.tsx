@@ -1,13 +1,14 @@
+import { SubjectSticker } from "@stu/domain-ui/subject/SubjectSticker";
+import { AgendaCard } from "@stu/domain-ui/timetable/AgendaCard";
+import { WeekGrid } from "@stu/domain-ui/timetable/WeekGrid";
 import { Hero, type HeroProps } from "@stu/ui/Hero";
 import { Pill } from "@stu/ui/Pill";
 import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
-import { Image, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 import { AbsenceCard } from "#/domain-ui/app/AbsenceCard.tsx";
-import { AgendaCard } from "#/domain-ui/app/AgendaCard.tsx";
 import { type Exam, GradesCard } from "#/domain-ui/app/GradesCard.tsx";
-import { WeekGrid } from "#/domain-ui/app/WeekGrid.tsx";
 
 import { Demo } from "./Demo.ts";
 
@@ -28,7 +29,7 @@ function PhoneScreen(props: Omit<HeroProps, "top">) {
 export function TodayScreen({ onOpen }: { onOpen?: (id: string) => void }) {
   return (
     <PhoneScreen subtitle="Das steht heute an:" title={`Moin, ${Demo.student}!`}>
-      <AgendaCard onOpen={onOpen} rows={Demo.today} />
+      <AgendaCard items={Demo.today} onOpen={onOpen} />
       <AbsenceCard days={1} unexcused={2} />
     </PhoneScreen>
   );
@@ -47,8 +48,7 @@ export function CourseScreen({
   onBack?: () => void;
 }) {
   const { color, elevation } = Theme.useTheme();
-  const { name, teacher, term, oral } = Demo.courses[course];
-  const art = Demo.art[course];
+  const { name, slot, teacher, term, oral } = Demo.courses[course];
 
   return (
     <PhoneScreen
@@ -63,8 +63,7 @@ export function CourseScreen({
             },
           ]}
         >
-          {/* `defaultSource` makes react-native-web render the image while prerendering. */}
-          <Image defaultSource={{ uri: art }} source={{ uri: art }} style={styles.art} />
+          <SubjectSticker art={Demo.art[course]} size={70} />
         </View>
       }
       chips={[term]}
@@ -82,13 +81,14 @@ export function CourseScreen({
         average={Demo.confirmedAverage(exams)}
         exams={exams}
         oral={oral}
+        slot={slot}
         onSign={onSign}
       />
     </PhoneScreen>
   );
 }
 
-/** Meine Woche, with the arrows between weeks and "Heute" back to this one. */
+/** Meine Woche, with the arrows between weeks and "Heute" back to this one from another. */
 export function WeekScreen({ week, onShow }: { week: number; onShow: (week: number) => void }) {
   const shown = Demo.weeks[week] ?? Demo.weeks[Demo.currentWeek];
 
@@ -107,24 +107,21 @@ export function WeekScreen({ week, onShow }: { week: number; onShow: (week: numb
   return (
     <PhoneScreen
       chips={[`KW ${String(shown.number)}`, shown.kind]}
+      subtitle={shown.dates}
       title="Meine Woche"
       toolbar={{
         end: (
           <>
             {arrow(-1, "Vorige Woche")}
-            <Pill label="Heute" onPress={() => onShow(Demo.currentWeek)} />
+            {week === Demo.currentWeek ? null : (
+              <Pill label="Heute" onPress={() => onShow(Demo.currentWeek)} />
+            )}
             {arrow(1, "Nächste Woche")}
           </>
         ),
       }}
     >
-      <WeekGrid
-        cells={shown.cells}
-        days={shown.days}
-        now={shown.today === undefined ? undefined : Demo.now}
-        periods={Demo.periods}
-        today={shown.today}
-      />
+      <WeekGrid week={shown.grid} wide={false} />
     </PhoneScreen>
   );
 }
@@ -139,5 +136,4 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  art: { width: 62, height: 62 },
 });

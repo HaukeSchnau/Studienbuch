@@ -1,29 +1,29 @@
-import { useAtom, useAtomSet, useAtomValue } from "@effect/atom-react";
+import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import { DateText } from "@stu/domain-ui/calendar/DateText";
 import { HomeworkPanel } from "@stu/domain-ui/homework/HomeworkPanel";
-import { RefusalCard } from "@stu/domain-ui/refusal/RefusalCard";
+import { AgendaCard } from "@stu/domain-ui/timetable/AgendaCard";
 import { Arrive } from "@stu/ui/Arrive";
 import { Pill } from "@stu/ui/Pill";
 import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
 import * as Option from "effect/Option";
-import * as AsyncResult from "effect/reactivity/AsyncResult";
-import * as Atom from "effect/reactivity/Atom";
-import * as Schema from "effect/Schema";
 import { useRouter } from "expo-router";
 import { StyleSheet, View } from "react-native";
 
 import { HeroScreen } from "../../ui/HeroScreen.tsx";
+import { HomeworkRefusals } from "../homework/HomeworkRefusals.tsx";
+import { HomeworkRoutes } from "../homework/HomeworkRoutes.ts";
 import { HomeworkState } from "../homework/HomeworkState.ts";
-import { Refused } from "../homework/Refused.ts";
+import { OfflineChip } from "../device-status/OfflineChip.tsx";
 import { KeysState } from "../keys/KeysState.ts";
-import { OfflineChip } from "./OfflineChip.tsx";
+import { TimetableRoutes } from "../timetable/TimetableRoutes.ts";
 import { OverviewState } from "./OverviewState.ts";
 
 /**
- * "Übersicht", the Flutter app's home: "Moin, Lena!" with today's date in the green hero, and the
- * blue homework panel below. From M2, "Heute" and "Morgen" come between the two. A refused change
- * waits as a card on the hero's band until the student picks what happens to it.
+ * "Übersicht", the Flutter app's home: "Moin, Lena!" and "Das steht heute an:" in the green hero,
+ * the day's lessons on its band, each opening its lesson sheet, and the blue homework panel below.
+ * Without a timetable the hero names today's date and the card stays away. A refused change waits
+ * as a card on the band until the student picks what happens to it.
  */
 export function OverviewScreen() {
   return Option.match(KeysState.useAccountId(), {
@@ -36,36 +36,30 @@ function AccountOverview({ accountId }: { readonly accountId: string }) {
   const router = useRouter();
   const { color } = Theme.useTheme();
   const overview = useAtomValue(OverviewState.overview(accountId));
-  const [toggled, toggle] = useAtom(HomeworkState.setDone(accountId));
-  const redo = useAtomSet(HomeworkState.redo(accountId));
-  const dismiss = useAtomSet(HomeworkState.dismiss(accountId));
+  const toggle = useAtomSet(HomeworkState.setDone(accountId));
 
   // Until the notebook is read, the canvas alone: a greeting without the name would flash first.
   if (Option.isNone(overview)) {
     return <View style={[styles.blank, { backgroundColor: color.canvas }]} />;
   }
 
-  const { name, today, locked, offline, panel } = overview.value;
+  const { name, today, locked, readable, offline, reading, panel, agenda } = overview.value;
+  const card = Option.getOrUndefined(agenda)?.card;
 
   const setDone = (id: string, done: boolean) =>
     Option.map(panel, ({ notebook }) => toggle({ notebook, id, doneOn: done ? today : undefined }));
-
-  const notToggled = Option.filter(AsyncResult.error(toggled), Schema.is(HomeworkState.NotToggled));
 
   return (
     <HeroScreen
       title={Option.match(name, { onNone: () => "Moin!", onSome: (first) => `Moin, ${first}!` })}
       underline
-      subtitle={DateText.long(today)}
+      subtitle={Option.match(agenda, {
+        onNone: () => DateText.long(today),
+        onSome: ({ heading }) => heading,
+      })}
       status={<OfflineChip offline={offline} />}
-      // The way to this device and to signing out, until Mein Profil holds them.
       aside={
-        <Pill
-          label="Dieses Gerät"
-          icon="person"
-          iconOnly
-          onPress={() => router.push("/diagnose")}
-        />
+        <Pill label="Profil" icon="person" iconOnly onPress={() => router.navigate("/profil")} />
       }
       footer={{
         color: color.panelFold,
@@ -75,6 +69,9 @@ function AccountOverview({ accountId }: { readonly accountId: string }) {
               items={Option.getOrUndefined(panel)?.items}
               locked={locked}
               onToggle={setDone}
+              onOpen={(id) => router.push(HomeworkRoutes.detail(id))}
+              onAll={() => router.push(HomeworkRoutes.list)}
+              onAdd={readable ? () => router.push(HomeworkRoutes.add) : undefined}
               style={styles.grow}
             />
           </Arrive>
@@ -82,32 +79,22 @@ function AccountOverview({ accountId }: { readonly accountId: string }) {
       }}
     >
       <Arrive delay={110} style={styles.band}>
-        {Option.match(panel, {
+        {card === undefined ? null : (
+          <AgendaCard
+            items={card.items}
+            notice={card.notice}
+            stand={Option.getOrUndefined(agenda)?.stand}
+            onOpen={(id) => router.push(TimetableRoutes.lesson(id))}
+          />
+        )}
+        {Option.match(reading, {
           onNone: () => null,
-          onSome: ({ refusals }) =>
-            refusals.map(({ rejected, change }) => (
-              <RefusalCard
-                key={`${rejected.clientId} ${String(rejected.mutationId)}`}
-                change={change}
-                reason={rejected.reason}
-                onRetry={() => redo(rejected)}
-                onDismiss={() => dismiss(rejected)}
-              />
-            )),
-        })}
-        {Option.match(notToggled, {
-          onNone: () => null,
-          onSome: (failed) => (
-            <RefusalCard
-              change={Refused.tick(
-                failed.done,
-                Option.getOrUndefined(
-                  Option.flatMap(panel, (p) => Option.fromNullishOr(p.titles.get(failed.id))),
-                ),
-              )}
-              reason={{ _tag: failed.reason }}
-              onRetry={() => setDone(failed.id, failed.done)}
-              onDismiss={() => toggle(Atom.Reset)}
+          onSome: (reading) => (
+            <HomeworkRefusals
+              accountId={accountId}
+              reading={reading}
+              readable={readable}
+              today={today}
             />
           ),
         })}

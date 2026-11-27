@@ -1,7 +1,6 @@
 import { useAtom } from "@effect/atom-react";
 import { Button } from "@stu/ui/Button";
 import { Card } from "@stu/ui/Card";
-import { Field } from "@stu/ui/Field";
 import { Text } from "@stu/ui/Text";
 import { Theme } from "@stu/ui/Theme";
 import * as Exit from "effect/Exit";
@@ -11,7 +10,8 @@ import { useState } from "react";
 import { Keyboard } from "react-native";
 
 import { HeroScreen } from "../../ui/HeroScreen.tsx";
-import { KeyProblem, keyReasonOf } from "./KeysUi.tsx";
+import { useRunning } from "../account/AccountForm.tsx";
+import { CardCodeField, KeyProblem, keyReasonOf } from "./KeysUi.tsx";
 import { KeysState } from "./KeysState.ts";
 
 /** "Notfallkarte": the code typed in, which opens the notebook on this device. */
@@ -34,9 +34,12 @@ function EnterCode({ accountId }: { readonly accountId: string }) {
   const { color } = Theme.useTheme();
   const [code, setCode] = useTypedCode();
   const [opened, open] = useAtom(KeysState.unlockWithCode(accountId), { mode: "promiseExit" });
+  const opening = useRunning(KeysState.unlockWithCode(accountId));
   const reason = keyReasonOf(opened);
 
   const submit = async () => {
+    if (opening()) return;
+
     Keyboard.dismiss();
 
     if (Exit.isSuccess(await open(code))) router.replace("/");
@@ -49,16 +52,9 @@ function EnterCode({ accountId }: { readonly accountId: string }) {
       back="/notizbuch-entsperren"
     >
       <Card padded>
-        <Field
-          label="Code von deiner Notfallkarte"
+        <CardCodeField
           value={code}
           onChangeText={setCode}
-          placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX"
-          autoCapitalize="characters"
-          autoCorrect={false}
-          autoComplete="off"
-          spellCheck={false}
-          returnKeyType="go"
           onSubmitEditing={() => void submit()}
           invalid={Option.isSome(reason)}
         />

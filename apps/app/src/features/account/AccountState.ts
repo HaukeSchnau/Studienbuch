@@ -1,23 +1,34 @@
-import { useAtomSet, useAtomValue } from "@effect/atom-react";
+import { useAtomMount, useAtomSet, useAtomValue } from "@effect/atom-react";
 import type { Access } from "@stu/api/Access";
-import { SyncClient } from "@stu/sync/client";
+import { AccountDeletion } from "@stu/api/AccountDeletion";
+import type { Demo } from "@stu/api/Demo";
+import { CryptoSuite } from "@stu/e2ee";
+import { SyncClient, SyncQuery } from "@stu/sync/client";
 import * as Effect from "effect/Effect";
+import * as Equal from "effect/Equal";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import * as Redacted from "effect/Redacted";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Atom from "effect/reactivity/Atom";
+import * as AtomRegistry from "effect/reactivity/AtomRegistry";
+import * as RpcClient from "effect/rpc/RpcClient";
 import * as Stream from "effect/Stream";
 import * as SubscriptionRef from "effect/SubscriptionRef";
 import { useEffect } from "react";
 
+import { ApiProtocol } from "../../infra/api/ApiProtocol.ts";
 import { SessionStore } from "../../infra/auth/SessionStore.ts";
 import { layer as signUpStore } from "../../infra/auth/signUpStore.ts";
 import { publicComputer } from "../../infra/device/publicComputer.ts";
+import { Passkeys } from "../../infra/passkeys/Passkeys.ts";
 import { layer as authenticator } from "../../infra/passkeys/platform.ts";
 import { AccountEngine } from "../../infra/runtime/AccountEngine.ts";
 import { Layers } from "../../infra/runtime/Layers.ts";
-import { OfferedPrf } from "../keys/OfferedPrf.ts";
+import { Offered } from "../keys/Offered.ts";
 import { Account } from "./Account.ts";
+import { Deletion } from "./Deletion.ts";
+import { DeletionServer } from "./DeletionServer.ts";
 import { PasskeyCheck } from "./PasskeyCheck.ts";
 
 // The account flows as atoms for the screens, on this device's layers. Each sign-in hands over the
@@ -25,16 +36,73 @@ import { PasskeyCheck } from "./PasskeyCheck.ts";
 
 export * as AccountState from "./AccountState.ts";
 
+const bearer = (token: Redacted.Redacted) => ({
+  headers: { authorization: `Bearer ${Redacted.value(token)}` },
+});
+
+const unreachable = Effect.fail(new DeletionServer.Unreachable());
+
+/** `DeletionServer` over HTTP to `Ports.Server`, with the token each call names. */
+const deletionServer = Layer.effect(DeletionServer.Service)(
+  Effect.gen(function* () {
+    const client = yield* RpcClient.make(AccountDeletion.Rpcs);
+
+    return DeletionServer.Service.of({
+      delete: (token) =>
+        client["AccountDeletion.delete"](undefined, bearer(token)).pipe(
+          Effect.catchTags({ RpcClientError: () => unreachable }),
+        ),
+      deleted: (token) =>
+        client["AccountDeletion.deleted"](undefined, bearer(token)).pipe(
+          Effect.catchTags({
+            RpcClientError: () => unreachable,
+            "AccountDeletion.Unavailable": () => unreachable,
+          }),
+        ),
+    });
+  }),
+).pipe(Layer.provide(ApiProtocol.authenticated(Effect.succeedNone)));
+
 const runtime = Atom.runtime(
-  Layer.mergeAll(authenticator, Account.confirmations.pipe(Layer.provideMerge(signUpStore))).pipe(
-    Layer.provideMerge(AccountEngine.device),
-  ),
+  Layer.mergeAll(
+    authenticator,
+    deletionServer,
+    CryptoSuite.layer,
+    Account.confirmations.pipe(Layer.provideMerge(signUpStore)),
+  ).pipe(Layer.provideMerge(AccountEngine.device)),
 ).pipe(Atom.keepAlive);
 
 /** The account this device is signed in as, then every change. */
 export const current = runtime
   .atom(Stream.unwrap(Effect.map(SessionStore.Service, (store) => store.changes)))
   .pipe(Atom.keepAlive);
+
+/** The account the device holds: the same through a new token and through the session's end. */
+const holder = Atom.make((get) =>
+  Option.map(Option.flatten(AsyncResult.value(get(current))), (signed) => signed.accountId),
+).pipe(Atom.withEquality(Equal.equals));
+
+/**
+ * Memory of the device's account that outlives its screens and not the account: `initial` again
+ * once another account or none holds the device, so sign-out leaves nothing of a student. It
+ * isn't lazy, so a value nobody reads goes at that moment too.
+ */
+export const memory = <A>(initial: A) => {
+  const self: Atom.Writable<A, A> = Atom.writable(
+    (get) => {
+      get(holder);
+
+      return initial;
+    },
+    (context, value: A) => {
+      // A write before any read reads first, so the value follows the account from the start.
+      context.get(self);
+      context.setSelf(value);
+    },
+  ).pipe(Atom.setLazy(false), Atom.keepAlive);
+
+  return self;
+};
 
 /** `Account.keepsNothing` for this device. Storage outside an account follows it too. */
 export const keepsNothing = Atom.make((get) =>
@@ -45,26 +113,14 @@ export const keepsNothing = Atom.make((get) =>
 export const useAccess = () => Account.access(useAtomValue(current));
 
 /**
- * The commands of `accountId` that the server hasn't settled, as its engine counts them. Reading it
- * starts the engine. When the engine can't start, nothing else can open the account's database
- * either, so the count stays unknown.
+ * The commands of `accountId` that the server hasn't settled, for "Abmelden". Reading it starts the
+ * engine. When the engine can't start, nothing else can open the account's database either, so
+ * they stay unknown.
  */
-const unsentOf = Atom.family((accountId: string) =>
-  Atom.runtime(AccountEngine.app(accountId)).atom(
-    Stream.unwrap(Effect.map(SyncClient.Service, (sync) => sync.status.changes)).pipe(
-      Stream.map((status) => status.waiting),
-      Stream.changes,
-    ),
-  ),
-);
-
-/** The unsent commands of the account on this device for "Abmelden", 0 when it holds none. */
-export const unsent = Atom.make((get) =>
-  AsyncResult.flatMap(get(current), (signed) =>
-    Option.match(signed, {
-      onNone: () => AsyncResult.success(0),
-      onSome: ({ accountId }) => get(unsentOf(accountId)),
-    }),
+export const unsent = Atom.family((accountId: string) =>
+  Atom.map(
+    SyncQuery.family(Atom.runtime(AccountEngine.app(accountId)), SyncClient.outbox)(),
+    AsyncResult.map(AccountEngine.unsentOf),
   ),
 );
 
@@ -90,14 +146,60 @@ export const signingUp = runtime
   )
   .pipe(Atom.keepAlive);
 
+const attempting = runtime
+  .atom(
+    Stream.unwrap(
+      Effect.map(SessionStore.Service, ({ attempt }) =>
+        SubscriptionRef.changes(attempt).pipe(
+          Stream.map((now) => now.running),
+          Stream.changes,
+        ),
+      ),
+    ),
+  )
+  .pipe(Atom.keepAlive);
+
+/**
+ * Whether a sign-in, sign-up or sign-out runs on this device (`Account.attempt`): the screens then
+ * start none, and the "Öffentlicher Computer" choice stays as that attempt read it.
+ */
+export const useAttempting = () => AsyncResult.getOrElse(useAtomValue(attempting), () => false);
+
+/**
+ * Whether the sign-in of `result` runs as the device's attempt. One a sign-out took over from may
+ * wait for its server a while yet, but its screen offers a new sign-in at once.
+ */
+export const useSigningIn = (result: AsyncResult.AsyncResult<unknown, unknown>) => {
+  const attempting = useAttempting();
+
+  return result.waiting && attempting;
+};
+
 /**
  * The tab's choice when a sign-in starts. Read without a dependency: a change must not run the
  * sign-in again.
  */
 const chosen = (get: Atom.FnContext) => get.registry.get(publicComputer);
 
+// Each sign-in runs as the device's one attempt (`Account.attempt`). A second call of its atom
+// must meet that refusal rather than interrupt the first, so these atoms run `concurrent`. A run
+// then outlives its atom's context, so what it hands on goes through the registry (`handOver`).
+const oneAttempt = { concurrent: true };
+
+const handOver = <W>(get: Atom.FnContext, atom: Atom.Writable<unknown, W>, value: W) =>
+  Effect.sync(() => get.registry.set(atom, value));
+
 export const signIn = runtime.fn<{ readonly email: string; readonly password: string }>()(
-  ({ email, password }, get) => Account.signIn(email, password, chosen(get)),
+  ({ email, password }, get) => Account.attempt(Account.signIn(email, password, chosen(get))),
+  oneAttempt,
+);
+
+/** "Anmelden als Lena" (`Account.signInAsPersona`), one run per persona. */
+export const signInAs = Atom.family((persona: Demo.Persona) =>
+  runtime.fn<void>()(
+    (_, get) => Account.attempt(Account.signInAsPersona(persona, chosen(get))),
+    oneAttempt,
+  ),
 );
 
 /** `reservation` as `Access.redeem` answered on the code screen. */
@@ -118,7 +220,11 @@ export const resetPassword = runtime.fn<{
   readonly email: string;
   readonly code: string;
   readonly password: string;
-}>()(({ email, code, password }, get) => Account.resetPassword(email, code, password, chosen(get)));
+}>()(
+  ({ email, code, password }, get) =>
+    Account.attempt(Account.resetPassword(email, code, password, chosen(get))),
+  oneAttempt,
+);
 
 /** `password` only when the screen asked for it again, after a restart. */
 export const confirmEmail = runtime.fn<{
@@ -129,9 +235,9 @@ export const confirmEmail = runtime.fn<{
   Account.confirmEmail(email, code, Option.fromNullishOr(password)),
 );
 
-// `cancelSignUp`, `finish`, `leave` and `signOut` run while their screen goes away. They stay alive
-// so the sign-up's entry goes, the sign-in completes, an unfinished session is kept or ends, and
-// the device is wiped and the session revoked.
+// `cancelSignUp`, `finish`, `leave`, `signOut` and `deleteAccount` run while their screen goes away.
+// They stay alive so the sign-up's entry goes, the sign-in completes, an unfinished session is kept
+// or ends, and the device is wiped and the session revoked.
 
 export const cancelSignUp = runtime
   .fn<void>()(() => Account.cancelSignUp)
@@ -139,10 +245,13 @@ export const cancelSignUp = runtime
 
 /** Signs the device in with the session that confirmed `email`, with a new passkey first. */
 export const finish = runtime
-  .fn<{ readonly email: string; readonly withPasskey: boolean }>()(({ email, withPasskey }, get) =>
-    Effect.tap(Account.finish(email, withPasskey, chosen(get)), (used) =>
-      Effect.sync(() => get.set(OfferedPrf.waiting, used)),
-    ),
+  .fn<{ readonly email: string; readonly withPasskey: boolean }>()(
+    ({ email, withPasskey }, get) =>
+      // The PRF output goes to `OfferedPrf` only: this atom stays alive and keeps what it returns.
+      Effect.flatMap(Account.attempt(Account.finish(email, withPasskey, chosen(get))), (used) =>
+        handOver(get, Offered.prf, used),
+      ),
+    oneAttempt,
   )
   .pipe(Atom.keepAlive);
 
@@ -161,10 +270,55 @@ export function useLaterOnLeave(email: string) {
 }
 
 /** Signs in with a passkey, and leaves its PRF output for the notebook's unlock. */
-export const signInWithPasskey = runtime.fn<void>()((_, get) =>
-  Effect.tap(Account.signInWithPasskey(chosen(get)), (used) =>
-    Effect.sync(() => get.set(OfferedPrf.waiting, Option.some(used))),
-  ),
+export const signInWithPasskey = runtime.fn<void>()(
+  (_, get) =>
+    Effect.tap(Account.attempt(Account.signInWithPasskey(chosen(get))), (used) =>
+      handOver(get, Offered.prf, Option.some(used)),
+    ),
+  oneAttempt,
+);
+
+// The sign-ups without an address and the card's sign-in hand their secrets to `Offered` only:
+// these atoms stay alive while their screen goes, and keep what they return.
+
+const offerCard = (get: Atom.FnContext): Account.Offer => ({
+  give: (card) => handOver(get, Offered.card, Option.some(card)),
+  withdraw: (card) => Effect.sync(() => get.registry.update(Offered.card, Offered.withdraw(card))),
+});
+
+/** An account without an address, made with its Notfallkarte (`Account.signUpWithCard`). */
+export const signUpWithCard = runtime
+  .fn<Access.Reservation>()(
+    (reservation, get) =>
+      Account.attempt(Account.signUpWithCard(reservation, chosen(get), offerCard(get))),
+    oneAttempt,
+  )
+  .pipe(Atom.keepAlive);
+
+/** An account without an address, made with a passkey (`Account.signUpWithPasskey`). */
+export const signUpWithPasskey = runtime
+  .fn<Access.Reservation>()(
+    (reservation, get) =>
+      Effect.flatMap(
+        Account.attempt(Account.signUpWithPasskey(reservation, offerCard(get))),
+        (used) => handOver(get, Offered.prf, Option.some(used)),
+      ),
+    oneAttempt,
+  )
+  .pipe(Atom.keepAlive);
+
+/** "Mit Notfallkarte anmelden": the card signs in, then opens the notebook. */
+export const signInWithCard = runtime
+  .fn<string>()(
+    (typed, get) =>
+      Effect.asVoid(Account.attempt(Account.signInWithCard(typed, chosen(get), offerCard(get)))),
+    oneAttempt,
+  )
+  .pipe(Atom.keepAlive);
+
+/** Whether this device can keep a passkey of its own, which decides how a sign-up starts. */
+export const passkeysHere = runtime.atom(
+  Effect.flatMap(Passkeys.Authenticator, (passkeys) => passkeys.available),
 );
 
 /**
@@ -173,22 +327,105 @@ export const signInWithPasskey = runtime.fn<void>()((_, get) =>
  */
 export const signedOut = Atom.make(false).pipe(Atom.keepAlive);
 
+const failed = Effect.fail(new Account.Problem({ reason: "sign-out-failed" }));
+
+/**
+ * Signs the device out (`Account.signOut`). `unsent` is what the question before showed
+ * (`unsent`), `None` when it couldn't tell. A newer change refuses with `AccountEngine.MoreUnsent`,
+ * and the question asks again; any other failure is "sign-out-failed", which the student retries.
+ * It takes over from an attempt under way, which then keeps no session.
+ */
 export const signOut = runtime
+  .fn<Option.Option<AccountEngine.Unsent>>()((unsent, get) =>
+    Account.signOut(({ accountId, publicComputer }, forgetSession) => {
+      // Before the session goes, which is when the gates move on.
+      const signedOutHere = Effect.andThen(
+        Effect.sync(() => {
+          get.set(signedOut, true);
+          get.set(Offered.prf, Option.none());
+          get.set(Offered.card, Option.none());
+        }),
+        forgetSession,
+      );
+
+      return AccountEngine.forget(
+        accountId,
+        unsent,
+        // A public computer's account kept everything in its engine, which `forget` stopped.
+        Effect.gen(function* () {
+          if (publicComputer) return yield* signedOutHere;
+
+          yield* Layers.endSignOut(accountId, signedOutHere);
+        }),
+      );
+    }).pipe(
+      Effect.catchTags({
+        "Forgetting.Unfinished": () => failed,
+        "Keychain.Unavailable": () => failed,
+        SqlError: () => failed,
+      }),
+    ),
+  )
+  .pipe(Atom.keepAlive);
+
+/**
+ * What this tab forgets of an account that was deleted, before its session goes. The gates then
+ * lead to the start, not to "Anmelden", also when another account signed out here before.
+ */
+const leftDeleted = Effect.flatMap(AtomRegistry.AtomRegistry, (registry) =>
+  Effect.sync(() => {
+    registry.set(signedOut, false);
+    registry.set(Offered.prf, Option.none());
+    registry.set(Offered.card, Option.none());
+  }),
+);
+
+/**
+ * Leaves the deleted account by its id, without asking about its unsent changes, which went with it
+ * on the server (`AccountEngine.forgetIfHeld`), and forgets it in this tab (`leftDeleted`). A
+ * failure before the point of no return is `Deletion.Unchanged` and can run again; one after it
+ * is "forget-failed" and finishes at the next start.
+ */
+export const leaveDeleted = (accountId: string) =>
+  AccountEngine.forgetIfHeld(accountId, leftDeleted).pipe(
+    Effect.catchTags({
+      // `Engines.forget` fails with these before it writes the note, its point of no return.
+      "AccountEngine.MoreUnsent": () => unchanged,
+      "Keychain.Unavailable": () => unchanged,
+      SqlError: () => unchanged,
+      "Forgetting.Unfinished": () => Effect.fail(new Deletion.Problem({ reason: "forget-failed" })),
+    }),
+  );
+
+const unchanged = Effect.fail(new Deletion.Unchanged());
+
+/**
+ * Why the device's account couldn't be deleted, for "Konto löschen". It belongs to that account:
+ * another account holding the device starts without one.
+ */
+export const deletionProblem = memory(Option.none<Deletion.Reason>());
+
+/** "Konto löschen" (`Deletion.deleteAccount`), which leaves its reason in `deletionProblem`. */
+export const deleteAccount = runtime
   .fn<void>()((_, get) =>
     Effect.andThen(
-      // Before the session goes, which is when the gates move on.
-      Effect.sync(() => get.set(signedOut, true)),
-      // The account's engine closes first: only a closed database can be deleted. A public
-      // computer's account kept everything in its engine, so closing it forgets the account.
-      Account.signOut(({ accountId, publicComputer }) =>
-        Effect.andThen(
-          AccountEngine.close(accountId),
-          publicComputer ? Effect.void : Layers.forget(accountId),
-        ),
+      Effect.sync(() => get.set(deletionProblem, Option.none())),
+      Deletion.deleteAccount(leaveDeleted, (reason) =>
+        Effect.sync(() => get.set(deletionProblem, Option.some(reason))),
       ),
     ),
   )
   .pipe(Atom.keepAlive);
+
+const forgetWhenDeleted = runtime
+  .atom(Deletion.forgetWhenDeleted(leaveDeleted))
+  .pipe(Atom.keepAlive);
+
+/**
+ * Forgets the account when its session ends because it was deleted (`Deletion.forgetWhenDeleted`).
+ * The root layout mounts it, so it watches from the start.
+ */
+export const useForgetWhenDeleted = () => useAtomMount(forgetWhenDeleted);
 
 /** The device check's two steps (design/spikes/passkey-prf.md). */
 export const checkCreate = runtime.fn<void>()(() => PasskeyCheck.create);

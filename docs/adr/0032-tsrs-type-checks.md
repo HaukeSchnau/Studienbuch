@@ -1,0 +1,9 @@
+# tsrs type-checks
+
+Status: accepted 2026-11-24
+
+tsrs, the Rust port of the TypeScript 7.1 compiler, replaces `tsc` here. All of Hauke's TypeScript projects are moving onto the OXC and Vite+ toolchain, and from Vite+ 1.7 on, `vp check` runs its type-aware lint and its type check on `tsrs-lint`. No package installs `typescript` anymore: Expo loads `app.config.ts` through Node's type stripping as before, and `vp pack` builds no declarations. Expo's dev server still wants `typescript` for its own TypeScript setup, typed routes included, so the dev shell sets `EXPO_NO_TYPESCRIPT_SETUP`, as devenv's app process did before. No check reads typed routes, because neither CI nor a dev instance ever generated them. This supersedes the parts of [ADR 0010](0010-toolchain.md) that name TypeScript 7 and tsgolint, and its claim that there is no separate type check.
+
+`vp check` checks each file only in the project of its nearest `tsconfig.json`. An app also compiles the shared packages it imports under its own options, and only that app's program sees the result: under apps/app's `react-native` condition, `@stu/ui/Drawing` resolves to `Drawing.tsx`, while packages/domain-ui's own project resolves it to `Drawing.web.tsx`, so a domain-ui call that only the native twin rejects passes `vp check`. CI's `typecheck` task therefore still runs `tsrs --noEmit -p` for every project, and `typecheck-deploy` runs it for deploy/, which has its own install.
+
+The versions stay coupled. The catalog pins `tsrs` to exactly the version Vite+ bundles, so the lockfile holds one tsrs and both checks run the same compiler. `prepare` patches oxlint's binding and that tsrs with `effect-tsgo patch --no-typescript --oxlint --tsrs`, so the Effect rules run in `vp check`. A Vite+ bump moves tsrs with it and must stay inside the versions `@effect/tsgo` supports.

@@ -27,6 +27,10 @@ const light = {
   dangerTint: "#F6E1E3",
   warning: "#8D5703",
   warningTint: "#FEEDDA",
+  // The yellow note stuck on a changed lesson (D76), its ink and its folded corner.
+  note: "#FFE27A",
+  noteInk: "#203755",
+  noteFold: "#E9C649",
   // The brand green: hero fill and illustrations. Only large text sits on it.
   hero: "#33A42B",
   heroEdge: "#3B7FD9",
@@ -43,6 +47,9 @@ const light = {
   // The darker wave across the panel, legacy's AufgabenClipper (the panel under 10 % black). It
   // reaches the panel's bottom, so it is also the colour below it.
   panelFold: "#3572C3",
+  // Navy, the homework panel's colour on a card: the "Hausaufgabe offen" pill on a lesson.
+  homework: "#203755",
+  onHomework: "#FFFFFF",
   // The decorative blobs, drawn at 45 % opacity. Landing page, onboarding and empty states only.
   blobGreen: "#6DB868",
   blobBlue: "#76A6E5",
@@ -74,6 +81,9 @@ const dark = {
   dangerTint: "#3D1D20",
   warning: "#E2A94F",
   warningTint: "#33240C",
+  note: "#D8BC55",
+  noteInk: "#1C1A0E",
+  noteFold: "#B89B35",
   hero: "#1F6D18",
   heroEdge: "#5B9AED",
   heroUnderline: "#A9CBFA",
@@ -83,6 +93,8 @@ const dark = {
   panelDue: "#FF9C9C",
   panelSoft: "#A9B9CF",
   panelFold: "#163051",
+  homework: "#2A6FC7",
+  onHomework: "#FFFFFF",
   blobGreen: "#1F5A1B",
   blobBlue: "#1E4170",
   fieldFill: "rgba(255, 255, 255, 0.07)",
@@ -230,8 +242,9 @@ export const type = {
   callout: { size: 16, line: 22, weight: "400", ios: "callout" },
   subhead: { size: 15, line: 20, weight: "500", ios: "subheadline" },
   footnote: { size: 13, line: 18, weight: "600", ios: "footnote" },
-  // Week grid cells only.
+  // Week grid cells only: the subject, and the teacher and room under it.
   caption: { size: 12, line: 16, weight: "700", ios: "caption1", maxScale: 1.3 },
+  caption2: { size: 11, line: 14, weight: "600", ios: "caption2", maxScale: 1.3 },
   figure: { size: 34, line: 38, weight: "700", ios: "largeTitle" },
 } as const;
 
@@ -244,7 +257,11 @@ export const layout = {
   minTarget: 48,
   wideBreakpoint: 768,
   contentMaxWidth: 720,
+  // Meine Woche's grid, whose cells need the room for full names and details (m2-5-week.md).
+  weekMaxWidth: 960,
   weekGridListAtFontScale: 1.35,
+  // The phone the screens are drawn for, 390 points wide.
+  phoneWidth: 390,
 } as const;
 
 // Nested shapes subtract the padding: a card of 28 with padding 8 holds an inner shape of 20.

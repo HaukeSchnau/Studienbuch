@@ -30,6 +30,8 @@ import { Migrations } from "./infra/database/Migrations.ts";
 import { Jobs } from "./infra/jobs/Jobs.ts";
 import { Mail } from "./infra/mail/Mail.ts";
 import { Telemetry } from "./infra/telemetry/Telemetry.ts";
+import { ImportCommand } from "./import/ImportCommand.ts";
+import { ImportJob } from "./import/ImportJob.ts";
 import { Health } from "./routes/Health.ts";
 import { DevServers } from "./routes/DevServers.ts";
 import { Rpc } from "./routes/Rpc.ts";
@@ -44,11 +46,14 @@ import { Sync } from "./sync/Sync.ts";
 const besideServer = (name: string) =>
   NodeURL.fileURLToPath(new URL(`../${name}/`, import.meta.url));
 
-const runtime = Layer.mergeAll(
-  Database.layer,
-  Migrations.layerRelease(besideServer("migrations")),
-  Telemetry.layer,
-).pipe(Layer.provideMerge(Deployment.layer));
+const withDatabase = (database: typeof Database.layer) =>
+  Layer.mergeAll(
+    database,
+    Migrations.layerRelease(besideServer("migrations")),
+    Telemetry.layer,
+  ).pipe(Layer.provideMerge(Deployment.layer));
+
+const runtime = withDatabase(Database.commandLayer);
 
 // devenv runs Vite and Metro beside the server and names them, and a release serves their builds.
 const webBuilds = Layer.unwrap(
@@ -85,9 +90,12 @@ const serve = Effect.gen(function* () {
   yield* Migrations.requireHead(yield* Migrations.Release);
 
   return yield* Layer.launch(
-    Layer.mergeAll(SyncServer.closeFirst.pipe(Layer.provide(http)), Jobs.layer),
+    Layer.mergeAll(
+      SyncServer.closeFirst.pipe(Layer.provide(http)),
+      Jobs.layer({ import: ImportJob.layer }),
+    ),
   );
-}).pipe(Effect.provide(runtime));
+}).pipe(Effect.provide(withDatabase(Database.layer)));
 
 const prepare = Effect.gen(function* () {
   const applied = yield* Migrations.apply(yield* Migrations.Release);
@@ -151,6 +159,7 @@ const cli = Command.make("studienbuch-server", {}, () => serve).pipe(
           Command.withDescription("Prints what /api/health/ready reports"),
         ),
         AccessCommand.command.pipe(Command.provide(runtime)),
+        ImportCommand.command.pipe(Command.provide(runtime)),
         Seed.command.pipe(Command.provide(Layer.merge(runtime, DemoAccounts.seeding))),
       ]),
     ),

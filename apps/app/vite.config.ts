@@ -65,6 +65,9 @@ export default defineConfig({
         // `.web` files, the development build and `global`. expo-modules-core also re-exports names
         // from files that only declare types, which Metro never checks.
         optimizeDeps: {
+          // A cache from an earlier run lacks the imports added since. Vite would find those mid-run
+          // and reload the page under a running test, so every run scans and bundles afresh.
+          force: true,
           // The SQLite worker imports these. Vite would find them only when a test starts the
           // worker, then reload the page under that test.
           include: [

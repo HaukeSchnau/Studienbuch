@@ -25,9 +25,10 @@ describe("Platform.spec", () => {
       console: ["{node}/bin/node", "{bundle}/server/main.mjs", "console"],
       endpoint: { hostName: "pr-7.studienbuch.schnau.dev", visibility: "tailnet" },
       health: { path: "/api/health/ready" },
-      database: { env: "DATABASE_URL", majorVersion: 18, dropOnDelete: true },
+      database: { env: "DATABASE_URL", majorVersion: 18, dropOnDelete: true, connections: 10 },
       env: {
         STUDIENBUCH_ENVIRONMENT: "preview",
+        DATABASE_CONNECTIONS: "10",
         STUDIENBUCH_REVISION: "8f3c2a1e",
         STUDIENBUCH_DEMO_SCHOOL: "seed",
         PUBLIC_URL: "https://pr-7.studienbuch.schnau.dev",
@@ -49,7 +50,7 @@ describe("Platform.spec", () => {
     });
   });
 
-  it("keeps beta's database and reads its mail, demo password and keys from SOPS", () => {
+  it("keeps beta's database and reads its mail, demo password, WebUntis account and keys from SOPS", () => {
     const beta = environment("beta");
     const spec = Platform.spec(beta, release, storage, Platform.sopsSecrets(beta));
 
@@ -57,23 +58,46 @@ describe("Platform.spec", () => {
       env: "DATABASE_URL",
       majorVersion: 18,
       dropOnDelete: false,
+      connections: 40,
     });
     assert.deepStrictEqual(spec.secrets, {
       AUTH_SECRET: { sops: "projects/studienbuch/beta/auth-secret" },
       DEMO_KEY_SEED: { sops: "projects/studienbuch/beta/demo-key-seed" },
       MAIL_URL: { sops: "projects/studienbuch/beta/mail-url" },
       DEMO_PASSWORD: { sops: "projects/studienbuch/beta/demo-password" },
+      WEBUNTIS_USERNAME: { sops: "projects/studienbuch/beta/webuntis-username" },
+      WEBUNTIS_PASSWORD: { sops: "projects/studienbuch/beta/webuntis-password" },
       S3_ACCESS_KEY_ID: { sops: "projects/studienbuch/r2/beta/access-key-id" },
       S3_SECRET_ACCESS_KEY: { sops: "projects/studienbuch/r2/beta/secret-access-key" },
     });
+    assert.deepStrictEqual(
+      [spec.env.WEBUNTIS_SCHOOL_LOGIN_NAME, spec.env.WEBUNTIS_SERVER_URL],
+      ["igs-lilienthal", "https://igs-lilienthal.webuntis.com"],
+    );
     assert.isFalse("MAIL_URL" in spec.env);
     assert.deepStrictEqual(
-      [spec.env.STUDIENBUCH_ENVIRONMENT, spec.env.PASSKEY_RP_ID, spec.env.S3_PREFIX],
-      ["beta", "beta.studienbuch.app", ""],
+      [
+        spec.env.STUDIENBUCH_ENVIRONMENT,
+        spec.env.PASSKEY_RP_ID,
+        spec.env.S3_PREFIX,
+        spec.env.DATABASE_CONNECTIONS,
+      ],
+      ["beta", "beta.studienbuch.app", "", "40"],
     );
     assert.deepStrictEqual(JSON.parse(spec.env.STUDIENBUCH_NATIVE_APPS ?? "null"), {
       ios: ["2243J9RD68.dev.schnau.studienbuch"],
       android: [],
     });
+  });
+
+  it("gives production neither the WebUntis account nor the school", () => {
+    const prod = environment("prod");
+    const spec = Platform.spec(prod, release, storage, Platform.sopsSecrets(prod));
+    const names = [...Object.keys(spec.secrets), ...Object.keys(spec.env)];
+
+    assert.deepStrictEqual(
+      names.filter((name) => name.startsWith("WEBUNTIS_")),
+      [],
+    );
   });
 });

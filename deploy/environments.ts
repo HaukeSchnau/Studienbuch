@@ -24,10 +24,28 @@ export interface Environment {
   /** Only a preview's database goes with it; the host dumps it first. */
   readonly dropDatabase: boolean;
   /**
+   * `DATABASE_CONNECTIONS`: what the database's role may hold, and the server's pools stay within.
+   * srv-2 shares 200 among every service's database (infra `hosts/srv-2/services.nix`): beta,
+   * prod and six previews hold 140 of them.
+   */
+  readonly databaseConnections: number;
+  /**
    * `STUDIENBUCH_NATIVE_APPS`: the native builds that talk to this environment, as the server's
    * `NativeApps.Apps` reads them. Previews are web only.
    */
   readonly nativeApps: Option.Option<NativeApps>;
+  /**
+   * The WebUntis school the import reads. Its account is the stage's SOPS keys `webuntis-username`
+   * and `webuntis-password`. Only beta imports (D107): two logins with one account log each other
+   * out (AGENTS.md rule 2), so production needs an account of its own first.
+   */
+  readonly webuntis: Option.Option<WebUntisSchool>;
+}
+
+/** A school pinned by its login name and server, so a run needs no school search. */
+export interface WebUntisSchool {
+  readonly loginName: string;
+  readonly serverUrl: string;
 }
 
 export interface NativeApps {
@@ -54,7 +72,9 @@ const preview = (pr: number): Environment => ({
   blobPrefix: `pr-${pr}/`,
   memory: "512M",
   dropDatabase: true,
+  databaseConnections: 10,
   nativeApps: Option.none(),
+  webuntis: Option.none(),
 });
 
 const beta: Environment = {
@@ -67,7 +87,12 @@ const beta: Environment = {
   blobPrefix: "",
   memory: "1G",
   dropDatabase: false,
+  databaseConnections: 40,
   nativeApps: Option.some(studienbuchApps),
+  webuntis: Option.some({
+    loginName: "igs-lilienthal",
+    serverUrl: "https://igs-lilienthal.webuntis.com",
+  }),
 };
 
 const prod: Environment = {
@@ -80,7 +105,9 @@ const prod: Environment = {
   blobPrefix: "",
   memory: "1G",
   dropDatabase: false,
+  databaseConnections: 40,
   nativeApps: Option.some(studienbuchApps),
+  webuntis: Option.none(),
 };
 
 /** The environment of a stage, or none for a stage that isn't one of Studienbuch's. */

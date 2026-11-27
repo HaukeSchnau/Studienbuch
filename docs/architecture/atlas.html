@@ -597,7 +597,7 @@ svg .st { font-size: 12.5px; font-weight: 700; fill: var(--ink); }
     <tbody>
       <tr><th>school</th><td>reader</td><td>readable</td><td>the server (Schools, later the import)</td><td>admission with a Zugangscode</td></tr>
       <tr><th>notebook</th><td>owner</td><td>sealed</td><td>its owner; the server writes only the Notebook row</td><td>created for you at admission</td></tr>
-      <tr><th>course</th><td>reader</td><td>readable</td><td>the server, from M2</td><td>the Enrollment rule, granted by your notebook</td></tr>
+      <tr><th>course</th><td>reader</td><td>readable</td><td>the server (Schools, later the import)</td><td>the Enrollment rule, granted by your notebook</td></tr>
     </tbody>
   </table></div>
 </section>
@@ -611,14 +611,14 @@ svg .st { font-size: 12.5px; font-weight: 700; fill: var(--ink); }
 
 <section id="life">
   <h2><span class="n">9</span>A device's life</h2>
-  <p>Offline is a normal state, and so is a session that ended: the device keeps its data and its outbox and waits for the same account to sign in again. The only ways to lose local data are signing out (which now warns about unsent changes) and, from M3, being removed by another device.</p>
+  <p>Offline is a normal state, and so is a session that ended: the device keeps its data and its outbox and waits for the same account to sign in again. Local data goes when the device signs out (which warns about unsent changes), when its account is deleted, here with "Konto löschen" or on another device, found out when its session ends, and, from M3, when another device removes it.</p>
   <div class="dia wide" data-d="life"></div>
   <p class="scrollhint">Scroll the diagram sideways.</p>
 </section>
 
 <section id="ship">
   <h2><span class="n">10</span>From commit to phone</h2>
-  <p>A pull request gets a preview as soon as the bundle passes its smoke test, before the other checks finish, so Hauke can look early. A push to main deploys to beta only after every check. The native path is configured but not connected: EAS profiles and channels exist, no CI job calls them.</p>
+  <p>A pull request gets a preview as soon as the bundle passes its smoke test, before the other checks finish, so Hauke can look early. A push to main deploys to beta only after every check. Once beta runs the commit, Calder builds the native app for TestFlight and Play internal, unless neither its fingerprint nor its files changed.</p>
   <div class="dia wide" data-d="ship"></div>
   <p class="scrollhint">Scroll the diagram sideways.</p>
 </section>
@@ -667,9 +667,9 @@ svg .st { font-size: 12.5px; font-weight: 700; fill: var(--ink); }
     <div class="lane"><h4>M0</h4><p class="goal">Clean slate, verification loop, deployed by CI</p><ul>
       <li class="done">Server, landing, console, one origin</li><li class="done">Calder CI, previews on srv-2</li><li class="done">Lint plugin and toolchain</li><li class="doing">Deploys: PRs to previews, main to beta</li><li class="doing">Cutover to PostgreSQL 18</li><li>Mobile release: TestFlight, Play, OTA</li></ul></div>
     <div class="lane"><h4>M1</h4><p class="goal">Sync engine, homework as its first passenger</p><ul>
-      <li class="done">Definition API, protocol, ADRs</li><li class="done">e2ee formats with vectors</li><li class="done">Sync server: push, pull, pokes</li><li class="done">Encrypted notebook, unlock</li><li class="done">Access codes, demo school</li><li class="doing">Sync client, simulation, Lab</li><li class="doing">Accounts and sign-in screens</li><li class="done">Homework on the home</li><li>Homework screens</li><li>E2E: Playwright on web</li></ul></div>
+      <li class="done">Definition API, protocol, ADRs</li><li class="done">e2ee formats with vectors</li><li class="done">Sync server: push, pull, pokes</li><li class="done">Encrypted notebook, unlock</li><li class="done">Access codes, demo school</li><li class="doing">Sync client, simulation, Lab</li><li class="doing">Accounts and sign-in screens</li><li class="done">Homework on the home</li><li class="done">Homework screens</li><li>E2E: Playwright on web</li></ul></div>
     <div class="lane"><h4>M2</h4><p class="goal">School data flows down, correctly</p><ul>
-      <li>Anonymized corpus and harness</li><li>WebUntis import job</li><li>IGS school profile</li><li>Lessons in course spaces</li><li>Übersicht, Meine Woche</li></ul></div>
+      <li class="doing">Anonymized corpus and harness</li><li>WebUntis import job</li><li>IGS school profile</li><li>Lessons in course spaces</li><li>Übersicht, Meine Woche</li></ul></div>
     <div class="lane"><h4>M3</h4><p class="goal">Onboarding and profile</p><ul>
       <li>Semesters, rollover</li><li>Settings, about, feedback</li><li>Notfallkarte in password managers</li><li>App lock, off by default</li><li>QR pairing, key renewal, device removal</li></ul></div>
     <div class="lane"><h4>M4</h4><p class="goal">Grades, absences, signatures</p><ul>
@@ -693,7 +693,7 @@ svg .st { font-size: 12.5px; font-weight: 700; fill: var(--ink); }
       <tr><th>Deterministic simulation</th><td>3 devices on the real engines over PGlite and PG 18, 15 to 40 random steps (crash, offline, sever, duplicate, forge, backup, restore), seed 20261029, 10 runs, a replay token on failure</td><td><span class="cell yes">yes</span></td><td>lost writes, divergence, gaps in versions, wrong membership, plaintext leaks into Postgres, frames, logs and spans</td></tr>
       <tr><th>Conformance cases</th><td>23 cases run on sqlite-wasm, sqlite-node, PGlite and PG 18, and again on each phone's SQLite from the self test</td><td><span class="cell yes">yes</span></td><td>the device and the server computing a different row from the same mutator</td></tr>
       <tr><th>Snapshots</th><td><code>schema.v1/v2.json</code>, <code>wire.jsonl</code> and <code>wire.v2.schema.json</code>, e2ee <code>vectors.json</code></td><td><span class="cell yes">yes</span></td><td>a change that would break the app one release back, or a format change by accident</td></tr>
-      <tr><th>Browser tests</th><td>Playwright in Chromium and Firefox, 7 files: IndexedDB keychain, OPFS, public computer (layers and device storage), account engines, Lab wipe, and RouteLink under expo-router (<code>infra/testing/render.tsx</code>)</td><td><span class="cell no">no</span></td><td>web storage bugs, links that load the whole page; CI's shell has had the browsers since 29 October, but <code>.calder/ci.ts</code> still leaves these files out</td></tr>
+      <tr><th>Browser tests</th><td>Playwright in Chromium and Firefox, 8 files: IndexedDB keychain, OPFS, public computer (layers and device storage), account engines, Lab wipe, the home's re-queries, and RouteLink under expo-router (<code>infra/testing/render.tsx</code>)</td><td><span class="cell yes">yes</span></td><td>web storage bugs, links that load the whole page, screens that miss a write; <code>test-app-browser</code> reruns every file when any <code>.web</code> file changes, because Calder's import graph doesn't follow the web swap</td></tr>
       <tr><th>serverSmoke, closureGuard</th><td>Nix checks on the release bundle</td><td><span class="cell yes">yes</span></td><td>a bundle that doesn't migrate, serve or shut down cleanly, or that drags in store paths</td></tr>
       <tr><th>Sync Lab</th><td>by hand at <code>/app/dev/sync-lab</code> on dev and previews: 3 devices, offline, latency, drop answer, duplicate push, crash, wipe, two forges</td><td><span class="cell meta">manual</span></td><td>what a person notices: a stuck outbox, a refusal without its reason, devices that disagree</td></tr>
       <tr><th>On-device self test</th><td><code>/app/selbsttest</code>: crypto vectors on the platform's WebCrypto, conformance replay on its SQLite</td><td><span class="cell meta">manual</span></td><td>Hermes, quick-crypto or SQLCipher behaving differently from Node</td></tr>
@@ -749,13 +749,12 @@ svg .st { font-size: 12.5px; font-weight: 700; fill: var(--ink); }
     <li><b>The sync tables look different.</b>sync.md's diagram gives <code>space</code> columns such as <code>school_id</code>, <code>floor</code>, <code>history</code>, <code>rotation_required</code>; <code>space_member.user_id</code>; <code>sync_client.revoked_at</code>; <code>command_log.args</code> and <code>outcome</code>. The code has <code>(id, kind, parent_id, key, version, key_epoch)</code>, <code>account_id</code> with <code>granted_by</code>, and <code>kind, detail, applied, sha256</code>. A space kind says whether it may hold sealed rows, and each table declares itself readable or encrypted, so a notebook holds both.<span class="src"><code>packages/sync/src/server/Tables.ts</code></span></li>
     <li><b>Nobody sends DeviceRevoked.</b>sync.md and ADR 0017 describe a removed device wiping itself on <code>Sync.DeviceRevoked</code>. The client handles it; the server never sends it, and <code>Sync.Locked</code> is likewise declared but unused. Both wait for M3's device removal and later confirmations.<span class="src"><code>packages/sync/src/client/Replication.ts</code>, <code>packages/sync/src/server/SealCommand.ts</code></span></li>
     <li><b>Restores don't resend key operations.</b>ADR 0021 and architecture.md invariant 12 say devices re-send their key operations of the last 7 days after <code>EpochChanged</code>. ADR 0025 names ADR 0021 and says M1 doesn't, because a re-sent passkey or card wrapper would fail the ten-minute rule; the code only republishes generation 0 and the device wrapper on <code>NoKeyRecord</code>. ADR 0021 now says at its top that 0025 supersedes that part. The rest of 0021 holds: the device forgets its cursors and the next pull replaces every space.<span class="src"><code>packages/sync/src/client/Replication.ts</code>, <code>apps/app/src/features/keys/KeysState.ts</code></span></li>
-    <li><b>No tombstone floor, no engine jobs.</b>sync.md plans a tombstone floor, a purge job and a daily membership job for term dates. The only job is <code>heartbeat</code>, and the course rule ignores dates until M3.<span class="src"><code>apps/server/src/infra/jobs/Jobs.ts</code>, <code>packages/core/src/notebook/Enrollment.ts</code></span></li>
-    <li><b>The access flow is shorter.</b>domain.md has <code>access.reserve(code)</code> then <code>access.redeem(reservation)</code>. The code has one <code>Access.redeem({code})</code> that returns a reservation; the sign-up carries it in a header and confirming the email admits.<span class="src"><code>packages/api/src/Access.ts</code>, <code>apps/server/src/auth/Auth.ts</code></span></li>
+    <li><b>No tombstone floor, no engine jobs.</b>sync.md plans a tombstone floor, a purge job and a daily membership job for term dates. The jobs are <code>heartbeat</code> and the WebUntis import, and the course rule ignores dates until M3.<span class="src"><code>apps/server/src/infra/jobs/Jobs.ts</code>, <code>packages/core/src/notebook/Enrollment.ts</code></span></li>
+    <li><b>The access flow is shorter.</b>domain.md has <code>access.reserve(code)</code> then <code>access.redeem(reservation)</code>. The code has one <code>Access.redeem({code})</code> that returns a reservation; the sign-up carries it in a header, and confirming the email admits, or for an account without an address the sign-up itself.<span class="src"><code>packages/api/src/Access.ts</code>, <code>apps/server/src/auth/Auth.ts</code></span></li>
     <li><b>The profile mutator changed.</b>domain.md's <code>notebook.update(cohortId?, adult?, displayName?)</code> is <code>notebookProfile.set(notebook, displayName, adult)</code>. The server-written <code>Notebook</code> row and the separate <code>CourseOffering</code> table aren't in domain.md.<span class="src"><code>packages/core/src/notebook/</code></span></li>
     <li><b>Space keys live in SQLite.</b>encryption.md keeps them in a <code>space_key</code> table and deletes them from the keychain at logout. They are in <code>sync_space_key</code> in the account database.<span class="src"><code>packages/sync/src/client/EngineTables.ts</code></span></li>
-    <li><b>Account deletion doesn't exist.</b>Several docs describe <code>account.delete</code> crypto-shredding the account. Better Auth's <code>/delete-user</code> is disabled and there is no other path.<span class="src"><code>apps/server/src/auth/Auth.ts</code></span></li>
-    <li><b>architecture.md is ahead of the code.</b>It describes the WebUntis import, <code>Lesson</code>, <code>ImportStatus</code> and blobs in the present tense. There is no import code, and no server code reads the blob buckets.<span class="src"><code>apps/server/src/main.ts</code></span></li>
-    <li><b>Hosting details drifted.</b>hosting.md puts the R2 bucket in the Studienbuch stack (infra's tokens stack makes it), removes previews after 7 idle days (only closing the PR does), lets the preview wait on the bundle (it waits on serverSmoke) and grants 6 services (4). ADR 0010 says there is no separate <code>tsc</code> run; CI runs <code>tsc --noEmit</code>.<span class="src"><code>.calder/ci.ts</code>, <code>deploy/alchemy.run.ts</code></span></li>
+    <li><b>architecture.md is ahead of the code.</b>It describes the WebUntis import and blobs in the present tense. The import job reads IGS on beta since go 1 but publishes nothing until go 2, so only the demo seed writes lessons there, and no server code reads the blob buckets.<span class="src"><code>apps/server/src/main.ts</code></span></li>
+    <li><b>Hosting details drifted.</b>hosting.md puts the R2 bucket in the Studienbuch stack (infra's tokens stack makes it), removes previews after 7 idle days (only closing the PR does), lets the preview wait on the bundle (it waits on serverSmoke) and grants 6 services (4).<span class="src"><code>.calder/ci.ts</code>, <code>deploy/alchemy.run.ts</code></span></li>
   </ul>
 </section>
 
@@ -765,9 +764,8 @@ svg .st { font-size: 12.5px; font-weight: 700; fill: var(--ink); }
   <ul class="findings">
     <li><b>On the web, space keys sit unencrypted in OPFS.</b>The root key and device seed are sealed under a non-extractable WebCrypto key in IndexedDB, but <code>sync_space_key</code> is a plain blob in the account's SQLite, which the browser keeps unencrypted. The opened rows sit in the same file as plaintext in <code>base_row</code>, so a copied browser profile already reads today's notebook; the keys add every row written later, because key rotation isn't built. Wrapping the space keys the way the root key is wrapped would close the second part only. The first needs the browser's database itself encrypted.</li>
     <li><b>The simulation never seals.</b>It runs with <code>sealing = false</code>, so the engine's own encrypted path (sealing at push, Stale and re-seal, opening on pull) isn't exercised there, and the plaintext invariant only ever sees forged markers. The flag's comment still says the engine sends no <code>Seal</code> yet, which stopped being true when <code>Sealing.ts</code> landed. The encrypted path is the one that matters most for privacy.</li>
-    <li><b>Browser tests and E2E don't run in CI.</b>The seven Playwright browser tests run only locally, and no E2E runner exists yet although 74 scenario contracts are accepted. The CI shell already has Playwright's Chromium and Firefox (<code>flake.nix</code>, since 29 October); <code>test-app</code> in <code>.calder/ci.ts</code> still excludes <code>*.browser.test.ts</code> with a comment saying the shell lacks them. Dropping that exclusion, or adding a browser job, is the first step.</li>
+    <li><b>E2E doesn't run in CI.</b>No E2E runner exists yet although 74 scenario contracts are accepted. The browser tests run in CI (<code>test-app-browser</code>), in the CI shell's Chromium and Firefox, which an E2E job can use as well.</li>
     <li><b>Some security state lives only in memory.</b>Rate limits and session revocations are per process. A restart clears every limit. A second server process would miss revocations, so a revoked session's sockets there stay open until that connection checks its session again, 4 to 6 minutes later.</li>
-    <li><b>Deleting an account would leave ciphertext behind.</b><code>space_member</code>, <code>sync_client</code>, <code>command_log</code> and notebook spaces have no foreign key to <code>auth_user</code>. Deleting a user cascades the auth, access, demo and key tables: sessions and keys go, while the notebook space, its ciphertext and key boxes in <code>sync_row</code>, the memberships and the command log stay. Worth deciding before the first real deletion request.</li>
     <li><b>Provisioned, unused.</b>Garage and R2 buckets exist in every environment with credentials in the process, and no code reads them until M4. The heartbeat job runs on every preview because <code>STUDIENBUCH_JOBS</code> is never set.</li>
     <li><b>Probing seal fetches is free.</b><code>fetchSeals</code> counts only fetches that found seals. Probing unknown credential ids costs nothing, though it also returns nothing.</li>
   </ul>
@@ -786,14 +784,14 @@ svg .st { font-size: 12.5px; font-weight: 700; fill: var(--ink); }
     <div><b>Schule</b> <code>School</code>: a school using Studienbuch; its rules are fields of its row</div>
     <div class="is-planned"><b>Schulprofil</b> <code>SchoolProfile</code>: one school's conventions and timetable source</div>
     <div><b>Schuljahr, Halbjahr</b> <code>SchoolYear</code>, <code>Term</code></div>
-    <div class="is-planned"><b>Ferien, Feiertag</b> <code>Closure</code>: dates without school</div>
+    <div><b>Ferien, Feiertag</b> <code>Closure</code>: dates without school</div>
     <div class="is-planned"><b>Stunde, Block</b> <code>Period</code>: a named time slot of the day</div>
     <div><b>Jahrgang, Klasse</b> <code>Cohort</code>, <code>SchoolClass</code></div>
     <div><b>Fach, Kurs</b> <code>Subject</code>, <code>Course</code>: Mathematik; a teaching group such as "MA23"</div>
     <div><b>Kurswahl</b> <code>Enrollment</code>: the courses a student takes in one term</div>
-    <div class="is-planned"><b>Stunde (im Plan)</b> <code>Lesson</code>: one dated lesson with any change</div>
-    <div class="is-planned"><b>Vertretung, Entfall</b> <code>ChangeKind</code></div>
-    <div class="is-planned"><b>Stand</b> <code>ImportStatus</code>: when school data was last imported</div>
+    <div><b>Stunde (im Plan)</b> <code>Lesson</code>: one dated lesson with any change</div>
+    <div><b>Vertretung, Entfall</b> <code>ChangeKind</code></div>
+    <div><b>Stand</b> <code>ImportStatus</code>: when school data was last imported</div>
     <div><b>Mein Studienbuch</b> <code>Notebook</code>: a student's personal space at one school</div>
     <div><b>Hausaufgabe</b> <code>Homework</code></div>
     <div class="is-planned"><b>Note</b> <code>Grade</code>: Klausur, mündlich or Gesamtnote</div>
@@ -837,8 +835,8 @@ DIAGRAMS.system = {
     { id: "native", x: 20, y: 192, w: 205, h: 66, t: "iOS and Android app", s: "Expo, SQLCipher, keychain\nEXPO_PUBLIC_API_URL", k: "plain" },
     { id: "webapp", x: 20, y: 284, w: 205, h: 66, t: "Browser at /app", s: "Expo web SPA, SQLite in OPFS\nservice worker for offline", k: "plain" },
     { id: "site", x: 20, y: 376, w: 205, h: 58, t: "Browser at / and /console", s: "landing, legal, console", k: "plain" },
-    { id: "stores", x: 20, y: 470, w: 205, h: 58, t: "TestFlight, Play internal", s: "store builds point at beta", k: "plain", ms: "M0" },
-    { id: "eas", x: 250, y: 470, w: 180, h: 58, t: "EAS Build, Update", s: "profiles exist, CI\ndoesn't call them yet", k: "infra", ms: "M0" },
+    { id: "stores", x: 20, y: 470, w: 205, h: 58, t: "TestFlight, Play internal", s: "store builds point at beta", k: "plain" },
+    { id: "storebuilds", x: 250, y: 470, w: 180, h: 58, t: "Store builds", s: "Calder's Expo steps\non m1", k: "infra" },
 
     { id: "caddy", x: 470, y: 212, w: 180, h: 62, t: "Caddy", s: "TLS, reverse proxy\nTailnet only for previews", k: "wire" },
     { id: "ctrl", x: 700, y: 212, w: 180, h: 62, t: "Service controller", s: "Fleet.Service to systemd\nsecrets in /run/fleet", k: "infra" },
@@ -877,8 +875,8 @@ DIAGRAMS.system = {
     { a: "calder", b: "ctrl", l: "alchemy deploy\nFleet.Service", k: "plain", ao: 0 },
     { a: "calder", b: "alstate", l: "state", k: "dash" },
     { a: "calder", b: "cfdns", k: "dash", as: "t", bs: "t", via: [[785, 8], [340, 8]] },
-    { a: "eas", b: "stores", l: "upload", k: "plain", ms: "M0" },
-    { a: "stores", b: "native", k: "plain", as: "l", bs: "l", via: [[10, 499], [10, 225]], ms: "M0" },
+    { a: "storebuilds", b: "stores", l: "upload", k: "plain" },
+    { a: "stores", b: "native", k: "plain", as: "l", bs: "l", via: [[10, 499], [10, 225]] },
     { a: "devserver", b: "devpg", l: "SQL", k: "plain" },
     { a: "devserver", b: "vite", l: "proxies / and /console", k: "wire", as: "t", bs: "l", ao: 50, via: [[190, 646], [530, 646], [530, 666]], la: [380, 640] },
     { a: "devserver", b: "metro", l: "proxies /app", k: "wire", as: "b", bs: "l", ao: 50, via: [[190, 782], [530, 782], [530, 738]], la: [380, 776] },
@@ -900,7 +898,7 @@ DIAGRAMS.repo = {
     { id: "p-web", x: 430, y: 36, w: 300, h: 74, t: "apps/web", s: "TanStack Start: landing, legal\nand the console SPA" },
     { id: "p-server", x: 820, y: 36, w: 300, h: 74, t: "apps/server", s: "the Effect server: serve, prepare,\nconsole, verify" },
     { id: "p-domainui", x: 40, y: 190, w: 200, h: 68, t: "domain-ui", s: "dumb domain components\nrows and callbacks in" },
-    { id: "p-ui", x: 300, y: 190, w: 200, h: 68, t: "ui", s: "tokens, Nunito, icons\nknows no domain type" },
+    { id: "p-ui", x: 300, y: 190, w: 200, h: 68, t: "ui", s: "tokens, icons, stickers\nknows no domain type" },
     { id: "p-api", x: 620, y: 190, w: 220, h: 68, t: "api", s: "RPC groups and schemas\nno handlers" },
     { id: "p-core", x: 380, y: 340, w: 260, h: 68, t: "core", s: "the domain: tables, mutators,\nmembership, civil time", k: "read" },
     { id: "p-plat", x: 40, y: 340, w: 280, h: 68, t: "React, Expo, node:*, SQL\nClock, Random", k: "stop" },
@@ -920,6 +918,7 @@ DIAGRAMS.repo = {
     { a: "p-app", b: "p-client", as: "l", bs: "l", via: [[28, 73], [28, 470], [150, 470], [150, 537]] },
     { a: "p-app", b: "p-e2ee", as: "l", bs: "b", via: [[24, 90], [24, 612], [1030, 612]] },
     { a: "p-web", b: "p-ui" },
+    { a: "p-web", b: "p-domainui", as: "b", bs: "t", ao: -120, bo: 60, via: [[460, 136], [200, 136]] },
     { a: "p-web", b: "p-api" },
     { a: "p-server", b: "p-api" },
     { a: "p-server", b: "p-core", as: "b", bs: "t", ao: -90, bo: 60, via: [[880, 300], [570, 300]] },
@@ -953,29 +952,32 @@ DIAGRAMS.app = {
   ],
   nodes: [
     { id: "r-nf", x: 40, y: 42, w: 110, h: 70, t: "+not-found", s: "any other\naddress" },
-    { id: "r-auth", x: 165, y: 42, w: 255, h: 70, t: "(auth)", s: "anmelden, konto-erstellen, aktivieren\ne-mail-bestaetigen, passwort-vergessen\ngeschafft" },
+    { id: "r-auth", x: 165, y: 42, w: 255, h: 70, t: "(auth)", s: "anmelden, mit-notfallkarte, aktivieren\nkonto-anlegen, konto-erstellen, geschafft\ne-mail-bestaetigen, passwort-vergessen" },
     { id: "r-keys", x: 435, y: 42, w: 195, h: 70, t: "(keys)", s: "notfallkarte\nnotizbuch-entsperren\nnotizbuch-schluessel" },
-    { id: "r-tabs", x: 645, y: 42, w: 175, h: 70, t: "(tabs)/(uebersicht)", s: "index, diagnose\nselbsttest" },
+    { id: "r-tabs", x: 645, y: 42, w: 175, h: 70, t: "(tabs)", s: "(uebersicht,woche): stunden,\nhausaufgaben · (profil):\ndiagnose, selbsttest, …" },
     { id: "r-check", x: 835, y: 42, w: 120, h: 70, t: "(check)", s: "passkey-test" },
     { id: "r-lab", x: 970, y: 42, w: 150, h: 70, t: "dev/sync-lab", s: "web, dev and\npreview only" },
 
-    { id: "f-account", x: 40, y: 184, w: 170, h: 72, t: "account", s: "gates, sign-in, sign-up\nsign-out" },
-    { id: "f-keys", x: 225, y: 184, w: 170, h: 72, t: "keys", s: "NotebookKeys, unlock\nNotfallkarte" },
-    { id: "f-onb", x: 410, y: 184, w: 160, h: 72, t: "onboarding", s: "first start: name\nJahrgang, Kurse" },
-    { id: "f-over", x: 585, y: 184, w: 140, h: 72, t: "overview", s: "Übersicht and\nits homework" },
-    { id: "f-diag", x: 740, y: 184, w: 140, h: 72, t: "diagnostics", s: "self tests" },
-    { id: "f-lab", x: 895, y: 184, w: 115, h: 72, t: "sync-lab", s: "3 virtual\ndevices" },
-    { id: "f-hw", x: 1025, y: 184, w: 100, h: 72, t: "homework", s: "rows for\nthe home" },
+    { id: "f-account", x: 40, y: 184, w: 135, h: 72, t: "account", s: "gates, sign-in, sign-up\nsign-out" },
+    { id: "f-keys", x: 185, y: 184, w: 135, h: 72, t: "keys", s: "NotebookKeys, unlock\nNotfallkarte" },
+    { id: "f-onb", x: 330, y: 184, w: 125, h: 72, t: "onboarding", s: "first start: name\nJahrgang, Kurse" },
+    { id: "f-over", x: 465, y: 184, w: 95, h: 72, t: "overview", s: "Übersicht, its\ncard and panel" },
+    { id: "f-tt", x: 568, y: 184, w: 70, h: 72, t: "timetable", s: "lessons,\nlesson sheet,\nMeine Woche" },
+    { id: "f-prof", x: 643, y: 184, w: 64, h: 72, t: "profile", s: "Profil" },
+    { id: "f-diag", x: 715, y: 184, w: 88, h: 72, t: "diagnostics", s: "self tests" },
+    { id: "f-dev", x: 810, y: 184, w: 110, h: 72, t: "device-status", s: "today, key\nand connection" },
+    { id: "f-lab", x: 935, y: 184, w: 90, h: 72, t: "sync-lab", s: "3 virtual\ndevices" },
+    { id: "f-hw", x: 1040, y: 184, w: 85, h: 72, t: "homework", s: "list, page\nand sheet" },
 
     { id: "a-devlayers", x: 40, y: 330, w: 280, h: 74, t: "Layers.device", s: "one per device: lifecycle, HTTP, WebSocket,\nsessions, server origin, keychain", k: "wire" },
-    { id: "a-engines", x: 340, y: 330, w: 280, h: 74, t: "AccountEngine.Engines", s: "an engine per account, started on first\nuse, closed before sign-out deletes", k: "wire" },
+    { id: "a-engines", x: 340, y: 330, w: 280, h: 74, t: "AccountEngine.Engines", s: "an engine per signed-in account; sign-out\nstops and deletes it in one turn", k: "wire" },
     { id: "a-acct", x: 52, y: 456, w: 170, h: 80, t: "Layers.account", s: "the account's secrets\nand its database" },
     { id: "a-sync", x: 238, y: 456, w: 180, h: 80, t: "SyncClient", s: "mutate, live queries\noutbox, refusals", k: "wire" },
     { id: "a-transport", x: 434, y: 456, w: 180, h: 80, t: "WebSocketTransport", s: "ticket, then socket\nto /api/sync", k: "wire" },
 
-    { id: "a-atoms", x: 670, y: 312, w: 220, h: 96, t: "Atoms", s: "AccountState, KeysState,\nOnboarding-, HomeworkState,\nOverviewState for screens", k: "wire" },
-    { id: "a-ui", x: 910, y: 312, w: 220, h: 96, t: "packages/ui, src/ui", s: "tokens, AppTabs, useConfirm,\nWebStyles, RouteLink;\n.web.tsx twins" },
-    { id: "a-dui", x: 670, y: 440, w: 220, h: 70, t: "packages/domain-ui", s: "HomeworkPanel, SubjectMark,\nRefusalCard, Due" },
+    { id: "a-atoms", x: 670, y: 312, w: 220, h: 96, t: "Atoms", s: "AccountState, KeysState,\nDeviceStatus, HomeworkState,\nOnboarding-, Overview-,\nTimetable-, Lesson-, WeekState", k: "wire" },
+    { id: "a-ui", x: 910, y: 312, w: 220, h: 96, t: "packages/ui, src/ui", s: "tokens, PanelScreen, RouteLink;\nAppTabs, useConfirm, Sheet\nwith .web.tsx twins" },
+    { id: "a-dui", x: 670, y: 440, w: 220, h: 70, t: "packages/domain-ui", s: "HomeworkPanel, -List, -Detail,\n-Form, AgendaCard, WeekGrid,\nstickers, RefusalCard, Due" },
     { id: "a-core", x: 910, y: 440, w: 220, h: 70, t: "packages/core", s: "Studienbuch.schema, mutators", k: "read" },
 
     { id: "i-sqlite", x: 40, y: 624, w: 205, h: 70, t: "SQLite", s: "native: SQLCipher, key in keychain\nweb: wa-sqlite worker in OPFS", k: "infra" },
@@ -994,26 +996,31 @@ DIAGRAMS.app = {
     { a: "r-auth", b: "f-account" },
     { a: "r-keys", b: "f-keys" },
     { a: "r-tabs", b: "f-over", ao: 0 },
-    { a: "r-tabs", b: "f-diag", as: "b", bs: "t", ao: 60, bo: -20 },
-    { a: "r-check", b: "f-account", as: "b", bs: "t", ao: -40, bo: 45, via: [[855, 138], [170, 138]] },
+    { a: "r-tabs", b: "f-prof", as: "b", bs: "t", ao: -30, bo: 0 },
+    { a: "r-tabs", b: "f-diag", as: "b", bs: "t", ao: 50, bo: 0 },
+    { a: "r-tabs", b: "f-hw", as: "b", bs: "t", ao: 70, via: [[802, 146], [1082, 146]], bo: 0 },
+    { a: "r-check", b: "f-account", as: "b", bs: "t", ao: -40, bo: 45, via: [[855, 138], [162.5, 138]] },
     { a: "r-lab", b: "f-lab" },
-    { a: "f-account", b: "a-atoms", as: "b", bs: "t", ao: 40, via: [[125, 284], [720, 284]], bo: -60 },
-    { a: "f-keys", b: "a-atoms", as: "b", bs: "t", via: [[310, 280], [760, 280]], bo: -20 },
-    { a: "f-onb", b: "a-atoms", as: "b", bs: "t", via: [[490, 276], [800, 276]], bo: 20 },
-    { a: "f-over", b: "a-atoms", as: "b", bs: "t", ao: 45, bo: -80 },
-    { a: "f-hw", b: "a-atoms", as: "b", bs: "t", via: [[1075, 294], [870, 294]], bo: 90 },
+    { a: "f-account", b: "a-atoms", as: "b", bs: "t", via: [[107.5, 284], [720, 284]], bo: -60 },
+    { a: "f-keys", b: "a-atoms", as: "b", bs: "t", via: [[252.5, 280], [760, 280]], bo: -20 },
+    { a: "f-onb", b: "a-atoms", as: "b", bs: "t", via: [[392.5, 276], [800, 276]], bo: 20 },
+    { a: "f-over", b: "a-atoms", as: "b", bs: "t", ao: 35, bo: -80 },
+    { a: "f-tt", b: "a-atoms", as: "b", bs: "t", ao: 0, bo: -100, ey: 270 },
+    { a: "f-prof", b: "a-atoms", as: "b", bs: "t", ao: 0, bo: -40 },
+    { a: "f-dev", b: "a-atoms", as: "b", bs: "t", ao: -10, bo: 75 },
+    { a: "f-hw", b: "a-atoms", as: "b", bs: "t", via: [[1082, 294], [870, 294]], bo: 90 },
     { a: "a-atoms", b: "a-engines" },
     { a: "a-engines", b: "a-devlayers" },
     { a: "a-engines", b: "a-sync", l: "builds", as: "b", bs: "t", ao: -60, bo: 30 },
     { a: "a-sync", b: "a-acct" },
     { a: "a-sync", b: "a-transport" },
     { a: "a-sync", b: "a-core", l: "Studienbuch.schema", as: "b", bs: "b", ey: 580, la: [700, 576] },
-    { a: "f-lab", b: "a-engines", as: "b", bs: "r", ao: 0, via: [[952, 290], [650, 290], [650, 350]] },
+    { a: "f-lab", b: "a-engines", as: "b", bs: "r", ao: 0, via: [[980, 290], [650, 290], [650, 350]] },
     { a: "a-acct", b: "i-sqlite", as: "b", bs: "t", ao: -40, bo: 0 },
     { a: "a-acct", b: "i-keychain", as: "b", bs: "t", ao: 40, bo: -40 },
     { a: "a-devlayers", b: "i-keychain", as: "l", bs: "t", via: [[28, 367], [28, 606], [380, 606]] },
-    { a: "f-keys", b: "i-passkeys", as: "b", bs: "t", ao: 60, via: [[345, 292], [656, 292], [656, 600], [580, 600]] },
-    { a: "a-ui", b: "f-over", as: "t", bs: "b", ao: 0, via: [[1020, 280], [655, 280]], k: "dash" },
+    { a: "f-keys", b: "i-passkeys", as: "b", bs: "t", ao: 60, via: [[312.5, 292], [656, 292], [656, 600], [580, 600]] },
+    { a: "a-ui", b: "f-over", as: "t", bs: "b", ao: 0, via: [[1020, 280], [550, 280]], k: "dash" },
     { a: "a-dui", b: "a-ui", k: "dash" },
   ],
 };
@@ -1045,9 +1052,10 @@ DIAGRAMS.server = {
     { id: "s-redeem", x: 310, y: 132, w: 246, h: 50, t: "Access.redeem", s: "code to reservation, failure limits" },
     { id: "s-keys", x: 310, y: 192, w: 118, h: 50, t: "Keys.*", s: "state, init, add,\nfetchSeals", k: "key" },
     { id: "s-demo", x: 438, y: 192, w: 118, h: 50, t: "Demo.*", s: "persona sign-in" },
-    { id: "s-dev", x: 310, y: 250, w: 246, h: 40, t: "Dev.*: a school per call", s: "" },
+    { id: "s-dev", x: 310, y: 250, w: 118, h: 44, t: "Dev.*", s: "a school per call" },
+    { id: "s-delete", x: 438, y: 250, w: 118, h: 44, t: "AccountDeletion", s: "fresh sign-in", k: "stop" },
 
-    { id: "s-ba", x: 310, y: 348, w: 246, h: 56, t: "Better Auth", s: "email and password, email code,\npasskeys, signed bearer tokens" },
+    { id: "s-ba", x: 310, y: 348, w: 246, h: 56, t: "Better Auth", s: "email and password, passkeys,\nNotfallkarte, signed bearer tokens" },
     { id: "s-hooks", x: 310, y: 414, w: 120, h: 120, t: "Hooks", s: "sign-up needs a\nreservation; the\npassword counts\nonly after the\nemail code", k: "stop" },
     { id: "s-limits", x: 438, y: 414, w: 118, h: 120, t: "Limits", s: "per client,\nper address,\nper code; kept\nin memory", k: "stop" },
 
@@ -1057,9 +1065,11 @@ DIAGRAMS.server = {
     { id: "m-demo", x: 600, y: 194, w: 250, h: 54, t: "Demo seed", s: "Lena and Tom, demo school", k: "read" },
     { id: "m-mail", x: 600, y: 330, w: 120, h: 60, t: "Mail", s: "SMTP or\ncapture:" },
     { id: "m-tele", x: 730, y: 330, w: 120, h: 60, t: "Telemetry", s: "OTLP if set" },
-    { id: "m-jobs", x: 600, y: 404, w: 120, h: 60, t: "Jobs", s: "ClusterCron:\nheartbeat" },
+    { id: "m-jobs", x: 600, y: 404, w: 120, h: 60, t: "Jobs", s: "ClusterCron:\nheartbeat, import" },
     { id: "m-migr", x: 730, y: 404, w: 120, h: 60, t: "Migrations", s: "prepare applies\nserve requires" },
-    { id: "m-import", x: 730, y: 478, w: 120, h: 56, t: "WebUntis\nimport", s: "", ms: "M2" },
+    { id: "m-import", x: 730, y: 478, w: 120, h: 56, t: "Import", s: "a run: snapshot,\nstore, publish", k: "read" },
+    { id: "m-corpus", x: 600, y: 262, w: 250, h: 56, t: "Corpus tools", s: "capture once, pseudonymize, check, pack\nvp run corpus:*, not in the bundle", k: "stop" },
+    { id: "m-live", x: 600, y: 802, w: 250, h: 58, t: "LiveWebUntis", s: "one login a run, each request sent once,\nnothing after a 401; beta, with credentials", k: "stop" },
 
     { id: "y-tickets", x: 310, y: 594, w: 130, h: 56, t: "Tickets", s: "single use, 30 s", k: "wire" },
     { id: "y-conn", x: 310, y: 664, w: 130, h: 56, t: "Connections", s: "4 per session", k: "wire" },
@@ -1080,14 +1090,15 @@ DIAGRAMS.server = {
     { id: "t-row", x: 916, y: 628, w: 248, h: 56, t: "sync_row", s: "JSONB, or envelope and ciphertext", k: "seal" },
     { id: "t-log", x: 916, y: 696, w: 248, h: 56, t: "command_log, sync_client", s: "every command, refusals", k: "wire" },
     { id: "t-epoch", x: 916, y: 764, w: 248, h: 44, t: "sync_epoch", s: "", k: "wire" },
-    { id: "t-misc", x: 916, y: 300, w: 248, h: 74, t: "demo_account, captured_mail", s: "job_run, cluster_* (Effect's)\nmigrations", k: "infra" },
+    { id: "t-misc", x: 916, y: 300, w: 248, h: 74, t: "demo_account, captured_mail", s: "job_run, deleted_session,\ncluster_* (Effect's), migrations", k: "infra" },
+    { id: "t-import", x: 916, y: 400, w: 248, h: 74, t: "source_version, import_run", s: "import_school: lease, pause,\ncheckpoint; never synced", k: "infra" },
   ],
   edges: [
     { a: "h-rpc", b: "s-sys", as: "r", bs: "l", ex: 270 },
     { a: "h-auth", b: "s-ba", as: "r", bs: "l" },
     { a: "h-ticket", b: "y-tickets" },
     { a: "h-ws", b: "y-conn" },
-    { a: "h-inspect", b: "t-log", l: "reads space, space_member, sync_row sizes, command_log", k: "dash", as: "r", bs: "r", via: [[262, 748], [262, 846], [1172, 846], [1172, 724]], la: [580, 840] },
+    { a: "h-inspect", b: "t-log", l: "reads space, space_member, sync_row sizes, command_log", k: "dash", as: "r", bs: "r", via: [[262, 748], [262, 876], [1172, 876], [1172, 724]], la: [440, 870] },
     { a: "s-ba", b: "s-hooks", as: "b", bs: "t", ao: -60 , bo: 0},
     { a: "s-hooks", b: "m-access", l: "confirmed: admit", as: "r", bs: "l", ao: 40, via: [[578, 474], [578, 73]], la: [574, 306], lanchor: "end", k: "read" },
     { a: "s-redeem", b: "m-access", as: "r", bs: "l", ao: 0, bo: 10 },
@@ -1108,7 +1119,11 @@ DIAGRAMS.server = {
     { a: "y-pull", b: "t-log", as: "b", bs: "l", via: [[516, 800], [890, 800], [890, 724]], k: "wire" },
     { a: "y-spaces", b: "t-space", k: "read" },
     { a: "y-writer", b: "y-member" },
-    { a: "m-import", b: "y-writer", as: "b", bs: "t", ms: "M2", via: [[790, 548], [585, 548], [585, 734]] },
+    { a: "m-import", b: "m-schools", as: "l", bs: "r", l: "one tx", k: "read" },
+    { a: "m-jobs", b: "m-import", as: "b", bs: "t", ao: 40, bo: -30, via: [[700, 471], [760, 471]] },
+    { a: "m-import", b: "m-live", as: "r", bs: "r", ao: 14, via: [[862, 520], [862, 831]], k: "stop" },
+    { a: "m-import", b: "t-import", as: "r", bs: "l", via: [[880, 520], [880, 437]] },
+    { a: "m-corpus", b: "m-import", as: "r", bs: "r", via: [[880, 290], [880, 506]], k: "stop" },
     { a: "m-schools", b: "y-writer", as: "b", bs: "t", via: [[660, 548], [585, 548], [585, 734]], k: "read" },
     { a: "m-migr", b: "t-misc", k: "dash" },
   ],
@@ -1241,7 +1256,7 @@ DIAGRAMS.spaces = {
     { id: "sp-school", x: 256, y: 46, w: 330, h: 116, t: "School rows", s: "School (with its rules), SchoolYear\nTerm, Subject, SchoolClass\nCourse, CourseOffering", k: "read", al: "l" },
     { id: "sp-ma", x: 600, y: 46, w: 170, h: 116, t: "Course space\nma-23", s: "kind course, child\nof the school, role\nreader; empty today", k: "read" },
     { id: "sp-de", x: 782, y: 46, w: 170, h: 116, t: "Course space\nde-23", s: "a space per course,\nso the choice decides\nwho reads its lessons", k: "read" },
-    { id: "sp-lesson", x: 964, y: 46, w: 170, h: 116, t: "Lesson rows", s: "timetable and changes\nfrom WebUntis, in\ncourse spaces", k: "read", ms: "M2" },
+    { id: "sp-lesson", x: 964, y: 46, w: 170, h: 116, t: "Lesson rows", s: "timetable and changes\nfrom WebUntis, in\ncourse spaces", k: "read" },
     { id: "sp-nbrow", x: 256, y: 236, w: 135, h: 66, t: "Notebook", s: "schoolId\nserver-written", k: "read" },
     { id: "sp-enr", x: 401, y: 236, w: 135, h: 66, t: "Enrollment", s: "Kurswahl\nreadable", k: "read" },
     { id: "sp-keys", x: 546, y: 236, w: 135, h: 66, t: "_key, _keychain", s: "key boxes and\nhistory links", k: "key" },
@@ -1349,12 +1364,12 @@ DIAGRAMS.ship = {
   groups: [
     { x: 10, y: 10, w: 1160, h: 236, t: "A pull request", k: "wire" },
     { x: 10, y: 262, w: 1160, h: 170, t: "A push to main", k: "read" },
-    { x: 10, y: 448, w: 1160, h: 180, t: "Phones: wired in config, not in CI yet", k: "dash" },
+    { x: 10, y: 448, w: 1160, h: 180, t: "Phones: store builds once beta is ready", k: "dash" },
   ],
   nodes: [
     { id: "c-push", x: 30, y: 48, w: 150, h: 70, t: "jj-push", s: "a bookmark to Gitea\nPR opened with tea" },
     { id: "c-plan", x: 210, y: 48, w: 160, h: 70, t: "Calder plans", s: ".calder/ci.ts\nreuses results" , k: "infra" },
-    { id: "c-checks", x: 400, y: 36, w: 230, h: 94, t: "Checks", s: "fmt, lint, knip, typecheck\ntest, test-app, test-server\ntest-sync, deploy checks" },
+    { id: "c-checks", x: 400, y: 36, w: 230, h: 94, t: "Checks", s: "fmt, lint, knip, typecheck\ntest, test-app, app browser\ntest-server, test-sync, deploy" },
     { id: "c-build", x: 400, y: 146, w: 230, h: 86, t: "Artifacts", s: "bundle (x86_64, tower or\ndev-hauke), node (aarch64)\npnpmDeps" , k: "infra" },
     { id: "c-smoke", x: 660, y: 146, w: 170, h: 86, t: "serverSmoke", s: "prepare, verify, serve,\nready on PG 18; the one\ncheck previews wait for" },
     { id: "c-preview", x: 860, y: 146, w: 150, h: 86, t: "preview", s: "alchemy deploy\n--stage pr-N\nbefore checks end", k: "wire" },
@@ -1368,9 +1383,9 @@ DIAGRAMS.ship = {
     { id: "c-ready", x: 950, y: 300, w: 205, h: 76, t: "ready-beta", s: "/api/health/ready\nreports the revision", k: "wire" },
     { id: "c-nightly", x: 30, y: 388, w: 400, h: 34, t: "Nightly at 03:00: the whole plan again, without reuse", s: "", k: "note" },
 
-    { id: "c-eas", x: 30, y: 486, w: 230, h: 90, t: "EAS Build", s: "profiles beta and\nproduction; runtime\nversion = fingerprint", k: "infra", ms: "M0" },
-    { id: "c-stores", x: 300, y: 486, w: 230, h: 90, t: "TestFlight, Play internal", s: "store builds with\nEXPO_PUBLIC_API_URL\nof beta", k: "infra", ms: "M0" },
-    { id: "c-ota", x: 570, y: 486, w: 230, h: 90, t: "EAS Update", s: "channel beta: JS-only\nchanges reach phones\nwithout a store build", k: "infra", ms: "M0" },
+    { id: "c-builds", x: 30, y: 486, w: 230, h: 90, t: "Store builds", s: "testflight, play on m1\nkeyed by fingerprint\nand the app's files", k: "infra" },
+    { id: "c-stores", x: 300, y: 486, w: 230, h: 90, t: "TestFlight, Play internal", s: "store builds with\nEXPO_PUBLIC_API_URL\nof beta", k: "infra" },
+    { id: "c-ota", x: 570, y: 486, w: 230, h: 90, t: "Over-the-air updates", s: "our own update server;\nuntil then no build\nasks for updates", k: "infra", ms: "M5" },
     { id: "c-phone", x: 840, y: 486, w: 315, h: 90, t: "Lena's phone", s: "talks to beta; the web app needs\nnone of this, beta serves it at /app", k: "plain" },
   ],
   edges: [
@@ -1386,9 +1401,10 @@ DIAGRAMS.ship = {
     { a: "c-beta", b: "c-prepare", k: "wire" },
     { a: "c-prepare", b: "c-ready", k: "wire" },
     { a: "c-build", b: "c-merge", l: "checks green, preview looks right", as: "b", bs: "t", ao: -60, via: [[455, 256], [105, 256]], la: [270, 252] },
-    { a: "c-eas", b: "c-stores", ms: "M0" },
-    { a: "c-stores", b: "c-phone", ms: "M0", as: "b", bs: "b", ey: 604 },
-    { a: "c-ota", b: "c-phone", ms: "M0" },
+    { a: "c-ready", b: "c-builds", l: "after ready-beta", as: "b", bs: "t", ao: -62, bo: 100, via: [[990, 440], [245, 440]], la: [600, 436] },
+    { a: "c-builds", b: "c-stores" },
+    { a: "c-stores", b: "c-phone", as: "b", bs: "b", ey: 604 },
+    { a: "c-ota", b: "c-phone", ms: "M5" },
     { a: "c-ready", b: "c-phone", l: "HTTPS, WSS", as: "b", bs: "t", k: "wire", ao: 0, bo: 100 },
   ],
 };
@@ -1401,35 +1417,35 @@ const INFO = {
 
   gitea: { t: "Gitea", k: "infra", d: ["The real home of the code at git.schnau.dev. Agents push a bookmark with jj and open the PR with <code>tea</code>; GitHub is a mirror for outside contributors.", "Every PR and every push to main starts a Calder run."], a: [8] },
 
-  calder: { t: "Calder", k: "infra", d: ["Hauke's CI and deploy system. It runs <code>.calder/ci.ts</code>: checks, the bundle, the flake checks, then the preview or beta deploy.", "It runs on srv-2 and builds the x86_64 bundle on the tower or dev-hauke, the aarch64 checks elsewhere. It reuses results that <code>calder check</code> already produced."], f: [".calder/ci.ts", ".calder/flake.ts"], a: [7, 10] },
+  calder: { t: "Calder", k: "infra", d: ["Hauke's CI and deploy system. It runs <code>.calder/ci.ts</code>: checks, the bundle, the flake checks, then the preview or beta deploy, and after beta the store builds.", "It runs on srv-2 and builds the x86_64 bundle on the tower or dev-hauke, the aarch64 checks elsewhere. It reuses results that <code>calder check</code> already produced."], f: [".calder/ci.ts", ".calder/flake.ts"], a: [7, 10] },
 
   alstate: { t: "Alchemy state", k: "infra", d: ["Alchemy keeps what each stage created (the Fleet service, the DNS record, generated secrets such as the auth secret of a preview) in a Cloudflare worker called <code>alchemy-state-store-fleet</code>."], f: ["deploy/alchemy.run.ts"], a: [6] },
 
-  native: { t: "iOS and Android app", k: "plain", d: ["The Expo app as a store build. It keeps one SQLCipher database per account, its secrets in the keychain, and talks to the server named in <code>EXPO_PUBLIC_API_URL</code>.", "No store build exists yet: EAS isn't wired into CI."], f: ["apps/app/app.config.ts", "apps/app/eas.json", "apps/app/src/infra/api/ServerOrigin.ts"], a: [13, 15] },
+  native: { t: "iOS and Android app", k: "plain", d: ["The Expo app as a store build. It keeps one SQLCipher database per account, its secrets in the keychain, and talks to the server named in <code>EXPO_PUBLIC_API_URL</code>.", "It has no over-the-air updates until our own update server runs (M5.16), so new JavaScript reaches it only in a new store build."], f: ["apps/app/app.config.ts", "apps/app/src/infra/api/ServerOrigin.ts"], a: [13, 15] },
 
   webapp: { t: "Browser at /app", k: "plain", d: ["The same Expo app exported for the web, served by the server under <code>/app</code> as a single-page app. SQLite runs as wa-sqlite in a worker on OPFS, one tab owns a device's database, and a service worker lets it start offline.", "It always calls its own origin, so one build serves every preview and beta."], f: ["apps/app/src/infra/sqlite/database.web.ts", "apps/app/public/sw.js", "apps/server/src/routes/WebBuilds.ts"], a: [14, 16, 5] },
 
-  site: { t: "Landing page and console", k: "plain", d: ["TanStack Start pages, prerendered: the landing page, Impressum, Datenschutz and the console SPA under <code>/console</code>.", "Today the console shows the server's revision and, on dev and previews, the captured mail. The landing page draws its app screens with stand-in components in <code>apps/web/src/domain-ui/app/</code>, not yet with the app's own."], f: ["apps/web/src/routes/index.tsx", "apps/web/src/routes/console.tsx", "apps/web/src/features/marketing/Screens.tsx"], a: [3] },
+  site: { t: "Landing page and console", k: "plain", d: ["TanStack Start pages, prerendered: the landing page, Impressum, Datenschutz and the console SPA under <code>/console</code>.", "Today the console shows the server's revision and, on dev and previews, the captured mail. The landing page's Übersicht card and week are the app's own <code>AgendaCard</code> and <code>WeekGrid</code>; its grades, absence and homework cards are still stand-ins in <code>apps/web/src/domain-ui/app/</code>."], f: ["apps/web/src/routes/index.tsx", "apps/web/src/routes/console.tsx", "apps/web/src/features/marketing/Screens.tsx"], a: [3] },
 
-  stores: { t: "TestFlight and Play internal", k: "plain", ms: "M0", d: ["Store builds for testers, pointing at beta. The profiles exist in <code>eas.json</code>, and Calder already holds an Expo token and the Play upload keystore, but no CI job builds or uploads yet.", "The mobile release pipeline is M0-WP17, not started yet; the store release train for production is M5.4."], f: ["apps/app/eas.json"] },
+  stores: { t: "TestFlight and Play internal", k: "plain", d: ["Builds for testers, with <code>EXPO_PUBLIC_API_URL</code> of beta. Internal testers get each TestFlight build without Apple's beta review.", "The store release train for production is M5.4."], f: [".calder/ci.ts"] },
 
-  eas: { t: "EAS Build and EAS Update", k: "infra", ms: "M0", d: ["Two profiles, <code>beta</code> and <code>production</code>, each with its own update channel. The runtime version is the native fingerprint, so a JS-only change can reach phones as an update while a native change needs a new build.", "Nothing calls EAS from CI today, and <code>eas-cli</code> isn't a dependency."], f: ["apps/app/eas.json", "apps/app/app.config.ts", "apps/app/fingerprint.config.js"] },
+  storebuilds: { t: "Store builds", k: "infra", d: ["Calder's <code>@calder-ci/std/Expo</code> steps on each push to main, once beta runs the commit: <code>testflight</code> archives and uploads on m1, <code>play</code> builds a bundle signed with the upload key and releases it to the internal track, also on m1 until the tower's workers have an Android SDK.", "Each is keyed by the native fingerprint (<code>runtime-ios</code>, <code>runtime-android</code>, which pull requests show too) and by the app's files, since without over-the-air updates a new build is how new JavaScript reaches testers. A push that changes neither reuses the last builds."], f: [".calder/ci.ts", "apps/app/app.config.ts", "apps/app/fingerprint.config.js"] },
 
   caddy: { t: "Caddy", k: "wire", d: ["srv-2's front door. It terminates TLS and proxies each hostname to the loopback port of its service. Preview routes answer 403 to anyone outside the Tailnet.", "The routes come from the service controller through infra's agent-service route sources."], a: [6, 7] },
 
-  ctrl: { t: "Service controller", k: "infra", d: ["The Fleet service controller from nix-infra-modules, on srv-2. Calder's Alchemy deploy declares a <code>Fleet.Service</code>, and the controller turns it into a systemd unit <code>fleet-service@&lt;name&gt;</code> with a dynamic user, a loopback port, <code>DATABASE_URL</code> and secrets as files under <code>/run/fleet</code>.", "Studienbuch's grant: 4 services, 4 GB."], f: ["deploy/platform/fleet.ts", "deploy/alchemy.run.ts"], a: [6] },
+  ctrl: { t: "Service controller", k: "infra", d: ["The Fleet service controller from projects-sdk, on srv-2. Calder's Alchemy deploy declares a <code>Fleet.Service</code>, and the controller turns it into a systemd unit <code>fleet-service@&lt;name&gt;</code> with a dynamic user, a loopback port, <code>DATABASE_URL</code> and secrets as files under <code>/run/fleet</code>.", "Studienbuch's grant: 4 services, 4 GB."], f: ["deploy/platform/fleet.ts", "deploy/alchemy.run.ts"], a: [6] },
 
-  beta: { t: "studienbuch-beta", k: "plain", d: ["One Node 26 process runs the whole product: the landing page, the console, the web app, RPC, auth and sync, from one architecture-independent bundle. It gets 1 GB.", "It sends real mail, holds the demo school with a review password, and doesn't import from WebUntis yet."], f: ["apps/server/src/main.ts", "nix/bundle.nix"], a: [3, 4, 5] },
+  beta: { t: "studienbuch-beta", k: "plain", d: ["One Node 26 process runs the whole product: the landing page, the console, the web app, RPC, auth and sync, from one architecture-independent bundle. It gets 1 GB.", "It sends real mail and holds the demo school with a review password. Its import reads IGS's WebUntis on schedule and publishes nothing yet."], f: ["apps/server/src/main.ts", "nix/bundle.nix"], a: [3, 4, 5] },
 
   prN: { t: "studienbuch-pr-N", k: "plain", d: ["A preview per open pull request, at 512 MB, with its own database, the demo school, an open access code and captured mail. Alchemy refuses a fourth.", "Closing the PR dumps and drops its database."], f: ["deploy/environments.ts", "deploy/alchemy.run.ts"], a: [7] },
 
-  pg: { t: "PostgreSQL 18", k: "infra", d: ["One cluster on srv-2, with a database and role per service, at most 40 connections each. It stores accounts, keys, every synced row and the command log.", "Pokes travel on it too: writers call <code>pg_notify</code> inside their transaction, and every server process listens."], f: ["apps/server/src/infra/database/Database.ts", "packages/sync/src/server/Pokes.ts"], a: [12, 18, 19] },
+  pg: { t: "PostgreSQL 18", k: "infra", d: ["One cluster on srv-2, with a database and role per service. A role may hold 40 connections, a preview's 10, and the server divides them among <code>serve</code>, Better Auth's pool, <code>prepare</code> and the console. It stores accounts, keys, every synced row and the command log.", "Pokes travel on it too: writers call <code>pg_notify</code> inside their transaction, and every server process listens."], f: ["apps/server/src/infra/database/Database.ts", "packages/sync/src/server/Pokes.ts"], a: [12, 18, 19] },
 
-  smtp: { t: "Mail", k: "infra", d: ["Beta sends the confirmation and reset codes over SMTP from <code>konto@studienbuch.app</code>, with the URL from SOPS. Dev and previews set <code>MAIL_URL=capture:</code> and keep each mail in the <code>captured_mail</code> table for the console.", "A mail's content never reaches a log."], f: ["apps/server/src/infra/mail/Mail.ts", "apps/web/src/features/mail/CapturedMail.tsx"] },
+  smtp: { t: "Mail", k: "infra", d: ["Beta sends the confirmation and reset codes over SMTP from <code>konto@studienbuch.app</code>, with the URL from SOPS. Dev and previews set <code>MAIL_URL=capture:</code> and keep each mail in the <code>captured_mail</code> table for the console.", "A mail's content never reaches a log, and no layer sends to an address under <code>.invalid</code>, which an account without an address carries."], f: ["apps/server/src/infra/mail/Mail.ts", "apps/web/src/features/mail/CapturedMail.tsx"] },
 
   r2: { t: "Cloudflare R2", k: "infra", ms: "M4", d: ["Buckets for previews (objects expire after 14 days) and beta exist, made by infra's tokens stack, and the server gets <code>S3_*</code> variables. No server code reads them yet.", "They wait for photos and signatures, blob sync in M4."] },
 
-  webuntis: { t: "WebUntis", k: "infra", ms: "M2", d: ["The school's timetable and substitutions. The import will be a job inside the server that turns provider records into rows of the school and course spaces through <code>SyncWriter</code>.", "No import code exists on main, so beta doesn't import yet."], f: ["packages/sync/src/server/SyncWriter.ts"], a: [11] },
+  webuntis: { t: "WebUntis", k: "infra", ms: "M2", d: ["The school's timetable and substitutions. The import is a job inside the server: every ten minutes by day and once a night it logs in once and reads a snapshot. Once publishing is on (go 2), it turns the snapshot into rows of the school and course spaces through <code>SyncWriter</code>.", "Since go 1 (D107), beta's job logs in with the IGS account that live tests and captures also use, and publishes nothing until go 2. Production has no account. The corpus tools captured it once, with Hauke's go, into a pseudonymized corpus."], f: ["packages/sync/src/server/SyncWriter.ts", "apps/server/src/import/SchoolImport.ts", "apps/server/src/import/ImportJob.ts", "apps/server/src/infra/webuntis/LiveWebUntis.ts"], a: [11] },
 
   otlp: { t: "OTLP export", k: "infra", ms: "M5", d: ["The server exports traces, logs and metrics over OTLP as soon as <code>OTEL_EXPORTER_OTLP_ENDPOINT</code> is set. No environment sets it today.", "Crash reporting and server OTLP are M5.3."], f: ["apps/server/src/infra/telemetry/Telemetry.ts"] },
 
@@ -1448,17 +1464,17 @@ const INFO = {
   /* repo */
   "p-app": { t: "apps/app", d: ["The Expo app for iOS, Android and the web. Routes in <code>src/app</code>, one directory per domain area in <code>src/features</code>, and everything that exists because of a technology in <code>src/infra</code>.", "It may import every package except the sync server and the server app."], f: ["apps/app/package.json", "apps/app/src/app/_layout.tsx"], a: [13, 15, 16] },
 
-  "p-web": { t: "apps/web", d: ["The landing page, legal pages and the operator console, on TanStack Start. It must not import <code>@stu/sync</code>: sync belongs to the Expo app."], f: ["apps/web/package.json", "apps/web/src/router.tsx"], a: [3] },
+  "p-web": { t: "apps/web", d: ["The landing page, legal pages and the operator console, on TanStack Start. It must not import <code>@stu/sync</code>: sync belongs to the Expo app.", "The landing page draws the app's stickers, the Übersicht's <code>AgendaCard</code> and Meine Woche's <code>WeekGrid</code> from <code>packages/domain-ui</code> with its own demo rows, so they look the same on the page and in the app. Its other app screens are still stand-ins in <code>apps/web/src/domain-ui/app/</code>."], f: ["apps/web/package.json", "apps/web/src/router.tsx"], a: [3] },
 
   "p-server": { t: "apps/server", d: ["The one server process: HTTP routes, RPC handlers, Better Auth, Drizzle schema and migrations, jobs and the CLI commands. No Expo or React Native package may load here."], f: ["apps/server/src/main.ts", "apps/server/package.json"], a: [3, 4, 11, 12] },
 
-  "p-domainui": { t: "packages/domain-ui", d: ["Dumb components and helpers shared by the app and the landing page: rows and callbacks in. Today that is the home's homework panel and its cards, the refusal card, subject colors and art, refusal sentences and date text. It may not read SQLite or the sync engine."], f: ["packages/domain-ui/src/homework/HomeworkPanel.tsx", "packages/domain-ui/src/homework/HomeworkItem.ts", "packages/domain-ui/src/subject/SubjectMark.ts", "packages/domain-ui/src/refusal/RefusalText.ts", "packages/domain-ui/src/homework/Due.ts"] },
+  "p-domainui": { t: "packages/domain-ui", d: ["Dumb components and helpers shared by the app and the landing page: rows and callbacks in. Today that is the Übersicht's day card (<code>AgendaCard</code>, worded by <code>AgendaItem</code>) and the lesson sheet (<code>LessonSheet</code>), Meine Woche's grid and day switch (<code>WeekGrid</code>, <code>DaySwitch</code>, worded by <code>WeekItem</code>), the home's homework panel and its cards, the full list's rows, a homework's page, the add sheet's form with its month picker, the refusal card, subject colors, the stickers for subjects, grade kinds and states, refusal sentences and date text. The landing page takes its stickers from here. It may not read SQLite or the sync engine."], f: ["packages/domain-ui/src/homework/HomeworkPanel.tsx", "packages/domain-ui/src/homework/HomeworkList.tsx", "packages/domain-ui/src/homework/HomeworkForm.tsx", "packages/domain-ui/src/homework/HomeworkItem.ts", "packages/domain-ui/src/subject/SubjectMark.ts", "packages/domain-ui/src/subject/SubjectArt.ts", "packages/domain-ui/src/refusal/RefusalText.ts", "packages/domain-ui/src/homework/Due.ts", "packages/domain-ui/src/timetable/AgendaCard.tsx", "packages/domain-ui/src/timetable/AgendaItem.ts", "packages/domain-ui/src/timetable/LessonSheet.tsx", "packages/domain-ui/src/timetable/WeekGrid.tsx", "packages/domain-ui/src/timetable/WeekItem.ts"] },
 
-  "p-ui": { t: "packages/ui", d: ["The design system: tokens in light and dark, Nunito, icons and domain-free components, several with a <code>.web.tsx</code> twin. It knows no domain type, so it may import none of core, sync, e2ee, api or domain-ui.", "Its hooks keep lists usable while rows change: <code>useLingeringOrder</code> leaves a ticked item in place for a moment, and <code>useKeptFocus</code> gives the keyboard's focus back to a box that moved (web only; the native file does nothing).", "Every checkbox and choice is built on <code>Checkable</code>, which answers Space on the web as react-native-web doesn't for these roles; <code>studienbuch/no-raw-checkable</code> keeps the roles there."], f: ["packages/ui/src/Tokens.ts", "packages/ui/src/Theme.ts", "packages/ui/src/useLingeringOrder.ts", "packages/ui/src/useKeptFocus.web.ts", "packages/ui/src/Checkable.tsx"], a: [15] },
+  "p-ui": { t: "packages/ui", d: ["The design system: tokens in light and dark, Nunito, line icons for actions, the sticker style (<code>Sticker.ts</code>: palette, white die-cut edge, shadow) and domain-free components, several with a <code>.web.tsx</code> twin. It knows no domain type, so it may import none of core, sync, e2ee, api or domain-ui.", "Its hooks keep lists usable while rows change: <code>useLingeringOrder</code> leaves a ticked item in place for a moment, and <code>useKeptFocus</code> gives the keyboard's focus back to a box that moved (web only; the native file does nothing).", "Every checkbox and choice is built on <code>Checkable</code>, which answers Space on the web as react-native-web doesn't for these roles; <code>studienbuch/no-raw-checkable</code> keeps the roles there."], f: ["packages/ui/src/Tokens.ts", "packages/ui/src/Theme.ts", "packages/ui/src/Sticker.ts", "packages/ui/src/useLingeringOrder.ts", "packages/ui/src/useKeptFocus.web.ts", "packages/ui/src/Checkable.tsx"], a: [15] },
 
   "p-api": { t: "packages/api", d: ["Effect RPC groups and their schemas outside sync: System, Access, Keys, Demo, Dev and Mail. Handlers live in apps/server, so this package may not import <code>RpcServer</code> or a platform package."], f: ["packages/api/src/Api.ts", "packages/api/src/Keys.ts", "packages/api/src/Access.ts"] },
 
-  "p-core": { t: "packages/core", k: "read", d: ["The domain: row tables, mutators, membership rules, the School row's rule fields, refusal tags and civil time. <code>Studienbuch.RefusalTag</code> is every tag a command can end with, the engine's included, so the refusal sentences cover each one. It also holds the school rules the app and the server share: today at the school (<code>School.today</code>), the usual school year and its halves (<code>SchoolYear.around</code>), which class and courses a choice may name (<code>Enrollment.classFits</code>, <code>Enrollment.courses</code>), and which elective groups still need a course (<code>Enrollment.groups</code>, <code>Enrollment.unanswered</code>, from the offerings' <code>groupKey</code> and <code>choiceRequired</code>). Mutators run on devices and, for readable tables, again on the server, so core imports no UI, platform API, SQL client, sync engine, clock or randomness.", "<code>Studienbuch.schema</code> collects 11 tables and 6 mutators at schema version 3."], f: ["packages/core/src/registry/Studienbuch.ts", "packages/core/src/homework/Homework.ts", "packages/core/src/notebook/Enrollment.ts", "packages/core/src/school/School.ts"], a: [1, 17] },
+  "p-core": { t: "packages/core", k: "read", d: ["The domain: row tables, mutators, membership rules, the School row's rule fields, refusal tags and civil time. <code>Studienbuch.RefusalTag</code> is every tag a command can end with, the engine's included, so the refusal sentences cover each one. It also holds the school rules the app and the server share: today at the school (<code>School.today</code>), the usual school year and its halves (<code>SchoolYear.around</code>), which class and courses a choice may name (<code>Enrollment.classFits</code>, <code>Enrollment.courses</code>), which elective groups still need a course (<code>Enrollment.groups</code>, <code>Enrollment.unanswered</code>, from the offerings' <code>groupKey</code> and <code>choiceRequired</code>), and the timetable's rules (<code>Timetable</code>: the day the Übersicht shows, the week Meine Woche shows with its closed and unpublished days and overlapping lessons side by side, phases, double periods as one block, free periods, a change's note, and when the Stand is old). Mutators run on devices and, for readable tables, again on the server, so core imports no UI, platform API, SQL client, sync engine, clock or randomness.", "<code>Studienbuch.schema</code> collects 17 tables and 6 mutators at schema version 5."], f: ["packages/core/src/registry/Studienbuch.ts", "packages/core/src/homework/Homework.ts", "packages/core/src/notebook/Enrollment.ts", "packages/core/src/school/School.ts", "packages/core/src/timetable/Timetable.ts"], a: [1, 17] },
 
   "p-plat": { t: "What core never imports", k: "stop", d: ["React, React Native, Expo, <code>node:*</code>, SQL clients, e2ee, api, the sync client, server, Lab and conformance suite, and <code>Clock</code>, <code>Random</code> and <code>Crypto</code> from Effect. Nor does it read <code>DateTime.now</code> or the host's time zone, sleep, or take randomness from <code>crypto</code>. Ids and timestamps reach a mutator as arguments, so a replay gives the same result on every device and on the server."], f: ["tools/oxlint/studienbuch/boundaries/packages.ts", "tools/oxlint/studienbuch/rules/no-ambient-clock-or-random.ts"] },
 
@@ -1479,33 +1495,39 @@ const INFO = {
   /* app */
   "r-nf": { t: "Route +not-found", d: ["Any address no other route matches: a typo, an old link or a wrong deep link, on all three platforms. It shows the sign-in card with one way back to <code>/</code>, which is the Übersicht when signed in and the access code when not.", "Expo Router's <code>/_sitemap</code> is off in every build, so no page lists the routes."], f: ["apps/app/src/app/+not-found.tsx", "apps/app/src/features/account/NotFoundScreen.tsx", "apps/app/app.config.ts"] },
 
-  "r-auth": { t: "Routes (auth)", d: ["Willkommen with the access code (<code>aktivieren</code>), sign-in, sign-up, the email code, forgotten password and the success screen. Screens hand the email and reservation along in memory, never in the URL."], f: ["apps/app/src/app/(auth)/_layout.tsx", "apps/app/src/features/account/Steps.ts"] },
+  "r-auth": { t: "Routes (auth)", d: ["Willkommen with the access code (<code>aktivieren</code>), sign-in by email, passkey or Notfallkarte, sign-up without an address (<code>konto-anlegen</code>) or with one, the email code, forgotten password and the success screen. Screens hand the email and reservation along in memory, never in the URL."], f: ["apps/app/src/app/(auth)/_layout.tsx", "apps/app/src/features/account/Steps.ts"] },
 
   "r-keys": { t: "Routes (keys)", d: ["Notfallkarte, Notizbuch entsperren and Notizbuch-Schlüssel: the screens for the notebook's root key."], f: ["apps/app/src/app/(keys)/notizbuch-entsperren.tsx", "apps/app/src/features/keys/KeysScreen.tsx"], a: [25] },
 
-  "r-tabs": { t: "Routes (tabs)", d: ["The signed-in app: Übersicht, and the device's diagnostics and self test. Only one tab exists so far."], f: ["apps/app/src/app/(tabs)/_layout.tsx", "apps/app/src/ui/navigation/AppTabs.tsx"] },
+  "r-tabs": { t: "Routes (tabs)", d: ["The signed-in app in three tabs. Übersicht and Meine Woche share one stack layout (<code>(uebersicht,woche)</code>), so the lesson sheet (<code>stunden</code>), homework's list (<code>hausaufgaben</code>), a homework's page and the add and edit sheet open in the tab that opened them, and back returns there. Expo Router resolves a link without a group to the current tab's copy; a reload opens over the Übersicht. Profil holds the device's diagnostics, the self test and account deletion, which keep their old addresses (<code>/diagnose</code>, <code>/selbsttest</code>, <code>/konto-loeschen</code>) because the group adds no path. Meine Woche is <code>/woche</code>, with the shown week and the day list's day in its address (<code>?kw=2026-W48&amp;tag=2026-11-26</code>). Noten joins with its feature."], f: ["apps/app/src/app/(tabs)/_layout.tsx", "apps/app/src/app/(tabs)/(uebersicht,woche)/_layout.tsx", "apps/app/src/app/(tabs)/(profil)/_layout.tsx", "apps/app/src/ui/navigation/AppTabs.tsx"] },
 
   "r-check": { t: "Route (check)", d: ["A passkey test that checks whether this device's authenticator gives a PRF output, the thing the passkey unlock depends on."], f: ["apps/app/src/app/(check)/passkey-test.tsx", "apps/app/src/features/account/PasskeyCheck.ts"] },
 
   "r-lab": { t: "Route dev/sync-lab", d: ["The Sync Lab at <code>/app/dev/sync-lab</code>. It ships in every build but loads only when <code>System.info</code> reports development or preview. The native build shows a sentence instead."], f: ["apps/app/src/app/dev/sync-lab.tsx", "apps/app/src/features/sync-lab/SyncLabRoute.native.tsx"] },
 
-  "f-account": { t: "features/account", d: ["Signing up, in and out. <code>AccountGates</code> decides between the sign-in screens and the tabs. A device holds one account at a time: while another account is still signed in here, even with an ended session, a new sign-in is refused, because that account's database may hold changes the server never got.", "Each sign-in hands the tab's \"Öffentlicher Computer\" choice to its session, which keeps it while the device holds the account. <code>AccountState.keepsNothing</code> is the device's one answer: the held account's choice, else the tab's.", "Sign-out warns first, in one question, when it would lose commands the engine counted as unsent, or the notebook when this device holds its only way in (<code>NotebookKeys.atSignOut</code>). In that case the question offers Notfallkarte erstellen first."], f: ["apps/app/src/features/account/Account.ts", "apps/app/src/features/account/AccountGates.tsx", "apps/app/src/features/account/SignOutButton.tsx"], a: [28] },
+  "f-account": { t: "features/account", d: ["Signing up, in and out. <code>AccountGates</code> decides between the sign-in screens and the tabs. A device holds one account at a time: while another account is still signed in here, even with an ended session, a new sign-in is refused, because that account's database may hold changes the server never got.", "Each sign-in hands the tab's \"Öffentlicher Computer\" choice to its session, which keeps it while the device holds the account. <code>AccountState.keepsNothing</code> is the device's one answer: the held account's choice, else the tab's.", "Sign-out warns first, in one question, when it would lose commands the engine counted as unsent, or the notebook when this device holds its only way in (<code>NotebookKeys.atSignOut</code>). In that case the question offers Notfallkarte erstellen first.", "An account without an address (ADR 0030) signs up with a passkey in one prompt, or with its Notfallkarte where the device keeps no passkey or is a public computer. Its card then signs in on any device and opens the notebook in the same step; a typo is caught on the device. A session that comes with a card is kept only once the account's secrets hold the card: a device that can't store it keeps nothing and says so."], f: ["apps/app/src/features/account/Account.ts", "apps/app/src/features/account/AccountGates.tsx", "apps/app/src/features/account/SignOutButton.tsx", "apps/app/src/features/account/CreateAccountScreen.tsx", "apps/app/src/features/account/CardSignInScreen.tsx"], a: [28] },
 
-  "f-keys": { t: "features/keys", d: ["The notebook's root key on this device: the first device makes it, a new device unlocks with a passkey's PRF output or the Notfallkarte, and the keys screen adds methods. It accepts a key only after <code>Wrapper.recover</code> checked the anchor, the chain and the endorsement."], f: ["apps/app/src/features/keys/NotebookKeys.ts", "apps/app/src/features/keys/KeysState.ts", "apps/app/src/features/keys/AccountNotice.tsx"], a: [25, 26] },
+  "f-keys": { t: "features/keys", d: ["The notebook's root key on this device: the first device makes it, a new device unlocks with a passkey's PRF output or the Notfallkarte, and the keys screen adds methods. It accepts a key only after <code>Wrapper.recover</code> checked the anchor, the chain and the endorsement.", "Every key step of an account runs one at a time under <code>NotebookKeys.Guard</code>, and the screens, the card step, sign-ins and retries all go through <code>settle</code>: first the key, then the Notfallkarte. A first key is kept as <code>pending-key</code> before it goes out and until the server confirms it, so no second one is ever made. A card is kept as <code>pending-card</code>, written before the session, until the server holds its wrapper and the student saved it: a new account's card goes out as soon as the key exists, and a card that signed in on the account's first own device waits through an offline start. A new card from Notfallkarte erstellen waits there before it goes out and shows once the server holds it, so a lost answer never leaves the account with a retired card and an unknown new one; a card a newer one retired is dropped, and the card step says so. The card step comes before the first start and can't be skipped; without a passkey it ends with typing the code back once, and a public computer offers no passkey."], f: ["apps/app/src/features/keys/NotebookKeys.ts", "apps/app/src/features/keys/KeysState.ts", "apps/app/src/features/keys/AccountNotice.tsx", "apps/app/src/features/keys/SaveCardScreen.tsx"], a: [25, 26] },
 
   "f-onb": { t: "features/onboarding", d: ["The first start, in the Flutter app's order: name and volljährig go to the encrypted profile, Jahrgang, Klasse and Kurse to the readable course choice that the server checks again. The course step builds and checks that choice with core's <code>Enrollment</code> rules: a group such as Kunst and Musik shows as one choice, a required one holds Fertig back until it is answered, and a class answered for another Jahrgang drops out, so it sends only a choice the server accepts. Drafts live in the account's own database."], f: ["apps/app/src/features/onboarding/Onboarding.ts", "apps/app/src/features/onboarding/OnboardingState.ts"] },
 
-  "f-over": { t: "features/overview", d: ["Übersicht, with \"Moin, Lena!\" in the hero and the homework panel below it: what is due, ticked in place, refusals with their reason, and an offline chip while changes wait.", "<code>OverviewState</code> puts it together from the account, keys, onboarding and homework atoms, so the screen only draws. A device without the notebook key says so with a banner instead of claiming there is no homework; <code>NotebookKeys.unlocked</code> is the one rule for that, shared with the banner and the onboarding gate."], f: ["apps/app/src/features/overview/OverviewScreen.tsx", "apps/app/src/features/overview/OverviewState.ts", "apps/app/src/features/overview/Offline.ts", "apps/app/src/features/overview/OfflineChip.tsx"] },
+  "f-over": { t: "features/overview", d: ["Übersicht, with \"Moin, Lena!\" and \"Das steht heute an:\" in the hero, the day's lessons on its band, and the homework panel below: what is due, ticked in place, \"Alle\" for the full list and \"+\" for a new one, refusals with their reason, and an offline chip while changes wait.", "<code>OverviewState</code> adds the greeting, the day's card with its Stand, and the panel's cards to homework's <code>HomeworkState.screen</code>, so the screen only draws. It depends on homework, timetable and device-status, never the other way."], f: ["apps/app/src/features/overview/OverviewScreen.tsx", "apps/app/src/features/overview/OverviewState.ts"] },
 
-  "f-diag": { t: "features/diagnostics", d: ["Dieses Gerät and Selbsttest: the crypto test vectors on this platform's WebCrypto with timings, the conformance replay on its SQLite, storage persistence and the server's revision. The start counter and the self-test open where <code>AccountState.keepsNothing</code> says, so a public computer keeps nothing of them."], f: ["apps/app/src/features/diagnostics/CryptoSelfTest.ts", "apps/app/src/features/diagnostics/SqliteSelfTest.ts"] },
+  "f-tt": { t: "features/timetable", d: ["<code>TimetableState</code> reads the school's timetable from the device: the lessons from a date on with their courses and subjects, or one lesson by its id with the lessons from its day on, and the school's teachers, rooms, closures, week labels and Stand. A teacher shows by <code>displayName</code>, else the short name. Meine Woche (<code>WeekScreen</code>, put together by <code>WeekState</code>) shows a week's grid, or at a text size of 1.35 and above a day list with a day switch, and a card at a school without a timetable. Like the Übersicht, it marks a lesson's open homework from homework's <code>HomeworkState.screen</code>. Which day and week to show and how to word them are <code>Timetable</code>'s in core and <code>AgendaItem</code>'s and <code>WeekItem</code>'s in domain-ui.", "The lesson sheet opens over the Übersicht or Meine Woche at <code>/stunden/[id]</code>, from a lesson's row, a cell or the week's day list. <code>LessonState</code> puts it together from one lesson, the course's next one (<code>Timetable.nextLesson</code>) and homework's <code>HomeworkState.screen</code>: the course's homework, and \"Hausaufgabe eintragen\", which replaces the sheet with homework's add sheet, its course and due date set by route params. It depends on homework, never the other way."], f: ["apps/app/src/features/timetable/TimetableState.ts", "apps/app/src/features/timetable/LessonState.ts", "apps/app/src/features/timetable/LessonSheetScreen.tsx", "apps/app/src/features/timetable/WeekState.ts", "apps/app/src/features/timetable/WeekScreen.tsx"] },
+
+  "f-prof": { t: "features/profile", d: ["Profil, D83's slim profile: the name, Jahrgang, Klasse and school the device holds, read from onboarding's reading, then the Notizbuch-Schlüssel row, the way to the diagnostics, Abmelden and Konto löschen. A fact the device doesn't hold stays out."], f: ["apps/app/src/features/profile/ProfileScreen.tsx", "apps/app/src/features/profile/Profile.ts"] },
+
+  "f-diag": { t: "features/diagnostics", d: ["Diagnose and Selbsttest, behind Profil: the crypto test vectors on this platform's WebCrypto with timings, the conformance replay on its SQLite, storage persistence and the server's revision. The start counter and the self-test open where <code>AccountState.keepsNothing</code> says, so a public computer keeps nothing of them."], f: ["apps/app/src/features/diagnostics/CryptoSelfTest.ts", "apps/app/src/features/diagnostics/SqliteSelfTest.ts"] },
 
   "f-lab": { t: "features/sync-lab", d: ["Three virtual devices in one tab, A and B for Lena and C for Tom, each with its own engine, storage and faults, beside a server pane that shows spaces, the command log and ciphertext sizes. A green bar shows when every device agrees with the server."], f: ["apps/app/src/features/sync-lab/Lab.ts", "apps/app/src/features/sync-lab/LabDevice.ts", "apps/app/src/features/sync-lab/Agreement.ts"] },
 
-  "f-hw": { t: "features/homework", d: ["The homework rows the home reads: <code>HomeworkState</code> reads homework with its course and subject, ticks it and retries or dismisses a refusal, and <code>Refused</code> turns a refused change into one line for its card. The homework screens themselves come later in M1."], f: ["apps/app/src/features/homework/HomeworkState.ts", "apps/app/src/features/homework/Refused.ts", "packages/core/src/homework/Homework.ts"] },
+  "f-hw": { t: "features/homework", d: ["Homework's screens on Flutter's design: the full list (\"Offen\" and \"Erledigt\"), a homework's page, and the add and edit sheet, which the phones present as the system's sheet and the web draws itself.", "<code>HomeworkState</code> reads homework with its course and subject and the courses to choose from, and <code>screen</code> puts it together with device-status's today, key and connection. It ticks, saves and deletes, keeps what the student touched in the sheet as a draft in the account's database, and retries or dismisses a refusal. <code>HomeworkInput</code> decodes the sheet before Save, so an invalid value never reaches the outbox, and an edit sends only the fields the student touched. <code>Refused</code> turns a refused change into one line for its card."], f: ["apps/app/src/features/homework/HomeworkState.ts", "apps/app/src/features/homework/HomeworkInput.ts", "apps/app/src/features/homework/HomeworkSheetScreen.tsx", "apps/app/src/features/homework/Refused.ts", "packages/core/src/homework/Homework.ts"] },
+
+  "f-dev": { t: "features/device-status", d: ["What every screen of the account shows around its content: today at the school, read again every minute, whether the device holds the notebook's key (<code>NotebookKeys.unlocked</code>), and whether it is offline with changes waiting. <code>Offline.shown</code> shows going offline after two seconds and coming back at once, and <code>OfflineChip</code> says it under a page's title. Homework and the Übersicht depend on it; it depends on neither."], f: ["apps/app/src/features/device-status/DeviceStatus.ts", "apps/app/src/features/device-status/Offline.ts", "apps/app/src/features/device-status/OfflineChip.tsx"] },
 
   "a-devlayers": { t: "Layers.device", k: "wire", d: ["Everything a device has before anyone signs in: the server origin, the sessions signed in here, the app lifecycle, HTTP and WebSocket, and the keychain (memory only on a public computer). One build of it per device, so its secrets have a single writer.", "At start it finishes any sign-out that an earlier run left half done."], f: ["apps/app/src/infra/runtime/Layers.ts"] },
 
-  "a-engines": { t: "AccountEngine.Engines", k: "wire", d: ["The device's running sync engines, keyed by account. An engine starts at first use and runs until sign-out closes it, because its database may be open only once and only a closed one can be deleted. It opens an account's storage on disk only for a session the device keeps, and in memory for a public computer's account or one without a session. The Sync Lab runs one per virtual device."], f: ["apps/app/src/infra/runtime/AccountEngine.ts"] },
+  "a-engines": { t: "AccountEngine.Engines", k: "wire", d: ["The device's running sync engines, keyed by account. An engine starts at first use and runs until sign-out stops it, because its database may be open only once and only a closed one can be deleted. It opens an account's storage on disk only for a session the device keeps, and in memory for a public computer's account. An account the device holds no session of gets no engine.", "Sign-out (<code>forget</code>) stops the engine and deletes the account in one turn, so a screen on its way out can't open the database again in between. It holds the engine's writes while it reads the outbox, and refuses when a command waits that the question didn't show: a newer one under the same client id, or any after a renumber gave the outbox a new one. It reads the outbox and its client id in one transaction. A failure before the note leaves the engine running and the account signed in. Once its note is written, the account gets no engine until the sign-out finishes, and every write of the account's rows or secrets, unlocking included, fails. A new session is kept in a turn of its own (<code>keep</code>), after any sign-out under way or left unfinished. The Sync Lab runs one per virtual device."], f: ["apps/app/src/infra/runtime/AccountEngine.ts"] },
 
   "a-acct": { t: "Layers.account", d: ["What a signed-in account adds: its secrets in its own keychain namespace and its own database, per server origin, device and account. Signing in as someone else never opens another account's rows."], f: ["apps/app/src/infra/runtime/Layers.ts", "apps/app/src/infra/sqlite/AccountDatabase.ts"] },
 
@@ -1515,7 +1537,7 @@ const INFO = {
 
   "a-atoms": { t: "Atoms", k: "wire", d: ["Data and subscriptions for screens live in effect-atom atoms, each on an atom runtime built from the device's or the account's layers. React's own state and effect hooks are allowed only inside a documented <code>use…</code> hook; a lint rule checks it."], f: ["apps/app/src/features/account/AccountState.ts", "apps/app/src/features/keys/KeysState.ts", "apps/app/src/features/onboarding/OnboardingState.ts", "apps/app/src/features/overview/OverviewState.ts", "tools/oxlint/studienbuch/rules/no-ad-hoc-state-or-effects.ts"] },
 
-  "a-ui": { t: "UI pieces", d: ["The design system from packages/ui, plus app-only pieces in <code>src/ui</code>: AppTabs, the question before a destructive step (<code>useConfirm</code>, the system alert on the phones and our dialog on the web) and WebStyles, each with a <code>.web.tsx</code> or <code>.web.ts</code> twin where the browser needs something else, and RouteLink, the one way to link to a screen, which the browser follows without loading the page. A twin shares its file's extension, because Metro tries every platform for one extension before the next; a lint rule checks it."], f: ["apps/app/src/ui/navigation/AppTabs.web.tsx", "apps/app/src/ui/useConfirm.web.tsx", "apps/app/src/ui/navigation/RouteLink.tsx", "packages/ui/src/Tokens.ts", "tools/oxlint/studienbuch/rules/platform-twin-extension.ts"], a: [15] },
+  "a-ui": { t: "UI pieces", d: ["The design system from packages/ui, plus app-only pieces in <code>src/ui</code>: AppTabs, the question before a destructive step (<code>useConfirm</code>, the system alert on the phones and our dialog on the web), Sheet and WebStyles, each with a <code>.web.tsx</code> or <code>.web.ts</code> twin where the browser needs something else, PanelScreen, homework's blue page, SettingsRow, Profil's rows, and RouteLink, the one way to link to a screen, which the browser follows without loading the page. A twin shares its file's extension, because Metro tries every platform for one extension before the next; a lint rule checks it."], f: ["apps/app/src/ui/navigation/AppTabs.web.tsx", "apps/app/src/ui/useConfirm.web.tsx", "apps/app/src/ui/navigation/RouteLink.tsx", "packages/ui/src/Tokens.ts", "tools/oxlint/studienbuch/rules/platform-twin-extension.ts"], a: [15] },
 
   "a-dui": { i: "p-domainui" },
 
@@ -1523,15 +1545,15 @@ const INFO = {
 
   "i-sqlite": { t: "SQLite on every device", k: "infra", d: ["iOS and Android: SQLCipher through expo-sqlite, each database with its own random key in the keychain. The web: Effect's wasm client in a worker, each database in its own OPFS directory, unencrypted at rest; a public computer or a private window keeps it in memory.", "One tab owns a device's database (Web Locks); other tabs park until \"Hier verwenden\"."], f: ["apps/app/src/infra/sqlite/database.ts", "apps/app/src/infra/sqlite/database.web.ts", "apps/app/src/infra/sqlite/opfs.worker.ts", "apps/app/src/infra/device/TabOwner.ts"], a: [13, 14] },
 
-  "i-keychain": { t: "Keychain", k: "key", d: ["Secrets that never leave the device: the root key, the device seed, a pending key, the bearer tokens. iOS keychain and Android Keystore storage through SecureStore; in a browser, IndexedDB with each value sealed under a non-extractable WebCrypto key. The content security policy on <code>/app</code> keeps foreign scripts out."], f: ["apps/app/src/infra/keychain/Keychain.ts", "apps/app/src/infra/keychain/IndexedDbKeychain.ts", "apps/app/src/infra/keychain/SecureStoreKeychain.ts"], a: [22] },
+  "i-keychain": { t: "Keychain", k: "key", d: ["Secrets that never leave the device: the root key, the device seed, a pending key, the bearer tokens, and a card-first sign-up's card until its session is kept (<code>DeviceSessions</code>). iOS keychain and Android Keystore storage through SecureStore; in a browser, IndexedDB with each value sealed under a non-extractable WebCrypto key. The content security policy on <code>/app</code> keeps foreign scripts out."], f: ["apps/app/src/infra/keychain/Keychain.ts", "apps/app/src/infra/keychain/DeviceSessions.ts", "apps/app/src/infra/keychain/IndexedDbKeychain.ts", "apps/app/src/infra/keychain/SecureStoreKeychain.ts"], a: [22] },
 
-  "i-passkeys": { t: "Passkeys with PRF", k: "key", d: ["The platform's passkey sheet with the PRF extension: WebAuthn in the browser, react-native-passkeys on phones. The PRF output stays on the device and unlocks the notebook; the server sees the credential only.", "Sign-in and unlock happen in one prompt."], f: ["apps/app/src/infra/passkeys/Passkeys.ts", "apps/app/src/infra/passkeys/platform.web.ts", "apps/app/src/features/keys/OfferedPrf.ts"], a: [25, 26] },
+  "i-passkeys": { t: "Passkeys with PRF", k: "key", d: ["The platform's passkey sheet with the PRF extension: WebAuthn in the browser, react-native-passkeys on phones. The PRF output stays on the device and unlocks the notebook; the server sees the credential only.", "Sign-in and unlock happen in one prompt."], f: ["apps/app/src/infra/passkeys/Passkeys.ts", "apps/app/src/infra/passkeys/platform.web.ts", "apps/app/src/features/keys/Offered.ts"], a: [25, 26] },
 
   "i-files": { t: "Device files", k: "infra", d: ["A small Expo module on iOS keeps the databases out of the iCloud backup (the keys stay behind anyway). Android leaves them out through backup rules at build time. The browser has neither."], f: ["apps/app/modules/device-files/ios/DeviceFilesModule.swift", "apps/app/src/infra/device/files.ts"] },
 
   "i-crypto": { t: "WebCrypto everywhere", k: "infra", d: ["Hermes has no WebCrypto, so quick-crypto installs <code>crypto.subtle</code> and <code>getRandomValues</code> natively. Browsers bring their own. Every platform runs the same e2ee code."], f: ["apps/app/src/infra/crypto/runtime.ts", "apps/app/src/infra/crypto/runtime.web.ts"] },
 
-  "i-auth": { t: "Auth client", k: "infra", d: ["Better Auth's routes the app uses, with every response parsed. The device keeps a bearer token, no cookies. A sign-up waiting for its code survives a restart in the keychain (sessionStorage on the web), without its password."], f: ["apps/app/src/infra/auth/AuthApi.ts", "apps/app/src/infra/auth/SessionStore.ts", "apps/app/src/infra/auth/PendingSignUp.ts"], a: [28] },
+  "i-auth": { t: "Auth client", k: "infra", d: ["Better Auth's routes the app uses, with every response parsed, our card sign-up and sign-in among them, and <code>Demo.signIn</code> for \"Anmelden als Lena\" on dev and previews. The device keeps a bearer token, no cookies. A sign-up waiting for its code survives a restart in the keychain (sessionStorage on the web), without its password."], f: ["apps/app/src/infra/auth/AuthApi.ts", "apps/app/src/infra/auth/SessionStore.ts", "apps/app/src/infra/auth/PendingSignUp.ts"], a: [28] },
 
   "i-device": { t: "Device", k: "infra", d: ["Which device a set of layers runs as. In a browser <code>?device=a</code> and <code>?device=b</code> are two devices side by side. The tab's \"Öffentlicher Computer\" choice for the next sign-in lives here, in sessionStorage."], f: ["apps/app/src/infra/device/VirtualDevice.ts", "apps/app/src/infra/device/publicComputer.web.ts", "apps/app/src/infra/device/DeviceGate.web.tsx"], a: [14] },
 
@@ -1539,7 +1561,7 @@ const INFO = {
 
   "i-offline": { t: "Offline start", k: "infra", d: ["On the web the service worker serves the last build of <code>/app</code> when the network is gone, so the app starts offline with its local data. Development builds run without one."], f: ["apps/app/src/infra/offline/ServiceWorker.ts", "apps/app/public/sw.js", "docs/operations/service-worker.md"], a: [16] },
 
-  "i-origin": { t: "Server origin", k: "infra", d: ["The web app calls its own origin, so one build serves every preview and beta. Native builds name their server in <code>EXPO_PUBLIC_API_URL</code>, set per EAS environment. A lint rule refuses baked-in origins."], f: ["apps/app/src/infra/api/ServerOrigin.ts", "tools/oxlint/studienbuch/rules/no-baked-origin.ts"], a: [3] },
+  "i-origin": { t: "Server origin", k: "infra", d: ["The web app calls its own origin, so one build serves every preview and beta. Native builds name their server in <code>EXPO_PUBLIC_API_URL</code>, set per store build. A lint rule refuses baked-in origins."], f: ["apps/app/src/infra/api/ServerOrigin.ts", "tools/oxlint/studienbuch/rules/no-baked-origin.ts"], a: [3] },
 
   /* server */
   "h-rpc": { t: "/api/rpc", k: "wire", d: ["Effect RPC over HTTP POST, JSON. One endpoint for every group in packages/api. Answers carry <code>cache-control: no-store</code>, because some hold sessions or demo root keys."], f: ["apps/server/src/routes/Rpc.ts", "packages/api/src/Api.ts"] },
@@ -1566,23 +1588,25 @@ const INFO = {
 
   "s-redeem": { t: "Access.redeem", d: ["Turns a typed Zugangscode into a reservation for the sign-up that follows. Every failure looks the same. Failures count per code (20 per window) and per client address; right codes never count, so nobody can block a code by redeeming it."], f: ["apps/server/src/school/Redemption.ts", "apps/server/src/school/AccessCodes.ts", "packages/api/src/Access.ts"] },
 
-  "s-keys": { t: "Keys.*", k: "key", d: ["<code>state</code>, <code>init</code> (the first device publishes generation 0 and its device wrapper), <code>addWrapper</code> (a passkey or Notfallkarte needs a sign-in in the last 10 minutes) and <code>fetchSeals</code> (a new device's unlock, 20 per day)."], f: ["packages/api/src/Keys.ts", "apps/server/src/keys/KeyCalls.ts"], a: [25, 26] },
+  "s-keys": { t: "Keys.*", k: "key", d: ["<code>state</code>, <code>init</code> (the first device publishes generation 0 and its device wrapper), <code>addWrapper</code> (a passkey or Notfallkarte needs a sign-in in the last 10 minutes; the card of an account without an address brings its login and replaces the old card; a retired card stays retired, so a resend after a lost answer can't bring it back) and <code>fetchSeals</code> (a new device's unlock, 20 per day)."], f: ["packages/api/src/Keys.ts", "apps/server/src/keys/KeyCalls.ts"], a: [25, 26] },
 
   "s-demo": { t: "Demo.*", d: ["On dev and previews anyone can sign in as Lena or Tom without a password. Every server hands a signed-in demo account its root key, which the server derives from <code>DEMO_KEY_SEED</code>; beta's store review account needs that."], f: ["apps/server/src/demo/PersonaSignIn.ts", "apps/server/src/demo/DemoKeys.ts"], a: [27] },
 
+  "s-delete": { t: "AccountDeletion.*", k: "stop", d: ["<code>delete</code> needs a sign-in in the last 10 minutes, then deletes the account in one transaction: its user row with everything that cascades (passwords, passkeys, key records, wrappers, seals, recovery events, sign-ups), its sessions, notebooks with their rows and key boxes, memberships, sync clients and command log, access and email codes. The ended sessions reach the sync server's revocations. Every path that writes the account's rows first takes its lock (<code>AccountLock</code>), an advisory lock on the account's id: exclusive for the deletion, a card replacement and an admission to a school, else shared. Row locks follow under it in one order: its logins, its user row, then its newest key record. Card sign-in, pushed commands (<code>Ports.Accounts</code>) and the key store take it too. A write on a connection still open either finishes before the deletion and is deleted with it, or finds the account gone and writes nothing, and a card sign-in under way finishes first.", "Each ended session leaves only the SHA-256 of its token in <code>deleted_session</code>, with no account and no time. A device whose session ended asks <code>deleted</code> with its token and, on yes, forgets the account as sign-out does."], f: ["apps/server/src/account/Deletion.ts", "apps/server/src/account/AccountLock.ts", "apps/server/src/account/DeletionTables.ts", "packages/api/src/AccountDeletion.ts", "packages/sync/src/server/Ports.ts", "apps/app/src/features/account/Deletion.ts"], a: [31] },
+
   "s-dev": { t: "Dev.*", d: ["A fresh school per call and the caller's admission to it, for the Sync Lab and future E2E runs. Every server has the handlers, only development and preview answer."], f: ["apps/server/src/dev/Shortcuts.ts", "packages/api/src/Dev.ts"] },
 
-  "s-ba": { t: "Better Auth", d: ["Email and password with required confirmation, a 6-digit email code (keyed hash, 5 tries, 15 minutes), passkeys with user verification, and signed bearer tokens. Sessions last 90 days and renew at most daily. Unused flows are switched off by path."], f: ["apps/server/src/auth/Auth.ts", "apps/server/src/auth/AuthTables.ts"], a: [28] },
+  "s-ba": { t: "Better Auth", d: ["Email and password with required confirmation, a 6-digit email code (keyed hash, 5 tries, 15 minutes), passkeys with user verification, and signed bearer tokens. Sessions last 90 days and renew at most daily. Unused flows are switched off by path.", "An account without an address (D97) signs up with a passkey first, or with the Notfallkarte where a device has no passkeys, and the card then signs in. It has Better Auth's placeholder address under <code>.invalid</code>, which <code>Mail</code> never sends to and no email route accepts. Its own plugin, <code>WithoutAddress</code>, holds these routes and hooks."], f: ["apps/server/src/auth/Auth.ts", "apps/server/src/auth/AuthTables.ts", "apps/server/src/auth/WithoutAddress.ts", "apps/server/src/auth/CardLogins.ts"], a: [28] },
 
-  "s-hooks": { t: "Auth hooks", k: "stop", d: ["A sign-up needs a reservation header, and its password is swapped for a random one until the email code proves the address. The sign-up's own password waits as a hash with the reservation it carried; a confirmation that carries that reservation must match it, and confirming sets the typed password and deletes passkeys and sessions made before. A sign-up of an address still waiting for its code mails a fresh one. A new password ends other sessions. Registering a passkey signs nobody in. A new user gets an empty name, a new session no IP address.", "A deleted session reaches the sync server's revocations, which close its sockets."], f: ["apps/server/src/auth/Auth.ts"] },
+  "s-hooks": { t: "Auth hooks", k: "stop", d: ["A sign-up needs a reservation header, and its password is swapped for a random one until the email code proves the address. The sign-up's own password waits as a hash with the reservation it carried; a confirmation that carries that reservation must match it, and confirming sets the typed password and deletes passkeys and sessions made before. A sign-up of an address still waiting for its code mails a fresh one. A new password ends other sessions. Registering a passkey for a signed-in account needs a sign-in in the last 10 minutes and signs nobody in; registering one without a session needs a reservation and makes a new account without an address with its session. A new user gets an empty name, a new session no IP address.", "A deleted session reaches the sync server's revocations, which close its sockets."], f: ["apps/server/src/auth/Auth.ts", "apps/server/src/auth/WithoutAddress.ts", "apps/server/src/auth/FreshSignIn.ts"] },
 
   "s-limits": { t: "Limits", k: "stop", d: ["A school's whole network reaches the server from one address, so a client address gets only a ceiling (100 per route in 15 minutes). The limits that stop guessing count per email address (5 code mails an hour, 10 wrong passwords) and per access code.", "They live in this process's memory, so a restart clears them."], f: ["apps/server/src/limits/Limits.ts", "apps/server/src/auth/Auth.ts"] },
 
-  "m-access": { t: "Access and AccessCodes", k: "read", d: ["Zugang: admitting an account to a school in one transaction: the notebook space and its <code>Notebook</code> row, the account as owner, the account as school reader, and the first course choice through <code>enrollment.set</code>. Confirmed sign-ups, the console, the demo seed and the dev shortcuts all admit through it.", "Codes are stored as SHA-256 digests; a use is spent under the code row's lock."], f: ["apps/server/src/school/Access.ts", "apps/server/src/school/AccessCodes.ts", "apps/server/src/sync/Notebooks.ts"] },
+  "m-access": { t: "Access and AccessCodes", k: "read", d: ["Zugang: admitting an account to a school in one transaction: the notebook space and its <code>Notebook</code> row, the account as owner, the account as school reader, and the first course choice through <code>enrollment.set</code>. Creating the notebook holds its school's lock shared (<code>Schools.holdSpaces</code>), so it waits for a publish of the school. Sign-ups, the console, the demo seed and the dev shortcuts all admit through it: an email sign-up once its address is confirmed, one without an address at once.", "Codes are stored as SHA-256 digests, each with a use limit; a use is spent under the code row's lock."], f: ["apps/server/src/school/Access.ts", "apps/server/src/school/AccessCodes.ts", "apps/server/src/sync/Notebooks.ts"] },
 
   "m-keystore": { t: "KeyStore", k: "key", d: ["Stores key records, wrappers and seals after checking every signature it can, and hands out seals for an unlock. It never holds a root key, a seed or a PRF output, except the derived keys of demo accounts. The sync server asks it for an account's newest record to check key-box signatures."], f: ["apps/server/src/keys/KeyStore.ts", "apps/server/src/keys/KeyTables.ts", "apps/server/src/sync/Sync.ts"], a: [24, 25, 27] },
 
-  "m-schools": { t: "Schools", k: "read", d: ["Publishes a school's shared data to its School space and its course spaces, and reads what the school offers today through core's course-choice rules. <code>Schools.simple</code> builds the dev schools and the demo school from core's usual school year, and they publish through here; the import joins in M2."], f: ["apps/server/src/school/Schools.ts"] },
+  "m-schools": { t: "Schools", k: "read", d: ["Publishes a school's shared data to its School space and its course spaces in one transaction, and reads what the school offers today through core's course-choice rules. It holds the school's lock, which notebook creation shares, so no space joins while it runs, then locks the spaces it writes in id order, creates new course spaces with <code>Spaces.createMany</code>, and removes only the lessons and closure dates its caller names in <code>Removals</code>; a closure keeps its dates before the evidence's day. <code>Schools.simple</code> builds the dev schools and the demo school from core's usual school year, and they publish through here; the import joins in M2."], f: ["apps/server/src/school/Schools.ts"] },
 
   "m-demo": { t: "Demo seed", k: "read", d: ["The demo school for the current school year, and Lena and Tom with their key records, courses and encrypted notebook content. <code>prepare</code> runs it when <code>STUDIENBUCH_DEMO_SCHOOL=seed</code>; a second run writes nothing."], f: ["apps/server/src/demo/Seed.ts", "apps/server/src/demo/DemoSchool.ts", "apps/server/src/demo/DemoNotebooks.ts"], a: [27] },
 
@@ -1590,11 +1614,15 @@ const INFO = {
 
   "m-tele": { i: "otlp", t: "Telemetry" },
 
-  "m-jobs": { t: "Jobs", d: ["Scheduled work runs inside the server through Effect's ClusterCron on a single-node cluster in Postgres, so runs never overlap across processes. The only job is <code>heartbeat</code>, which proves the machinery before the import depends on it."], f: ["apps/server/src/infra/jobs/Jobs.ts"], a: [11] },
+  "m-jobs": { t: "Jobs", d: ["Scheduled work runs inside the server through Effect's ClusterCron on a single-node cluster in Postgres, so runs never overlap across processes. <code>heartbeat</code> proves the machinery; <code>import</code> is the WebUntis import's daytime and nightly crons. infra can't import domain code, so <code>main.ts</code> hands the import's crons to <code>Jobs.layer</code>, and <code>STUDIENBUCH_JOBS</code> picks which jobs a process runs."], f: ["apps/server/src/infra/jobs/Jobs.ts", "apps/server/src/import/ImportJob.ts"], a: [11] },
+
+  "m-live": { t: "LiveWebUntis", k: "stop", d: ["The import's connection to WebUntis, built for one run: webuntis-api over node:http, which sends each request exactly once. Fetch sends a request again when the server answers 421, a login form too, so one admission could have logged in twice. Its account is the one live tests and captures use, and two logins with it log each other out (AGENTS.md rule 2).", "The run's gate admits every attempt before it is sent, logins and retries included: within the reservation, before the lease's deadline and the school's midnight, and while the session holds. A run posts the login form once. A second form, from a stale token or a retry, and any 401 lose the session; nothing is sent after it, and the run ends <code>SessionLost</code> and publishes nothing.", "<code>ImportJob</code> registers the two crons only on beta, and only where <code>WEBUNTIS_*</code> credentials exist. A refused password pauses the job at once, and so does the second lost session in a row, under the owner <code>import</code>. <code>console import status</code>, <code>pause --by</code> and <code>resume --by</code> read and set the pause, and the console never connects to WebUntis."], f: ["apps/server/src/infra/webuntis/LiveWebUntis.ts", "apps/server/src/import/ImportJob.ts", "apps/server/src/import/ImportCommand.ts", "apps/server/src/infra/webuntis/WebUntisTesting.ts"] },
 
   "m-migr": { t: "Migrations", d: ["drizzle-kit writes the SQL from the Drizzle schema, the sync engine's tables included. <code>prepare</code> applies them; <code>serve</code> refuses a database behind the release. Eight migrations so far."], f: ["apps/server/src/infra/database/Migrations.ts", "apps/server/drizzle.config.ts", "apps/server/src/infra/database/Schema.ts"], a: [12] },
 
-  "m-import": { i: "webuntis" },
+  "m-import": { t: "Import", k: "read", d: ["An import reads WebUntis only through webuntis-api's <code>WebUntisClient</code>, with the school's <code>SchoolProfile</code> for what WebUntis doesn't say (which classes are the upper school, which substitution texts are stock phrases, whether it publishes yet), and returns an <code>ImportResult</code>: rows in all but name, the provider entries each came from, the days it read completely, and the entries it couldn't give a course. <code>SchoolImport.apply</code> replaces stored rows only inside those days, so a failed read deletes nothing, and offerings only widen. <code>ImportIds</code> mints every id from the WebUntis record, so ids survive any order of reads.", "<code>ImportRun</code> is one run: it claims the school's lease (<code>Lease</code>, which a pause for a live test waits for), reserves its requests against the day's cap, reads the views <code>Plan</code> names for today to four weeks ahead over the connection it is given, whose every request its gate admits only within the reservation, before the lease's deadline and the school's midnight, and while the session holds, and stores every read in <code>source_version</code> through the policy's store column: no student's name, unknown fields dropped and counted, three months kept. A run with a failed read or a lost session publishes nothing. Otherwise the import runs over the stored form of the snapshot through <code>RecordedWebUntis</code>, and the rows, the checkpoint (<code>previous</code>, pending removals, a revision only one run can move), the Stand and the run's row commit in one transaction. Without the profile's <code>publish</code> it keeps only the checkpoint.", "<code>Projection</code> turns a result into what <code>Schools.publish</code> takes: the profile's grade levels only, a lesson's text only as a stock phrase, and removals with evidence: a lesson whose entry moved goes at once, anything else that disappeared only when the next snapshot lacks it too.", "The harness runs an import on a corpus through <code>RecordedWebUntis</code>, a client that answers from recorded reads as of a given time, and measures the rows against WebUntis's own student, teacher and room views and hand-labelled cases. <code>Students</code> holds each student's Kurswahl from the term's opening weeks and counts courses nobody chose. <code>CourseIdentity</code> counts, per subject, the real courses an import splits over several of its courses and its courses that join several real ones; a real course is a subject and the students whose timetables show its entries in the term's opening weeks. <code>NaiveImport</code> is the import the corpus measures, and <code>CourseKey</code> says which course an entry is of: its subject and every class it lists, so a Kopplung is one course in every class view, and a course per teacher where groups of one subject and classes meet at once. <code>TinySchool</code> is the invented school every pull request runs on (<code>vp run import:eval</code>).", "CI's <code>import-eval</code> step runs every import change on the pinned real corpus, weekly and as a timeline, and fails when any number differs from <code>baseline.json</code>, the aggregates committed in the public repository. A change that improves a number updates the file in the same commit."], f: ["apps/server/src/import/SchoolImport.ts", "apps/server/src/import/ImportRun.ts", "apps/server/src/import/Lease.ts", "apps/server/src/import/Plan.ts", "apps/server/src/import/source/SourceStore.ts", "apps/server/src/import/source/SourceTables.ts", "apps/server/src/import/NaiveImport.ts", "apps/server/src/import/CourseKey.ts", "apps/server/src/import/Projection.ts", "apps/server/src/import/ImportIds.ts", "apps/server/src/import/profiles/SchoolProfile.ts", "apps/server/src/import/profiles/IgsLilienthal.ts", "apps/server/src/infra/webuntis/RecordedWebUntis.ts", "apps/server/src/import/evaluation/Evaluator.ts", "apps/server/src/import/evaluation/Students.ts", "apps/server/src/import/evaluation/CourseIdentity.ts", "apps/server/src/import/evaluation/TinySchool.ts", "apps/server/src/import/evaluation/Baseline.ts"] },
+
+  "m-corpus": { t: "Corpus tools", k: "stop", d: ["Turn one WebUntis capture into a corpus agents may read (m2-import-corpus.md). <code>Capture</code> reads master data, directories, exams and every planned timetable through the <code>WebUntisClient</code> it is given, so the import job can run it on beta's connection later; it never logs in itself, and a live run needs <code>--go</code>.", "<code>Pseudonymizer</code> walks every read by <code>Policy</code>, which names a rule for each field and fails on a field without one: names become keyed tokens, person ids keyed numbers, free text a token unless it is a stock or frequent phrase. The dictionary scan looks for every learned name in the result, and the grammar check, which needs no real data, accepts only tokens, dates and the manifest's kept words.", "<code>Archive</code> packs a corpus as tar, zstd and age: the raw capture for Hauke's key only, the corpus for his key and any other recipient. <code>corpus:fetch</code> unpacks into <code>~/.cache</code> and checks the grammar again; with <code>--pinned</code> it takes the archive <code>pin.json</code> names in the private corpus repository, by commit and SHA-256."], f: ["apps/server/src/import/corpus/Capture.ts", "apps/server/src/import/corpus/CapturePlan.ts", "apps/server/src/import/corpus/Policy.ts", "apps/server/src/import/corpus/Pseudonymizer.ts", "apps/server/src/import/corpus/Checks.ts", "apps/server/src/import/corpus/Archive.ts", "apps/server/src/import/corpus/Pin.ts", "apps/server/src/import/corpus/main.ts"] },
 
   "y-tickets": { i: "h-ticket" },
 
@@ -1612,13 +1640,13 @@ const INFO = {
 
   "y-events": { t: "Events and pokes", k: "wire", d: ["One <code>LISTEN stu_sync</code> per process feeds an in-process PubSub. Each connection takes the pokes of the spaces its account reads, coalesced over 50 ms. A poke is a hint: the device pulls."], f: ["packages/sync/src/server/Events.ts", "packages/sync/src/server/Pokes.ts", "packages/sync/src/server/Listener.ts"] },
 
-  "y-spaces": { t: "Spaces", k: "read", d: ["Spaces and memberships for server code outside commands, such as admitting an account. Each membership change pokes the account's devices on commit with <code>AccountChanged</code>, so they pull their new list of spaces."], f: ["packages/sync/src/server/Spaces.ts"] },
+  "y-spaces": { t: "Spaces", k: "read", d: ["Spaces and memberships for server code outside commands, such as admitting an account or creating a school's new course spaces (<code>createMany</code>, which applies the membership rules of the school's spaces once). Each membership change pokes the account's devices on commit with <code>AccountChanged</code>, so they pull their new list of spaces."], f: ["packages/sync/src/server/Spaces.ts"] },
 
   "y-writer": { t: "SyncWriter", k: "read", d: ["How server code writes readable rows outside commands: admissions, the demo school and later the import. Each write is an ordinary versioned change with membership rules applied and a poke on commit."], f: ["packages/sync/src/server/SyncWriter.ts"], a: [11, 19] },
 
   "y-member": { t: "Membership rules", k: "read", d: ["Memberships that follow rows. Today there is one: a notebook's owner reads the Course space of every course its Enrollment lists. A rule only removes the memberships it granted itself (<code>granted_by</code>)."], f: ["packages/sync/src/server/Membership.ts", "packages/core/src/notebook/Enrollment.ts"] },
 
-  "t-auth": { t: "Better Auth's tables", k: "infra", d: ["auth_user (email, empty name), auth_session (no IP address), auth_account (password hash), auth_passkey and auth_verification (keyed hashes of email codes). Better Auth writes them through its own pool."], f: ["apps/server/src/auth/AuthTables.ts"] },
+  "t-auth": { t: "Better Auth's tables", k: "infra", d: ["auth_user (email or a placeholder, empty name), auth_session (no IP address), auth_account (password hash, or the SHA-256 of a card's login), auth_passkey and auth_verification (keyed hashes of email codes). Better Auth writes them through its own pool."], f: ["apps/server/src/auth/AuthTables.ts", "apps/server/src/auth/CardLogins.ts"] },
 
   "t-access": { t: "Access tables", k: "read", d: ["access_code (SHA-256 digests, uses, expiry), access_reservation, access_sign_up (which reservation each sign-up carried, and the hash of the password it chose until the reservation is spent or lapses), and school_access (account, school, notebook)."], f: ["apps/server/src/school/SchoolTables.ts"] },
 
@@ -1632,7 +1660,9 @@ const INFO = {
 
   "t-epoch": { t: "sync_epoch", k: "wire", d: ["One random id written when <code>prepare</code> first meets the database and rewritten by a restore. Combined with Postgres's system identifier and timeline, it tells devices that the server rewound, so they resend what it lost."], f: ["packages/sync/src/server/SyncEpoch.ts"], a: [21] },
 
-  "t-misc": { t: "Everything else", k: "infra", d: ["demo_account marks the seed's accounts, captured_mail keeps dev and preview mail, job_run records the last run of each job, and Effect's cluster creates its own cluster_* tables."], f: ["apps/server/src/demo/DemoTables.ts", "apps/server/src/infra/mail/MailTables.ts"] },
+  "t-import": { t: "The import's own tables", k: "infra", d: ["Server-only and never synced. source_version keeps every read of a run as the store's policy leaves it, a version per day of a timetable and per read without a range, written only when it changed and kept three months. import_run is one row per run that got the lease: its school-local date, the requests it reserved and sent, its outcome, and a report of counts, read kinds, field paths and tags. import_school holds the lease and its owner, the pause and who took it, and the checkpoint: a revision, the import's identity state and the removals waiting for a second snapshot."], f: ["apps/server/src/import/source/SourceTables.ts"] },
+
+  "t-misc": { t: "Everything else", k: "infra", d: ["demo_account marks the seed's accounts, captured_mail keeps dev and preview mail, job_run records the last run of each job, deleted_session keeps a hash of each session a deletion ended, and Effect's cluster creates its own cluster_* tables."], f: ["apps/server/src/demo/DemoTables.ts", "apps/server/src/account/DeletionTables.ts", "apps/server/src/infra/mail/MailTables.ts"] },
 
   /* seq lanes */
   "seq-A": { t: "Device A", d: ["The device that writes. Its engine runs the mutator on local SQLite and keeps the command in the outbox until a pull settles it. Readable and encrypted writes look the same here; they differ at push."], f: ["packages/sync/src/client/SyncClient.ts", "packages/sync/src/client/Outbox.ts", "packages/sync/src/client/Sealing.ts"], a: [17, 23] },
@@ -1658,7 +1688,7 @@ const INFO = {
 
   "k-prf": { t: "Passkey PRF output", k: "key", d: ["The authenticator's PRF output for a fixed salt, asked for at sign-in. It derives a wrapper key pair, and the server keeps R sealed to it, so signing in with the passkey on a new device also unlocks the notebook. Up to 4 wrappers per passkey."], f: ["apps/app/src/infra/passkeys/Passkeys.ts", "packages/e2ee/src/recovery/Wrapper.ts"], a: [25, 26] },
 
-  "k-card": { t: "Notfallkarte", k: "key", d: ["128 random bits plus a CRC-12, shown as 28 Crockford base32 characters in groups of four. e2ee defines a QR payload too, but the app shows and reads only the typed code so far. The CRC catches a typo before anything leaves the device. Its wrapper lets a new device recover R when no passkey is around."], f: ["packages/e2ee/src/recovery/RecoveryCode.ts", "apps/app/src/features/keys/RecoveryCodeScreen.tsx"], a: [25, 26] },
+  "k-card": { t: "Notfallkarte", k: "key", d: ["128 random bits plus a CRC-12, shown as 28 Crockford base32 characters in groups of four. e2ee defines a QR payload too, but the app shows and reads only the typed code so far. The CRC catches a typo before anything leaves the device. Its wrapper lets a new device recover R when no passkey is around. For an account without an address its login (<code>RecoveryCode.login</code>) signs in too. A new card retires the old one's wrappers for every account, and its login."], f: ["packages/e2ee/src/recovery/RecoveryCode.ts", "apps/app/src/features/keys/RecoveryCodeScreen.tsx"], a: [25, 26] },
 
   "k-shamir": { t: "Shamir shares", k: "key", ms: "later", d: ["Wrapper kind 4 is reserved for split recovery shares. The format byte exists, nothing else."], f: ["packages/e2ee/src/recovery/Wrapper.ts"] },
 
@@ -1685,11 +1715,11 @@ const INFO = {
   /* spaces */
   "sp-school": { t: "School space", k: "read", d: ["One space per school, its id a slug such as <code>igs-lilienthal</code>. It holds the School row with its rule fields, years, terms, subjects, classes, courses and offerings. Only the server writes it; every admitted account reads it."], f: ["packages/core/src/school/School.ts", "packages/core/src/school/CourseOffering.ts"] },
 
-  "sp-ma": { t: "Course spaces", k: "read", d: ["One space per course, a child of its school. Choosing the course in an Enrollment makes the student a reader. It holds nothing yet: lessons arrive with the import in M2."], f: ["packages/core/src/school/Course.ts", "packages/core/src/notebook/Enrollment.ts"] },
+  "sp-ma": { t: "Course spaces", k: "read", d: ["One space per course, a child of its school. Choosing the course in an Enrollment makes the student a reader. It holds the course's lessons, which <code>Schools.publish</code> writes."], f: ["packages/core/src/school/Course.ts", "packages/core/src/notebook/Enrollment.ts"] },
 
   "sp-de": { i: "sp-ma" },
 
-  "sp-lesson": { t: "Lesson rows", k: "read", ms: "M2", d: ["Dated lessons with teacher, room and any change, imported from WebUntis into course spaces, so each student receives the lessons of exactly the courses they chose."] },
+  "sp-lesson": { t: "Lesson rows", k: "read", d: ["Dated lessons with teacher, room and any change, in course spaces, so each student receives the lessons of exactly the courses they chose. The demo seed publishes a week of them; the WebUntis import joins in M2, and no screen shows them before M2.5."], f: ["packages/core/src/school/Lesson.ts"] },
 
   "sp-nbrow": { t: "Notebook row", k: "read", d: ["The notebook's school, under the notebook's id. Only the server writes it, at admission, so <code>enrollment.set</code> can't choose another school's courses. <code>verify</code> checks that it agrees with the space's parent."], f: ["packages/core/src/notebook/Notebook.ts", "apps/server/src/sync/Notebooks.ts"] },
 
@@ -1714,13 +1744,13 @@ const INFO = {
   /* way in, by column */
   w1: { t: "Willkommen!", d: ["The student types the Zugangscode from the school's letter. <code>Access.redeem</code> answers a reservation with the school's name, valid for 2 hours. Redeeming holds no use, so nobody can block a code."], f: ["apps/app/src/features/account/WelcomeScreen.tsx", "apps/server/src/school/Redemption.ts", "apps/server/src/school/AccessCodes.ts"] },
 
-  w2: { t: "Konto erstellen", d: ["Email and password. The reservation travels in the <code>access-reservation</code> header so no request log holds it. The server claims one of three sign-ups for the reservation, then Better Auth creates the user with a random throwaway password and mails a 6-digit code. The chosen password waits as a hash with the reservation until the code confirms it. Signing up again before confirming mails a fresh code."], f: ["apps/app/src/features/account/SignUpScreen.tsx", "apps/server/src/auth/Auth.ts"] },
+  w2: { t: "Konto anlegen", d: ["Without an address, a passkey, or on a device without passkeys the Notfallkarte, makes the account at once and spends one use of the code; the card step follows. \"Lieber mit E-Mail-Adresse\" leads to email and password. The reservation travels in the <code>access-reservation</code> header so no request log holds it. The server claims one of three sign-ups for the reservation, then Better Auth creates the user with a random throwaway password and mails a 6-digit code. The chosen password waits as a hash with the reservation until the code confirms it. Signing up again before confirming mails a fresh code."], f: ["apps/app/src/features/account/CreateAccountScreen.tsx", "apps/app/src/features/account/SignUpScreen.tsx", "apps/server/src/auth/WithoutAddress.ts", "apps/server/src/auth/Auth.ts"] },
 
   w3: { t: "E-Mail bestätigen", d: ["The code and the password together. With the device's reservation it must be the password that sign-up chose; a wrong one gives the code back with one try less. Before the address counts as confirmed, the server sets the password, deletes passkeys and sessions of the account, then admits it to the reservation's school and spends one use of the code in the same transaction. The device is signed in."], f: ["apps/app/src/features/account/ConfirmEmailScreen.tsx", "apps/server/src/school/AccessCodes.ts", "apps/server/src/school/Access.ts"] },
 
   w4: { t: "Geschafft", d: ["The device keeps the signed bearer token in its keychain and offers a passkey. Registering one creates no session. If another account with an ended session still holds the device, the new session is refused and ends on the server."], f: ["apps/app/src/features/account/Account.ts", "apps/app/src/infra/auth/SessionStore.ts"], a: [28] },
 
-  w5: { t: "First start", d: ["Name and volljährig go to <code>notebookProfile.set</code> (sealed); Jahrgang, Klasse and Kurse to <code>enrollment.set</code> (readable, rerun by the server). Both work offline and sync later; a refused course choice brings the course step back."], f: ["apps/app/src/features/onboarding/Onboarding.ts", "apps/app/src/features/onboarding/OnboardingState.ts"] },
+  w5: { t: "First start", d: ["The name the app calls the student by, a nickname if they like, and volljährig go to <code>notebookProfile.set</code> (sealed); Jahrgang, Klasse and Kurse to <code>enrollment.set</code> (readable, rerun by the server). Both work offline and sync later; a refused course choice brings the course step back."], f: ["apps/app/src/features/onboarding/Onboarding.ts", "apps/app/src/features/onboarding/OnboardingState.ts"] },
 
   w6: { t: "The notebook's key", k: "key", d: ["The account's first device makes R and a device seed, keeps them as <code>pending-key</code> until <code>Keys.init</code> succeeded, then they become <code>root-key</code>. Any later device starts locked and unlocks with a passkey's PRF output or the Notfallkarte through <code>Keys.fetchSeals</code>, then adds its own device wrapper."], f: ["apps/app/src/features/keys/NotebookKeys.ts", "apps/server/src/keys/KeyStore.ts"], a: [25, 26] },
 
@@ -1753,11 +1783,11 @@ const INFO = {
 
   "l-held": { t: "Held", k: "key", d: ["The push answered that the server has no key record for the account (<code>NoKeyRecord</code>, as after a restore), so the device publishes its own record again and resends. Or the account's key is newer than this device's (<code>KeysBehind</code>), which needs key renewal from M3. A key the server's chain doesn't derive shows a support notice."], f: ["apps/app/src/features/keys/KeysState.ts", "packages/sync/src/protocol/Protocol.ts"], a: [25] },
 
-  "l-ended": { t: "Session ended", k: "stop", d: ["Close code 4401: the session was revoked or expired. The device keeps its data and outbox, stops reconnecting and asks for sign-in. The same account picks up where it was; another account is refused until this one signs out."], f: ["packages/sync/src/protocol/Connection.ts", "apps/app/src/features/account/Account.ts"], a: [28] },
+  "l-ended": { t: "Session ended", k: "stop", d: ["Close code 4401: the session was revoked or expired. The device keeps its data and outbox, stops reconnecting and asks for sign-in. Each attempt connects with a token and ends only that token's session (<code>Session.ended</code>), so a sign-in here since the socket opened keeps its new session and connects with it. The same account picks up where it was; another account is refused until this one signs out."], f: ["packages/sync/src/protocol/Connection.ts", "apps/app/src/features/account/Account.ts"], a: [28] },
 
   "l-update": { t: "Update required", k: "stop", d: ["Close code 4426: the client's contract is below the server's minimum. The device waits for a newer app. The server deploys first and sends each message tag only to clients that know it, so this should be rare."], f: ["packages/sync/src/server/Contract.ts"] },
 
-  "l-signout": { t: "Abmelden", k: "stop", d: ["Asks first when the engine counted changes the server hasn't received (PR 99), or when no passkey, Notfallkarte or other device opens the notebook without this one. Then it closes the engine, deletes the account's database, secrets and session, and revokes the session on the server."], f: ["apps/app/src/features/account/SignOutButton.tsx", "apps/app/src/infra/runtime/Forgetting.ts"] },
+  "l-signout": { t: "Abmelden", k: "stop", d: ["Asks first when the engine counted changes the server hasn't received (PR 99), or when no passkey, Notfallkarte or other device opens the notebook without this one. Then, in one turn of the engines, it stops the engine and deletes the account's database, secrets and session, and revokes the session on the server. A change saved after the question makes it ask again. The note it writes first is the point of no return: from there it retries what fails, says \"Abmelden hat nicht geklappt\" when it still fails, and finishes before the next session or at the next start. Konto löschen leaves the same way, without the question, since the account and its unsent changes are gone on the server; so does any device of the account whose session ends when the server says the account was deleted.", "Nothing of the account stays in the app's memory: its atoms go with its screens, and what outlives a screen sits in <code>AccountState.memory</code>, which forgets it when another account or none holds the device (<code>studienbuch/no-kept-account-atom</code>)."], f: ["apps/app/src/features/account/SignOutButton.tsx", "apps/app/src/features/account/AccountState.ts", "apps/app/src/infra/runtime/AccountEngine.ts", "apps/app/src/infra/runtime/Forgetting.ts", "apps/app/src/features/account/Deletion.ts"] },
 
   "l-revoked": { t: "Removed by another device", k: "stop", ms: "M3", d: ["The client already handles <code>Sync.DeviceRevoked</code> and close code 4403 by wiping itself after one more pull, but the server never sends either: device removal is M3."], f: ["packages/sync/src/client/SyncClient.ts", "packages/sync/src/protocol/Connection.ts"] },
 
@@ -1768,7 +1798,7 @@ const INFO = {
 
   "c-plan": { t: "Calder's plan", k: "infra", d: ["<code>.calder/ci.ts</code> declares every job and their order. The format, lint, typecheck and test jobs time out after 15 minutes; the Nix builds have no limit of their own."], f: [".calder/ci.ts"] },
 
-  "c-checks": { t: "Checks", d: ["fmt, lint (oxlint with type information and the local plugin), knip, typecheck, and the test jobs: test, test-app, test-server and test-sync (both on a real PostgreSQL 18), typecheck-deploy and test-deploy, plus the flake checks serverSmoke and closureGuard. Browser tests don't run in CI yet."], f: [".calder/ci.ts", "vite.config.ts"], a: [10] },
+  "c-checks": { t: "Checks", d: ["fmt, lint (oxlint with type information from tsrs, and the local plugin), knip, typecheck (<code>tsrs -p</code> for every project, which also checks shared packages under each app's options), and the test jobs: test, test-app, test-app-browser (headless Chromium and Firefox), test-server and test-sync (both on a real PostgreSQL 18), typecheck-deploy and test-deploy, plus the flake checks serverSmoke and closureGuard."], f: [".calder/ci.ts", "vite.config.ts"], a: [10, 32] },
 
   "c-build": { t: "Artifacts", k: "infra", d: ["The architecture-independent bundle (server, landing, console, Expo web export), built on x86_64 on the tower or dev-hauke, Node for aarch64, and the pnpm dependencies' hash."], f: ["nix/bundle.nix", "flake.nix"], a: [5] },
 
@@ -1792,11 +1822,11 @@ const INFO = {
 
   "c-nightly": { t: "Nightly", d: ["At 03:00 the whole plan runs again without reuse. The simulation could run with more seeds here; it doesn't yet."], f: [".calder/ci.ts"] },
 
-  "c-eas": { i: "eas" },
+  "c-builds": { i: "storebuilds" },
 
   "c-stores": { i: "stores" },
 
-  "c-ota": { t: "EAS Update", k: "infra", ms: "M0", d: ["JS-only changes reach phones on the <code>beta</code> channel without a store build, as long as the native fingerprint (the runtime version) didn't change. Not wired into CI yet."], f: ["apps/app/app.config.ts", "apps/app/fingerprint.config.js"] },
+  "c-ota": { t: "Over-the-air updates", k: "infra", ms: "M5", d: ["JavaScript for installed builds whose native fingerprint matches, from an Expo Updates server of our own with code signing (M5.16, D94). Until it runs, builds have updates off and ask no server, Expo's included."], f: ["apps/app/app.config.ts", "apps/app/fingerprint.config.js"] },
 
   "c-phone": { t: "Lena's phone", d: ["Talks to beta. The web app needs no store at all: beta serves it at <code>/app</code>, and every deploy reaches it on the next load."], f: ["apps/app/src/infra/updates/BuildInfo.ts"] },
 };
@@ -1834,8 +1864,8 @@ const WALK = {
     {
       at: "a-screen", form: "plain", token: "Arbeitsblatt S. 42",
       title: "Lena saves a homework item",
-      text: ["She types the task for Mathe, due Thursday, and saves. The app's homework screens arrive with M1-WP13; today the Sync Lab's form calls exactly the same function."],
-      where: ["apps/app/src/features/sync-lab/LabDevice.ts", "packages/core/src/homework/Homework.ts"],
+      text: ["She taps \"+\" on the homework panel, picks Mathe, types the task, picks Thursday and saves. The sheet decodes what she typed first (<code>HomeworkInput.decode</code>), so \"Speichern\" stays disabled until it would pass; the Sync Lab's form calls the same function."],
+      where: ["apps/app/src/features/homework/HomeworkSheetScreen.tsx", "apps/app/src/features/homework/HomeworkState.ts", "packages/core/src/homework/Homework.ts"],
       data: 'Homework.create {\n  notebook: "nb-7f3c…",\n  id: "c1a9…" (random UUIDv4),\n  courseId: "ma-23",\n  title: "Arbeitsblatt S. 42",\n  dueOn: "2026-11-12"\n}',
     },
     {
@@ -1963,6 +1993,7 @@ const ADR = {
   24: "0024-epoch-keys-sealed-per-member-account", 25: "0025-recovery-without-escrow",
   26: "0026-recovery-methods-are-key-pairs", 27: "0027-demo-accounts-have-server-derived-keys",
   28: "0028-sessions-and-the-sync-connection",
+  31: "0031-account-deletion-leaves-token-hashes", 32: "0032-tsrs-type-checks",
 };
 const KIND = {
   read: "Readable: plaintext the server may read",

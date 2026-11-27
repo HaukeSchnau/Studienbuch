@@ -5,12 +5,26 @@
   "type": "module",
   "exports": {
     "./calendar/DateText": "./src/calendar/DateText.ts",
+    "./calendar/Pickable": "./src/calendar/Pickable.ts",
+    "./grade/GradeMarker": "./src/grade/GradeMarker.tsx",
     "./homework/Due": "./src/homework/Due.ts",
+    "./homework/HomeworkDetail": "./src/homework/HomeworkDetail.tsx",
+    "./homework/HomeworkForm": "./src/homework/HomeworkForm.tsx",
     "./homework/HomeworkItem": "./src/homework/HomeworkItem.ts",
+    "./homework/HomeworkList": "./src/homework/HomeworkList.tsx",
     "./homework/HomeworkPanel": "./src/homework/HomeworkPanel.tsx",
     "./refusal/RefusalCard": "./src/refusal/RefusalCard.tsx",
     "./refusal/RefusalText": "./src/refusal/RefusalText.ts",
-    "./subject/SubjectMark": "./src/subject/SubjectMark.ts"
+    "./status/StatusSticker": "./src/status/StatusSticker.tsx",
+    "./subject/SubjectArt": "./src/subject/SubjectArt.ts",
+    "./subject/SubjectMark": "./src/subject/SubjectMark.ts",
+    "./subject/SubjectSticker": "./src/subject/SubjectSticker.tsx",
+    "./timetable/AgendaCard": "./src/timetable/AgendaCard.tsx",
+    "./timetable/AgendaItem": "./src/timetable/AgendaItem.ts",
+    "./timetable/DaySwitch": "./src/timetable/DaySwitch.tsx",
+    "./timetable/LessonSheet": "./src/timetable/LessonSheet.tsx",
+    "./timetable/WeekGrid": "./src/timetable/WeekGrid.tsx",
+    "./timetable/WeekItem": "./src/timetable/WeekItem.ts"
   },
   "dependencies": {
     "@stu/core": "workspace:*",
@@ -23,7 +37,6 @@
     "@types/react": "catalog:",
     "react": "catalog:",
     "react-native": "catalog:",
-    "typescript": "catalog:",
     "vite-plus": "catalog:"
   },
   "peerDependencies": {

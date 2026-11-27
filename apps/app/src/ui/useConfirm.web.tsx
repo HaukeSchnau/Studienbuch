@@ -4,7 +4,7 @@ import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
 import { useFocusOnMount } from "@stu/ui/useFocusOnMount";
 import * as Option from "effect/Option";
-import { useCallback, useId, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import { Modal, ScrollView, StyleSheet, View } from "react-native";
 
 import type { Answer, Question } from "./useConfirm.tsx";
@@ -16,9 +16,10 @@ interface Asked {
 
 /**
  * useConfirm.tsx on the web, where the system alert does nothing: our dialog, as `dialog` for the
- * screen to render. It traps the focus, and Escape or a click beside it answers `cancel`.
+ * screen to render. It traps the focus, and Escape or a click beside it answers `cancel`. Once
+ * `askable` turns false, an open question closes as `cancel`.
  */
-export function useConfirm() {
+export function useConfirm(askable = true) {
   const [asked, setAsked] = useState(Option.none<Asked>());
 
   const ask = useCallback(
@@ -34,10 +35,18 @@ export function useConfirm() {
     [],
   );
 
-  const dialog = Option.match(asked, {
-    onNone: () => null,
-    onSome: ({ question, answer }) => <Dialog question={question} onAnswer={answer} />,
-  });
+  useEffect(() => {
+    if (!askable && Option.isSome(asked)) asked.value.answer("cancel");
+  }, [askable, asked]);
+
+  // Not drawn for the frame before the effect closes it either.
+  const dialog = Option.match(
+    Option.filter(asked, () => askable),
+    {
+      onNone: () => null,
+      onSome: ({ question, answer }) => <Dialog question={question} onAnswer={answer} />,
+    },
+  );
 
   return { ask, dialog };
 }

@@ -1,7 +1,7 @@
+import { AgendaCard } from "@stu/domain-ui/timetable/AgendaCard";
 import type { ReactNode } from "react";
 
 import { AbsenceCard } from "#/domain-ui/app/AbsenceCard.tsx";
-import { AgendaCard } from "#/domain-ui/app/AgendaCard.tsx";
 import { GradesCard } from "#/domain-ui/app/GradesCard.tsx";
 import { HomeworkCard } from "#/domain-ui/app/HomeworkCard.tsx";
 import { Site } from "#/domain-ui/Site.ts";
@@ -63,7 +63,7 @@ export function Features({ demo, dispatch }: { demo: Demo.State; dispatch: Demo.
         <div className="feature-grid reveal-group">
           <Feature
             area="timetable"
-            preview={<AgendaCard rows={changes} />}
+            preview={<AgendaCard items={changes} />}
             title="Stundenplan und Vertretungen"
           >
             Der Plan kommt direkt aus dem Stundenplan deiner Schule. Was heute ausfällt oder
@@ -77,6 +77,7 @@ export function Features({ demo, dispatch }: { demo: Demo.State; dispatch: Demo.
                 average={Demo.confirmedAverage(exams)}
                 exams={exams}
                 oral={Demo.courses.de.oral}
+                slot={Demo.courses.de.slot}
                 onSign={(exam) => dispatch({ kind: "sign", place: "features", exam })}
               />
             }

@@ -1,4 +1,5 @@
 import { useAtomValue } from "@effect/atom-react";
+import { System } from "@stu/api/System";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import { lazy, Suspense } from "react";
 
@@ -21,7 +22,7 @@ export function SyncLabRoute() {
     onInitial: () => <LabNotice text="Fragt den Server, ob es das Sync Lab hier gibt." />,
     onFailure: () => <LabNotice text="Der Server antwortet nicht." />,
     onSuccess: ({ value: { environment } }) =>
-      environment === "development" || environment === "preview" ? (
+      System.isDevelopmentOrPreview(environment) ? (
         <Suspense fallback={<LabNotice text="Lädt die Geräte." />}>
           <SyncLab environment={environment} />
         </Suspense>

@@ -1,46 +1,30 @@
-import { type CivilTime, type Notebook, School } from "@stu/core";
+import { CivilTime, type HomeworkDates, type Notebook, Timetable } from "@stu/core";
 import { HomeworkItem } from "@stu/domain-ui/homework/HomeworkItem";
-import { type Outbox, SyncClient } from "@stu/sync/client";
-import * as Effect from "effect/Effect";
+import { AgendaItem } from "@stu/domain-ui/timetable/AgendaItem";
 import * as Option from "effect/Option";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Atom from "effect/reactivity/Atom";
-import * as Stream from "effect/Stream";
 
-import { AccountEngine } from "../../infra/runtime/AccountEngine.ts";
-import { Account } from "../account/Account.ts";
-import { AccountState } from "../account/AccountState.ts";
+import { DeviceStatus } from "../device-status/DeviceStatus.ts";
 import { HomeworkState } from "../homework/HomeworkState.ts";
-import { Refused } from "../homework/Refused.ts";
-import { KeysState } from "../keys/KeysState.ts";
-import { NotebookKeys } from "../keys/NotebookKeys.ts";
 import { Onboarding } from "../onboarding/Onboarding.ts";
 import { OnboardingState } from "../onboarding/OnboardingState.ts";
-import { Offline } from "./Offline.ts";
+import { TimetableState } from "../timetable/TimetableState.ts";
 
 // What the Übersicht shows, put together from the account's atoms, so its screen only draws.
 
 export * as OverviewState from "./OverviewState.ts";
 
-export interface Overview {
+export interface Overview extends HomeworkState.Screen {
   /** The first name from the encrypted profile, which a locked device can't read. */
   readonly name: Option.Option<string>;
-  readonly today: CivilTime.PlainDate;
-  /**
-   * The device doesn't hold the notebook's key: it is `Locked`, `Offline` or `NotHere`, or its status
-   * failed (`NotebookKeys.unlocked`).
-   */
-  readonly locked: boolean;
-  /**
-   * `Some` with the changes that wait for the server while the device has no connection. Not while
-   * the session has ended, which the account's notice says instead.
-   */
-  readonly offline: Option.Option<{ readonly waiting: number }>;
   /** `None` until the device has read the notebook, or when the account has none. */
   readonly panel: Option.Option<Panel>;
+  /** The lessons of the day the card shows. `None` when the device couldn't read them. */
+  readonly agenda: Option.Option<Agenda>;
 }
 
-/** The notebook's homework as the panel shows it, and the refused changes above it. */
+/** The notebook's homework as the panel shows it. */
 export interface Panel {
   readonly notebook: Notebook.Id;
   /**
@@ -48,89 +32,74 @@ export interface Panel {
    * sealed, and an empty list would say there is no homework.
    */
   readonly items: ReadonlyArray<HomeworkItem.Item> | undefined;
-  readonly refusals: ReadonlyArray<{ readonly rejected: Outbox.Rejected; readonly change: string }>;
-  readonly titles: ReadonlyMap<string, string>;
 }
 
-const runtime = Atom.family((accountId: string) => Atom.runtime(AccountEngine.app(accountId)));
-
-/** Whether the engine is offline (`Offline.shown`), and how many changes wait for the server. */
-const connection = Atom.family((accountId: string) =>
-  runtime(accountId).atom(
-    Stream.unwrap(
-      Effect.map(SyncClient.Service, (sync) =>
-        Stream.zipLatest(
-          Offline.shown(
-            sync.status.changes.pipe(Stream.map((status) => status.connection !== "online")),
-          ),
-          sync.status.changes.pipe(
-            Stream.map((status) => status.waiting),
-            Stream.changes,
-          ),
-        ),
-      ),
-    ),
-  ),
-);
+/** The hero's line and the card, with the Stand in its foot once it is old. */
+export interface Agenda extends AgendaItem.Agenda {
+  readonly stand: AgendaItem.Stand | undefined;
+}
 
 /**
- * The Übersicht of the account, `None` until the device has read who the student is, so the
- * greeting never shows without the name first. A read that failed shows it without the name.
+ * The day `Timetable.shown` picks at `now`, in words, with the Stand once it is old and the
+ * `homework` the device can read on its lessons.
+ */
+export const agenda = (
+  held: TimetableState.Reading,
+  now: number,
+  disconnected: boolean,
+  homework: ReadonlyArray<HomeworkDates.OfCourse>,
+): Agenda => {
+  const moment = CivilTime.momentIn(now, held.timeZone);
+  const shown = AgendaItem.agenda(Timetable.shown(held.plan, moment), held.names, moment, homework);
+
+  return {
+    ...shown,
+    stand:
+      shown.card === undefined
+        ? undefined
+        : AgendaItem.staleStand(held.observedAt, now, held.timeZone, disconnected),
+  };
+};
+
+/**
+ * The Übersicht of the account, `None` until the device has read who the student is and its
+ * timetable, so neither the greeting nor the hero's line changes as the screen appears. A read that
+ * failed shows it without the name, or without the lessons.
  */
 export const overview = Atom.family((accountId: string) =>
   Atom.make((get): Option.Option<Overview> => {
     const name = Onboarding.greeting(get(OnboardingState.reading(accountId)));
-    const reading = Option.flatten(AsyncResult.value(get(HomeworkState.reading(accountId))));
+    const current = get(HomeworkState.screen(accountId));
+    const now = get(DeviceStatus.now);
 
-    const today = AsyncResult.value(
-      get(
-        HomeworkState.today(
-          Option.match(reading, {
-            onNone: () => School.defaultTimeZone,
-            onSome: (r) => r.timeZone,
-          }),
-        ),
-      ),
-    );
+    if (Option.isNone(name) || Option.isNone(current) || AsyncResult.isInitial(now)) {
+      return Option.none();
+    }
 
-    if (Option.isNone(name) || Option.isNone(today)) return Option.none();
+    const { today, readable, reading, disconnected } = current.value;
+    // The week's lessons decide its free periods, so the read starts on its Monday.
+    const monday = CivilTime.addDays(today, 1 - CivilTime.dayOfWeek(today));
+    const timetable = get(TimetableState.reading(accountId)(CivilTime.format(monday)));
 
-    const disconnected = Option.filter(
-      AsyncResult.value(get(connection(accountId))),
-      ([offline]) => offline,
-    );
-
-    const ended = Account.access(get(AccountState.current)) === "ended";
-
-    const unlocked = NotebookKeys.unlocked(get(KeysState.status(accountId)));
+    if (AsyncResult.isInitial(timetable)) return Option.none();
 
     return Option.some({
+      ...current.value,
       name: name.value,
-      today: today.value,
-      locked: Option.contains(unlocked, false),
-      offline: ended ? Option.none() : Option.map(disconnected, ([, waiting]) => ({ waiting })),
-      panel: Option.map(reading, (value) => {
-        const titles = new Map(value.homework.map((each) => [each.id, each.title]));
-
-        return {
-          notebook: value.notebook,
-          items: Option.contains(unlocked, true)
-            ? HomeworkItem.panel(
-                // Online, a change settles within a second, so its marker would only flicker.
-                value.homework.map((each) => ({
-                  ...each,
-                  waiting: each.waiting && Option.isSome(disconnected),
-                })),
-                today.value,
-              )
-            : undefined,
-          refusals: value.refusals.map((rejected) => ({
-            rejected,
-            change: Refused.change(rejected, titles),
-          })),
-          titles,
-        };
-      }),
+      panel: Option.map(reading, (value) => ({
+        notebook: value.notebook,
+        items: readable ? HomeworkItem.panel(value.homework, today) : undefined,
+      })),
+      agenda: Option.flatMap(Option.flatten(AsyncResult.value(timetable)), (held) =>
+        Option.map(AsyncResult.value(now), (millis) =>
+          agenda(
+            held,
+            millis,
+            disconnected,
+            Option.match(reading, { onNone: () => [], onSome: (value) => value.homework }),
+          ),
+        ),
+      ),
     });
   }),
 );

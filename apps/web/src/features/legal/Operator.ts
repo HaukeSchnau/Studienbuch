@@ -53,4 +53,4 @@ export const supervisoryAuthority = {
 } as const;
 
 /** Shown as "Stand". Update it whenever the wording of either page changes. */
-export const lastUpdated = "17. November 2026";
+export const lastUpdated = "27. November 2026";

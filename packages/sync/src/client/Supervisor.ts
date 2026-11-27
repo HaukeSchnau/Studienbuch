@@ -15,6 +15,7 @@ import * as Option from "effect/Option";
 import * as Predicate from "effect/Predicate";
 import * as Queue from "effect/Queue";
 import * as Random from "effect/Random";
+import * as Redacted from "effect/Redacted";
 import * as RpcClient from "effect/rpc/RpcClient";
 import * as RpcMessage from "effect/rpc/RpcMessage";
 import type * as Scope from "effect/Scope";
@@ -113,8 +114,10 @@ const between = (low: Duration.Duration, high: Duration.Duration) =>
 export type Connection = "offline" | "connecting" | "online";
 
 export interface Options {
-  /** Opens a link, which its scope closes. */
-  readonly connect: Effect.Effect<Link, Ports.ConnectFailed, Scope.Scope>;
+  /** Opens a link as the session of a token, which its scope closes. */
+  readonly connect: (
+    token: Redacted.Redacted,
+  ) => Effect.Effect<Link, Ports.ConnectFailed, Scope.Scope>;
   /** One round of push and pull. */
   readonly replicate: SyncRound;
   readonly session: Ports.Session["Service"];
@@ -142,12 +145,11 @@ interface Conditions {
   readonly offline: boolean;
   readonly online: boolean;
   readonly foreground: boolean;
-  /** Counts the session's tokens, so a wait can tell a new sign-in from the old token. */
-  readonly token: Option.Option<number>;
+  readonly signedIn: boolean;
 }
 
 const ready = (conditions: Conditions) =>
-  !conditions.offline && conditions.online && Option.isSome(conditions.token);
+  !conditions.offline && conditions.online && conditions.signedIn;
 
 /** How an attempt ended. */
 type End = Data.TaggedEnum<{
@@ -184,7 +186,7 @@ export const run = Effect.fnUntraced(function* (options: Options) {
     offline: false,
     online: true,
     foreground: true,
-    token: Option.none(),
+    signedIn: false,
   });
 
   /**
@@ -202,20 +204,29 @@ export const run = Effect.fnUntraced(function* (options: Options) {
   const waitFor = (predicate: (current: Conditions) => boolean) =>
     SubscriptionRef.changes(conditions).pipe(Stream.filter(predicate), Stream.runHead);
 
-  let tokens = 0;
-
   yield* options.session.changes.pipe(
     Stream.runForEach((token) =>
       Effect.andThen(
         Option.isSome(token) ? Queue.offer(wakeups, "reset") : Effect.void,
-        update((current) => ({
-          ...current,
-          token: Option.isSome(token) ? Option.some((tokens += 1)) : Option.none(),
-        })),
+        update((current) => ({ ...current, signedIn: Option.isSome(token) })),
       ),
     ),
     Effect.forkScoped,
   );
+
+  /** The session's token once it has one other than `old`: its first, or a new sign-in's. */
+  const tokenOtherThan = (old: Option.Option<Redacted.Redacted>) =>
+    options.session.changes.pipe(
+      Stream.filter(
+        (token) =>
+          Option.isSome(token) &&
+          !Option.exists(old, (each) => Redacted.value(each) === Redacted.value(token.value)),
+      ),
+      Stream.runHead,
+      Effect.map(Option.flatten),
+      Effect.flatMap(Effect.fromOption),
+      Effect.orDie,
+    );
 
   yield* SubscriptionRef.changes(options.offline).pipe(
     Stream.runForEach((offline) =>
@@ -289,7 +300,7 @@ export const run = Effect.fnUntraced(function* (options: Options) {
     const nextOrStop = <A>(effect: Effect.Effect<A>) =>
       Effect.raceFirst(
         Effect.map(effect, () => Option.none<End>()),
-        Effect.map(Deferred.await(stop), Option.some),
+        Effect.asSome(Deferred.await(stop)),
       );
 
     yield* Queue.offer(rounds, undefined);
@@ -334,9 +345,12 @@ export const run = Effect.fnUntraced(function* (options: Options) {
     }
   });
 
-  const attempt = Effect.fnUntraced(function* (stop: Deferred.Deferred<End>) {
+  const attempt = Effect.fnUntraced(function* (
+    stop: Deferred.Deferred<End>,
+    token: Redacted.Redacted,
+  ) {
     const connected = yield* Effect.raceFirst(
-      Effect.asSome(Effect.result(options.connect)),
+      Effect.asSome(Effect.result(options.connect(token))),
       Effect.as(Deferred.await(stop), Option.none()),
     );
 
@@ -444,6 +458,10 @@ export const run = Effect.fnUntraced(function* (options: Options) {
     // A wakeup from before this attempt doesn't end it.
     yield* Queue.clear(wakeups);
 
+    // What the attempt connects with, read from the session rather than `conditions`, which
+    // follows it a step behind: a 4401 ends that session only.
+    const token = yield* tokenOtherThan(Option.none());
+
     const end: End = yield* Effect.scoped(
       Effect.gen(function* () {
         const stop = yield* Deferred.make<End>();
@@ -459,7 +477,7 @@ export const run = Effect.fnUntraced(function* (options: Options) {
           Effect.forkScoped,
         );
 
-        return yield* attempt(stop);
+        return yield* attempt(stop, token);
       }),
     );
 
@@ -473,10 +491,11 @@ export const run = Effect.fnUntraced(function* (options: Options) {
         failures = 0;
         continue;
       case "SessionEnded": {
+        // The server ended the session this attempt connected with. After a new sign-in here,
+        // as before a new Notfallkarte, the device holds a newer token, which stays and connects.
         yield* options.report("offline");
-        yield* options.session.ended;
-        const ended = tokens;
-        yield* waitFor((next) => Option.exists(next.token, (token) => token > ended));
+        yield* options.session.ended(token);
+        yield* tokenOtherThan(Option.some(token));
         failures = 0;
         continue;
       }

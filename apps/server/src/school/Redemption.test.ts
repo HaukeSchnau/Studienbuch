@@ -3,7 +3,6 @@ import { Access } from "@stu/api/Access";
 import { School } from "@stu/core";
 import { Postgres18 } from "@stu/sync/testing";
 import * as Effect from "effect/Effect";
-import * as Option from "effect/Option";
 import * as RpcTest from "effect/rpc/RpcTest";
 import * as TestClock from "effect/testing/TestClock";
 import { Limits } from "../limits/Limits.ts";
@@ -22,22 +21,26 @@ describe.skipIf(Postgres18.socket === null)("Redemption on PostgreSQL 18", () =>
       "an address gets its ceiling of wrong codes, and a code a few failures, per window",
       () =>
         Effect.gen(function* () {
-          yield* Schools.publish({
-            id: school,
-            school: { name: "Schule am See", timeZone: "Europe/Berlin" },
-            schoolYears: {},
-            terms: {},
-            subjects: {},
-            classes: {},
-            courses: {},
-            offerings: {},
-          });
+          yield* Schools.publish(
+            {
+              id: school,
+              school: { name: "Schule am See", timeZone: "Europe/Berlin" },
+              schoolYears: {},
+              terms: {},
+              subjects: {},
+              classes: {},
+              courses: {},
+              offerings: {},
+              teachers: {},
+              rooms: {},
+              closures: {},
+              weekLabels: {},
+              lessons: {},
+            },
+            SchoolTesting.replacing,
+          );
 
-          const { code } = yield* AccessCodes.mint({
-            school,
-            kind: "student",
-            maxUses: Option.none(),
-          });
+          const { code } = yield* AccessCodes.mint({ school, kind: "student", maxUses: 30 });
 
           const wrong = Array.from(
             { length: Limits.perClient },

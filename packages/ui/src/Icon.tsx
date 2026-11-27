@@ -1,6 +1,7 @@
 import { Vector, type VectorPath } from "./Vector.tsx";
 
-// The few glyphs our own content draws, on a 24-point grid. Chrome uses the platform's symbols.
+// The few line glyphs our own content draws, on a 24-point grid: actions and controls. Chrome uses
+// the platform's symbols, and states, subjects and grade kinds are stickers (Sticker.ts).
 const stroked =
   (d: string) =>
   (color: string): ReadonlyArray<VectorPath> => [{ d, stroke: color, strokeWidth: 2.4 }];
@@ -9,16 +10,21 @@ const glyphs = {
   check: stroked("M5 12.5l4.5 4.5L19 7.5"),
   chevron: stroked("M9.5 6l6 6-6 6"),
   back: stroked("M14.5 6l-6 6 6 6"),
+  /** The Flutter app's way back: an arrow with its shaft. */
+  arrowBack: stroked("M19.5 12h-15M11 5.5 4.5 12l6.5 6.5"),
   plus: stroked("M12 5v14M5 12h14"),
   alert: stroked("M12 7.5v6M12 17v.01"),
   alertCircle: stroked("M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0M12 7.5v5M12 16.25v.01"),
   /** A bin, for deleting. */
   delete: stroked("M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5"),
-  clock: stroked("M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0M12 7.5V12l3 2"),
-  /** Waiting to go out. */
-  cloudUp: stroked(
-    "M7 19h10a4 4 0 0 0 .7-7.94A6 6 0 0 0 6.1 10.6 4.25 4.25 0 0 0 7 19zM12 16v-5.5M9.75 12.75 12 10.5l2.25 2.25",
+  /** A pencil, for editing. */
+  edit: stroked("M4.5 19.5l1-4.5L15.5 5a2.1 2.1 0 0 1 3 3l-10 10zM13.5 7l3 3"),
+  /** A cross, for a step not done yet. */
+  cross: stroked("M6.5 6.5l11 11M17.5 6.5l-11 11"),
+  calendar: stroked(
+    "M5.5 5.5h13a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1v-12a1 1 0 0 1 1-1zM4.5 10h15M8.5 3.5v4M15.5 3.5v4",
   ),
+  clock: stroked("M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0M12 7.5V12l3 2"),
   cloudOff: stroked(
     "M7 19h10a4 4 0 0 0 .7-7.94A6 6 0 0 0 6.1 10.6 4.25 4.25 0 0 0 7 19zM4 4l16 16",
   ),
@@ -32,15 +38,16 @@ const glyphs = {
   retry: stroked("M19.5 12a7.5 7.5 0 1 1-2.2-5.3M19.5 4.5V9H15"),
   /** Someone's account. */
   person: stroked("M8 8a4 4 0 1 0 8 0a4 4 0 1 0-8 0M4.5 20c.8-3.6 3.7-6 7.5-6s6.7 2.4 7.5 6"),
-  /** Confirmed: a white tick in a filled circle. */
-  checkBadge: (color: string): ReadonlyArray<VectorPath> => [
-    { d: "M0 12a12 12 0 1 0 24 0a12 12 0 1 0-24 0", fill: color },
-    { d: "M7 12.5l3.2 3.2L17 9", stroke: "#FFFFFF", strokeWidth: 2.8 },
-  ],
-  /** Still missing: an open ring. */
-  openBadge: (color: string): ReadonlyArray<VectorPath> => [
-    { d: "M2.5 12a9.5 9.5 0 1 0 19 0a9.5 9.5 0 1 0-19 0", stroke: color, strokeWidth: 2.6 },
-  ],
+  /** The notebook's key. */
+  key: stroked(
+    "M4.5 15.5a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0-7 0M10.5 13 19 4.5M16 7.5l2.5 2.5M18.5 5l2 2",
+  ),
+  /** An open book, for homework. */
+  book: stroked(
+    "M12 6.5C9.8 5 7.2 4.6 4.5 5.3v13c2.7-.7 5.3-.3 7.5 1.2 2.2-1.5 4.8-1.9 7.5-1.2v-13c-2.7-.7-5.3-.3-7.5 1.2zM12 6.5v13",
+  ),
+  /** A pulse line, for how this device runs. */
+  pulse: stroked("M3 12h4l2.5-6 5 12 2.5-6h4"),
 };
 
 export type IconName = keyof typeof glyphs;

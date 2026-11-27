@@ -9,6 +9,7 @@
  * text   = base32(bytes || check), 140 bits, groups of 4 joined by "-": ZGWY-6WXJ-9MB6-...
  * QR     = "STUDIENBUCH-NOTFALLKARTE-1:" || text
  * parse  ignores case, spaces and dashes, and reads O as 0 and I or L as 1
+ * login  = HKDF-SHA256(ikm = bytes(16), salt = empty, info = "stu.card.login.v1", 32)
  * ```
  */
 import * as Effect from "effect/Effect";
@@ -16,6 +17,7 @@ import * as Redacted from "effect/Redacted";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 
+import { Bytes } from "../format/Bytes.ts";
 import { CryptoSuite } from "../suite/CryptoSuite.ts";
 
 export * as RecoveryCode from "./RecoveryCode.ts";
@@ -99,6 +101,26 @@ export const generate = Effect.gen(function* () {
   const bytes = Redacted.make(yield* (yield* CryptoSuite.Service).randomBytes(codeLength));
 
   return { bytes, text: text(bytes) };
+});
+
+/**
+ * What the card of an account without an address signs in with; the server keeps its SHA-256. No
+ * account id goes in, since the device signs in before it knows the account, and no wrapper label,
+ * so it tells nothing about the seed that opens the root key.
+ */
+export const login = Effect.fn("RecoveryCode.login")(function* (
+  code: Redacted.Redacted<Uint8Array>,
+) {
+  const suite = yield* CryptoSuite.Service;
+
+  return Redacted.make(
+    yield* suite.hkdf({
+      ikm: Redacted.value(code),
+      salt: new Uint8Array(0),
+      info: Bytes.label("stu.card.login.v1"),
+      length: 32,
+    }),
+  );
 });
 
 /** What the QR code on the card holds. */

@@ -3,18 +3,20 @@ packages:
   - packages/*
 
 catalogMode: strict
+pmOnFail: error
 
 catalog:
-  "@effect/tsgo": 0.62.0
+  "@effect/tsgo": 0.73.4
   # Exactly the oxlint that Vite+ bundles, which loads the local plugins in tools/oxlint.
-  "@oxlint/plugins": 1.89.0
+  "@oxlint/plugins": 1.94.0
   knip: 6.43.0
-  typescript: 7.0.2
+  # Exactly the tsrs that Vite+ bundles, so the lint's type check and `tsrs -p` are one compiler.
+  tsrs: 7.1.0-beta.tsrs4
   # Vite+ bundles Vite and Vitest. These two follow its release, so every package and plugin
   # resolves the same copies as `vp`.
-  vite: npm:@voidzero-dev/vite-plus-core@1.4.0
-  vite-plus: 1.4.0
-  vitest: 5.0.5
+  vite: npm:@voidzero-dev/vite-plus-core@8.3.8001
+  vite-plus: 1.8.0
+  vitest: 5.1.1
   # Effect's unstable modules change in patch releases, so `effect` and every `@effect/*` sit at one
   # exact version and move together.
   effect: 4.0.7
@@ -94,7 +96,7 @@ catalog:
   expo-network: 58.0.4
   # Browser tests (`*.browser.test.ts`): Vitest's Playwright provider at Vite+'s Vitest version, and
   # the Playwright whose browsers nixpkgs builds (`playwright-driver.browsers`).
-  "@vitest/browser-playwright": 5.0.5
+  "@vitest/browser-playwright": 5.1.1
   playwright: 1.64.1
   # Metro's Babel transformer, which apps/app/metro.transformer.js wraps, at the version Expo 58.0.20
   # depends on.
@@ -116,6 +118,16 @@ catalog:
   # `bundledNativeModules.json`. babel-preset-expo adds the worklets plugin once it resolves.
   react-native-reanimated: 4.7.1
   react-native-worklets: 0.13.0
+  # Better Auth's placeholder address and its transactions for our own sign-in routes, at the
+  # version Better Auth itself depends on, so both share one instance.
+  "@better-auth/core": 1.7.14
+  # WebUntis, read-only, behind the import's seam (m2-import-corpus.md). The harness decodes recorded
+  # bodies with its schemas, so the import sees what the live client would return.
+  "@schnau/webuntis-api": 0.4.0
+  # age encryption for the import corpus's archives (m2-import-corpus.md, section 5), so packing and
+  # fetching need no age binary on the dev hosts or in CI.
+  age-encryption: 0.3.1
+  "@schnau/tsconfig": ^0.1.1
 
 overrides:
   vite@*: "catalog:"
@@ -126,14 +138,14 @@ overrides:
   react-native-worklets@*: "catalog:"
 
 peerDependencyRules:
-  # The alias reports Vite+'s version, not the Vite 8 inside it.
   allowedVersions:
-    vite: "*"
     # The driver's range is stale: Effect's own repository tests it against 0.2.1.
     "@effect/sql-sqlite-wasm>@effect/wa-sqlite": 0.2.1
 
-# Same-day releases we need now. Delete each entry at the next bump of its package.
 minimumReleaseAgeExclude:
+  # Ours, so its releases are usable the day they come out.
+  - "@schnau/tsconfig"
+  # Same-day releases we need now. Delete each entry at the next bump of its package.
   - effect@4.0.7
   - "@effect/platform-node-shared@4.0.7"
   - "@effect/platform-node@4.0.7"
@@ -150,7 +162,10 @@ patchedDependencies:
   # Passkey sign-in asks for "preferred" user verification and both verify calls accept none, but
   # the PRF unlock needs verification on every assertion (recovery.md, section 4). The patch reads
   # `authenticatorSelection.userVerification` for all three, so "required" applies everywhere.
-  # `Auth.test.ts` fails when a bump drops it. Delete it once upstream PR #11155 or #11981 ships.
+  # It also takes the registration's `name` for the display name, which would otherwise be an
+  # account's placeholder address (`WithoutAddress`). `Auth.test.ts` fails when a bump drops either.
+  # Delete the first part once upstream PR #11155 or #11981 ships, the second once upstream uses
+  # `name` for both.
   "@better-auth/passkey@1.7.14": patches/@better-auth__passkey@1.7.14.patch
   # Expo Router ignores `experiments.baseUrl` while NODE_ENV is development (expo/expo#47701), so
   # behind the dev server's front door `/app/...` matched no route and links left `/app`. The patch

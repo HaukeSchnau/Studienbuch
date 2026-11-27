@@ -1,11 +1,13 @@
 /**
  * The demo seed: the demo school for the current school year, and Lena and Tom with their first key
  * records, admitted with their courses for today's term and their notebooks' encrypted content. `prepare` runs it when
- * `STUDIENBUCH_DEMO_SCHOOL=seed`, and `console demo seed` on request. A second run writes nothing.
+ * `STUDIENBUCH_DEMO_SCHOOL=seed`, and `console demo seed` on request. A second run in the same
+ * week and term writes nothing but a new Stand, read at the time of the run.
  */
 import { Demo } from "@stu/api/Demo";
 import { Dev } from "@stu/api/Dev";
 import { CryptoSuite } from "@stu/e2ee";
+import { System } from "@stu/api/System";
 import * as Command from "effect/cli/Command";
 import * as Config from "effect/Config";
 import * as Console from "effect/Console";
@@ -36,16 +38,13 @@ export const run = Effect.gen(function* () {
   return yield* Effect.gen(function* () {
     const today = yield* DemoSchool.today;
     const { data, term } = yield* DemoSchool.data(today);
-    yield* Schools.publish(data);
+    yield* Schools.publish(data, Schools.removeMissing(today));
 
-    // Anyone may sign up to the demo school where anyone may sign in as its students.
-    if (Deployment.isDevelopmentOrPreview((yield* Deployment.Current).environment)) {
+    // Anyone may sign up to the demo school where anyone may sign in as its students. A
+    // development or preview database lives for one branch, so a thousand outlast its testers.
+    if (System.isDevelopmentOrPreview((yield* Deployment.Current).environment)) {
       yield* AccessCodes.ensure(
-        {
-          school: DemoSchool.id,
-          kind: "student",
-          maxUses: Option.none(),
-        },
+        { school: DemoSchool.id, kind: "student", maxUses: 1000 },
         Dev.demoSchoolCode,
       );
     }

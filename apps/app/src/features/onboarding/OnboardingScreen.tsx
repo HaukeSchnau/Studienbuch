@@ -140,19 +140,15 @@ function WhoStep({
   return (
     <>
       <AuthHeading>Willkommen!</AuthHeading>
-      <Lead>
-        {canChoose
-          ? "Bitte gib deinen Namen und deinen Jahrgang an."
-          : "Bitte gib deinen Namen an."}
-      </Lead>
+      <Lead>Ein Spitzname geht auch. Den Namen kennen nur deine Geräte.</Lead>
       <Form>
         <Field
           pill
-          label="Name"
+          label="Wie soll die App dich nennen?"
           value={answers.name}
           onChangeText={(name) => save({ ...draft, name })}
-          autoComplete="given-name"
-          textContentType="givenName"
+          autoComplete="nickname"
+          textContentType="nickname"
           autoCorrect={false}
           maxLength={80}
           returnKeyType="next"

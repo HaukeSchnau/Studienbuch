@@ -5,11 +5,9 @@ import * as Fiber from "effect/Fiber";
 import * as HttpClient from "effect/http/HttpClient";
 import * as HttpClientResponse from "effect/http/HttpClientResponse";
 import * as Layer from "effect/Layer";
-import * as Option from "effect/Option";
 import * as Redacted from "effect/Redacted";
 import * as RpcClient from "effect/rpc/RpcClient";
 import * as Socket from "effect/socket/Socket";
-import * as Stream from "effect/Stream";
 import * as TestClock from "effect/testing/TestClock";
 import { Connection } from "../protocol/Connection.ts";
 import { Protocol } from "../protocol/Protocol.ts";
@@ -179,12 +177,6 @@ describe("WebSocketTransport.layer", () => {
       Layer.provide(
         Layer.mergeAll(
           Layer.succeed(Ports.Server, { origin: new URL("https://beta.example") }),
-          Layer.succeed(Ports.Session, {
-            accountId: "account-lena",
-            token: Effect.succeedSome(Redacted.make("token-1")),
-            changes: Stream.make(Option.some(Redacted.make("token-1"))),
-            ended: Effect.void,
-          }),
           Layer.succeed(HttpClient.HttpClient, http),
           Layer.succeed(Socket.WebSocketConstructor, constructor),
         ),
@@ -194,11 +186,13 @@ describe("WebSocketTransport.layer", () => {
     return { layer, opened, authorizations };
   };
 
-  it.effect("a ticket opens the socket at its URL, with the session's bearer token", () =>
+  it.effect("a ticket opens the socket at its URL, with the bearer token it connects as", () =>
     Effect.gen(function* () {
       const { layer, opened, authorizations } = transport(200, '{"ticket":"t-1"}');
 
-      yield* Effect.flatMap(Ports.Transport, (each) => each.connect).pipe(Effect.provide(layer));
+      yield* Effect.flatMap(Ports.Transport, (each) => each.connect(Redacted.make("token-1"))).pipe(
+        Effect.provide(layer),
+      );
       yield* TestClock.adjust(0);
 
       expect(authorizations).toEqual(["Bearer token-1"]);
@@ -216,19 +210,15 @@ describe("WebSocketTransport.layer", () => {
         Layer.provide(
           Layer.mergeAll(
             Layer.succeed(Ports.Server, { origin: new URL("https://beta.example") }),
-            Layer.succeed(Ports.Session, {
-              accountId: "account-lena",
-              token: Effect.succeedSome(Redacted.make("token-1")),
-              changes: Stream.make(Option.some(Redacted.make("token-1"))),
-              ended: Effect.void,
-            }),
             Layer.succeed(HttpClient.HttpClient, silent),
             Layer.succeed(Socket.WebSocketConstructor, sockets().constructor),
           ),
         ),
       );
 
-      const attempt = yield* Effect.flatMap(Ports.Transport, (each) => each.connect).pipe(
+      const attempt = yield* Effect.flatMap(Ports.Transport, (each) =>
+        each.connect(Redacted.make("token-1")),
+      ).pipe(
         Effect.provide(layer),
         Effect.match({ onFailure: (error) => error.reason, onSuccess: () => "connected" }),
         Effect.forkScoped,
@@ -242,7 +232,7 @@ describe("WebSocketTransport.layer", () => {
   it.effect("a 401 from the ticket route ends the session, any other failure is unreachable", () =>
     Effect.gen(function* () {
       const reason = (status: number) =>
-        Effect.flatMap(Ports.Transport, (each) => each.connect).pipe(
+        Effect.flatMap(Ports.Transport, (each) => each.connect(Redacted.make("token-1"))).pipe(
           Effect.provide(transport(status, "{}").layer),
           Effect.match({ onFailure: (error) => error.reason, onSuccess: () => "connected" }),
           Effect.scoped,

@@ -31,6 +31,38 @@ export const weekday = (date: CivilTime.PlainDate) =>
 export const shortWeekday = (date: CivilTime.PlainDate) =>
   shortWeekdays[PlainDateFns.dayOfWeek(date) - 1] ?? "";
 
+/** "November" */
+export const month = (date: CivilTime.PlainDate) => months[date.month - 1] ?? "";
+
+/** "9.11.", or "9.11.2027" in another year than `today`'s. */
+export const dayMonth = (date: CivilTime.PlainDate, today: CivilTime.PlainDate) =>
+  `${String(date.day)}.${String(date.month)}.${date.year === today.year ? "" : String(date.year)}`;
+
+/** "Mo, 9.11." */
+export const short = (date: CivilTime.PlainDate, today: CivilTime.PlainDate) =>
+  `${shortWeekday(date)}, ${dayMonth(date, today)}`;
+
+/** A time of day as a lesson's `start` counts it, such as "08:00". */
+export const time = (millis: number) => {
+  const minutes = Math.floor(millis / 60_000);
+
+  return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+};
+
+/** "Sa, 9. Januar" */
+export const medium = (date: CivilTime.PlainDate) =>
+  `${shortWeekday(date)}, ${String(date.day)}. ${month(date)}`;
+
+/** "16.–20. November", or "30. November – 4. Dezember" across months. */
+export const span = (first: CivilTime.PlainDate, last: CivilTime.PlainDate) =>
+  first.month === last.month && first.year === last.year
+    ? `${String(first.day)}.–${String(last.day)}. ${month(last)}`
+    : `${String(first.day)}. ${month(first)} – ${String(last.day)}. ${month(last)}`;
+
 /** "Mittwoch, 11. November", as the Übersicht's hero names today. */
 export const long = (date: CivilTime.PlainDate) =>
-  `${weekday(date)}, ${String(date.day)}. ${months[date.month - 1] ?? ""}`;
+  `${weekday(date)}, ${String(date.day)}. ${month(date)}`;
+
+/** `long`, with the year when it isn't `today`'s: "Mittwoch, 27. Oktober 2027". */
+export const full = (date: CivilTime.PlainDate, today: CivilTime.PlainDate) =>
+  date.year === today.year ? long(date) : `${long(date)} ${String(date.year)}`;

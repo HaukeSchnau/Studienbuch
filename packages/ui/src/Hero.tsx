@@ -23,10 +23,14 @@ export interface HeroProps {
   readonly status?: ReactNode;
   /** Art at the right of the title, such as a subject's tile. It may overlap the swoosh. */
   readonly aside?: ReactNode;
+  /** Art at the left of the title, such as the student's initials on Profil. */
+  readonly leading?: ReactNode;
   /** Our own toolbar row above the title on the web. Native toolbars float over `top` instead. */
   readonly toolbar?: { readonly start?: ReactNode; readonly end?: ReactNode };
   /** The space above the title: the status bar and the native toolbar row. */
   readonly top: number;
+  /** The content column's widest, `Tokens.layout.contentMaxWidth` unless a screen needs more. */
+  readonly maxWidth?: number;
   /**
    * Reports how far down the colour reaches at the right edge, where the swoosh starts, so a screen
    * can tell when the status bar has left the colour.
@@ -48,8 +52,10 @@ export function Hero({
   chips = [],
   status,
   aside,
+  leading,
   toolbar,
   top,
+  maxWidth = Tokens.layout.contentMaxWidth,
   onColourEnd,
   children,
 }: HeroProps) {
@@ -75,12 +81,13 @@ export function Hero({
       >
         <Swoosh band={swoosh.band} line={color.heroEdge} canvas={color.canvas} />
         {toolbar === undefined ? null : (
-          <View style={[styles.column, styles.toolbar]}>
+          <View style={[styles.column, { maxWidth }, styles.toolbar]}>
             <View style={styles.toolbarGroup}>{toolbar.start}</View>
             <View style={styles.toolbarGroup}>{toolbar.end}</View>
           </View>
         )}
-        <View style={[styles.column, styles.heading]} onLayout={swoosh.onHeading}>
+        <View style={[styles.column, { maxWidth }, styles.heading]} onLayout={swoosh.onHeading}>
+          {leading}
           <View style={styles.text} onLayout={swoosh.onText}>
             <View style={[styles.text, styles.reach]} onLayout={swoosh.onReach}>
               <View {...words.container}>
@@ -130,6 +137,7 @@ export function Hero({
       <View
         style={[
           styles.column,
+          { maxWidth },
           styles.content,
           { marginTop: heroGap - below, minHeight: below - heroGap },
         ]}
@@ -261,7 +269,7 @@ function Swoosh({
 const styles = StyleSheet.create({
   area: { position: "relative" },
   swoosh: { position: "absolute", left: 0, right: 0, bottom: -1 },
-  column: { width: "100%", maxWidth: Tokens.layout.contentMaxWidth, alignSelf: "center" },
+  column: { width: "100%", alignSelf: "center" },
   toolbar: {
     flexDirection: "row",
     alignItems: "center",
@@ -278,7 +286,8 @@ const styles = StyleSheet.create({
     gap: Tokens.space.lg,
     paddingHorizontal: Tokens.layout.cardPadding,
   },
-  text: { flexShrink: 1, gap: Tokens.space.xs },
+  // Grows, so `leading` and the text stay together at the left and `aside` stays at the right.
+  text: { flexGrow: 1, flexShrink: 1, gap: Tokens.space.xs },
   // As wide as its own text, where the column would stretch it to the status.
   reach: { alignSelf: "flex-start" },
   onHero: { color: "#FFFFFF" },

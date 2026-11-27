@@ -106,7 +106,16 @@ const server = (environment: string, options: { readonly keySeed?: boolean } = {
 /** The `Api.Rpcs` client over HTTP, as a device calls it. */
 const rpc = Effect.gen(function* () {
   const server = yield* HttpServer.HttpServer;
-  const url = new URL(Api.path, HttpServer.formatAddress(server.address));
+  const { address } = server;
+
+  // CI's sandbox sends Node's fetch through its egress proxy to every host but localhost
+  // (`NO_PROXY`), and the test server listens on all addresses.
+  const url = new URL(
+    Api.path,
+    address._tag === "UnixPathAddress"
+      ? HttpServer.formatAddress(address)
+      : `http://localhost:${address.port}`,
+  );
 
   return yield* RpcClient.make(Api.Rpcs).pipe(
     Effect.provide(
@@ -309,6 +318,11 @@ describe.skipIf(Postgres18.socket === null)("Demo sign-in over the router", () =
             "Keys.fetchSeals": Effect.exit(
               client["Keys.fetchSeals"]({ method: Keys.RecoveryCode.make({}) }, bearer(mia)),
             ),
+            "AccountDeletion.deleted": Effect.exit(
+              client["AccountDeletion.deleted"](undefined, bearer(mia)),
+            ),
+            // Without a session, so Mia stays for the calls below.
+            "AccountDeletion.delete": Effect.exit(client["AccountDeletion.delete"](undefined)),
           });
 
           const lena = calls["Demo.signIn"];
@@ -370,6 +384,8 @@ describe.skipIf(Postgres18.socket === null)("Demo sign-in over the router", () =
               "Keys.init": "Success",
               "Keys.addWrapper": "Success",
               "Keys.fetchSeals": "Success",
+              "AccountDeletion.deleted": "Success",
+              "AccountDeletion.delete": "Failure",
             },
             miasKey: "Demo.NotDemo",
             lenasKey: handedOver,

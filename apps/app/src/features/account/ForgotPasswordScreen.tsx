@@ -7,7 +7,6 @@ import { Text } from "@stu/ui/Text";
 import { Theme } from "@stu/ui/Theme";
 import * as Exit from "effect/Exit";
 import * as Option from "effect/Option";
-import * as Atom from "effect/reactivity/Atom";
 import { Keyboard } from "react-native";
 
 import { PublicComputerChoice } from "../keys/PublicComputerChoice.tsx";
@@ -19,9 +18,10 @@ import {
   reasonOf,
   Strong,
   useCredentials,
+  useRunning,
 } from "./AccountForm.tsx";
 import { AccountState } from "./AccountState.ts";
-import { CodeField, ResendCode, useCode } from "./CodeField.tsx";
+import { CodeField, ResendCode, useCode, useForgetAnswer } from "./CodeField.tsx";
 import { Steps } from "./Steps.ts";
 
 /**
@@ -40,9 +40,12 @@ function Address() {
   const typed = Option.getOrElse(useAtomValue(Steps.forgotten), () => "");
   const { email, setEmail } = useCredentials(typed);
   const [sent, request] = useAtom(AccountState.requestPasswordReset, { mode: "promiseExit" });
+  const sending = useRunning(AccountState.requestPasswordReset);
   const keep = useAtomSet(Steps.resetSentTo);
 
   const submit = async () => {
+    if (sending()) return;
+
     Keyboard.dismiss();
 
     const exit = await request(email.trim());
@@ -93,17 +96,19 @@ function Address() {
 function NewPassword({ email }: { readonly email: string }) {
   const { color } = Theme.useTheme();
   const [result, reset] = useAtom(AccountState.resetPassword, { mode: "promiseExit" });
-  const forget = useAtomSet(AccountState.resetPassword);
   const keepSentTo = useAtomSet(Steps.resetSentTo);
   const keepTyped = useAtomSet(Steps.forgotten);
-  const code = useCode(() => forget(Atom.Reset));
+  const forgetResult = useForgetAnswer(AccountState.resetPassword);
+  const code = useCode(forgetResult);
   const { password, setPassword } = useCredentials();
   const [resent, request] = useAtom(AccountState.requestPasswordReset, { mode: "promiseExit" });
   const short = password.length < Accounts.minPasswordLength;
   const complete = code.complete && !short;
+  const attempting = AccountState.useAttempting();
+  const saving = AccountState.useSigningIn(result);
 
   const submit = async () => {
-    if (!complete) return;
+    if (!complete || attempting) return;
 
     Keyboard.dismiss();
 
@@ -154,8 +159,8 @@ function NewPassword({ email }: { readonly email: string }) {
           kind="action"
           label="Passwort speichern"
           block
-          disabled={!complete}
-          busy={result.waiting}
+          disabled={!complete || attempting}
+          busy={saving}
           onPress={() => void submit()}
         />
         <ResendCode
@@ -163,7 +168,7 @@ function NewPassword({ email }: { readonly email: string }) {
           send={() => request(email).then(Exit.isSuccess)}
           onSent={() => {
             code.clear();
-            forget(Atom.Reset);
+            forgetResult();
           }}
         />
       </Form>

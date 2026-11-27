@@ -1,9 +1,11 @@
+import { useAtomSet } from "@effect/atom-react";
 import { Accounts } from "@stu/api/Accounts";
 import { Link } from "@stu/ui/Link";
 import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
 import { useAnnounceStatus } from "@stu/ui/useAnnounce";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
+import * as Atom from "effect/reactivity/Atom";
 import { useEffect, useState } from "react";
 import { StyleSheet, TextInput, View } from "react-native";
 
@@ -11,7 +13,7 @@ import { useFocused } from "@stu/ui/Field";
 import { Text } from "@stu/ui/Text";
 
 import type { Account } from "./Account.ts";
-import { ProblemText, reasonOf } from "./AccountForm.tsx";
+import { ProblemText, reasonOf, useRunning } from "./AccountForm.tsx";
 import { TypedCode } from "./TypedCode.ts";
 
 // The code from a mail, on "E-Mail bestätigen" and "Passwort vergessen?": its six boxes, what they
@@ -93,6 +95,22 @@ export function useCode(onEdit: () => void) {
       setValue(next);
     },
     clear: () => setValue(""),
+  };
+}
+
+/**
+ * Forgets the last answer of the form's `action` when what it sent changes or a new code came,
+ * unless it runs: the screen waits for that answer, and forgetting would interrupt a run that isn't
+ * concurrent. Read when called, as a new code's answer can come after the run began.
+ */
+export function useForgetAnswer(
+  action: Atom.Writable<AsyncResult.AsyncResult<unknown, unknown>, Atom.Reset>,
+) {
+  const running = useRunning(action);
+  const forget = useAtomSet(action);
+
+  return () => {
+    if (!running()) forget(Atom.Reset);
   };
 }
 

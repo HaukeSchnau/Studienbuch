@@ -28,7 +28,7 @@ function Unlock({ accountId }: { readonly accountId: string }) {
   const router = useRouter();
   const { color } = Theme.useTheme();
   const status = useAtomValue(KeysState.status(accountId));
-  const prfProblem = useAtomValue(KeysState.prfProblem);
+  const signInProblem = useAtomValue(KeysState.signInProblem);
   const [passkey, withPasskey] = useAtom(KeysState.withPasskey(accountId));
   const current = Option.getOrUndefined(AsyncResult.value(status))?._tag;
 
@@ -61,7 +61,7 @@ function Unlock({ accountId }: { readonly accountId: string }) {
           />
         </View>
         <ProblemText reason={reasonOf(passkey)} />
-        <KeyProblem reason={Option.orElse(keyReasonOf(passkey), () => prfProblem)} />
+        <KeyProblem reason={Option.orElse(keyReasonOf(passkey), () => signInProblem)} />
         {current === "Offline" ? (
           <Text variant="subhead" style={{ color: color.inkSoft }}>
             Zum Entsperren brauchst du einmal Internet.

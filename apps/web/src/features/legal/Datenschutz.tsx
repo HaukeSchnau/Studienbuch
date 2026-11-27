@@ -124,8 +124,12 @@ export function Datenschutz() {
       <p>Diese Daten können wir lesen, weil Anmeldung, Abgleich und Stundenplan sie brauchen:</p>
       <ul>
         <li>
-          Kontodaten: E-Mail-Adresse, Bestätigungsstatus und Anmeldedaten. Bei einem Passkey sind
-          das dessen öffentliche Schlüsseldaten; biometrische Merkmale verlassen Ihr Gerät nicht.
+          Kontodaten: Ihre Anmeldedaten. Das sind die öffentlichen Schlüsseldaten Ihres Passkeys und
+          ein Prüfwert Ihrer Notfallkarte, aus dem sich die Karte nicht zurückrechnen lässt;
+          biometrische Merkmale verlassen Ihr Gerät nicht. Eine E-Mail-Adresse und ein Passwort,
+          dieses nur als kryptografischer Hash, speichern wir nur, wenn Sie sich mit einer
+          E-Mail-Adresse angemeldet haben. Konten ohne E-Mail-Adresse erhalten eine zufällige
+          interne Kennung, an die nie eine E-Mail geht.
         </li>
         <li>
           Sitzungs- und Gerätedaten wie Ablaufzeit, IP-Adresse, Browser- und Gerätekennung, die
@@ -158,6 +162,11 @@ export function Datenschutz() {
 
       <h3>Konto und Schulzugang</h3>
       <p>
+        Ein Konto braucht weder eine E-Mail-Adresse noch Ihren Namen. Ihren Anzeigenamen kennen nur
+        Ihre Geräte. Anonym ist ein Konto damit trotzdem nicht: Schulzugang und Kurswahl können
+        zusammen mit dem Stundenplan der Schule auf eine bestimmte Person hindeuten.
+      </p>
+      <p>
         Ein Konto kann länger bestehen als ein einzelner Schulzugang. Die E-Mail-Adresse dient der
         Anmeldung, Bestätigung und Wiederherstellung; sie wird nicht als Nachweis einer
         Schulzugehörigkeit verwendet. Die Schule erhält von uns keine Zuordnung zwischen Zugangscode
@@ -187,6 +196,11 @@ export function Datenschutz() {
         Passkey oder über die Notfallkarte, die die App beim Einrichten ausgibt. Gehen alle drei
         verloren, können wir Ihre verschlüsselten Inhalte nicht wiederherstellen, weil wir keine
         Kopie Ihrer Schlüssel besitzen. Konto, Stundenplan und Kurswahl bleiben erhalten.
+      </p>
+      <p>
+        Ohne E-Mail-Adresse meldet die Notfallkarte Sie auch an. Wer die Karte hat, kommt in Ihr
+        Konto und kann Ihre Einträge lesen. Bewahren Sie sie deshalb sicher auf, und ersetzen Sie
+        sie in der App, wenn Sie sie verloren haben; die alte Karte gilt dann nicht mehr.
       </p>
 
       <h3>Übernahme aus dem Stundenplansystem</h3>
@@ -248,10 +262,12 @@ export function Datenschutz() {
       <p>
         Konten und die zugehörigen Zugangsdaten speichern wir, solange das Konto besteht.
         Abgelaufene Sitzungen sowie Bestätigungs- und Wiederherstellungstoken werden gelöscht,
-        sobald sie für ihren Sicherheitszweck nicht mehr benötigt werden. Die Löschung eines Kontos
-        kann über die oben genannte E-Mail-Adresse verlangt werden. Datensicherungen bewahren wir
-        bis zu 35&nbsp;Tage auf, Server-Protokolle bis zu 10&nbsp;Tage. Mit einem Konto löschen wir
-        auch die Sicherungen seiner Schlüssel. Spätestens 35&nbsp;Tage später sind sie auch aus den
+        sobald sie für ihren Sicherheitszweck nicht mehr benötigt werden. Ihr Konto können Sie
+        jederzeit in der App löschen. Geräte, die bei der Löschung noch angemeldet sind, löschen
+        ihre Kopie, sobald sie sich wieder verbinden. Auf anderen Geräten bleiben Ihre Einträge, bis
+        Sie dort die App oder die Websitedaten löschen. Datensicherungen bewahren wir bis zu
+        35&nbsp;Tage auf, Server-Protokolle bis zu 10&nbsp;Tage. Mit einem Konto löschen wir auch
+        die Sicherungen seiner Schlüssel. Spätestens 35&nbsp;Tage später sind sie auch aus den
         Datensicherungen gelöscht, und ältere Kopien verschlüsselter Inhalte kann danach niemand
         mehr öffnen.
       </p>
@@ -275,6 +291,15 @@ export function Datenschutz() {
       <p>
         Soweit eine Verarbeitung auf einer Einwilligung beruht, können Sie diese jederzeit mit
         Wirkung für die Zukunft widerrufen (Artikel&nbsp;7 Absatz&nbsp;3 DSGVO).
+      </p>
+      <p>
+        Ein Konto ohne E-Mail-Adresse ist weder mit einem Namen noch mit einer E-Mail-Adresse
+        verknüpft. Weder Ihre Schule noch wir erheben zusätzliche Daten, nur um es einer Person
+        zuzuordnen (Artikel&nbsp;11 Absatz&nbsp;1 DSGVO). Ihre Rechte üben Sie deshalb am
+        einfachsten in der App aus: Dort sehen Sie Ihre Einträge vollständig und können Ihr Konto
+        löschen. Wenden Sie sich auf anderem Weg an uns, brauchen wir einen Nachweis, dass das Konto
+        Ihnen gehört, etwa eine Anmeldung mit Ihrer Notfallkarte oder Ihrem Passkey (Artikel&nbsp;12
+        Absatz&nbsp;6 DSGVO).
       </p>
 
       <h2>7. Beschwerderecht</h2>

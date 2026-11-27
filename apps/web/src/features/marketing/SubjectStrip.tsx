@@ -1,3 +1,4 @@
+import { SubjectSticker } from "@stu/domain-ui/subject/SubjectSticker";
 import { Tokens } from "@stu/ui/Tokens";
 
 import { DriftingRow } from "#/ui/DriftingRow.tsx";
@@ -5,7 +6,7 @@ import { DriftingRow } from "#/ui/DriftingRow.tsx";
 import { Demo } from "./Demo.ts";
 
 /**
- * A timetable drifting past, in the app's subject art on the course colours. It says "school"
+ * A timetable drifting past, in the app's subject stickers on the course colours. It says "school"
  * faster than any sentence. The row is decoration, so it is hidden from assistive technology;
  * reaching for a tile stops it.
  */
@@ -13,7 +14,7 @@ export function SubjectStrip() {
   return (
     <div className="subject-strip">
       <DriftingRow>
-        {Demo.strip.map(({ icon, label, slot }, index) => (
+        {Demo.strip.map(({ art, label, slot }, index) => (
           <span
             className="subject-tile"
             key={label}
@@ -23,7 +24,7 @@ export function SubjectStrip() {
               backgroundColor: Tokens.subject[slot].fill,
             }}
           >
-            <img alt="" height={28} src={`/subjects/${icon}.svg`} width={28} />
+            <SubjectSticker art={art} size={36} />
             {label}
           </span>
         ))}

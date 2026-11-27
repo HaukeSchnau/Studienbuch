@@ -15,13 +15,20 @@
     "./Card": "./src/Card.tsx",
     "./Checkable": "./src/Checkable.tsx",
     "./Checkbox": "./src/Checkbox.tsx",
+    "./Drawing": {
+      "react-native": "./src/Drawing.tsx",
+      "default": "./src/Drawing.web.tsx"
+    },
     "./Field": "./src/Field.tsx",
     "./Hero": "./src/Hero.tsx",
     "./Icon": "./src/Icon.tsx",
     "./Link": "./src/Link.tsx",
+    "./MarkerBlob": "./src/MarkerBlob.tsx",
+    "./PanelWave": "./src/PanelWave.tsx",
     "./Pill": "./src/Pill.tsx",
     "./PillChoice": "./src/PillChoice.tsx",
     "./RevisionCard": "./src/RevisionCard.tsx",
+    "./Sticker": "./src/Sticker.ts",
     "./SubjectBlob": "./src/SubjectBlob.tsx",
     "./SuccessTick": "./src/SuccessTick.tsx",
     "./Text": "./src/Text.tsx",
@@ -43,6 +50,10 @@
     },
     "./useLayout": "./src/useLayout.ts",
     "./useLingeringOrder": "./src/useLingeringOrder.ts",
+    "./useRefocus": {
+      "react-native": "./src/useRefocus.ts",
+      "default": "./src/useRefocus.web.ts"
+    },
     "./useStableCallback": "./src/useStableCallback.ts",
     "./Vector": {
       "react-native": "./src/Vector.tsx",
@@ -61,7 +72,6 @@
     "react-native": "catalog:",
     "react-native-reanimated": "catalog:",
     "react-native-svg": "catalog:",
-    "typescript": "catalog:",
     "vite-plus": "catalog:"
   },
   "peerDependencies": {

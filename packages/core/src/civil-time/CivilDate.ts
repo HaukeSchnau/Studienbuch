@@ -17,3 +17,13 @@ export const order: Order.Order<CivilTime.PlainDate> = Order.make((self, that) =
 
 export const addDays = (date: CivilTime.PlainDate, days: number): CivilTime.PlainDate =>
   PlainDateFns.addDays(date, days);
+
+/** 1 for Monday to 7 for Sunday. */
+export const dayOfWeek = (date: CivilTime.PlainDate): number => PlainDateFns.dayOfWeek(date);
+
+/**
+ * The ISO 8601 week, such as `2026-W53` for 31 December 2026. Its year is the week's, which
+ * differs from the date's around New Year, where legacy counted 1 January 2027 as week 0.
+ */
+export const isoWeek = (date: CivilTime.PlainDate): string =>
+  `${PlainDateFns.yearOfWeek(date)}-W${String(PlainDateFns.weekOfYear(date)).padStart(2, "0")}`;

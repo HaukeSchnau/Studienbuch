@@ -6,10 +6,14 @@
   pkgs,
   lib,
   config,
+  inputs,
   ...
 }:
 let
-  toolchain = import ./nix/toolchain.nix { inherit pkgs; };
+  toolchain = import ./nix/toolchain.nix {
+    inherit pkgs;
+    sdk = inputs.projectSdk;
+  };
   root = config.devenv.root;
   state = config.env.DEVENV_STATE;
   port = name: toString config.processes.${name}.ports.http.value;
@@ -56,7 +60,7 @@ in
     exec ${config.services.garage.package}/bin/garage -c ${garageConfig} server
   '';
 
-  env = {
+  env = import ./nix/shell-env.nix { inherit pkgs; } // {
     STUDIENBUCH_ENVIRONMENT = "development";
     PUBLIC_URL = "http://localhost:${port "server"}";
     PASSKEY_RP_ID = "localhost";
@@ -73,6 +77,9 @@ in
     MAIL_URL = "capture:";
     MAIL_FROM = "Studienbuch <studienbuch@localhost>";
     STUDIENBUCH_DEMO_SCHOOL = "seed";
+    # `expo start` and `expo run` would otherwise ask for the `typescript` package, which tsrs
+    # replaces (ADR 0032), and rewrite apps/app/tsconfig.json.
+    EXPO_NO_TYPESCRIPT_SETUP = "1";
   };
 
   tasks."studienbuch:auth-secret" = {
@@ -128,8 +135,6 @@ in
     env = {
       EXPO_NO_TELEMETRY = "1";
       EXPO_OFFLINE = "1";
-      # `expo start` would otherwise rewrite tsconfig.json.
-      EXPO_NO_TYPESCRIPT_SETUP = "1";
     };
   };
 

@@ -34,7 +34,6 @@ export function SelfTestScreen() {
     failed: color.danger,
     missing: color.warning,
     pending: color.inkSoft,
-    warning: color.warning,
   };
 
   return (

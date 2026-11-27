@@ -1,5 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
+import * as Option from "effect/Option";
 import * as Exit from "effect/Exit";
 import * as Schema from "effect/Schema";
 import { CivilTime } from "./CivilTime.ts";
@@ -30,6 +31,48 @@ describe("CivilTime.PlainDate", () => {
   );
 });
 
+describe("CivilTime.isoWeek", () => {
+  it.effect.each([
+    { date: "2026-11-09", week: "2026-W46", day: 1 },
+    { date: "2026-12-31", week: "2026-W53", day: 4 },
+    { date: "2027-01-01", week: "2026-W53", day: 5 },
+    { date: "2027-01-04", week: "2027-W01", day: 1 },
+  ])("puts $date in $week", ({ date, week, day }) =>
+    Effect.gen(function* () {
+      const plain = yield* decode(date);
+
+      expect([CivilTime.isoWeek(plain), CivilTime.dayOfWeek(plain)]).toEqual([week, day]);
+    }),
+  );
+});
+
+describe("CivilTime.IsoWeek", () => {
+  const isIsoWeek = Schema.is(CivilTime.IsoWeek);
+
+  it.each([
+    { week: "2026-W53", valid: true },
+    { week: "2027-W01", valid: true },
+    { week: "2025-W52", valid: true },
+    { week: "2025-W53", valid: false },
+    { week: "2026-W00", valid: false },
+    { week: "2026-W54", valid: false },
+    { week: "2026-W5", valid: false },
+  ])("takes $week only if its year has it: $valid", ({ week, valid }) => {
+    expect(isIsoWeek(week)).toBe(valid);
+  });
+
+  it.each([
+    { week: "2026-W47", monday: "2026-11-16" },
+    { week: "2026-W53", monday: "2026-12-28" },
+    { week: "2027-W01", monday: "2027-01-04" },
+    { week: "2025-W53", monday: "none" },
+  ])("starts $week on $monday", ({ week, monday }) => {
+    expect(
+      Option.match(CivilTime.mondayOf(week), { onNone: () => "none", onSome: CivilTime.format }),
+    ).toBe(monday);
+  });
+});
+
 describe("CivilTime.dateIn", () => {
   const berlin = CivilTime.TimeZone.make("Europe/Berlin");
   const utc = CivilTime.TimeZone.make("UTC");
@@ -51,4 +94,30 @@ describe("CivilTime.dateIn", () => {
       false,
     ]);
   });
+});
+
+describe("CivilTime.Instant", () => {
+  const decodeInstant = Schema.decodeUnknownEffect(CivilTime.Instant);
+  const encodeInstant = Schema.encodeEffect(CivilTime.Instant);
+
+  it.effect("reads and writes an instant in UTC with milliseconds", () =>
+    Effect.gen(function* () {
+      const text = "2026-11-18T06:30:00.000Z";
+
+      expect(yield* encodeInstant(yield* decodeInstant(text))).toBe(text);
+    }),
+  );
+
+  // A stored instant has one spelling, so the same instant compares equal as text.
+  it.effect.each([
+    { name: "an offset", text: "2026-11-18T07:30:00.000+01:00" },
+    { name: "no milliseconds", text: "2026-11-18T06:30:00Z" },
+    { name: "a date only", text: "2026-11-18" },
+    { name: "a time that doesn't exist", text: "2026-11-18T25:30:00.000Z" },
+    { name: "a day that doesn't exist", text: "2026-02-30T06:30:00.000Z" },
+  ])("refuses $name", ({ text }) =>
+    Effect.gen(function* () {
+      expect(Exit.isFailure(yield* Effect.exit(decodeInstant(text)))).toBe(true);
+    }),
+  );
 });

@@ -1,11 +1,12 @@
 /** The sync engine's writers on a prepared database, for the tests of admissions and schools. */
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import { Studienbuch } from "@stu/core";
+import { School, Studienbuch } from "@stu/core";
 import { SyncServer } from "@stu/sync/server";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as SqlClient from "effect/sql/SqlClient";
 import { DatabaseTesting } from "../infra/database/DatabaseTesting.ts";
+import { Schools } from "./Schools.ts";
 
 export * as SchoolTesting from "./SchoolTesting.ts";
 
@@ -35,3 +36,6 @@ export const memberships = (account: string) =>
       order by line
     `,
   ).pipe(Effect.map((rows) => rows.map((row) => row.line)));
+
+/** A publish that owns the school's rows, on the TestClock's first day. */
+export const replacing = Schools.removeMissing(School.today(undefined, 0));

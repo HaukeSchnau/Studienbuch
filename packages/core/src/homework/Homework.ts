@@ -36,7 +36,9 @@ export type Id = typeof Id.Type;
 
 // Lengths count UTF-16 code units, as JavaScript and React Native's `maxLength` do.
 
-export const Title = Text.NonBlank.check(Schema.isMaxLength(200));
+export const titleMaxLength = 200;
+
+export const Title = Text.NonBlank.check(Schema.isMaxLength(titleMaxLength));
 
 export type Title = typeof Title.Type;
 

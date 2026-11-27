@@ -1,5 +1,7 @@
+import { Api } from "@stu/api";
 import { Access } from "@stu/api/Access";
 import { Accounts } from "@stu/api/Accounts";
+import { Demo } from "@stu/api/Demo";
 import { Ports } from "@stu/sync/client";
 import type * as Cause from "effect/Cause";
 import * as Context from "effect/Context";
@@ -13,10 +15,14 @@ import * as HttpIncomingMessage from "effect/http/HttpIncomingMessage";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Redacted from "effect/Redacted";
+import * as RpcClient from "effect/rpc/RpcClient";
 import * as Schema from "effect/Schema";
 
-// Better Auth's routes at `Accounts.path`, the ones Studienbuch uses, with every response parsed.
-// A device sends its bearer token and keeps no cookies (ADR 0028).
+import { Deadline } from "../api/Deadline.ts";
+
+// Better Auth's routes at `Accounts.path`, the ones Studienbuch uses, with every response parsed,
+// and `Demo.signIn`, the one way to a session outside them. A device sends its bearer token and
+// keeps no cookies (ADR 0028).
 
 export * as AuthApi from "./AuthApi.ts";
 
@@ -26,7 +32,7 @@ export class Refused extends Schema.TaggedError<Refused, { readonly brand: uniqu
   { status: Schema.Int, code: Schema.String },
 ) {}
 
-/** No answer at all: the device is offline, or the server is down. */
+/** No answer at all: the device is offline, the server is down, or it didn't answer in time. */
 export class Unreachable extends Schema.TaggedError<
   Unreachable,
   { readonly brand: unique symbol }
@@ -132,6 +138,18 @@ const sessionExpiry = HttpIncomingMessage.schemaBodyJson(
   Schema.NullOr(Schema.Struct({ session: Schema.Struct({ expiresAt: Schema.String }) })),
 );
 
+const sessionUser = HttpIncomingMessage.schemaBodyJson(
+  Schema.NullOr(Schema.Struct({ user: Schema.Struct({ email: Schema.String }) })),
+);
+
+const passkeyList = HttpIncomingMessage.schemaBodyJson(Schema.Array(Schema.Unknown));
+
+/** How the session's account can sign in again: with a password, a passkey, both or neither. */
+export interface WaysIn {
+  readonly password: boolean;
+  readonly passkey: boolean;
+}
+
 const refusal = HttpIncomingMessage.schemaBodyJson(Schema.Struct({ code: Schema.String }));
 const creationOptions = HttpIncomingMessage.schemaBodyJson(CreationOptions);
 const requestOptions = HttpIncomingMessage.schemaBodyJson(RequestOptions);
@@ -170,6 +188,11 @@ export class Service extends Context.Service<
     /** When the session ends now, or `None` once it ended. A call also renews it (D27). */
     readonly session: (token: Redacted.Redacted) => Effect.Effect<Option.Option<Date>, Failure>;
     readonly signOut: (token: Redacted.Redacted) => Effect.Effect<void, Failure>;
+    /**
+     * How the session's account can sign in again. An account without an address has no password,
+     * and one that signed up with its Notfallkarte may have no passkey either.
+     */
+    readonly waysIn: (token: Redacted.Redacted) => Effect.Effect<WaysIn, Failure>;
     readonly passkeySignInOptions: Effect.Effect<Ceremony<RequestOptions>, Failure>;
     readonly passkeySignIn: (
       challenge: string,
@@ -188,6 +211,33 @@ export class Service extends Context.Service<
       challenge: string,
       credential: Credential,
     ) => Effect.Effect<void, Failure>;
+    /** Options for the passkey that creates an account without an address with `reservation`. */
+    readonly passkeySignUpOptions: (
+      reservation: string,
+    ) => Effect.Effect<Ceremony<CreationOptions>, Failure>;
+    /** Creates the account without an address with its first passkey, and signs in. */
+    readonly passkeySignUp: (
+      reservation: string,
+      challenge: string,
+      credential: Credential,
+    ) => Effect.Effect<SignedIn, Failure>;
+    /**
+     * Creates an account without an address whose Notfallkarte has `login`, and signs in. The same
+     * login again signs in to the account it made, so a retry after a lost answer is safe.
+     */
+    readonly cardSignUp: (
+      login: Redacted.Redacted,
+      reservation: string,
+    ) => Effect.Effect<SignedIn, Failure>;
+    /** Signs in to the account without an address whose Notfallkarte has `login`. */
+    readonly cardSignIn: (login: Redacted.Redacted) => Effect.Effect<SignedIn, Failure>;
+    /**
+     * A new session of a demo persona's account, without a password. Only development and preview
+     * servers sign anyone in; the others refuse with `Demo.Unavailable`.
+     */
+    readonly personaSignIn: (
+      persona: Demo.Persona,
+    ) => Effect.Effect<SignedIn, Unreachable | Demo.Unavailable | Demo.NotSeeded>;
   }
 >()("AuthApi.Service") {}
 
@@ -232,19 +282,27 @@ export const layer = Layer.effect(Service)(
       ),
     );
 
-    const send = (request: HttpClientRequest.HttpClientRequest) =>
+    const exchange = <A>(
+      request: HttpClientRequest.HttpClientRequest,
+      handle: (response: HttpClientResponse.HttpClientResponse) => Effect.Effect<A, Failure>,
+    ) =>
       client.execute(request).pipe(
         Effect.mapError((cause) => new Unreachable({ cause })),
         Effect.flatMap(checked),
+        Effect.flatMap(handle),
+        Deadline.within(() => new Unreachable({ cause: "no answer in time" })),
       );
 
+    const send = (request: HttpClientRequest.HttpClientRequest) =>
+      exchange(request, () => Effect.void);
+
     const read = <A>(request: HttpClientRequest.HttpClientRequest, body: Read<A>) =>
-      Effect.flatMap(send(request), (response) =>
+      exchange(request, (response) =>
         Effect.mapError(body(response), (cause) => new ServerFailed({ cause })),
       );
 
     const ceremony = <A>(request: HttpClientRequest.HttpClientRequest, body: Read<A>) =>
-      Effect.flatMap(send(request), (response) =>
+      exchange(request, (response) =>
         Effect.all({
           options: body(response),
           challenge: Effect.fromOption(Headers.get(response.headers, Accounts.challengeHeader)),
@@ -253,6 +311,17 @@ export const layer = Layer.effect(Service)(
 
     const withChallenge = (request: HttpClientRequest.HttpClientRequest, challenge: string) =>
       HttpClientRequest.setHeader(request, Accounts.challengeHeader, challenge);
+
+    const registration = (challenge: string, credential: Credential) =>
+      withChallenge(post("/passkey/verify-registration", { response: credential }), challenge);
+
+    const demo = yield* RpcClient.make(Demo.Rpcs).pipe(
+      Effect.provide(
+        RpcClient.layerProtocolHttp({ url: `${server.origin.origin}${Api.path}` }).pipe(
+          Layer.provide(Api.serialization),
+        ),
+      ),
+    );
 
     return {
       signUp: (email, password, reservation) =>
@@ -288,6 +357,26 @@ export const layer = Layer.effect(Service)(
         ),
       signOut: (token) =>
         Effect.asVoid(send(HttpClientRequest.bearerToken(post("/sign-out", {}), token))),
+      waysIn: (token) =>
+        Effect.all({
+          password: Effect.map(
+            read(
+              HttpClientRequest.bearerToken(HttpClientRequest.get("/get-session"), token),
+              sessionUser,
+            ),
+            (found) => found !== null && !Accounts.isPlaceholder(found.user.email),
+          ),
+          passkey: Effect.map(
+            read(
+              HttpClientRequest.bearerToken(
+                HttpClientRequest.get("/passkey/list-user-passkeys"),
+                token,
+              ),
+              passkeyList,
+            ),
+            (passkeys) => passkeys.length > 0,
+          ),
+        }),
       passkeySignInOptions: ceremony(
         HttpClientRequest.get("/passkey/generate-authenticate-options"),
         requestOptions,
@@ -312,15 +401,35 @@ export const layer = Layer.effect(Service)(
         ),
       addPasskey: (token, challenge, credential) =>
         Effect.asVoid(
-          send(
-            HttpClientRequest.bearerToken(
-              withChallenge(
-                post("/passkey/verify-registration", { response: credential }),
-                challenge,
-              ),
-              token,
-            ),
+          send(HttpClientRequest.bearerToken(registration(challenge, credential), token)),
+        ),
+      passkeySignUpOptions: (reservation) =>
+        ceremony(
+          reserved(
+            HttpClientRequest.get("/passkey/generate-register-options"),
+            Option.some(reservation),
           ),
+          creationOptions,
+        ),
+      passkeySignUp: (reservation, challenge, credential) =>
+        read(reserved(registration(challenge, credential), Option.some(reservation)), signedIn),
+      cardSignUp: (login, reservation) =>
+        read(
+          reserved(
+            post(Accounts.cardSignUpPath, { login: Redacted.value(login) }),
+            Option.some(reservation),
+          ),
+          signedIn,
+        ),
+      cardSignIn: (login) =>
+        read(post(Accounts.cardSignInPath, { login: Redacted.value(login) }), signedIn),
+      // The session's root key comes with it, but the device asks for it again (`Demo.rootKey`),
+      // as after a password sign-in at a demo address.
+      personaSignIn: (persona) =>
+        demo["Demo.signIn"]({ persona }).pipe(
+          Effect.map(({ account, token }) => ({ accountId: account, token: Redacted.make(token) })),
+          Effect.catchTags({ RpcClientError: (cause) => Effect.fail(new Unreachable({ cause })) }),
+          Deadline.within(() => new Unreachable({ cause: "no answer in time" })),
         ),
     };
   }),

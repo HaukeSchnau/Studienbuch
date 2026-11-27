@@ -100,6 +100,7 @@ export const layer = Layer.effect(Passkeys.Authenticator)(
             prf: bytes(clientExtensionResults.prf?.results?.first),
           })),
         ),
+      available: Effect.sync(() => Passkey.isSupported()),
     }),
   ),
 ).pipe(Layer.provide(CryptoSuite.layer));

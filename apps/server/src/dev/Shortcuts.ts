@@ -6,6 +6,7 @@
 import { Dev } from "@stu/api/Dev";
 import { School, Studienbuch } from "@stu/core";
 import { Ports, SyncServer } from "@stu/sync/server";
+import { System } from "@stu/api/System";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
 import type * as Headers from "effect/http/Headers";
@@ -41,22 +42,13 @@ export const createSchool = Effect.gen(function* () {
   const id = School.Id.make(`dev-${suffix}`);
   const school = { name: `Schule ${suffix}`, timeZone: School.defaultTimeZone };
 
-  const { data, term } = yield* Schools.simple({
-    id,
-    school,
-    today: yield* Schools.today(school),
-    gradeLevel,
-    subjects,
-  });
-
-  yield* Schools.publish(data);
+  const today = yield* Schools.today(school);
+  const { data, term } = yield* Schools.simple({ id, school, today, gradeLevel, subjects });
+  yield* Schools.publish(data, Schools.removeMissing(today));
 
   const { code } = yield* Effect.orDie(
-    AccessCodes.mint({
-      school: id,
-      kind: "student",
-      maxUses: Option.none(),
-    }),
+    // One run of the end-to-end tests signs up a handful of students to its own school.
+    AccessCodes.mint({ school: id, kind: "student", maxUses: 100 }),
   );
 
   return new Dev.School({
@@ -100,7 +92,7 @@ export const handlers = Dev.Rpcs.toLayer(
 
     /** The calling account, on a development or preview server only. */
     const caller = Effect.fn("Shortcuts.caller")(function* (headers: Headers.Headers) {
-      if (!Deployment.isDevelopmentOrPreview(environment)) return yield* new Dev.Unavailable();
+      if (!System.isDevelopmentOrPreview(environment)) return yield* new Dev.Unavailable();
 
       const session = yield* sessions.resolve(headers);
 

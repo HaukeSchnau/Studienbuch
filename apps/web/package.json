@@ -13,6 +13,7 @@
   "dependencies": {
     "@effect/atom-react": "catalog:",
     "@stu/api": "workspace:*",
+    "@stu/domain-ui": "workspace:*",
     "@stu/ui": "workspace:*",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
@@ -28,7 +29,6 @@
     "@vitejs/plugin-react": "catalog:",
     "oxc-transform-react": "catalog:",
     "react-native": "catalog:",
-    "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:"
   }

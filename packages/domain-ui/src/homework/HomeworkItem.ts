@@ -3,10 +3,12 @@
  * in words and the state. The app builds items from its rows, and a page with demo rows can build
  * the same.
  */
-import { HomeworkDates, type CivilTime, type Subject } from "@stu/core";
+import { CivilTime, HomeworkDates, type Subject } from "@stu/core";
 import * as Arr from "effect/Array";
-import * as Option from "effect/Option";
+import type * as Option from "effect/Option";
+import * as Order from "effect/Order";
 
+import { DateText } from "../calendar/DateText.ts";
 import { SubjectMark } from "../subject/SubjectMark.ts";
 import { Due } from "./Due.ts";
 
@@ -28,6 +30,18 @@ export interface Item {
   readonly waiting: boolean;
 }
 
+/**
+ * How long a ticked homework stays in its place, in milliseconds, for its pen stroke and a second
+ * thought, before it moves to where its list sorts it (`useLingeringOrder`).
+ */
+export const linger = 1200;
+
+/** What the panel and the list say while the device has no key to the notebook. */
+export const locked = {
+  title: "Dein Notizbuch ist gesperrt",
+  text: "Deine Hausaufgaben sind verschlüsselt. Entsperr dein Notizbuch, dann stehen sie hier.",
+} as const;
+
 /** A homework row with its id and what the device knows of its course. */
 export interface Source extends HomeworkDates.Listed {
   readonly title: string;
@@ -38,11 +52,7 @@ export interface Source extends HomeworkDates.Listed {
 
 export const make = (source: Source, today: CivilTime.PlainDate): Item => ({
   id: source.id,
-  subject: Option.match(source.subject, { onNone: () => source.course, onSome: (s) => s.name }),
-  mark: Option.match(source.subject, {
-    onNone: () => SubjectMark.ofCourse(source.course),
-    onSome: SubjectMark.ofSubject,
-  }),
+  ...SubjectMark.named(source.course, source.subject),
   title: source.title,
   due: Due.label(source, today),
   overdue: HomeworkDates.isOverdue(source, today),
@@ -63,3 +73,65 @@ export const panel = (
     homework.filter((each) => HomeworkDates.isInReach(each, today)),
     HomeworkDates.order,
   ).map((each) => make(each, today));
+
+/** The full list's two parts, each in the order it shows. */
+export interface Listing {
+  readonly open: ReadonlyArray<Item>;
+  readonly done: ReadonlyArray<Item>;
+}
+
+/**
+ * The full list ("Alle"): every open homework by due date, then every done one by the day it was
+ * ticked, the latest first, so what was just finished is on top however late it was.
+ */
+export const list = (homework: ReadonlyArray<Source>, today: CivilTime.PlainDate): Listing => ({
+  open: Arr.sort(
+    homework.filter((each) => each.doneOn === undefined),
+    HomeworkDates.order,
+  ).map((each) => make(each, today)),
+  done: Arr.sort(
+    homework.flatMap((each) =>
+      each.doneOn === undefined ? [] : [{ ...each, doneOn: each.doneOn }],
+    ),
+    recentlyDone,
+  ).map((each) => make(each, today)),
+});
+
+type Done = Source & { readonly doneOn: CivilTime.PlainDate };
+
+// Ties go by due date, then id, so every device shows the same order.
+const recentlyDone: Order.Order<Done> = Order.flip(
+  Order.combineAll([
+    Order.mapInput(CivilTime.order, (each: Done) => each.doneOn),
+    Order.mapInput(CivilTime.order, (each: Done) => each.dueOn),
+    Order.mapInput(Order.String, (each: Done) => each.id),
+  ]),
+);
+
+/** One homework's page: the card's facts, the text, and its dates written out. */
+export interface Detail extends Item {
+  readonly description: string | undefined;
+  /** "Freitag, 20. November" */
+  readonly dueDate: string;
+  /** "Noch offen", "Überfällig seit Montag", or "Erledigt am Mittwoch, 28. Oktober". */
+  readonly state: string;
+}
+
+export const detail = (
+  source: Source & { readonly description: string | undefined },
+  today: CivilTime.PlainDate,
+): Detail => {
+  const item = make(source, today);
+
+  return {
+    ...item,
+    description: source.description,
+    dueDate: DateText.full(source.dueOn, today),
+    state:
+      source.doneOn !== undefined
+        ? `Erledigt am ${DateText.full(source.doneOn, today)}`
+        : item.overdue
+          ? item.due
+          : "Noch offen",
+  };
+};

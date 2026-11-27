@@ -11,7 +11,7 @@ const enabled = (env: Record<string, string>) =>
 describe("Jobs.enabled", () => {
   it.effect("reads STUDIENBUCH_JOBS, and runs every job when it is unset", () =>
     Effect.gen(function* () {
-      assert.deepStrictEqual(yield* enabled({}), ["heartbeat"]);
+      assert.deepStrictEqual(yield* enabled({}), ["heartbeat", "import"]);
       assert.deepStrictEqual(yield* enabled({ STUDIENBUCH_JOBS: "none" }), []);
       assert.deepStrictEqual(yield* enabled({ STUDIENBUCH_JOBS: "heartbeat" }), ["heartbeat"]);
     }),

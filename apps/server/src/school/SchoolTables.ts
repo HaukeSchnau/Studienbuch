@@ -39,10 +39,7 @@ export const schoolAccess = pgTable(
   ],
 );
 
-/**
- * Zugangscode: admits accounts of one kind to a school. Only the code's SHA-256 reaches the
- * database. `maxUses` null means any number of sign-ups, as the demo school's code on previews.
- */
+/** Zugangscode: admits accounts of one kind to a school. Only the code's SHA-256 reaches the database. */
 export const accessCode = pgTable(
   "access_code",
   {
@@ -50,8 +47,9 @@ export const accessCode = pgTable(
     schoolId: text("school_id").notNull(),
     kind: text("kind").notNull(),
     secretHash: text("secret_hash").notNull().unique(),
-    maxUses: integer("max_uses"),
-    /** Admissions so far. A use counts when the confirmed address admits the account. */
+    /** Every code has a limit, because an account without an address costs no inbox (D97). */
+    maxUses: integer("max_uses").notNull(),
+    /** Admissions so far: a confirmed address, or a sign-up without an address. */
     uses: integer("uses").notNull().default(0),
     expiresAt: timestamp("expires_at", { withTimezone: true, mode: "date" }),
     revokedAt: timestamp("revoked_at", { withTimezone: true, mode: "date" }),

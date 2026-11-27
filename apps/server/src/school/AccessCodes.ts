@@ -1,7 +1,8 @@
 /**
  * Zugangscodes, from the legacy server's `access/school-access.ts`. A sign-up carries a code's
- * reservation, and confirming its address spends a use while `Access.admit` runs, under the code
- * row's lock, so a code is never spent past its uses. Only SHA-256 digests are stored.
+ * reservation. An email sign-up spends a use when its address is confirmed, a sign-up without an
+ * address before it creates the account, both under the code row's lock, so a code is never spent
+ * past its uses. Only SHA-256 digests are stored.
  */
 import { Access as Api } from "@stu/api/Access";
 import { School } from "@stu/core";
@@ -14,6 +15,8 @@ import * as Base64Url from "effect/encoding/Base64Url";
 import * as Hex from "effect/encoding/Hex";
 import * as Option from "effect/Option";
 import * as SqlClient from "effect/sql/SqlClient";
+import { AccountLock } from "../account/AccountLock.ts";
+import type * as Statement from "effect/sql/Statement";
 import { Access } from "./Access.ts";
 
 export * as AccessCodes from "./AccessCodes.ts";
@@ -22,9 +25,9 @@ export * as AccessCodes from "./AccessCodes.ts";
 const reservationLifetime = Duration.hours(2);
 
 /**
- * How many accounts one reservation may create. A use is spent at confirmation, long after the
- * sign-up returns, so without a budget a reservation would allow any number of sign-ups and mails.
- * Three lets someone who mistyped their own address try twice more.
+ * How many accounts one reservation may create. An email sign-up spends its use at confirmation,
+ * long after the sign-up returns, so without a budget a reservation would allow any number of
+ * sign-ups and mails. Three lets someone who mistyped their own address try twice more.
  */
 export const signUpBudget = 3;
 
@@ -49,8 +52,11 @@ const at = (date: DateTime.Utc) => DateTime.toDateUtc(date);
 export interface Minting {
   readonly school: School.Id;
   readonly kind: Api.Kind;
-  /** None for any number of admissions. */
-  readonly maxUses: Option.Option<number>;
+  /**
+   * How many accounts the code admits, such as a class's size and a margin. Every code has a
+   * limit, because an account without an address costs no inbox (D97).
+   */
+  readonly maxUses: number;
   readonly expiresAt?: Option.Option<Date>;
 }
 
@@ -62,8 +68,7 @@ const store = Effect.fn("AccessCodes.store")(function* (minting: Minting, code: 
   yield* sql`
     insert into access_code (school_id, kind, secret_hash, max_uses, expires_at)
     values (
-      ${minting.school}, ${minting.kind}, ${secretHash},
-      ${Option.getOrNull(minting.maxUses)},
+      ${minting.school}, ${minting.kind}, ${secretHash}, ${minting.maxUses},
       ${Option.getOrNull(minting.expiresAt ?? Option.none())}
     )
     on conflict (secret_hash) do nothing
@@ -95,7 +100,7 @@ export interface Listed {
   readonly id: string;
   readonly kind: string;
   readonly uses: number;
-  readonly maxUses: number | null;
+  readonly maxUses: number;
   readonly expiresAt: Date | null;
   readonly revokedAt: Date | null;
   readonly createdAt: Date;
@@ -128,7 +133,7 @@ interface Locked {
   readonly id: string;
   readonly schoolId: string;
   readonly kind: Api.Kind;
-  readonly maxUses: number | null;
+  readonly maxUses: number;
   readonly uses: number;
   readonly expiresAt: Date | null;
   readonly revokedAt: Date | null;
@@ -137,7 +142,7 @@ interface Locked {
 const open = (code: Locked, now: Date) =>
   code.revokedAt === null && (code.expiresAt === null || code.expiresAt > now);
 
-const spent = (code: Locked) => code.maxUses !== null && code.uses >= code.maxUses;
+const spent = (code: Locked) => code.uses >= code.maxUses;
 
 /**
  * Answers a reservation's token with the school's name, for the sign-up that follows. A code that
@@ -187,7 +192,7 @@ export const reserve = Effect.fn("AccessCodes.reserve")(function* (typed: string
 export const codeOf = Effect.fn("AccessCodes.codeOf")(function* (token: string) {
   const sql = yield* SqlClient.SqlClient;
 
-  const [code] = yield* sql<{ readonly id: string; readonly maxUses: number | null }>`
+  const [code] = yield* sql<{ readonly id: string; readonly maxUses: number }>`
     select c.id, c.max_uses as "maxUses"
     from access_reservation r join access_code c on c.id = r.code_id
     where r.token_hash = ${yield* digest(token)}
@@ -212,7 +217,7 @@ export const claimSignUp = Effect.fn("AccessCodes.claimSignUp")(function* (token
         select 1 from access_code c
         where c.id = r.code_id and c.revoked_at is null
           and (c.expires_at is null or c.expires_at > ${now})
-          and (c.max_uses is null or c.uses < c.max_uses)
+          and c.uses < c.max_uses
       )
     returning 1
   `;
@@ -281,11 +286,85 @@ export const forgetSignUpPasswords = Effect.fn("AccessCodes.forgetSignUpPassword
   yield* sql`update access_sign_up set password_hash = null where account_id = ${account}`;
 });
 
+/** A reservation and its code, locked until the transaction ends. */
+interface Held extends Locked {
+  readonly reservation: string;
+  readonly expires: Date;
+  readonly spentAt: Date | null;
+  readonly spentBy: string | null;
+}
+
+const lockHeld = (sql: SqlClient.SqlClient, which: Statement.Fragment) => sql<Held>`
+  select r.id as reservation, r.expires_at as expires, r.spent_at as "spentAt",
+    r.spent_by as "spentBy", c.id, c.school_id as "schoolId", c.kind, c.max_uses as "maxUses",
+    c.uses, c.expires_at as "expiresAt", c.revoked_at as "revokedAt"
+  from access_reservation r join access_code c on c.id = r.code_id
+  where ${which}
+  for update of r, c
+`;
+
+const heldBy = (sql: SqlClient.SqlClient, token: string) =>
+  Effect.flatMap(digest(token), (tokenHash) => lockHeld(sql, sql`r.token_hash = ${tokenHash}`));
+
+/** Whether the reservation may still spend a use: unspent and unexpired, of an open code with one left. */
+const available = (held: Held | undefined, now: Date): held is Held =>
+  held !== undefined &&
+  held.spentAt === null &&
+  held.expires > now &&
+  open(held, now) &&
+  !spent(held);
+
+/**
+ * Spends a use of the code and the reservation, in the caller's transaction. A spent reservation
+ * confirms no other sign-up, so the passwords they chose go.
+ */
+const spend = Effect.fn("AccessCodes.spend")(function* (
+  held: Held,
+  account: string | null,
+  now: Date,
+) {
+  const sql = yield* SqlClient.SqlClient;
+
+  yield* sql`update access_code set uses = uses + 1 where id = ${held.id}`;
+  yield* sql`
+    update access_reservation set spent_at = ${now}, spent_by = ${account}
+    where id = ${held.reservation}
+  `;
+  yield* sql`
+    update access_sign_up set password_hash = null where reservation_id = ${held.reservation}
+  `;
+});
+
+/**
+ * Admits the account to the code's school, in the caller's transaction. Every sign-up admits
+ * through here. A demo account, a school that went away or a choice its rules refuse admits
+ * nothing, and the account works without a school.
+ */
+const admitTo = Effect.fn("AccessCodes.admitTo")(function* (account: string, held: Held) {
+  const refused = (reason: string) =>
+    Effect.as(
+      Effect.logWarning("A sign-up wasn't admitted", { reason }),
+      Option.none<Access.Admission>(),
+    );
+
+  // Onboarding chooses the courses right after the first sign-in.
+  return yield* Access.admit(account, School.Id.make(held.schoolId), Option.none()).pipe(
+    Effect.asSome,
+    Effect.catchTags({
+      "Access.UnknownSchool": (error) => refused(error._tag),
+      "Access.DemoAccount": (error) => refused(error._tag),
+      "Enrollment.UnknownTerm": (error) => refused(error._tag),
+      "Enrollment.ClassRequired": (error) => refused(error._tag),
+      "Enrollment.CourseNotOffered": (error) => refused(error._tag),
+      "Enrollment.TwoInOneGroup": (error) => refused(error._tag),
+    }),
+  );
+});
+
 /**
  * Admits an account whose address was just confirmed to the school of the reservation the
- * confirming device carries, and spends that code's use in the same transaction. The reservation
- * must be one a sign-up for this address carried. Without one, or with one that lapsed, was spent
- * or names a code that ended or is used up, the account gets nothing and works without a school.
+ * confirming device carries, and spends the use. The reservation must be one a sign-up for this
+ * address carried. Without one, or with one that can't spend a use, the account gets nothing.
  */
 export const admitConfirmed = Effect.fn("AccessCodes.admitConfirmed")(function* (
   account: string,
@@ -297,6 +376,10 @@ export const admitConfirmed = Effect.fn("AccessCodes.admitConfirmed")(function* 
 
   return yield* sql.withTransaction(
     Effect.gen(function* () {
+      // Exclusive, as `Access.admit` takes it, and first, before the sign-up rows: a second
+      // confirmation, or a deletion, waits here for this one to end.
+      if (!(yield* AccountLock.hold(account, "update"))) return Option.none<Access.Admission>();
+
       const signedUp = yield* sql<{ readonly reservation: string }>`
         delete from access_sign_up where account_id = ${account}
         returning reservation_id as reservation
@@ -305,68 +388,100 @@ export const admitConfirmed = Effect.fn("AccessCodes.admitConfirmed")(function* 
       const [held] =
         tokenHash === null || signedUp.length === 0
           ? []
-          : yield* sql<
-              Locked & {
-                readonly reservation: string;
-                readonly expires: Date;
-                readonly spentAt: Date | null;
-              }
-            >`
-              select r.id as reservation, r.expires_at as expires, r.spent_at as "spentAt", c.id,
-                c.school_id as "schoolId", c.kind, c.max_uses as "maxUses", c.uses,
-                c.expires_at as "expiresAt", c.revoked_at as "revokedAt"
-              from access_reservation r join access_code c on c.id = r.code_id
-              where r.token_hash = ${tokenHash}
-                and r.id in ${sql.in(signedUp.map(({ reservation }) => reservation))}
-              for update of r, c
-            `;
+          : yield* lockHeld(
+              sql,
+              sql`r.token_hash = ${tokenHash}
+                and r.id in ${sql.in(signedUp.map(({ reservation }) => reservation))}`,
+            );
 
-      if (
-        held === undefined ||
-        held.spentAt !== null ||
-        held.expires <= now ||
-        !open(held, now) ||
-        spent(held)
-      ) {
+      if (!available(held, now)) return Option.none<Access.Admission>();
+
+      const admitted = yield* admitTo(account, held);
+
+      // An account that had access already used up nothing.
+      if (Option.isSome(admitted) && admitted.value.created) yield* spend(held, account, now);
+
+      return admitted;
+    }),
+  );
+});
+
+/**
+ * Whether a sign-up without an address could take the reservation's use now. A passkey sign-up
+ * asks before the device's prompt, so a lapsed reservation never leaves a passkey on the device
+ * for an account that doesn't exist.
+ */
+export const usable = Effect.fn("AccessCodes.usable")(function* (token: string) {
+  const sql = yield* SqlClient.SqlClient;
+  const now = at(yield* DateTime.now);
+
+  return yield* sql.withTransaction(
+    Effect.map(heldBy(sql, token), ([held]) => available(held, now)),
+  );
+});
+
+/**
+ * Spends the reservation's use for a sign-up without an address, before the account exists, and
+ * answers whether there was one. Under the code's lock, so a code makes no more accounts than it
+ * has uses, and a reservation makes one.
+ */
+export const takeUse = Effect.fn("AccessCodes.takeUse")(function* (token: string) {
+  const sql = yield* SqlClient.SqlClient;
+  const now = at(yield* DateTime.now);
+
+  return yield* sql.withTransaction(
+    Effect.gen(function* () {
+      const [held] = yield* heldBy(sql, token);
+
+      if (!available(held, now)) return false;
+
+      yield* spend(held, null, now);
+
+      return true;
+    }),
+  );
+});
+
+/** Gives a taken use back when the sign-up made no account. One that admitted an account stays. */
+export const returnUse = Effect.fn("AccessCodes.returnUse")(function* (token: string) {
+  const sql = yield* SqlClient.SqlClient;
+
+  yield* sql.withTransaction(
+    Effect.gen(function* () {
+      const [held] = yield* heldBy(sql, token);
+
+      if (held === undefined || held.spentAt === null || held.spentBy !== null) return;
+
+      yield* sql`update access_code set uses = uses - 1 where id = ${held.id}`;
+      yield* sql`update access_reservation set spent_at = null where id = ${held.reservation}`;
+    }),
+  );
+});
+
+/**
+ * Admits an account without an address, which a sign-up just created with the use `takeUse`
+ * spent, to the code's school. The reservation then names the account, and admits nobody else.
+ */
+export const admitSignedUp = Effect.fn("AccessCodes.admitSignedUp")(function* (
+  account: string,
+  token: string,
+) {
+  const sql = yield* SqlClient.SqlClient;
+
+  return yield* sql.withTransaction(
+    Effect.gen(function* () {
+      // Exclusive, as `Access.admit` takes it, and before the code's lock, as `admitConfirmed`.
+      if (!(yield* AccountLock.hold(account, "update"))) return Option.none<Access.Admission>();
+
+      const [held] = yield* heldBy(sql, token);
+
+      if (held === undefined || held.spentAt === null || held.spentBy !== null) {
         return Option.none<Access.Admission>();
       }
 
-      const school = School.Id.make(held.schoolId);
+      yield* sql`update access_reservation set spent_by = ${account} where id = ${held.reservation}`;
 
-      const refused = (reason: string) =>
-        Effect.as(
-          Effect.logWarning("A confirmed sign-up wasn't admitted", { reason }),
-          Option.none<Access.Admission>(),
-        );
-
-      // A demo account, a school that went away or a choice its rules refuse admits nothing.
-      // Onboarding chooses the courses right after the first sign-in.
-      const admitted = yield* Access.admit(account, school, Option.none()).pipe(
-        Effect.asSome,
-        Effect.catchTags({
-          "Access.UnknownSchool": (error) => refused(error._tag),
-          "Access.DemoAccount": (error) => refused(error._tag),
-          "Enrollment.UnknownTerm": (error) => refused(error._tag),
-          "Enrollment.ClassRequired": (error) => refused(error._tag),
-          "Enrollment.CourseNotOffered": (error) => refused(error._tag),
-          "Enrollment.TwoInOneGroup": (error) => refused(error._tag),
-        }),
-      );
-
-      // An account that had access already used up nothing. A spent reservation confirms no
-      // other sign-up, so the passwords they chose go.
-      if (Option.isSome(admitted) && admitted.value.created) {
-        yield* sql`update access_code set uses = uses + 1 where id = ${held.id}`;
-        yield* sql`
-          update access_reservation set spent_at = ${now}, spent_by = ${account}
-          where id = ${held.reservation}
-        `;
-        yield* sql`
-          update access_sign_up set password_hash = null where reservation_id = ${held.reservation}
-        `;
-      }
-
-      return admitted;
+      return yield* admitTo(account, held);
     }),
   );
 });

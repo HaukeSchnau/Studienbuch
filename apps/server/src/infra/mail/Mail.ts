@@ -1,4 +1,6 @@
+import { Accounts } from "@stu/api/Accounts";
 import { Mail as ApiMail } from "@stu/api/Mail";
+import { System } from "@stu/api/System";
 import { desc } from "drizzle-orm";
 import * as Config from "effect/Config";
 import * as Context from "effect/Context";
@@ -52,13 +54,25 @@ export class Service extends Context.Service<
   { readonly send: (message: Message) => Effect.Effect<void, SendFailed> }
 >()("Mail.Service") {}
 
+/**
+ * Every layer's `send`. An account without an address has a placeholder under `.invalid`, and no
+ * path, present or future, may hand one to the mail provider, so it fails as `placeholder`.
+ */
+const make = (send: (message: Message) => Effect.Effect<void, SendFailed>) =>
+  Service.of({
+    send: (message) =>
+      Accounts.isPlaceholder(message.to)
+        ? Effect.fail(new SendFailed({ code: "placeholder" }))
+        : send(message),
+  });
+
 /** Keeps each mail in `captured_mail` instead of sending it. */
 export const layerCapture = Layer.effect(Service)(
   Effect.gen(function* () {
     const db = yield* Database.Drizzle;
 
-    return {
-      send: Effect.fn("Mail.capture")(function* (message: Message) {
+    return make(
+      Effect.fn("Mail.capture")(function* (message: Message) {
         const sentAt = DateTime.toDateUtc(yield* DateTime.now);
 
         yield* db
@@ -66,7 +80,7 @@ export const layerCapture = Layer.effect(Service)(
           .values({ ...message, sentAt })
           .pipe(Effect.mapError(() => new SendFailed({ code: "capture" })));
       }),
-    };
+    );
   }),
 );
 
@@ -74,7 +88,7 @@ export const layerCapture = Layer.effect(Service)(
 export const captured = Effect.gen(function* () {
   const { environment } = yield* Deployment.Current;
 
-  if (!Deployment.isDevelopmentOrPreview(environment)) {
+  if (!System.isDevelopmentOrPreview(environment)) {
     return yield* new ApiMail.NotCaptured();
   }
 
@@ -132,8 +146,8 @@ export const layerSmtp = (url: Redacted.Redacted, from: string) =>
         (transport) => Effect.sync(() => transport.close()),
       );
 
-      return {
-        send: Effect.fn("Mail.smtp")(function* (message: Message) {
+      return make(
+        Effect.fn("Mail.smtp")(function* (message: Message) {
           yield* retried(
             Effect.tryPromise({
               try: () => transport.sendMail({ from, ...message }),
@@ -148,7 +162,7 @@ export const layerSmtp = (url: Redacted.Redacted, from: string) =>
             }),
           );
         }),
-      };
+      );
     }),
   );
 
@@ -167,7 +181,7 @@ export const layer = Layer.unwrap(
 
     if (Redacted.value(url) !== "capture:") return layerSmtp(url, from);
 
-    if (!Deployment.isDevelopmentOrPreview(environment)) {
+    if (!System.isDevelopmentOrPreview(environment)) {
       return yield* new CaptureNotAllowed({ environment });
     }
 

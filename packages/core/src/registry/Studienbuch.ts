@@ -10,17 +10,23 @@ import { Homework } from "../homework/Homework.ts";
 import { Enrollment } from "../notebook/Enrollment.ts";
 import { Notebook } from "../notebook/Notebook.ts";
 import { NotebookProfile } from "../notebook/NotebookProfile.ts";
+import { Closure } from "../school/Closure.ts";
 import { Course } from "../school/Course.ts";
 import { CourseOffering } from "../school/CourseOffering.ts";
+import { ImportStatus } from "../school/ImportStatus.ts";
+import { Lesson } from "../school/Lesson.ts";
+import { Room } from "../school/Room.ts";
 import { School } from "../school/School.ts";
 import { SchoolClass } from "../school/SchoolClass.ts";
 import { SchoolYear } from "../school/SchoolYear.ts";
 import { Subject } from "../school/Subject.ts";
+import { Teacher } from "../school/Teacher.ts";
 import { Term } from "../school/Term.ts";
+import { WeekLabel } from "../school/WeekLabel.ts";
 
 export * as Studienbuch from "./Studienbuch.ts";
 
-export const version = 3;
+export const version = 5;
 
 export const tables = [
   School.Row,
@@ -30,6 +36,12 @@ export const tables = [
   SchoolClass.Row,
   Course.Row,
   CourseOffering.Row,
+  Teacher.Row,
+  Room.Row,
+  Closure.Row,
+  WeekLabel.Row,
+  ImportStatus.Row,
+  Lesson.Row,
   Notebook.Row,
   NotebookProfile.Row,
   Enrollment.Row,

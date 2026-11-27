@@ -11,6 +11,14 @@ export const Environment = Schema.Literals(["development", "preview", "beta", "p
 export type Environment = typeof Environment.Type;
 
 /**
+ * Development and preview servers hold no real students. They open sign-up, keep mail instead of
+ * sending it, sign anyone in as a demo persona, and show the Sync Lab what they hold. The app
+ * offers persona sign-in and the Sync Lab by the same rule, from `Info.environment`.
+ */
+export const isDevelopmentOrPreview = (environment: Environment) =>
+  environment === "development" || environment === "preview";
+
+/**
  * What a client shows about the server it talks to. `revision` is the git revision of the release,
  * or `"unreleased"` when the server runs from a working copy.
  */

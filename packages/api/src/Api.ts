@@ -1,5 +1,6 @@
 import * as RpcSerialization from "effect/rpc/RpcSerialization";
 import { Access } from "./Access.ts";
+import { AccountDeletion } from "./AccountDeletion.ts";
 import { Demo } from "./Demo.ts";
 import { Dev } from "./Dev.ts";
 import { Keys } from "./Keys.ts";
@@ -10,7 +11,14 @@ import { System } from "./System.ts";
 export const path = "/api/rpc";
 
 /** Every RPC group the server serves at `path`. */
-export const Rpcs = System.Rpcs.merge(Mail.Rpcs, Dev.Rpcs, Demo.Rpcs, Keys.Rpcs, Access.Rpcs);
+export const Rpcs = System.Rpcs.merge(
+  Mail.Rpcs,
+  Dev.Rpcs,
+  Demo.Rpcs,
+  Keys.Rpcs,
+  Access.Rpcs,
+  AccountDeletion.Rpcs,
+);
 
 /** The wire format of `path`. Client and server provide this same layer. */
 export const serialization = RpcSerialization.layerNdjson;

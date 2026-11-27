@@ -1,7 +1,19 @@
 {
-  "extends": "../tsconfig.base.json",
+  // Not the root's tsconfig.base.json: CI installs this stack on its own, without the root's packages.
+  // The rest repeats what the base adds to @schnau/tsconfig.
+  "extends": "@schnau/tsconfig/effect",
   "compilerOptions": {
-    "types": ["node"]
+    "allowArbitraryExtensions": true,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+    "types": ["node"],
+    "plugins": [
+      {
+        "name": "@effect/language-service",
+        "diagnostics": false,
+        "namespaceImportPackages": ["effect"]
+      }
+    ]
   },
   "include": ["*.ts", "platform"]
 }

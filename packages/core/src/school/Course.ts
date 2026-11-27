@@ -1,7 +1,7 @@
 /**
  * Kurs: a lasting teaching group such as "MA23", which can span classes and school years. Its row
  * lives in the School space, and `CourseOffering` rows say who may choose it in which term. Its own
- * space holds its lessons from M2, and choosing it makes the student a reader there.
+ * space holds its lessons, and choosing it makes the student a reader there.
  */
 import { Ids, Sync } from "@stu/sync";
 import * as Schema from "effect/Schema";
@@ -35,6 +35,8 @@ export const Row = Sync.table("Course", {
     /** Such as "MA-E", as the timetable names it. */
     name: Schema.String,
     subjectId: Schema.optional(Subject.Id),
+    /** A level such as "E" or "G", when the school's courses have levels. */
+    level: Schema.optional(Schema.String),
   },
 });
 

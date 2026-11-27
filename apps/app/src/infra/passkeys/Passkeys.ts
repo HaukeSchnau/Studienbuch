@@ -69,6 +69,12 @@ export class Authenticator extends Context.Service<
     ) => Effect.Effect<Created, Cancelled | Failed>;
     /** Asks for any passkey of this server, with user verification and PRF on `Wrapper.prfSalt`. */
     readonly get: (options: AuthApi.RequestOptions) => Effect.Effect<Asserted, Cancelled | Failed>;
+    /**
+     * Whether this device can keep a passkey of its own, as a phone or a computer with Windows
+     * Hello or Touch ID can. A school computer usually can't, so a sign-up there starts with the
+     * Notfallkarte.
+     */
+    readonly available: Effect.Effect<boolean>;
   }
 >()("Passkeys.Authenticator") {}
 

@@ -3,7 +3,15 @@
  * pool, so nothing but `AuthTables.test.ts` keeps these declarations and its schema in step; the
  * test compares them with `getAuthTables` on every bump. Column names are Better Auth's own.
  */
-import { boolean, index, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  index,
+  integer,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
 
 export * as AuthTables from "./AuthTables.ts";
 
@@ -42,7 +50,11 @@ export const session = pgTable(
   (table) => [index("auth_session_userId_idx").on(table.userId)],
 );
 
-/** A way to sign in. Email and password is the only provider, with the password hash here. */
+/**
+ * A way to sign in: email and password, with the password hash here, or a Notfallkarte of an account
+ * without an address, with the SHA-256 of the card's login as `accountId` (`CardLogins`). A
+ * provider's `accountId` names one account, so a card signs in to one.
+ */
 export const account = pgTable(
   "auth_account",
   {
@@ -62,7 +74,10 @@ export const account = pgTable(
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (table) => [index("auth_account_userId_idx").on(table.userId)],
+  (table) => [
+    index("auth_account_userId_idx").on(table.userId),
+    uniqueIndex("auth_account_provider_account").on(table.providerId, table.accountId),
+  ],
 );
 
 /** Short-lived values: email codes and passkey challenges. */

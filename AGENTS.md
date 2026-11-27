@@ -1,6 +1,6 @@
 # Studienbuch
 
-Studienbuch is a school planner for students: the timetable and substitutions imported from WebUntis, homework, grades, absences and the signatures they need. Teachers and parents join later. It is local first: every device keeps its data in SQLite and syncs when it can. One Expo app runs on iOS, Android and the web, a TanStack Start site carries the landing page, legal pages and the operator console, and one Effect server process serves both and runs sync.
+Studienbuch is a school planner for students: the timetable and substitutions imported from WebUntis, homework, grades, absences and the signatures they need. Teachers and parents join later. Until a school enables the Lernplattform tier, nothing a student writes reaches a teacher or the school ([ADR 0029](docs/adr/0029-planner-first-teacher-flows-behind-a-school-capability.md)). It is local first: every device keeps its data in SQLite and syncs when it can. One Expo app runs on iOS, Android and the web, a TanStack Start site carries the landing page, legal pages and the operator console, and one Effect server process serves both and runs sync.
 
 The repository is in a from-scratch rewrite (milestone M0 started 2026-10-28). The old tree is at the `legacy-2026-10` bookmark. Nothing comes back from it without review ([ADR 0002](docs/adr/0002-restart-in-place.md)).
 
@@ -8,15 +8,15 @@ The repository is in a from-scratch rewrite (milestone M0 started 2026-10-28). T
 
 ### 1. It works offline
 
-Screens read local SQLite and never wait for the network. A write lands in the local database and the outbox in one transaction and shows at once. The server confirms or refuses it later, and a refusal stays on screen with its reason. A phone in flight mode for a week is a normal state, not an error path.
+Screens read local SQLite and never wait for the network. A write lands in the local database and the outbox in one transaction and shows at once. The server confirms or refuses it later, and a refusal stays on screen with its reason. A phone in flight mode for a week is a normal state, not an error path. Teachers are the exception. They will get an online view with no local database on their own devices (ADR 0029).
 
 ### 2. Students' privacy
 
-Most users are minors. Grades, absences, homework, signatures, photos and the display name are end-to-end encrypted: they leave the device as an envelope plus ciphertext, and the server enforces membership, roles, key epochs and signatures without reading them. School data stays readable, because the server imports it. Our privacy claim names what the server still sees: email, course choices, who is in which space, activity times, padded sizes and school data.
+Most users are minors. Grades, absences, homework, signatures, photos and the display name are end-to-end encrypted: they leave the device as an envelope plus ciphertext, and the server enforces membership, roles, key epochs and signatures without reading them. School data stays readable, because the server imports it. Our privacy claim names what the server still sees: the email address of accounts that use one, course choices, who is in which space, activity times, padded sizes and school data.
 
 ### 3. Three platforms
 
-iOS, Android and the web are one Expo app. A feature works on all three, or the PR says why not. The landing page shows the app's screens with demo data, drawn today by stand-ins in `apps/web/src/domain-ui/app/` rather than the app's own components.
+iOS, Android and the web are one Expo app. A feature works on all three, or the PR says why not. The landing page shows the app's screens with demo data. The Übersicht's card and the week are the app's own `AgendaCard` and `WeekGrid` from `packages/domain-ui`; the other screens are still stand-ins in `apps/web/src/domain-ui/app/`.
 
 ### 4. Long-term maintainability
 
@@ -44,7 +44,7 @@ Places:
 
 - **dev instance**: `devenv up` in one worktree, on localhost.
 - **preview**: a PR's release build at `pr-<n>.studienbuch.schnau.dev` (Tailnet), with its own database and the demo school.
-- **beta**: `beta.studienbuch.app`, deployed from every green push to `main`, with the demo school. It doesn't import from WebUntis yet. TestFlight and Play internal builds point at it.
+- **beta**: `beta.studienbuch.app`, deployed from every green push to `main`, with the demo school. Its import reads IGS's WebUntis on schedule and publishes nothing yet (go 1, D107). TestFlight and Play internal builds point at it.
 - **device**: one installation's local database. In a browser, `?device=a` and `?device=b` are two virtual devices, each with its own storage.
 
 The domain. UI copy is German, code is English:
@@ -79,10 +79,10 @@ The domain. UI copy is German, code is English:
 ## The five ways to hurt yourself
 
 1. **Killing by pattern.** Kill only a PID you captured at spawn, or the owner of your port from `ss -H -ltnp` after confirming `/proc/<pid>/cwd` is your worktree. Your own agent process has this worktree's path in its argv, and the host runs other agents' dev servers.
-2. **Logging the school out of WebUntis.** Two logins with one WebUntis account log each other out, and beta's import will use the school's account. Develop and test the import against the anonymized corpus. A live login needs Hauke's go, and once beta imports, its import paused first.
-3. **Baking in an origin.** One web build serves every preview, beta and later prod. `EXPO_PUBLIC_API_URL` exists for native builds only, set per EAS environment.
+2. **Logging the school out of WebUntis.** Two logins with one WebUntis account log each other out, and beta's import logs in on schedule with the IGS account. Develop and test the import against the anonymized corpus. A live login needs Hauke's go and beta's import paused first: `ssh srv-2 sudo -n fleet console studienbuch-beta import pause --by <you>` returns once no run reads, and `import resume --by <you>` ends it after the login. The import pauses itself after a refused password or two lost sessions in a row; `import status` says so, and `import resume --by import` ends that pause. Accounts: beta's import, webuntis-api's live tests and the M2 corpus capture share one IGS account, so every live test or capture runs `import pause --by <ref>` first and `import resume --by <ref>` after, and a capture and a live test never overlap. Legacy production (studienbuch.app) never logs into WebUntis.
+3. **Baking in an origin.** One web build serves every preview, beta and later prod. `EXPO_PUBLIC_API_URL` exists for native builds only, set for the store builds in `.calder/ci.ts`.
 4. **Leaking plaintext.** Content of encrypted tables exists in plaintext only on devices. Logs, spans, error messages, the command log, Postgres, dumps and the blob store carry ids, tags and ciphertext. Real names and real student data stay out of fixtures, logs and the repository.
-5. **Changing srv-2 by hand.** Previews, beta, their databases, the app stores and EAS change only through the pipeline (Calder and the Alchemy stack). Reading status and logs is fine. Anything that writes needs Hauke's go at the time.
+5. **Changing srv-2 by hand.** Previews, beta, their databases and the app stores change only through the pipeline (Calder and the Alchemy stack). Reading status and logs is fine. Anything that writes needs Hauke's go at the time.
 
 ## Hit every surface
 
@@ -101,7 +101,7 @@ The most common defect is a change that works where you tested it and is missing
 
 devenv on localhost is the dev environment, one instance per worktree ([ADR 0006](docs/adr/0006-fleet-service-instead-of-the-project-sdk.md)).
 
-- `devenv shell` (or direnv) provides Node, pnpm and PostgreSQL 18 from `nix/toolchain.nix`. `pnpm install` installs.
+- `devenv shell` (or direnv) provides Node, pnpm and PostgreSQL 18 from `nix/toolchain.nix`, and on Linux the Playwright browsers CI's shell has, from `nix/shell-env.nix`. `pnpm install` installs.
 - `devenv up` starts the dev instance: PostgreSQL 18 on a socket, Garage with its bucket and key, and the server as the one origin. The server proxies `/` and `/console` to Vite and `/app` to Metro, hot reload included, and serves `/api` itself. Before the server starts, a task generates the auth secret and runs `prepare`. The server gets the release variables, with `MAIL_URL=capture:`.
 - devenv allocates every port, counting up from 3000 for the server, so a second worktree gets 3001. Read them with `devenv processes list`. The server restarts when a file it imports changes.
 - `studienbuch-console <command>` runs the operator CLI against this worktree's database, for example `studienbuch-console status`.
@@ -114,14 +114,14 @@ devenv on localhost is the dev environment, one instance per worktree ([ADR 0006
 
 An empty database is a bad test.
 
-- The demo school: `prepare` seeds it deterministically when `STUDIENBUCH_DEMO_SCHOOL=seed`, with personas: two students, and later a teacher and a parent. Dev instances and previews offer "sign in as" for them.
-- The import runs against an anonymized WebUntis corpus that lives outside this public repository. Real WebUntis data stays out of the tree.
+- The demo school: `prepare` seeds it deterministically when `STUDIENBUCH_DEMO_SCHOOL=seed`, with personas: two students, and later a teacher and a parent. On dev instances and previews, the welcome and sign-in screens show "Anmelden als Lena" and "Anmelden als Tom", which sign in without a password. The server decides: the app shows them when `System.info` names a development or preview server, and `Demo.signIn` refuses on every other. On beta the personas sign in with the demo password only.
+- The import runs against an anonymized WebUntis corpus that lives outside this public repository. Real WebUntis data stays out of the tree. `vp run import:eval` in `apps/server` measures an import against a corpus; by default it uses TinySchool, an invented school in the tree that every pull request runs on. CI's `import-eval` step also measures every import change on the pinned real corpus against `baseline.json`, which `calder check` can't read, so before pushing an import change run `vp run corpus:fetch --pinned` and `vp run import:eval --corpus pinned --against baseline` there. A change that moves a number updates `baseline.json` in the same commit (`--json src/import/evaluation/baseline.json`).
 - E2E tests create their own school per run, so they can run against previews and beta without a reset.
 
 ## Verifying
 
 - Before every push, run `calder check`. It runs `.calder/ci.ts` on your working copy like a PR, and the push reuses its results.
-- While you iterate, run `vp run check:changed`. It checks format and lint on the files you changed, runs knip, typechecks the projects they affect and runs the tests beside them. `vp check` and `vp test run <files>` cover the whole repository or the files you name.
+- While you iterate, run `vp run check:changed`. It checks format and lint on the files you changed, runs knip, typechecks the projects they affect and runs the tests beside them. A browser it can't start is left out of the app's browser tests, and its summary says so. `vp check` and `vp test run <files>` cover the whole repository or the files you name.
 - Test behavior that can break: the sync engine (outbox, rebase, refusals, convergence), encryption formats and key handling, migrations, import parsing and projection, school rules, auth and membership guards, and the logic a bug fix changed. Leave out what types guarantee, trivial code, copy text, smoke runs and mock-call mirrors.
 - Extend before you add: when an existing test covers the behavior, add a row or an assertion there. Test at one layer, the lowest one that fails without your change.
 - Tests sit next to their module (`Homework.test.ts`), use `@effect/vitest`, and replace dependencies through Layers, never module mocks. A helper that several tests share is a `<Name>Testing.ts` module, which only tests may import.
@@ -139,6 +139,7 @@ Agents work through pull requests ([ADR 0008](docs/adr/0008-agents-work-through-
 - A PR that changes what a user sees links its preview and shows before and after screenshots.
 - A new or redesigned screen starts from its counterpart in the legacy Flutter app or the old web (`legacy-2026-10`), and its PR shows the two side by side. Departing from the legacy look needs Hauke's OK on that comparison first.
 - The orchestrator merges once checks pass and the preview looks right. Hauke can open any preview and never has to review code.
+- A revert that puts the app back to a tree built before reaches TestFlight and Play only if it also raises the version in `apps/app/package.json`, because Calder reuses the earlier store builds (`.calder/ci.ts`).
 - The catalog in `pnpm-workspace.yaml` is append-only while packages run in parallel: add entries only for dependencies you introduce. Regenerate `pnpm-lock.yaml` with `pnpm install` after a rebase, never merge it by hand.
 - Reviewer agents follow [docs/internals/review.md](docs/internals/review.md): what to check per area, and what not to report.
 
@@ -156,7 +157,7 @@ Most code changes need no documentation change, because agents can read the code
 
 ## How it works
 
-Every synced row lives in exactly one space: a student's notebook, a school, a course, and later chats and family spaces. Membership is the only read rule. Devices push commands and pull rows. A command runs its mutator from `packages/core` against local SQLite, so the screen updates at once, and waits in the outbox until the server settles it. For readable tables (`Mutate`), the server runs the same mutator again and may refuse it. For encrypted tables (`Seal`), the device's result is authoritative, and the server checks membership, key epoch, base version and signatures without reading the content. Rows come back by per-space version cursors, and a device's view is always its base rows plus a replay of its outbox. The WebUntis import comes in M2 as a job inside the server: a school profile will turn provider records into rows, and `SyncWriter` will write them on the same versioned path. CI builds one architecture-independent JS bundle (server, landing page and console, Expo web export), and srv-2 runs it with its own Node 26 as a `Fleet.Service`, one per preview and one for beta. Native builds reach phones through TestFlight and Play internal, and JS changes through EAS Update.
+Every synced row lives in exactly one space: a student's notebook, a school, a course, and later chats and family spaces. Membership is the only read rule. Devices push commands and pull rows. A command runs its mutator from `packages/core` against local SQLite, so the screen updates at once, and waits in the outbox until the server settles it. For readable tables (`Mutate`), the server runs the same mutator again and may refuse it. For encrypted tables (`Seal`), the device's result is authoritative, and the server checks membership, key epoch, base version and signatures without reading the content. Rows come back by per-space version cursors, and a device's view is always its base rows plus a replay of its outbox. The WebUntis import comes in M2 as a job inside the server: a school profile will turn provider records into rows, and `SyncWriter` will write them on the same versioned path. CI builds one architecture-independent JS bundle (server, landing page and console, Expo web export), and srv-2 runs it with its own Node 26 as a `Fleet.Service`, one per preview and one for beta. Native builds reach phones through TestFlight and Play internal: Calder builds them after each push to main that changes the app, and until M5.16's update server runs, that is also how new JavaScript reaches them.
 
 ## Where code lives
 

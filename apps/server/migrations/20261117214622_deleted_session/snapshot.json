@@ -1,0 +1,60 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "f904cf38-c9b3-45e8-833a-221afcc58781",
+  "prevIds": ["7cb2cc3f-395c-4208-a8fe-6db5f0069aa7"],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": ["table", "public", "deleted_session"],
+      "writes": [
+        "s|tbl|public.deleted_session",
+        "n|tbl|public.deleted_session",
+        "e|tbl|public.deleted_session",
+        "n|rel|public.deleted_session",
+        "n|type|public.deleted_session",
+        "n|rel|public.deleted_session_pkey"
+      ],
+      "reads": ["n|sch|public"]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "deleted_session",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "deleted_session",
+        "name": "token_hash",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "deleted_session",
+        "name": "deleted_session_pkey",
+        "columns": ["token_hash"],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    }
+  ]
+}

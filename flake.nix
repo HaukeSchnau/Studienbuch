@@ -1,8 +1,14 @@
 {
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    projects-sdk = {
+      url = "github:HaukeSchnau/projects-sdk/v0.1.0";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+  };
 
   outputs =
-    { nixpkgs, ... }:
+    { nixpkgs, projects-sdk, ... }:
     let
       inherit (nixpkgs) lib;
       forEach = systems: f: lib.genAttrs systems (system: f nixpkgs.legacyPackages.${system});
@@ -10,10 +16,14 @@
         "aarch64-linux"
         "x86_64-linux"
       ];
-      toolchain = pkgs: import ./nix/toolchain.nix { inherit pkgs; };
+      sdk = projects-sdk;
+      toolchain = pkgs: import ./nix/toolchain.nix { inherit pkgs sdk; };
       # The release is JavaScript without native code (ADR 0005). It is built once, on x86_64, and
       # every host runs that bundle with its own Node, so each system's checks test that pairing.
-      release = import ./nix/bundle.nix { pkgs = nixpkgs.legacyPackages.x86_64-linux; };
+      release = import ./nix/bundle.nix {
+        pkgs = nixpkgs.legacyPackages.x86_64-linux;
+        inherit sdk;
+      };
     in
     {
       # `node` is what a host runs the bundle with.
@@ -27,11 +37,11 @@
 
       checks = forEach linux (pkgs: {
         serverSmoke = import ./nix/server-smoke.nix {
-          inherit pkgs;
+          inherit pkgs sdk;
           inherit (release) bundle;
         };
         closureGuard = import ./nix/closure-guard.nix {
-          inherit pkgs;
+          inherit pkgs sdk;
           inherit (release) bundle;
         };
       });
@@ -41,17 +51,15 @@
           {
             packages = builtins.attrValues (toolchain pkgs);
           }
-          # apps/app's browser tests run headless Chromium and Firefox through Playwright, which the
-          # catalog pins to nixpkgs' version. Headless Chromium is the headless shell, so the full
-          # browser, WebKit and ffmpeg stay out: 1.4 GB instead of 2.4 GB.
-          // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
-            PLAYWRIGHT_BROWSERS_PATH = pkgs.playwright-driver.browsers.override {
-              withChromium = false;
-              withWebkit = false;
-              withFfmpeg = false;
-            };
-          }
+          // import ./nix/shell-env.nix { inherit pkgs; }
         );
+        # import-eval fetches the private corpus with git over SSH, which srv-2's system profile lacks.
+        corpus = pkgs.mkShellNoCC {
+          packages = builtins.attrValues (toolchain pkgs) ++ [
+            pkgs.git
+            pkgs.openssh
+          ];
+        };
       });
     };
 }

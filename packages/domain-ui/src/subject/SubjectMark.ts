@@ -1,10 +1,11 @@
 /**
- * How a subject shows: one of the twelve colours (D49), its legacy art, letters where it has none,
+ * How a subject shows: one of the twelve colours (D49), its sticker, letters where it has none,
  * and its blob. One subject, one mark, on every device and however a school spells it; an unknown
  * name hashes to a shared colour. The domain stays free of all of it.
  */
 import type { Subject } from "@stu/core";
 import type { Tokens } from "@stu/ui/Tokens";
+import * as Option from "effect/Option";
 
 import type { SubjectArt } from "./SubjectArt.ts";
 
@@ -21,7 +22,7 @@ export interface Mark {
 
 // Twelve slots for more than twenty subjects. The core subjects and the sciences each get their own;
 // subjects a student usually chooses one of share a slot: the arts, the second languages, and the
-// values subjects with politics. The art is the legacy Flutter app's for the same subjects.
+// values subjects with politics.
 const known: ReadonlyArray<{
   readonly slot: Tokens.SubjectSlot;
   readonly art?: SubjectArt.Name;
@@ -54,7 +55,7 @@ const known: ReadonlyArray<{
     art: "ethics",
     names: ["werteundnormen", "wn", "wun", "ethik", "philosophie", "phil"],
   },
-  { slot: "olive", names: ["erdkunde", "ek", "geographie", "geo"] },
+  { slot: "olive", art: "geography", names: ["erdkunde", "ek", "geographie", "geo"] },
   { slot: "olive", art: "seminar", names: ["seminarfach", "seminar", "sf"] },
   { slot: "magenta", art: "art", names: ["kunst", "ku"] },
   { slot: "magenta", art: "music", names: ["musik", "mu"] },
@@ -137,3 +138,48 @@ export const ofCourse = (courseName: string): Mark =>
     undefined,
     courseName,
   );
+
+// A week grid's cell on a phone is about 55 points wide and fits eight letters. Longer names get a
+// short form students use (D105); a name this list lacks falls back to the school's short name.
+const shorts = new Map([
+  ["mathematik", "Mathe"],
+  ["biologie", "Bio"],
+  ["geschichte", "Gesch."],
+  ["politikwirtschaft", "PoWi"],
+  ["seminarfach", "Seminar"],
+  ["erdkunde", "Erdkunde"],
+  ["geographie", "Erdkunde"],
+  ["informatik", "Info"],
+  ["franzoesisch", "Franz."],
+  ["werteundnormen", "WuN"],
+  ["philosophie", "Philo"],
+  ["darstellendesspiel", "DS"],
+]);
+
+const fits = 8;
+
+/** A subject's name as a phone's week grid writes it: "Mathe", "Gesch.", "Deutsch". */
+export const short = (subject: Pick<Subject.Row, "name" | "shortName">): string => {
+  const normalized = normalize(subject.name);
+
+  return (
+    shorts.get(normalized) ??
+    (normalized.includes("religion")
+      ? "Reli"
+      : subject.name.length <= fits || subject.shortName === ""
+        ? subject.name
+        : subject.shortName)
+  );
+};
+
+/**
+ * How a course shows: by its subject's name and mark, or by its own name where the school named no
+ * subject.
+ */
+export const named = (
+  course: string,
+  subject: Option.Option<Pick<Subject.Row, "name" | "shortName">>,
+) => ({
+  subject: Option.match(subject, { onNone: () => course, onSome: (s) => s.name }),
+  mark: Option.match(subject, { onNone: () => ofCourse(course), onSome: ofSubject }),
+});

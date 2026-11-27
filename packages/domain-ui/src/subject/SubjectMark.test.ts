@@ -53,6 +53,7 @@ describe("SubjectMark", () => {
     ["Politik-Wirtschaft", "PW", "politics"],
     ["Religion (kath.)", "RK", "religion"],
     ["Mathematik (erhöhtes Niveau)", "MA", "math"],
+    ["Erdkunde", "EK", "geography"],
     ["Astronomie", "AST", undefined],
   ])("gives %s the art of its subject, or its letters", (name, short, art) => {
     const mark = SubjectMark.ofSubject({ name, shortName: short });
@@ -85,5 +86,17 @@ describe("SubjectMark", () => {
     expect(Object.keys(Tokens.subject)).toContain(slot);
     expect(subject("astronomie")).toBe(slot);
     expect(course("Astronomie")).toBe(slot);
+  });
+
+  it.each([
+    ["Mathematik", "MA", "Mathe"],
+    ["Geschichte", "GE", "Gesch."],
+    ["Politik-Wirtschaft", "PW", "PoWi"],
+    ["Evangelische Religion", "RE", "Reli"],
+    ["Englisch", "EN", "Englisch"],
+    ["Sozialwissenschaften", "SW", "SW"],
+    ["Astronomie", "", "Astronomie"],
+  ])("writes %s as a phone's week grid does", (name, shortName, short) => {
+    expect(SubjectMark.short({ name, shortName })).toBe(short);
   });
 });

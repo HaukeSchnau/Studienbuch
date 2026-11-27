@@ -76,9 +76,15 @@ export const spec = (
   console: server("console"),
   endpoint: { hostName: environment.hostName, visibility: environment.visibility },
   health: { path: "/api/health/ready" },
-  database: { env: "DATABASE_URL", majorVersion: 18, dropOnDelete: environment.dropDatabase },
+  database: {
+    env: "DATABASE_URL",
+    majorVersion: 18,
+    dropOnDelete: environment.dropDatabase,
+    connections: environment.databaseConnections,
+  },
   env: {
     STUDIENBUCH_ENVIRONMENT: environment.kind,
+    DATABASE_CONNECTIONS: String(environment.databaseConnections),
     STUDIENBUCH_REVISION: release.revision,
     STUDIENBUCH_DEMO_SCHOOL: "seed",
     PUBLIC_URL: `https://${environment.hostName}`,
@@ -88,6 +94,13 @@ export const spec = (
     ...Option.match(environment.nativeApps, {
       onNone: () => ({}),
       onSome: (apps) => ({ STUDIENBUCH_NATIVE_APPS: JSON.stringify(apps) }),
+    }),
+    ...Option.match(environment.webuntis, {
+      onNone: () => ({}),
+      onSome: (school) => ({
+        WEBUNTIS_SCHOOL_LOGIN_NAME: school.loginName,
+        WEBUNTIS_SERVER_URL: school.serverUrl,
+      }),
     }),
     S3_ENDPOINT: storage.endpoint,
     S3_REGION: "auto",
@@ -101,6 +114,14 @@ export const spec = (
     S3_SECRET_ACCESS_KEY: {
       sops: `projects/studienbuch/r2/${environment.storage}/secret-access-key`,
     },
+    // With the school in `env` from the same field, because the server needs all four or none.
+    ...Option.match(environment.webuntis, {
+      onNone: () => ({}),
+      onSome: () => ({
+        WEBUNTIS_USERNAME: { sops: `projects/studienbuch/${environment.stage}/webuntis-username` },
+        WEBUNTIS_PASSWORD: { sops: `projects/studienbuch/${environment.stage}/webuntis-password` },
+      }),
+    }),
   },
   memory: { max: environment.memory },
 });

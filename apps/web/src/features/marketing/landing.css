@@ -476,7 +476,7 @@
   align-items: center;
   gap: 12px;
   margin-right: 16px;
-  padding: 14px 22px 14px 16px;
+  padding: 12px 22px 12px 12px;
   border-radius: 20px;
   color: #ffffff;
   font-size: 18px;
@@ -484,14 +484,6 @@
   white-space: nowrap;
   box-shadow: var(--elevation-card);
   transition: translate 200ms var(--ease-out);
-}
-
-.subject-tile img {
-  width: 30px;
-  height: 30px;
-  padding: 2px;
-  border-radius: 8px;
-  background: #ffffff;
 }
 
 @media (prefers-reduced-motion: no-preference) {
