@@ -248,8 +248,12 @@ export function Datenschutz() {
         Schlüssel, der nur bei uns liegt. Cloudflare beantwortet nur die DNS-Anfragen für unsere
         Domain; Ihre Anfragen an die App und Ihre Einträge laufen nicht über Cloudflare. Backblaze,
         Inc. und Cloudflare, Inc. haben ihren Sitz in den USA; ein Zugriff von dort ist rechtlich
-        nicht auszuschließen. Grundlage dafür ist der Angemessenheitsbeschluss der EU-Kommission zum
-        EU-US Data Privacy Framework, unter dem beide Unternehmen zertifiziert sind.
+        nicht auszuschließen. Die Übermittlung an diese beiden Unternehmen in den USA stützen wir
+        auf den Angemessenheitsbeschluss der EU-Kommission zum EU-US Data Privacy Framework
+        (Artikel&nbsp;45 DSGVO), unter dem beide zertifiziert sind. Soweit Cloudflare DNS-Anfragen
+        in Rechenzentren in Ländern ohne Angemessenheitsbeschluss beantwortet, gelten die
+        Standardvertragsklauseln der EU-Kommission (Artikel&nbsp;46 Absatz&nbsp;2 Buchstabe&nbsp;c
+        DSGVO) aus Cloudflares Auftragsverarbeitungsvertrag.
       </p>
 
       <h2>5. Speicherdauer</h2>
@@ -267,8 +271,8 @@ export function Datenschutz() {
         ihre Kopie, sobald sie sich wieder verbinden. Auf anderen Geräten bleiben Ihre Einträge, bis
         Sie dort die App oder die Websitedaten löschen. Datensicherungen bewahren wir bis zu
         35&nbsp;Tage auf, Server-Protokolle bis zu 10&nbsp;Tage. Mit einem Konto löschen wir auch
-        die Sicherungen seiner Schlüssel. In den Datensicherungen bleiben sie, bis wir diese
-        löschen.
+        die Sicherungen seiner Schlüssel. In den Datensicherungen bleiben sie, solange wir diese
+        aufbewahren (bis zu 35&nbsp;Tage).
       </p>
 
       <h2>6. Ihre Rechte</h2>
