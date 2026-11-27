@@ -1089,39 +1089,47 @@ describe.skipIf(Postgres18.socket === null)("ImportRun on PostgreSQL 18", () => 
         const offered = yield* ImportTesting.at(morning)(Schools.offered(school, 11));
         yield* Access.enroll(notebook, Option.getOrThrow(offered));
 
-        // Her phone's lessons, by space and id, with their days.
-        const held = new Map<string, string>();
+        // A pull's lesson ops, by `<space> <id>`, with the day of each live one.
+        const lessons = (response: Effect.Success<ReturnType<typeof pullOnce>>) =>
+          response.patches.flatMap(({ space, ops }) =>
+            ops.flatMap(({ tbl, id, row }) =>
+              tbl === "Lesson"
+                ? [
+                    {
+                      key: `${space} ${id}`,
+                      tag: row._tag,
+                      date: row._tag === "Readable" ? decodeDated(row.data) : Option.none(),
+                    },
+                  ]
+                : [],
+            ),
+          );
 
-        const apply = (response: Effect.Success<ReturnType<typeof pullOnce>>) => {
-          for (const { space, ops } of response.patches) {
-            for (const { tbl, id, row } of ops) {
-              if (tbl !== "Lesson") continue;
+        const first = yield* pullOnce("lena-offline", []);
+        const held = lessons(first);
+        const cursors = first.patches.map(({ space, to }) => ({ space, version: to }));
 
-              if (row._tag === "Readable") {
-                held.set(`${space} ${id}`, Option.getOrThrow(decodeDated(row.data)).date);
-              } else {
-                held.delete(`${space} ${id}`);
-              }
-            }
-          }
+        // 14 December less 28 days.
+        const expired = held.flatMap(({ key, date }) =>
+          Option.exists(date, (row) => row.date < "2026-11-16") ? [key] : [],
+        );
 
-          return response.patches.map(({ space, to }) => ({ space, version: to }));
-        };
-
-        const days = () => [...new Set(held.values())].sort();
-        const cursors = apply(yield* pullOnce("lena-offline", []));
-        const before = days();
         const later = yield* runAt(
           DateTime.add(morning, { days: 42 }),
           options(school, { source }),
         );
-        apply(yield* pullOnce("lena-offline", cursors));
 
-        expect({ outcome: later.outcome, first: [before[0], days()[0]], after: days() }).toEqual({
+        const second = lessons(yield* pullOnce("lena-offline", cursors));
+
+        expect({
+          outcome: later.outcome,
+          // Her phone held lessons on both sides of the cutoff.
+          held: [expired.length > 0, expired.length < held.length],
+          second: second.map(({ key, tag }) => `${key} ${tag}`).sort(),
+        }).toEqual({
           outcome: "Published",
-          first: ["2026-11-02", "2026-11-16"],
-          // 14 December less 28 days, and everything her phone held from it on.
-          after: before.filter((day) => day >= "2026-11-16"),
+          held: [true, true],
+          second: expired.map((key) => `${key} Deleted`).sort(),
         });
       }),
     );
