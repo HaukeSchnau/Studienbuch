@@ -11,7 +11,7 @@ import { Database } from "../database/Database.ts";
 import { Schema as Tables } from "../database/Schema.ts";
 
 /** Every job the server knows. */
-export const Name = Schema.Literals(["heartbeat", "import"]);
+export const Name = Schema.Literals(["heartbeat", "import", "retention"]);
 
 export type Name = typeof Name.Type;
 

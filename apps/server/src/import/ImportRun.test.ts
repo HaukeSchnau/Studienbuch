@@ -1,7 +1,6 @@
 import { TransportError, WebUntisClient } from "@schnau/webuntis-api";
 import { assert, describe, expect, it, layer } from "@effect/vitest";
 import { CivilTime, Enrollment, School, Studienbuch } from "@stu/core";
-import type { Protocol } from "@stu/sync";
 import { Pull, SyncWriter } from "@stu/sync/server";
 import { Postgres18 } from "@stu/sync/testing";
 import * as Clock from "effect/Clock";
@@ -32,10 +31,12 @@ import { ImportRun } from "./ImportRun.ts";
 import { ImportTesting } from "./ImportTesting.ts";
 import { Lease } from "./Lease.ts";
 import { NaiveImport } from "./NaiveImport.ts";
+import { RetentionSweep } from "./RetentionSweep.ts";
 import { SelfCheck } from "./SelfCheck.ts";
 import { SourceStore } from "./source/SourceStore.ts";
 
 const { list, object, planted } = NamedSchoolTesting;
+const { lessonDays, lessonOps, pullOnce } = SchoolTesting;
 const { morning } = ImportTesting;
 const entriesOf = (resource: number) => RecordedWebUntis.paths.entries(10, "CLASS", resource);
 const minutesAfter = (minutes: number) => DateTime.add(morning, { minutes });
@@ -207,6 +208,22 @@ const checkpoint = (school: string) =>
     `,
   ).pipe(Effect.map(([row]) => row));
 
+const decodeCheckpointDays = Schema.decodeUnknownEffect(
+  Schema.fromJsonString(
+    Schema.Struct({ lessons: Schema.Array(Schema.Struct({ date: Schema.String })) }),
+  ),
+);
+
+/** The days of the checkpoint's lessons, in order, and its revision. */
+const checkpointDays = (school: string) =>
+  Effect.gen(function* () {
+    const row = yield* checkpoint(school);
+    const { lessons } = yield* decodeCheckpointDays(row?.previous ?? "");
+    const days = [...new Set(lessons.map(({ date }) => date))].sort();
+
+    return { days, revision: row?.revision };
+  });
+
 const decodeSelfCheck = Schema.decodeUnknownEffect(Schema.fromJsonString(SelfCheck.Result));
 
 /** The school's self-checks, run by run. */
@@ -273,32 +290,6 @@ const throughJanuary = (corpus: Corpus.Corpus): Corpus.Corpus => ({
     ]),
   ),
 });
-
-/** The days of the school's published lessons, in order. */
-const lessonDays = (school: string) =>
-  Effect.flatMap(
-    SqlClient.SqlClient,
-    (sql) => sql<{ readonly date: string }>`
-      select distinct r.data->>'date' as date from sync_row r join space s on s.id = r.space_id
-      where s.parent_id = ${school} and r.tbl = 'Lesson' and r.data is not null
-      order by date
-    `,
-  ).pipe(Effect.map((rows) => rows.map(({ date }) => date)));
-
-const decodeDated = Schema.decodeUnknownOption(Schema.Struct({ date: Schema.String }));
-
-/** One pull of the account's phone from `cursors`, which must fit on one page. */
-const pullOnce = (account: string, cursors: ReadonlyArray<typeof Protocol.Cursor.Type>) =>
-  Effect.flatMap(Pull.Service, (service) =>
-    service.pull(account, {
-      clientId: `${account}-phone`,
-      syncEpoch: null,
-      contract: Studienbuch.schema.contract,
-      cursors,
-      settledMutationId: 0,
-      limit: 1000,
-    }),
-  ).pipe(Effect.tap((response) => Effect.sync(() => assert.isFalse(response.more))));
 
 const bridgeDay = {
   id: 3,
@@ -1104,24 +1095,8 @@ describe.skipIf(Postgres18.socket === null)("ImportRun on PostgreSQL 18", () => 
         const offered = yield* ImportTesting.at(morning)(Schools.offered(school, 11));
         yield* Access.enroll(notebook, Option.getOrThrow(offered));
 
-        // A pull's lesson ops, by `<space> <id>`, with the day of each live one.
-        const lessons = (response: Effect.Success<ReturnType<typeof pullOnce>>) =>
-          response.patches.flatMap(({ space, ops }) =>
-            ops.flatMap(({ tbl, id, row }) =>
-              tbl === "Lesson"
-                ? [
-                    {
-                      key: `${space} ${id}`,
-                      tag: row._tag,
-                      date: row._tag === "Readable" ? decodeDated(row.data) : Option.none(),
-                    },
-                  ]
-                : [],
-            ),
-          );
-
         const first = yield* pullOnce("lena-offline", []);
-        const held = lessons(first);
+        const held = lessonOps(first);
         const cursors = first.patches.map(({ space, to }) => ({ space, version: to }));
 
         // 14 December less 28 days.
@@ -1134,7 +1109,7 @@ describe.skipIf(Postgres18.socket === null)("ImportRun on PostgreSQL 18", () => 
           options(school, { source }),
         );
 
-        const second = lessons(yield* pullOnce("lena-offline", cursors));
+        const second = lessonOps(yield* pullOnce("lena-offline", cursors));
 
         expect({
           outcome: later.outcome,
@@ -1147,6 +1122,35 @@ describe.skipIf(Postgres18.socket === null)("ImportRun on PostgreSQL 18", () => 
           second: expired.map((key) => `${key} Deleted`).sort(),
         });
       }),
+    );
+
+    // Beta's import is dark, so its checkpoint is the only copy of the lessons it read.
+    it.effect(
+      "a sweep during a pause leaves no lesson more than 28 days past in the checkpoint",
+      () =>
+        Effect.gen(function* () {
+          const school = School.Id.make("tiny-swept");
+          const dark = { ...options(school).profile, publish: false };
+          yield* runAt(morning, options(school, { profile: dark }));
+          yield* ImportTesting.at(morning)(Lease.pause(school, "retention-test"));
+          const before = yield* checkpointDays(school);
+          // 03:00 in Berlin on 3 December, so 5 November is the oldest day kept.
+          const slot = DateTime.makeUnsafe("2026-12-03T02:00:00Z");
+          yield* RetentionSweep.sweepDue.pipe(ImportTesting.at(slot));
+          const after = yield* checkpointDays(school);
+
+          expect({
+            held: before.days.includes("2026-11-05"),
+            dropped: before.days.filter((day) => !after.days.includes(day)),
+            first: after.days[0],
+            revision: after.revision === before.revision,
+          }).toEqual({
+            held: true,
+            dropped: ["2026-11-02", "2026-11-03", "2026-11-04"],
+            first: "2026-11-05",
+            revision: true,
+          });
+        }),
     );
 
     it.effect("a night whose students' directory changed keeps none older than 35 days", () =>

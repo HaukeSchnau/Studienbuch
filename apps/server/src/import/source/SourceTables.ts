@@ -1,6 +1,6 @@
 /**
  * The import's server-only tables (m2-import-path.md, section 3). They never sync: what WebUntis
- * sent, what each run did, and each school's lease, pause and checkpoint.
+ * sent, what each run did, each school's lease, pause and checkpoint, and its last retention sweep.
  */
 import { sql } from "drizzle-orm";
 import {
@@ -100,4 +100,19 @@ export const importSchool = pgTable("import_school", {
   kurswahl: jsonb("kurswahl")
     .notNull()
     .default(sql`'[]'::jsonb`),
+});
+
+/**
+ * Each school's last daily sweep (`RetentionSweep`): when it ran, and what it deleted as counts, or
+ * the tag of what failed. A school is swept once per date of its own, also when that sweep failed.
+ */
+export const retentionSweep = pgTable("retention_sweep", {
+  schoolId: text("school_id").primaryKey(),
+  /** The school's date the sweep deleted for, which the next sweep must be after. */
+  sweptOn: date("swept_on", { mode: "string" }).notNull(),
+  sweptAt: timestamp("swept_at", { withTimezone: true, mode: "date" }).notNull(),
+  lessons: integer("lessons"),
+  checkpoint: integer("checkpoint"),
+  versions: integer("versions"),
+  failure: text("failure"),
 });

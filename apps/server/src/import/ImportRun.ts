@@ -604,6 +604,44 @@ const checkpointOf = (
 };
 
 /**
+ * Drops the lessons before `before` from the school's checkpoint, which otherwise only the next
+ * run trims, so a paused import keeps no older lesson there either. It moves no revision: a run
+ * in flight writes a checkpoint from its own day on, which holds none of them.
+ */
+export const trimCheckpoint = Effect.fn("ImportRun.trimCheckpoint")(
+  function* (school: School.Id, before: string) {
+    const sql = yield* SqlClient.SqlClient;
+
+    return yield* sql.withTransaction(
+      Effect.gen(function* () {
+        const [row] = yield* sql<{ readonly previous: unknown }>`
+          select previous from import_school
+          where school_id = ${school} and previous is not null
+          for update
+        `;
+
+        if (row === undefined) return 0;
+
+        const previous = yield* decodePrevious(row.previous);
+        const kept = without(previous, ({ date }) => date < before);
+        const dropped = previous.lessons.length - kept.lessons.length;
+
+        if (dropped === 0) return 0;
+
+        yield* sql`
+          update import_school set previous = ${yield* encodePrevious(kept)}::jsonb
+          where school_id = ${school}
+        `;
+
+        return dropped;
+      }),
+    );
+  },
+  // The checkpoint is a run's own encoding, so a failure to read it back is a defect.
+  Effect.orDie,
+);
+
+/**
  * The Stand to publish, if it changes: `coveredUntil` never moves back while what a run published
  * still stands, so a daytime run can't take back days a nightly one covered, and `observedAt` moves
  * in steps.

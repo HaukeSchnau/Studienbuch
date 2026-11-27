@@ -24,15 +24,10 @@ import * as Schema from "effect/Schema";
 import type { Schools } from "../school/Schools.ts";
 import { ImportIds } from "./ImportIds.ts";
 import { SchoolProfile } from "./profiles/SchoolProfile.ts";
+import { Retention } from "./Retention.ts";
 import { SchoolImport } from "./SchoolImport.ts";
 
 export * as Projection from "./Projection.ts";
-
-/**
- * Days a lesson stays published after its day (D113). A longer history of substitutions is a list
- * of teacher absences, which under the NPersVG needs the staff council's consent.
- */
-export const keptDays = 28;
 
 /**
  * A published lesson or closure that a snapshot lacked without evidence of where it went. It goes
@@ -180,7 +175,7 @@ const within = (
 
 /**
  * Removals at once, the candidates from the last snapshot this one confirms, the next ones, and
- * every lesson more than `keptDays` past. A closure counts as listed only when it enters the
+ * every lesson that `Retention` lets expire. A closure counts as listed only when it enters the
  * publish, so a malformed one removes nothing, and a confirmed one loses only the dates both
  * snapshots covered.
  */
@@ -235,13 +230,12 @@ const removalsOf = (input: Input, published: Schools.Data, refused: ReadonlySet<
     ),
   );
 
-  const oldest = CivilTime.addDays(input.today, -keptDays);
+  const expired = Retention.expired(input.today);
 
   const removals: Schools.Removals = {
     today: input.today,
-    // A lesson before `oldest` goes with its change, whatever the snapshot says.
-    lesson: ({ id, row }) =>
-      CivilTime.order(row.date, oldest) < 0 || lessons.moved.has(id) || confirmed.has(id),
+    // An expired lesson goes with its change, whatever the snapshot says.
+    lesson: (entry) => expired(entry) || lessons.moved.has(entry.id) || confirmed.has(entry.id),
     // A closure WebUntis still lists may lose the dates it no longer names, when the holiday read
     // covers all of them.
     closureDates: ({ id, row }) => {
