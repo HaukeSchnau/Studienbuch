@@ -1340,38 +1340,38 @@
       "views": {
         "student": {
           "weeks": {
-            "right": 817,
-            "of": 1575
+            "right": 799,
+            "of": 1567
           },
           "recall": {
-            "right": 17638,
-            "of": 17697
+            "right": 17507,
+            "of": 17569
           },
           "precision": {
-            "right": 17638,
-            "of": 19047
+            "right": 17507,
+            "of": 18959
           },
           "attributes": {
-            "right": 17638,
-            "of": 17638
+            "right": 17507,
+            "of": 17507
           }
         },
         "teacher": {
           "weeks": {
-            "right": 668,
-            "of": 668
+            "right": 669,
+            "of": 669
           },
           "recall": {
-            "right": 1891,
-            "of": 1891
+            "right": 1909,
+            "of": 1909
           },
           "precision": {
-            "right": 1891,
-            "of": 1891
+            "right": 1909,
+            "of": 1909
           },
           "attributes": {
-            "right": 1891,
-            "of": 1891
+            "right": 1909,
+            "of": 1909
           }
         },
         "room": {
@@ -1380,28 +1380,28 @@
             "of": 263
           },
           "recall": {
-            "right": 1844,
-            "of": 1844
+            "right": 1855,
+            "of": 1855
           },
           "precision": {
-            "right": 1844,
-            "of": 1844
+            "right": 1855,
+            "of": 1855
           },
           "attributes": {
-            "right": 1844,
-            "of": 1844
+            "right": 1855,
+            "of": 1855
           }
         }
       },
       "kurswahl": {
-        "right": 76,
+        "right": 71,
         "of": 181
       },
-      "ghostCourses": 1,
+      "ghostCourses": 0,
       "courseIdentity": {
-        "realCourses": 120,
+        "realCourses": 121,
         "split": 0,
-        "ourCourses": 118,
+        "ourCourses": 119,
         "merged": 2,
         "subjects": {
           "BI": {
@@ -1681,9 +1681,9 @@
             "merged": 0
           },
           "ge1": {
-            "realCourses": 2,
+            "realCourses": 3,
             "split": 0,
-            "ourCourses": 2,
+            "ourCourses": 3,
             "merged": 0
           },
           "ge2": {
@@ -1851,8 +1851,8 @@
         }
       },
       "changes": {
-        "right": 434,
-        "of": 434
+        "right": 410,
+        "of": 410
       },
       "courses": {
         "right": 10,
@@ -1869,21 +1869,21 @@
         }
       },
       "links": {
-        "right": 1886,
-        "of": 1886
+        "right": 1885,
+        "of": 1885
       },
       "exams": {
-        "right": 13,
-        "of": 15
+        "right": 20,
+        "of": 24
       },
       "examStudents": {
         "recall": {
-          "right": 232,
-          "of": 236
+          "right": 307,
+          "of": 309
         },
         "precision": {
-          "right": 232,
-          "of": 232
+          "right": 307,
+          "of": 309
         }
       },
       "weekLabels": {
@@ -1891,18 +1891,18 @@
         "of": 11
       },
       "courseIdsKept": {
-        "right": 16930,
-        "of": 16930
+        "right": 16919,
+        "of": 16919
       },
       "lookahead": {
-        "right": 1953,
-        "of": 1953
+        "right": 1951,
+        "of": 1951
       },
       "runs": {
         "total": 13,
         "failed": 0
       },
-      "hiddenDays": 1303,
+      "hiddenDays": 1313,
       "invariants": {
         "failedRuns": 0,
         "danglingCourses": 0,
@@ -1963,38 +1963,38 @@
       "views": {
         "student": {
           "weeks": {
-            "right": 817,
-            "of": 1575
+            "right": 799,
+            "of": 1567
           },
           "recall": {
-            "right": 17638,
-            "of": 17697
+            "right": 17507,
+            "of": 17569
           },
           "precision": {
-            "right": 17638,
-            "of": 19047
+            "right": 17507,
+            "of": 18959
           },
           "attributes": {
-            "right": 17638,
-            "of": 17638
+            "right": 17507,
+            "of": 17507
           }
         },
         "teacher": {
           "weeks": {
-            "right": 668,
-            "of": 668
+            "right": 669,
+            "of": 669
           },
           "recall": {
-            "right": 1891,
-            "of": 1891
+            "right": 1909,
+            "of": 1909
           },
           "precision": {
-            "right": 1891,
-            "of": 1891
+            "right": 1909,
+            "of": 1909
           },
           "attributes": {
-            "right": 1891,
-            "of": 1891
+            "right": 1909,
+            "of": 1909
           }
         },
         "room": {
@@ -2003,28 +2003,28 @@
             "of": 263
           },
           "recall": {
-            "right": 1844,
-            "of": 1844
+            "right": 1855,
+            "of": 1855
           },
           "precision": {
-            "right": 1844,
-            "of": 1844
+            "right": 1855,
+            "of": 1855
           },
           "attributes": {
-            "right": 1844,
-            "of": 1844
+            "right": 1855,
+            "of": 1855
           }
         }
       },
       "kurswahl": {
-        "right": 76,
+        "right": 71,
         "of": 181
       },
-      "ghostCourses": 1,
+      "ghostCourses": 0,
       "courseIdentity": {
-        "realCourses": 120,
+        "realCourses": 121,
         "split": 0,
-        "ourCourses": 118,
+        "ourCourses": 119,
         "merged": 2,
         "subjects": {
           "BI": {
@@ -2304,9 +2304,9 @@
             "merged": 0
           },
           "ge1": {
-            "realCourses": 2,
+            "realCourses": 3,
             "split": 0,
-            "ourCourses": 2,
+            "ourCourses": 3,
             "merged": 0
           },
           "ge2": {
@@ -2474,8 +2474,8 @@
         }
       },
       "changes": {
-        "right": 434,
-        "of": 434
+        "right": 410,
+        "of": 410
       },
       "courses": {
         "right": 10,
@@ -2492,21 +2492,21 @@
         }
       },
       "links": {
-        "right": 1886,
-        "of": 1886
+        "right": 1885,
+        "of": 1885
       },
       "exams": {
-        "right": 13,
-        "of": 15
+        "right": 20,
+        "of": 24
       },
       "examStudents": {
         "recall": {
-          "right": 232,
-          "of": 236
+          "right": 307,
+          "of": 309
         },
         "precision": {
-          "right": 232,
-          "of": 232
+          "right": 307,
+          "of": 309
         }
       },
       "weekLabels": {
@@ -2514,18 +2514,18 @@
         "of": 11
       },
       "courseIdsKept": {
-        "right": 186354,
-        "of": 186354
+        "right": 186237,
+        "of": 186237
       },
       "lookahead": {
-        "right": 17800,
-        "of": 17800
+        "right": 17772,
+        "of": 17772
       },
       "runs": {
         "total": 124,
         "failed": 0
       },
-      "hiddenDays": 1303,
+      "hiddenDays": 1313,
       "invariants": {
         "failedRuns": 0,
         "danglingCourses": 0,

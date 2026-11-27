@@ -28,6 +28,9 @@ export const Bin = Schema.Struct({ from: Count, to: Count, count: Count, people:
 
 export type Bin = typeof Bin.Type;
 
+/** A distribution of people themselves: `people` of them have a value from `from` to `to`. */
+export const PeopleBin = Schema.Struct({ from: Count, to: Count, people: People });
+
 /** A distribution as bins in ascending order. */
 export const Histogram = Schema.Array(Bin);
 
@@ -53,7 +56,7 @@ export const Cohort = Schema.Struct({
   kopplungen: Histogram,
   /** The share of the cohort's students a Kopplung's courses hold, in percent. */
   kopplungShare: Histogram,
-  /** Students per course. */
+  /** Students per course, in bins of five, so no bin's ends are a small roster's size. */
   courseSize: Histogram,
   /** A course's entries in a term's two opening weeks. */
   meetings: Histogram,
@@ -89,7 +92,7 @@ export const Distributions = Schema.Struct({
   /** Exams per course and term. */
   exams: Histogram,
   /** Students whose timetable WebUntis hid from some day on, by the share of captured days hidden. */
-  hidden: Histogram,
+  hidden: Schema.Array(PeopleBin),
   /**
    * The pitfalls that broke the import (M2.10's course identity table), added up over the terms
    * measured. `people` counts the students involved: every member of the groups, only the movers

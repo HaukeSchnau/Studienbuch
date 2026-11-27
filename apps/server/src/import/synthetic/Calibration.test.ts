@@ -1,6 +1,9 @@
-import { assert, describe, it } from "@effect/vitest";
+import * as NodeServices from "@effect/platform-node/NodeServices";
+import { assert, describe, it, layer } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
+import * as FileSystem from "effect/FileSystem";
+import * as Path from "effect/Path";
 import * as Schema from "effect/Schema";
 import { Calibrate } from "./Calibrate.ts";
 import { Calibration } from "./Calibration.ts";
@@ -69,6 +72,20 @@ describe("Calibration", () => {
       ];
 
       assert.deepStrictEqual(refused.map(Exit.isFailure), [true, true, true]);
+    }),
+  );
+});
+
+// A parse keeps the last of two equal keys, so the bytes themselves must be the format's own.
+layer(NodeServices.layer)("calibration.json", (it) => {
+  it.effect("is exactly the canonical encoding of what it decodes to", () =>
+    Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const file = yield* path.fromFileUrl(new URL("calibration.json", import.meta.url));
+      const raw = yield* fs.readFileString(file);
+
+      assert.strictEqual(raw, `${yield* Calibration.encode(yield* Calibration.decode(raw))}\n`);
     }),
   );
 });

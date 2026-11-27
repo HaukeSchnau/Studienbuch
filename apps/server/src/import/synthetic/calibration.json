@@ -85,124 +85,46 @@
       ],
       "courseSize": [
         {
-          "from": 1,
+          "from": 0,
           "to": 4,
           "count": 12,
           "people": 5
         },
         {
-          "from": 6,
-          "to": 6,
-          "count": 2,
-          "people": 6
-        },
-        {
-          "from": 7,
-          "to": 7,
-          "count": 3,
-          "people": 14
-        },
-        {
-          "from": 8,
-          "to": 8,
-          "count": 2,
-          "people": 16
-        },
-        {
-          "from": 9,
+          "from": 5,
           "to": 9,
-          "count": 2,
-          "people": 9
+          "count": 9,
+          "people": 32
         },
         {
-          "from": 11,
-          "to": 11,
+          "from": 10,
+          "to": 14,
           "count": 2,
           "people": 22
         },
         {
           "from": 15,
-          "to": 15,
-          "count": 1,
-          "people": 15
-        },
-        {
-          "from": 16,
-          "to": 16,
-          "count": 11,
-          "people": 71
-        },
-        {
-          "from": 17,
-          "to": 17,
-          "count": 43,
-          "people": 55
-        },
-        {
-          "from": 18,
-          "to": 18,
-          "count": 10,
-          "people": 66
-        },
-        {
-          "from": 19,
           "to": 19,
-          "count": 2,
-          "people": 31
+          "count": 67,
+          "people": 108
         },
         {
-          "from": 21,
-          "to": 21,
-          "count": 14,
-          "people": 78
-        },
-        {
-          "from": 22,
-          "to": 22,
-          "count": 11,
-          "people": 44
-        },
-        {
-          "from": 23,
-          "to": 23,
-          "count": 13,
-          "people": 69
-        },
-        {
-          "from": 24,
+          "from": 20,
           "to": 24,
-          "count": 2,
-          "people": 47
+          "count": 40,
+          "people": 114
         },
         {
-          "from": 26,
-          "to": 26,
-          "count": 1,
-          "people": 26
-        },
-        {
-          "from": 27,
-          "to": 27,
-          "count": 2,
-          "people": 27
+          "from": 25,
+          "to": 29,
+          "count": 3,
+          "people": 39
         },
         {
           "from": 30,
-          "to": 30,
-          "count": 1,
-          "people": 30
-        },
-        {
-          "from": 33,
-          "to": 33,
-          "count": 1,
-          "people": 33
-        },
-        {
-          "from": 34,
           "to": 34,
-          "count": 1,
-          "people": 34
+          "count": 3,
+          "people": 81
         }
       ],
       "meetings": [
@@ -285,130 +207,34 @@
       ],
       "courseSize": [
         {
-          "from": 3,
-          "to": 3,
-          "count": 2,
-          "people": 6
-        },
-        {
-          "from": 4,
+          "from": 0,
           "to": 4,
-          "count": 7,
-          "people": 20
-        },
-        {
-          "from": 5,
-          "to": 5,
-          "count": 4,
-          "people": 15
-        },
-        {
-          "from": 6,
-          "to": 6,
-          "count": 4,
-          "people": 16
-        },
-        {
-          "from": 7,
-          "to": 7,
-          "count": 5,
-          "people": 19
-        },
-        {
-          "from": 8,
-          "to": 8,
-          "count": 5,
+          "count": 9,
           "people": 25
         },
         {
-          "from": 9,
+          "from": 5,
           "to": 9,
-          "count": 5,
-          "people": 23
+          "count": 23,
+          "people": 64
         },
         {
           "from": 10,
-          "to": 10,
-          "count": 1,
-          "people": 10
-        },
-        {
-          "from": 11,
-          "to": 11,
-          "count": 5,
-          "people": 32
-        },
-        {
-          "from": 12,
-          "to": 12,
-          "count": 6,
-          "people": 41
-        },
-        {
-          "from": 13,
-          "to": 13,
-          "count": 13,
-          "people": 72
-        },
-        {
-          "from": 14,
           "to": 14,
-          "count": 12,
-          "people": 80
+          "count": 37,
+          "people": 98
         },
         {
           "from": 15,
-          "to": 15,
-          "count": 10,
-          "people": 72
-        },
-        {
-          "from": 16,
-          "to": 16,
-          "count": 16,
-          "people": 87
-        },
-        {
-          "from": 17,
-          "to": 17,
-          "count": 5,
-          "people": 56
-        },
-        {
-          "from": 18,
-          "to": 18,
-          "count": 5,
-          "people": 41
-        },
-        {
-          "from": 19,
           "to": 19,
-          "count": 4,
-          "people": 31
+          "count": 40,
+          "people": 101
         },
         {
           "from": 20,
-          "to": 20,
-          "count": 3,
-          "people": 38
-        },
-        {
-          "from": 21,
-          "to": 21,
-          "count": 4,
-          "people": 56
-        },
-        {
-          "from": 22,
-          "to": 22,
-          "count": 4,
-          "people": 44
-        },
-        {
-          "from": 24,
           "to": 24,
-          "count": 3,
-          "people": 37
+          "count": 14,
+          "people": 87
         }
       ],
       "meetings": [
@@ -521,122 +347,38 @@
       ],
       "courseSize": [
         {
-          "from": 2,
-          "to": 3,
-          "count": 7,
-          "people": 11
-        },
-        {
-          "from": 4,
+          "from": 0,
           "to": 4,
-          "count": 8,
-          "people": 23
+          "count": 15,
+          "people": 25
         },
         {
           "from": 5,
-          "to": 5,
-          "count": 12,
-          "people": 34
-        },
-        {
-          "from": 6,
-          "to": 6,
-          "count": 8,
-          "people": 23
-        },
-        {
-          "from": 7,
-          "to": 7,
-          "count": 11,
-          "people": 34
-        },
-        {
-          "from": 8,
-          "to": 8,
-          "count": 15,
-          "people": 51
-        },
-        {
-          "from": 9,
           "to": 9,
-          "count": 5,
-          "people": 33
+          "count": 51,
+          "people": 70
         },
         {
           "from": 10,
-          "to": 10,
-          "count": 2,
-          "people": 20
-        },
-        {
-          "from": 11,
-          "to": 11,
-          "count": 6,
-          "people": 41
-        },
-        {
-          "from": 12,
-          "to": 12,
-          "count": 5,
-          "people": 38
-        },
-        {
-          "from": 13,
-          "to": 13,
-          "count": 4,
-          "people": 45
-        },
-        {
-          "from": 14,
           "to": 14,
-          "count": 9,
-          "people": 57
+          "count": 26,
+          "people": 80
         },
         {
           "from": 15,
-          "to": 15,
-          "count": 4,
-          "people": 38
-        },
-        {
-          "from": 16,
-          "to": 16,
-          "count": 3,
-          "people": 40
-        },
-        {
-          "from": 17,
-          "to": 17,
-          "count": 3,
-          "people": 38
-        },
-        {
-          "from": 18,
-          "to": 18,
-          "count": 1,
-          "people": 18
-        },
-        {
-          "from": 19,
           "to": 19,
-          "count": 1,
-          "people": 19
+          "count": 12,
+          "people": 55
         },
         {
           "from": 20,
-          "to": 20,
-          "count": 1,
-          "people": 20
+          "to": 24,
+          "count": 3,
+          "people": 45
         },
         {
-          "from": 21,
-          "to": 21,
-          "count": 2,
-          "people": 33
-        },
-        {
-          "from": 63,
-          "to": 63,
+          "from": 60,
+          "to": 64,
           "count": 1,
           "people": 63
         }
@@ -894,13 +636,11 @@
     {
       "from": 60,
       "to": 69,
-      "count": 18,
       "people": 18
     },
     {
       "from": 70,
       "to": 109,
-      "count": 10,
       "people": 10
     }
   ],

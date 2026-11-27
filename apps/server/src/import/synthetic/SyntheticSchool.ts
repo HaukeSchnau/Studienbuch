@@ -625,6 +625,28 @@ const build = Effect.fnUntraced(function* (calibration: Calibration.Calibration,
 
   drafts.push(...shared);
 
+  // Students whose timetable WebUntis hides from some day on.
+  const hiddenBins = calibration.hidden.map(({ from, to, people }) => ({
+    from,
+    to,
+    count: people,
+  }));
+
+  const hiddenCount = calibration.hidden.reduce((sum, bin) => sum + bin.people, 0);
+
+  const hiddenOnes = new Set(
+    (yield* Random.shuffle(students.map((s) => s.id))).slice(0, hiddenCount),
+  );
+
+  const hiddenFrom = new Map<number, string>();
+
+  for (const student of hiddenOnes) {
+    const percent = Math.min(95, yield* draw(hiddenBins, 50));
+    const day = calendar[Math.floor((calendar.length * (100 - percent)) / 100)];
+
+    if (day !== undefined) hiddenFrom.set(student, day.date);
+  }
+
   // Roster changes in the second opening week: a few students switch courses within Kopplungen.
   // Later, some students join a course of a Kopplung they had none in.
   const moves: Array<Move> = [];
@@ -647,24 +669,45 @@ const build = Effect.fnUntraced(function* (calibration: Calibration.Calibration,
   const switches =
     changes === undefined ? 0 : Math.max(1, Math.round(changes.count / terms / movers / 2));
 
-  for (const student of (yield* Random.shuffle(students.map((each) => each.id))).slice(0, movers)) {
-    const own = yield* Random.shuffle(
-      kopplungen.filter(
-        (each) => each.courses.length >= 2 && each.courses.some((c) => c.roster.includes(student)),
-      ),
-    );
-
-    for (const kopplung of own.slice(0, switches)) {
+  // A switch shows as a roster change only when the course switched to meets in the opening
+  // weeks both before and on the day, so only such switches are drawn.
+  const switchesOf = (student: number) =>
+    kopplungen.flatMap((kopplung) => {
       const from = kopplung.courses.find((c) => c.roster.includes(student));
-      const [to] = yield* Random.shuffle(kopplung.courses.filter((c) => c !== from));
 
-      const date =
-        to === undefined ? undefined : meetingDays(to, (week) => week === secondOpening).at(-1);
+      return from === undefined
+        ? []
+        : kopplung.courses.flatMap((to) => {
+            const date = meetingDays(to, (week) => week === secondOpening).at(-1);
 
-      if (from === undefined || to === undefined || date === undefined) continue;
+            const earlier = meetingDays(to, (week) => opening.has(week)).some(
+              (day) => date !== undefined && day.date < date.date,
+            );
 
-      moving.add(student);
-      moves.push({ student, from: from.id, to: to.id, date: date.date });
+            return to === from || date === undefined || !earlier
+              ? []
+              : [{ student, from: from.id, to: to.id, date: date.date, kopplung }];
+          });
+    });
+
+  // A student WebUntis hides can't show a move.
+  const eligible = students.flatMap((each) => {
+    const found = hiddenFrom.has(each.id) ? [] : switchesOf(each.id);
+
+    return new Set(found.map((one) => one.kopplung)).size >= switches ? [found] : [];
+  });
+
+  for (const found of (yield* Random.shuffle(eligible)).slice(0, movers)) {
+    const done = new Set<number>();
+
+    for (const { kopplung, ...move } of yield* Random.shuffle(found)) {
+      const index = kopplungen.indexOf(kopplung);
+
+      if (done.has(index) || done.size >= switches) continue;
+
+      done.add(index);
+      moving.add(move.student);
+      moves.push(move);
     }
   }
 
@@ -673,27 +716,32 @@ const build = Effect.fnUntraced(function* (calibration: Calibration.Calibration,
   const joins = pitfalls.lateJoins;
   const joiners = joins === undefined ? 0 : perTerm(joins.people, terms);
 
-  const joined = (yield* Random.shuffle(students.filter((each) => !moving.has(each.id)))).slice(
-    0,
-    joiners,
-  );
-
-  for (const student of joined) {
-    const [kopplung] = yield* Random.shuffle(
-      kopplungen.filter(
-        (each) =>
-          each.grade === student.grade && !each.courses.some((c) => c.roster.includes(student.id)),
-      ),
+  // Only a course of a Kopplung the student has nothing in, meeting in the join weeks, can be one.
+  const joinsOf = (student: Student) =>
+    kopplungen.flatMap((kopplung) =>
+      kopplung.grade !== student.grade ||
+      kopplung.courses.some((c) => c.roster.includes(student.id))
+        ? []
+        : kopplung.courses.flatMap((to) =>
+            meetingDays(to, (week) => joinWeeks.has(week)).map((day) => ({
+              student: student.id,
+              from: undefined,
+              to: to.id,
+              date: day.date,
+            })),
+          ),
     );
 
-    const [to] = yield* Random.shuffle(kopplung?.courses ?? []);
+  const joinable = students.flatMap((each) => {
+    const found = moving.has(each.id) || hiddenFrom.has(each.id) ? [] : joinsOf(each);
 
-    const [date] =
-      to === undefined ? [] : yield* Random.shuffle(meetingDays(to, (week) => joinWeeks.has(week)));
+    return found.length === 0 ? [] : [found];
+  });
 
-    if (to !== undefined && date !== undefined) {
-      moves.push({ student: student.id, from: undefined, to: to.id, date: date.date });
-    }
+  for (const found of (yield* Random.shuffle(joinable)).slice(0, joiners)) {
+    const [join] = yield* Random.shuffle(found);
+
+    if (join !== undefined) moves.push(join);
   }
 
   // Teachers and rooms, free in every slot of a course where one is.
@@ -748,9 +796,14 @@ const build = Effect.fnUntraced(function* (calibration: Calibration.Calibration,
 
     const roomed = (yield* draw(calibration.rooms.perCourse, 1)) > 0;
 
-    const room =
+    const inherited =
       draft.teacherOf !== undefined && draft.meetings.every((m) => m.block === lunch)
         ? byId.get(draft.teacherOf)?.room
+        : undefined;
+
+    const room =
+      inherited !== undefined && isFree(roomBusy, inherited, draft.meetings)
+        ? inherited
         : [...shuffledRooms]
             .sort((a, b) => load(roomBusy, a) - load(roomBusy, b))
             .find((each) => isFree(roomBusy, each, draft.meetings));
@@ -803,22 +856,6 @@ const build = Effect.fnUntraced(function* (calibration: Calibration.Calibration,
         lower: true,
       });
     }
-  }
-
-  // Students whose timetable WebUntis hides from some day on.
-  const hiddenCount = calibration.hidden.reduce((sum, bin) => sum + bin.count, 0);
-
-  const hiddenOnes = new Set(
-    (yield* Random.shuffle(students.map((s) => s.id))).slice(0, hiddenCount),
-  );
-
-  const hiddenFrom = new Map<number, string>();
-
-  for (const student of hiddenOnes) {
-    const percent = Math.min(95, yield* draw(calibration.hidden, 50));
-    const day = calendar[Math.floor((calendar.length * (100 - percent)) / 100)];
-
-    if (day !== undefined) hiddenFrom.set(student, day.date);
   }
 
   const courses: ReadonlyArray<Course> = drafts.map(
