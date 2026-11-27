@@ -7,7 +7,6 @@ import {
   Lesson,
   Notebook,
   Room,
-  School,
   Subject,
   Teacher,
   Term,
@@ -29,7 +28,7 @@ import { Schema as Device } from "../../infra/sqlite/Schema.ts";
 
 // The school's timetable as the device holds it, for the Übersicht's card, Meine Woche and the
 // lesson sheet: the student's lessons from a date on with their courses, and the school's teachers,
-// rooms, closures, week labels and Stand.
+// rooms, closures, week labels and Stand. Today and now at the school come from `DeviceStatus.now`.
 
 export * as TimetableState from "./TimetableState.ts";
 
@@ -37,8 +36,6 @@ const runtime = Atom.family((accountId: string) => Atom.runtime(AccountEngine.ap
 
 /** What the device holds of the timetable. */
 export interface Reading {
-  /** The school's, which decides what "today" and "now" are. */
-  readonly timeZone: CivilTime.TimeZone;
   readonly plan: Timetable.Plan<AgendaItem.Source>;
   readonly names: AgendaItem.Names;
   /** When the import last read the school, in epoch milliseconds. `None` without a Stand. */
@@ -49,7 +46,6 @@ export interface Reading {
 
 const decode = {
   notebook: DeviceSchema.decodeView(Notebook.Row),
-  school: DeviceSchema.decodeView(School.Row),
   course: DeviceSchema.decodeView(Course.Row),
   subject: DeviceSchema.decodeView(Subject.Row),
   teacher: DeviceSchema.decodeView(Teacher.Row),
@@ -77,7 +73,6 @@ const read = Effect.fn("TimetableState.read")(function* (from: string) {
   const inSchool = <A extends { readonly space: string }>(rows: ReadonlyArray<A>) =>
     rows.filter((row) => row.space === notebook.schoolId);
 
-  const [school] = inSchool(yield* Effect.flatMap(db.select().from(Device.School), decode.school));
   const courses = inSchool(yield* Effect.flatMap(db.select().from(Device.Course), decode.course));
 
   const subjects = new Map(
@@ -125,7 +120,6 @@ const read = Effect.fn("TimetableState.read")(function* (from: string) {
   const named = new Map(courses.map((course) => [course.id, course]));
 
   return Option.some<Reading>({
-    timeZone: school?.timeZone ?? School.defaultTimeZone,
     plan: {
       lessons: lessons.filter(chosen).map((lesson) => {
         const course = named.get(lesson.courseId);
@@ -152,7 +146,6 @@ const read = Effect.fn("TimetableState.read")(function* (from: string) {
 
 const tables = [
   Notebook.Row,
-  School.Row,
   Course.Row,
   Subject.Row,
   Teacher.Row,

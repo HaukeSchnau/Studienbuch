@@ -672,7 +672,7 @@ describe("Timetable.staleSince", () => {
     },
   ])("$name", ({ read, now, stale }) => {
     expect(
-      Option.match(Timetable.staleSince(read, now, zone), {
+      Option.match(Timetable.staleSince(read, School.now({ timeZone: zone }, now)), {
         onNone: () => "fresh",
         onSome: ({ date, time }) => `${CivilTime.format(date)} ${clock(time)}`,
       }),

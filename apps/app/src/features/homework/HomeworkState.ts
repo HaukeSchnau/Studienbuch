@@ -1,13 +1,4 @@
-import {
-  type CivilTime,
-  Course,
-  Enrollment,
-  Homework,
-  Notebook,
-  School,
-  Subject,
-  Term,
-} from "@stu/core";
+import { type CivilTime, Course, Enrollment, Homework, Notebook, Subject, Term } from "@stu/core";
 import type { CourseChoice } from "@stu/domain-ui/homework/HomeworkForm";
 import type { HomeworkItem } from "@stu/domain-ui/homework/HomeworkItem";
 import { SubjectMark } from "@stu/domain-ui/subject/SubjectMark";
@@ -52,8 +43,6 @@ export interface Stored extends HomeworkItem.Source {
 /** What the device holds of the notebook's homework. */
 export interface Reading {
   readonly notebook: Notebook.Id;
-  /** The school's, which decides what "today" is. */
-  readonly timeZone: CivilTime.TimeZone;
   readonly homework: ReadonlyArray<Stored>;
   /** The notebook's changes the server refused, oldest first, apart from the course choice. */
   readonly refusals: ReadonlyArray<Outbox.Rejected>;
@@ -66,7 +55,6 @@ export interface Reading {
 
 const decode = {
   notebook: DeviceSchema.decodeView(Notebook.Row),
-  school: DeviceSchema.decodeView(School.Row),
   course: DeviceSchema.decodeView(Course.Row),
   subject: DeviceSchema.decodeView(Subject.Row),
   homework: DeviceSchema.decodeView(Homework.Row),
@@ -91,7 +79,6 @@ const read = Effect.gen(function* () {
   const inSchool = <A extends { readonly space: string }>(rows: ReadonlyArray<A>) =>
     rows.filter((row) => row.space === notebook.schoolId);
 
-  const [school] = inSchool(yield* Effect.flatMap(db.select().from(Device.School), decode.school));
   const courses = inSchool(yield* Effect.flatMap(db.select().from(Device.Course), decode.course));
 
   const subjects = new Map(
@@ -150,7 +137,6 @@ const read = Effect.gen(function* () {
 
   return Option.some<Reading>({
     notebook: Notebook.Id.make(notebook.id),
-    timeZone: school?.timeZone ?? School.defaultTimeZone,
     homework,
     refusals,
     terms,
@@ -175,15 +161,7 @@ const read = Effect.gen(function* () {
  * its rows in `pending_row` change, so `Homework` covers which of them wait.
  */
 export const query = SyncQuery.read({
-  tables: [
-    Notebook.Row,
-    School.Row,
-    Course.Row,
-    Subject.Row,
-    Homework.Row,
-    Term.Row,
-    Enrollment.Row,
-  ],
+  tables: [Notebook.Row, Course.Row, Subject.Row, Homework.Row, Term.Row, Enrollment.Row],
   queries: [SyncClient.refusals],
   run: () => read.pipe(Effect.catchTags({ SchemaError: Effect.die })),
 });
@@ -548,31 +526,22 @@ export const shown = (
     : { ...held, homework: [], refusals: [] };
 
 /**
- * The device's status, today at the school and what the screens show of the notebook (`shown`).
- * `None` until today is known.
+ * The device's status, today at the school (`DeviceStatus.today`) and what the screens show of the
+ * notebook (`shown`). `None` until today is known.
  */
 export const screen = Atom.family((accountId: string) =>
   Atom.make((get): Option.Option<Screen> => {
+    // Read before today, so the notebook's read runs beside the school's rather than after it.
     const held = Option.flatten(AsyncResult.value(get(reading(accountId))));
+    const today = get(DeviceStatus.today(accountId));
 
-    const now = AsyncResult.value(
-      get(
-        DeviceStatus.today(
-          Option.match(held, {
-            onNone: () => School.defaultTimeZone,
-            onSome: (r) => r.timeZone,
-          }),
-        ),
-      ),
-    );
-
-    if (Option.isNone(now)) return Option.none();
+    if (Option.isNone(today)) return Option.none();
 
     const device = get(DeviceStatus.status(accountId));
 
     return Option.some({
       ...device,
-      today: now.value,
+      today: today.value,
       reading: Option.map(held, (value) => shown(value, device)),
     });
   }),
