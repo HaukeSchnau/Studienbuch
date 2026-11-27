@@ -269,6 +269,17 @@ export const recording = Effect.fn("SourceStore.recording")(function* (school: S
   return recordingOfRows(rows);
 }, Effect.orDie);
 
+/** The paths of every read without a range the store holds for the school. */
+export const undatedPaths = Effect.fn("SourceStore.undatedPaths")(function* (school: School.Id) {
+  const sql = yield* SqlClient.SqlClient;
+
+  const rows = yield* sql<{ readonly path: string }>`
+    select distinct path from source_version where school_id = ${school} and day is null
+  `;
+
+  return rows.map(({ path }) => path);
+}, Effect.orDie);
+
 /**
  * What the store saw after `since` up to `until`, as a recording: each version observed then whose
  * day is `since`'s date or later, and the version each such path and day had at `since`, so a

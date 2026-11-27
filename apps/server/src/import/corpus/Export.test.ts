@@ -3,6 +3,7 @@ import { assert, describe, expect, layer } from "@effect/vitest";
 import { School } from "@stu/core";
 import { Postgres18 } from "@stu/sync/testing";
 import * as Age from "age-encryption";
+import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
@@ -60,11 +61,12 @@ const exported = Effect.fn("ExportTest.exported")(function* (school: School.Id) 
   const recipient = yield* Effect.promise(() => Age.identityToRecipient(identity));
   const target = yield* repository;
 
+  // On the day of its slot, as the weekly job runs it.
   const pushed = yield* Export.run({
     profile: { ...TinySchool.profile, id: school },
     until: ImportTesting.noon,
     recipients: [recipient],
-  }).pipe(Effect.provide(target.layer));
+  }).pipe(Effect.provide(target.layer), ImportTesting.at(ImportTesting.noon));
 
   const files = new Map((yield* Ref.get(target.files)).map((file) => [file.path, file.content]));
   const root = yield* fs.makeTempDirectoryScoped();
@@ -237,6 +239,76 @@ describe.skipIf(Postgres18.socket === null)("Export on PostgreSQL 18", () => {
       }),
     );
 
+    it.effect(
+      "a week exported after the store may have dropped its start pushes nothing, and says so",
+      () =>
+        Effect.gen(function* () {
+          const school = School.Id.make("export-late");
+          const sql = yield* SqlClient.SqlClient;
+          const target = yield* repository;
+
+          yield* stored(school, NamedSchoolTesting.corpus);
+
+          const late = (days: number) =>
+            Export.run({
+              profile: { ...TinySchool.profile, id: school },
+              until: ImportTesting.noon,
+              recipients: Export.recipients,
+            }).pipe(
+              Effect.provide(target.layer),
+              ImportTesting.at(DateTime.add(ImportTesting.noon, { days })),
+              Effect.flip,
+              Effect.map((error) => error._tag),
+            );
+
+          const rows = sql<{ readonly outcome: string | null }>`
+          select outcome from import_export where school_id = ${school} order by started_at
+        `;
+
+          // A day late, the oldest read its week can need is older than the store's 35 days.
+          expect({
+            late: yield* late(1),
+            pushed: (yield* Ref.get(target.files)).length,
+            rows: (yield* rows).map(({ outcome }) => outcome),
+          }).toEqual({ late: "Export.Forgotten", pushed: 0, rows: ["Export.Forgotten"] });
+        }),
+    );
+
+    it.effect("a read without a range whose week's version the store pruned refuses the week", () =>
+      Effect.gen(function* () {
+        const school = School.Id.make("export-replaced");
+        const sql = yield* SqlClient.SqlClient;
+        const target = yield* repository;
+        const path = RecordedWebUntis.paths.timeGrid;
+
+        yield* stored(school, NamedSchoolTesting.corpus);
+
+        // A new time grid after the week, and the old one pruned, as it is once 35 days old.
+        yield* SourceStore.write(school, DateTime.add(ImportTesting.noon, { hours: 1 }), [
+          { path, body: { schoolyearId: 10, units: [] } },
+        ]);
+        yield* sql`
+          delete from source_version where school_id = ${school} and path = ${path}
+            and observed_at < ${DateTime.toDateUtc(ImportTesting.noon)}
+        `;
+
+        const failed = yield* Export.run({
+          profile: { ...TinySchool.profile, id: school },
+          until: ImportTesting.noon,
+          recipients: Export.recipients,
+        }).pipe(
+          Effect.provide(target.layer),
+          ImportTesting.at(DateTime.add(ImportTesting.noon, { hours: 2 })),
+          Effect.flip,
+        );
+
+        expect({ failed: failed._tag, pushed: (yield* Ref.get(target.files)).length }).toEqual({
+          failed: "Export.Forgotten",
+          pushed: 0,
+        });
+      }),
+    );
+
     it.effect("an export of a field the corpus has no rule for pushes nothing, and says why", () =>
       Effect.gen(function* () {
         const school = School.Id.make("export-unruled");
@@ -274,7 +346,7 @@ describe.skipIf(Postgres18.socket === null)("Export on PostgreSQL 18", () => {
             profile: { ...TinySchool.profile, id: school },
             until: ImportTesting.noon,
             recipients: Export.recipients,
-          }).pipe(Effect.provide(target.layer)),
+          }).pipe(Effect.provide(target.layer), ImportTesting.at(ImportTesting.noon)),
         );
 
         const rows = yield* sql<{ readonly outcome: string | null; readonly report: unknown }>`

@@ -225,7 +225,8 @@ export const layer = Layer.unwrap(
         ClusterCron.make({
           name: "import-export",
           cron: weeklyExport,
-          // A restart exports each missed week from its own slot, in order, up to a week late.
+          // A restart exports each missed week from its own slot, in order, while it is under a week
+          // late; `Export.holds` refuses one the store may no longer hold, often sooner.
           calculateNextRunFromPrevious: true,
           skipIfOlderThan: "7 days",
           execute: exportWeek(token),

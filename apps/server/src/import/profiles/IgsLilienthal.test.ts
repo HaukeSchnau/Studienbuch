@@ -3,6 +3,7 @@ import * as Cron from "effect/Cron";
 import * as DateTime from "effect/DateTime";
 import * as Duration from "effect/Duration";
 import * as Option from "effect/Option";
+import { Export } from "../corpus/Export.ts";
 import { ImportJob } from "../ImportJob.ts";
 import { ImportRun } from "../ImportRun.ts";
 import { Lease } from "../Lease.ts";
@@ -146,7 +147,16 @@ describe("IgsLilienthal", () => {
         return `${parts.weekDay} ${parts.hour}:${parts.minute}`;
       });
 
-      expect({ local, clashes }).toEqual({ local: Array(8).fill("1 0:30"), clashes: [] });
+      // On time, the store still holds everything each week can need.
+      const held = slots.every((slot) =>
+        Export.holds(timeZone, DateTime.subtract(slot, { days: Export.days }), slot),
+      );
+
+      expect({ local, clashes, held }).toEqual({
+        local: Array(8).fill("1 0:30"),
+        clashes: [],
+        held: true,
+      });
     },
   );
 });

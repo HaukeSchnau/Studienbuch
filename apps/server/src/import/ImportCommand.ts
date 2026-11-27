@@ -187,6 +187,12 @@ const lastExport = (
       ? `, ${report.value.problems} problems`
       : "";
 
+  if (row.outcome === "Export.Forgotten") {
+    return [
+      `last export ${at} pushed nothing: it ran too late, and the source store may have pruned what its week showed at its start`,
+    ];
+  }
+
   if (row.outcome === "Gitea.CommitUnconfirmed") {
     return [
       `last export ${at} unconfirmed: Gitea didn't confirm the commit, so the corpus repository may hold it`,

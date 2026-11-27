@@ -4,7 +4,7 @@
  * checked like a capture, packed for Hauke's and CI's age keys, and committed to the private
  * corpus repository. The store's bodies never leave the server.
  */
-import type { School } from "@stu/core";
+import { CivilTime, type School } from "@stu/core";
 import type * as Arr from "effect/Array";
 import * as Cause from "effect/Cause";
 import * as Config from "effect/Config";
@@ -21,6 +21,7 @@ import * as SqlClient from "effect/sql/SqlClient";
 import * as Stream from "effect/Stream";
 import { Gitea } from "../../infra/gitea/Gitea.ts";
 import type { RecordedWebUntis } from "../../infra/webuntis/RecordedWebUntis.ts";
+import { Plan } from "../Plan.ts";
 import type { SchoolProfile } from "../profiles/SchoolProfile.ts";
 import { SourceStore } from "../source/SourceStore.ts";
 import { Archive } from "./Archive.ts";
@@ -95,10 +96,31 @@ export class Empty extends Schema.TaggedError<Empty, { readonly brand: unique sy
   { since: Schema.String },
 ) {}
 
+/**
+ * The store may have dropped what the window showed at its start: a day is first read up to
+ * `Plan.windowDays - 1` days before it, the store keeps `SourceStore.keptDays` of reads, and of a
+ * read without a range only the newest. An export never fills that from anything else.
+ */
+export class Forgotten extends Schema.TaggedError<Forgotten, { readonly brand: unique symbol }>()(
+  "Export.Forgotten",
+  { since: Schema.String },
+) {}
+
+/** Whether the store still holds every read a window starting at `since` can need, at `now`. */
+export const holds = (timeZone: School.Row["timeZone"], since: DateTime.Utc, now: DateTime.Utc) => {
+  const dateOf = (at: DateTime.Utc) => CivilTime.dateIn(DateTime.toEpochMillis(at), timeZone);
+  const needed = CivilTime.addDays(dateOf(since), -(Plan.windowDays - 1));
+  const kept = dateOf(DateTime.subtract(now, { days: SourceStore.keptDays }));
+
+  // A read on the oldest kept date may be older than the cut, so that date doesn't count.
+  return CivilTime.order(needed, kept) > 0;
+};
+
 /** Errors whose fields name read kinds, paths, problems and counts only. */
 const sanitized = Sanitized.only(
   new Set([
     "Export.Empty",
+    "Export.Forgotten",
     "Pseudonymizer.PolicyFailed",
     "Pseudonymizer.NotRaw",
     "Checks.LeakFound",
@@ -153,9 +175,19 @@ const make = Effect.fn("Export.make")(function* (input: Options) {
   const gitea = yield* Gitea.Service;
   const { timeZone } = input.profile.school;
   const window = { since: DateTime.subtract(input.until, { days }), until: input.until };
+
+  if (!holds(timeZone, window.since, yield* DateTime.now)) {
+    return yield* new Forgotten({ since: iso(window.since) });
+  }
+
   const reads = yield* SourceStore.between(input.profile.id, timeZone, window);
 
   if (reads.size === 0) return yield* new Empty({ since: iso(window.since) });
+
+  // A read without a range keeps only its newest version, which a later one may have replaced.
+  if ((yield* SourceStore.undatedPaths(input.profile.id)).some((path) => !reads.has(path))) {
+    return yield* new Forgotten({ since: iso(window.since) });
+  }
 
   const id = idAt(input.until, timeZone);
   const work = yield* fs.makeTempDirectoryScoped({ prefix: "corpus-export-" });
