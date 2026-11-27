@@ -17,23 +17,26 @@ export const family = (subject: string, classes: Iterable<string>) =>
 
 /**
  * The family of an entry in the view of `viewClass`, and the classes it is taught to, which include
- * the view's own class although the view doesn't list it. An entry without a subject, such as an
- * outing, is no course's but its class's, so it stays with the class whose view shows it and has
- * no parallel groups.
+ * the view's own class although the view doesn't list it. An entry without a subject, such as a
+ * day of events for the whole school, is one lesson of its classes too, but has no parallel
+ * groups.
  */
 export const familyOf = (
   subject: Option.Option<string>,
   entry: TimetableEntry,
   viewClass: string,
-) =>
-  Option.match(subject, {
-    onNone: () => ({ family: family("?", [viewClass]), taughtTo: [viewClass], grouped: false }),
-    onSome: (name) => {
-      const taughtTo = [...WebUntisEntry.names(entry, "CLASS").planned, viewClass];
+) => {
+  const taughtTo = [...WebUntisEntry.names(entry, "CLASS").planned, viewClass];
 
-      return { family: family(name, taughtTo), taughtTo, grouped: true };
-    },
-  });
+  return {
+    family: family(
+      Option.getOrElse(subject, () => "?"),
+      taughtTo,
+    ),
+    taughtTo,
+    grouped: Option.isSome(subject),
+  };
+};
 
 /** One parallel group of a family, by the teachers the plan gives it. */
 const group = (familyKey: string, teachers: Iterable<string>) =>

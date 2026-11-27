@@ -42,25 +42,25 @@
     "views": {
       "student": {
         "weeks": {
-          "right": 3337,
+          "right": 3366,
           "of": 4196
         },
         "recall": {
-          "right": 54798,
+          "right": 54602,
           "of": 55890
         },
         "precision": {
-          "right": 54798,
-          "of": 57652
+          "right": 54602,
+          "of": 55972
         },
         "attributes": {
-          "right": 54798,
-          "of": 54798
+          "right": 54602,
+          "of": 54602
         }
       },
       "teacher": {
         "weeks": {
-          "right": 1554,
+          "right": 1558,
           "of": 1566
         },
         "recall": {
@@ -69,7 +69,7 @@
         },
         "precision": {
           "right": 5089,
-          "of": 5121
+          "of": 5089
         },
         "attributes": {
           "right": 5081,
@@ -96,10 +96,10 @@
       }
     },
     "kurswahl": {
-      "right": 244,
+      "right": 300,
       "of": 473
     },
-    "ghostCourses": 3,
+    "ghostCourses": 4,
     "courseIdentity": {
       "realCourses": 377,
       "split": 0,
@@ -607,8 +607,8 @@
       }
     },
     "links": {
-      "right": 5107,
-      "of": 5107
+      "right": 5095,
+      "of": 5095
     },
     "exams": {
       "right": 36,
@@ -699,25 +699,25 @@
     "views": {
       "student": {
         "weeks": {
-          "right": 3337,
+          "right": 3366,
           "of": 4196
         },
         "recall": {
-          "right": 54798,
+          "right": 54602,
           "of": 55890
         },
         "precision": {
-          "right": 54798,
-          "of": 57652
+          "right": 54602,
+          "of": 55972
         },
         "attributes": {
-          "right": 54798,
-          "of": 54798
+          "right": 54602,
+          "of": 54602
         }
       },
       "teacher": {
         "weeks": {
-          "right": 1554,
+          "right": 1558,
           "of": 1566
         },
         "recall": {
@@ -726,7 +726,7 @@
         },
         "precision": {
           "right": 5089,
-          "of": 5121
+          "of": 5089
         },
         "attributes": {
           "right": 5081,
@@ -753,10 +753,10 @@
       }
     },
     "kurswahl": {
-      "right": 244,
+      "right": 300,
       "of": 473
     },
-    "ghostCourses": 3,
+    "ghostCourses": 4,
     "courseIdentity": {
       "realCourses": 377,
       "split": 0,
@@ -1264,8 +1264,8 @@
       }
     },
     "links": {
-      "right": 5107,
-      "of": 5107
+      "right": 5095,
+      "of": 5095
     },
     "exams": {
       "right": 36,

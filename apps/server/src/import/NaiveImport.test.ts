@@ -242,12 +242,11 @@ describe("NaiveImport", () => {
       },
     },
     {
-      name: "leaves an entry without a subject to the class whose view shows it",
+      name: "makes an entry without a subject, which each class's view shows, one lesson",
       shownBy112: true,
       subject: false,
       courses: {
-        "?/11.1": { classes: [111], gradeLevels: [11], lasting: true },
-        "?/12": { classes: [112], gradeLevels: [12], lasting: false },
+        "?/11.1+12": { classes: [111, 112], gradeLevels: [11, 12], lasting: false },
       },
     },
   ])("$name", ({ shownBy112, subject, courses }) =>
