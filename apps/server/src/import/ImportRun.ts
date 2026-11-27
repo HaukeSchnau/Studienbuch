@@ -691,9 +691,12 @@ const store = Effect.fn("ImportRun.store")(function* (
     }
   }
 
-  const versionsStored = yield* SourceStore.write(school, now, versions);
-  // After every write, so a read that a write just superseded doesn't outlive its 35 days.
-  const versionsPruned = yield* SourceStore.prune(school, now);
+  const sql = yield* SqlClient.SqlClient;
+
+  // Pruned with every write, so a version a write supersedes never outlives its 35 days.
+  const [versionsStored, versionsPruned] = yield* sql.withTransaction(
+    Effect.all([SourceStore.write(school, now, versions), SourceStore.prune(school, now)]),
+  );
 
   yield* Ref.update(report, (current) => {
     const reads = { ...current.reads };
