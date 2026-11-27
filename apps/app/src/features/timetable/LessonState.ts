@@ -57,7 +57,7 @@ export const sheet = Atom.family((accountId: string) =>
       const { reading, lesson } = found.value;
       const { today, readable } = screen.value;
       const notebook = readable ? screen.value.reading : Option.none();
-      const next = Timetable.nextLesson(reading.plan, lesson.courseId, lesson.date);
+      const next = Timetable.nextLesson(reading.plan, lesson.courseId, lesson.date, today);
 
       return Sheet.Lesson({
         today,

@@ -2,7 +2,8 @@ import { CivilTime } from "@stu/core";
 import * as Option from "effect/Option";
 import type { ImperativeRouter } from "expo-router";
 
-// Where homework's screens live in the Übersicht's stack, so every link to one names it the same.
+// Where homework's screens live in the Übersicht's and Meine Woche's stacks, so every link to one
+// names it the same.
 
 export * as HomeworkRoutes from "./HomeworkRoutes.ts";
 

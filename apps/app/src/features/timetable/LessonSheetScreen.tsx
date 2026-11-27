@@ -15,9 +15,9 @@ import { KeysState } from "../keys/KeysState.ts";
 import { LessonState } from "./LessonState.ts";
 
 /**
- * The lesson sheet, opened from a lesson on the Übersicht: the system's sheet on the phones, our
- * dialog on the wide web. "Hausaufgabe eintragen" and a homework row take its place, so one sheet
- * shows at a time and back leads to the Übersicht.
+ * The lesson sheet, opened from a lesson on the Übersicht or in Meine Woche: the system's sheet on
+ * the phones, our dialog on the wide web. "Hausaufgabe eintragen" and a homework row take its place,
+ * so one sheet shows at a time and back leads to the tab it opened from.
  */
 export function LessonSheetScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();

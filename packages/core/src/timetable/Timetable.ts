@@ -316,19 +316,22 @@ export const shown = <A extends Timed>(plan: Plan<A>, now: CivilTime.Moment): Sh
 
 /**
  * The course's first lesson on a day after `after` that takes place: not off, outside closures,
- * and published. That is when homework given on `after` is due. `None` while the device holds none,
- * as before the school publishes the next week.
+ * and published. That is when homework given on `after` is due, but never before `today`, where
+ * due dates start (`HomeworkDates.dueDates`). `None` while the device holds none, as before the
+ * school publishes the next week.
  */
 export const nextLesson = <A extends Timed>(
   plan: Plan<A>,
   course: string,
   after: CivilTime.PlainDate,
+  today: CivilTime.PlainDate,
 ): Option.Option<A> =>
   Arr.findFirst(
     Arr.sort(plan.lessons, byTime),
     (lesson) =>
       lesson.courseId === course &&
       CivilTime.order(lesson.date, after) > 0 &&
+      CivilTime.order(lesson.date, today) >= 0 &&
       !isOff(lesson) &&
       counts(plan, lesson.date),
   );

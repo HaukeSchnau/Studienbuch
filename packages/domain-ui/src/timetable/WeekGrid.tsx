@@ -514,7 +514,8 @@ const styles = StyleSheet.create({
   unpublished: { borderStyle: "dashed" },
   centred: { textAlign: "center" },
   upright: { alignItems: "center", transform: [{ rotate: "-90deg" }] },
-  now: { position: "absolute", height: 2, paddingHorizontal: 2 },
+  // Over the cells, so taps on the line reach the lesson under it.
+  now: { position: "absolute", height: 2, paddingHorizontal: 2, pointerEvents: "none" },
   nowLine: { flex: 1 },
   nowDot: { position: "absolute", left: -2, top: -4, width: 10, height: 10, borderRadius: 5 },
 });

@@ -18,12 +18,14 @@ import { HeroScreen } from "../../ui/HeroScreen.tsx";
 import { ArrowKeys } from "../../ui/ArrowKeys.tsx";
 import { OfflineChip } from "../device-status/OfflineChip.tsx";
 import { KeysState } from "../keys/KeysState.ts";
+import { TimetableRoutes } from "./TimetableRoutes.ts";
 import { WeekState } from "./WeekState.ts";
 
 /**
  * "Meine Woche", the Flutter app's week: the grid of the shown week under the green hero, with
  * "KW 47" and the school's "A-Woche", and arrows between weeks. At large text sizes a day list with
- * a day switcher takes the grid's place. A school without a timetable gets a card saying so.
+ * a day switcher takes the grid's place. A lesson opens its sheet over the week. A school without a
+ * timetable gets a card saying so.
  */
 export function WeekScreen() {
   return Option.match(KeysState.useAccountId(), {
@@ -44,6 +46,7 @@ function AccountWeek({ accountId }: { readonly accountId: string }) {
   useAtomMount(WeekState.screen(accountId)(""));
 
   const show = (week: string | undefined) => router.setParams({ kw: week, tag: undefined });
+  const open = (id: string) => router.push(TimetableRoutes.lesson(id));
 
   // Until the timetable is read, the canvas alone, so the hero's line doesn't change as it appears.
   if (Option.isNone(screen)) {
@@ -78,7 +81,9 @@ function AccountWeek({ accountId }: { readonly accountId: string }) {
           Reading: () => null,
           NoTimetable: () => <NoTimetable />,
           Week: (shown) => {
-            if (!list) return <WeekGrid week={shown.week} wide={wide} stand={shown.stand} />;
+            if (!list) {
+              return <WeekGrid week={shown.week} wide={wide} stand={shown.stand} onOpen={open} />;
+            }
 
             const chosen = shown.week.days.findIndex((day) => day.id === tag);
             const today = shown.week.days.findIndex((day) => day.today);
@@ -92,7 +97,12 @@ function AccountWeek({ accountId }: { readonly accountId: string }) {
                   selected={selected}
                   onSelect={(index) => router.setParams({ tag: shown.week.days[index]?.id })}
                 />
-                <AgendaCard items={day?.items ?? []} notice={day?.notice} stand={shown.stand} />
+                <AgendaCard
+                  items={day?.items ?? []}
+                  notice={day?.notice}
+                  stand={shown.stand}
+                  onOpen={open}
+                />
               </>
             );
           },
