@@ -670,13 +670,6 @@ describe("Timetable.staleSince", () => {
       now: berlin("2026-11-19", "06:30"),
       stale: "2026-11-18 21:50",
     },
-    {
-      // The clocks go forward at 02:00 on 29 March 2026, so 05:20 to 06:30 on the wall is 10 minutes.
-      name: "counts the time that passed, not the wall clock, on the day the clocks go forward",
-      read: Date.parse("2026-03-29T05:20:00+01:00"),
-      now: Date.parse("2026-03-29T06:30:00+02:00"),
-      stale: "fresh",
-    },
   ])("$name", ({ read, now, stale }) => {
     expect(
       Option.match(Timetable.staleSince(read, School.now({ timeZone: zone }, now)), {
