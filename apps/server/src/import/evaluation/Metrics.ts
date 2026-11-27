@@ -23,10 +23,12 @@ export interface TruthEntry {
   readonly previousRooms: ReadonlyArray<number>;
   /** Its subjects' codes as WebUntis writes them, such as `MA-E`. */
   readonly subjects: ReadonlyArray<string>;
+  /** The short names of the classes it is taught to, a change's removed ones included. */
+  readonly classes: ReadonlyArray<string>;
 }
 
 /** One of our lessons, in the truth's terms. */
-export interface Lesson extends Omit<TruthEntry, "ids" | "subjects"> {
+export interface Lesson extends Omit<TruthEntry, "ids" | "subjects" | "classes"> {
   readonly id: string;
   readonly courseId: string;
   readonly kind: Lesson.ChangeKind | undefined;

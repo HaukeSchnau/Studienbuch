@@ -172,7 +172,8 @@ describe("Evaluator", () => {
       expected: {
         ...both,
         mode: "weekly" as const,
-        // Students count in W46 only. Precision misses the other MA-E group.
+        // Students count in W46 only. Precision misses the other MA-E group. A teacher-week with
+        // no upper-school entry and none of our lessons counts nowhere.
         views: {
           student: {
             weeks: of(4, 8),
@@ -181,7 +182,7 @@ describe("Evaluator", () => {
             attributes: of(33, 33),
           },
           teacher: {
-            weeks: of(15, 18),
+            weeks: of(14, 17),
             recall: of(39, 40),
             precision: of(39, 40),
             attributes: of(38, 39),
@@ -221,7 +222,7 @@ describe("Evaluator", () => {
             attributes: of(33, 33),
           },
           teacher: {
-            weeks: of(18, 18),
+            weeks: of(17, 17),
             recall: of(40, 40),
             precision: of(40, 40),
             attributes: of(40, 40),

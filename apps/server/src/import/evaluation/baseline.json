@@ -60,37 +60,37 @@
       },
       "teacher": {
         "weeks": {
-          "right": 1183,
-          "of": 4125
+          "right": 1444,
+          "of": 1566
         },
         "recall": {
           "right": 4763,
-          "of": 35471
+          "of": 5089
         },
         "precision": {
           "right": 4763,
           "of": 4795
         },
         "attributes": {
-          "right": 125,
+          "right": 4757,
           "of": 4763
         }
       },
       "room": {
         "weeks": {
-          "right": 2344,
-          "of": 4983
+          "right": 583,
+          "of": 628
         },
         "recall": {
           "right": 4536,
-          "of": 28714
+          "of": 4849
         },
         "precision": {
           "right": 4535,
           "of": 4535
         },
         "attributes": {
-          "right": 32,
+          "right": 4534,
           "of": 4536
         }
       }
@@ -590,7 +590,7 @@
     },
     "changes": {
       "right": 945,
-      "of": 7064
+      "of": 978
     },
     "courses": {
       "right": 0,
@@ -634,7 +634,7 @@
     },
     "lookahead": {
       "right": 4728,
-      "of": 34837
+      "of": 5054
     },
     "runs": {
       "total": 33,
@@ -717,37 +717,37 @@
       },
       "teacher": {
         "weeks": {
-          "right": 1183,
-          "of": 4125
+          "right": 1500,
+          "of": 1566
         },
         "recall": {
           "right": 4892,
-          "of": 35471
+          "of": 5089
         },
         "precision": {
           "right": 4892,
           "of": 4924
         },
         "attributes": {
-          "right": 125,
+          "right": 4886,
           "of": 4892
         }
       },
       "room": {
         "weeks": {
-          "right": 2344,
-          "of": 4983
+          "right": 605,
+          "of": 628
         },
         "recall": {
           "right": 4659,
-          "of": 28714
+          "of": 4849
         },
         "precision": {
           "right": 4658,
           "of": 4658
         },
         "attributes": {
-          "right": 32,
+          "right": 4657,
           "of": 4659
         }
       }
@@ -1247,7 +1247,7 @@
     },
     "changes": {
       "right": 945,
-      "of": 7064
+      "of": 978
     },
     "courses": {
       "right": 0,
@@ -1291,7 +1291,7 @@
     },
     "lookahead": {
       "right": 42702,
-      "of": 308684
+      "of": 44672
     },
     "runs": {
       "total": 310,
