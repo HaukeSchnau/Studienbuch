@@ -948,7 +948,16 @@ describe.skipIf(Postgres18.socket === null)("ImportRun on PostgreSQL 18", () => 
           },
         );
 
-        const ran = yield* runAt(morning, options(school, { source: recorded(named) }));
+        // The same lesson in a student's own view, whose text names the student.
+        const namedInOwnView = planted(
+          named,
+          RecordedWebUntis.paths.entries(10, "STUDENT", 501),
+          (body) => {
+            firstEntryOn(body, "2026-11-11").lessonText = "Nachschreiben Lena Muster";
+          },
+        );
+
+        const ran = yield* runAt(morning, options(school, { source: recorded(namedInOwnView) }));
 
         const bodies = yield* sql<{ readonly body: string }>`
           select body::text as body from source_version where school_id = ${school}
@@ -974,8 +983,8 @@ describe.skipIf(Postgres18.socket === null)("ImportRun on PostgreSQL 18", () => 
           // The store keeps WebUntis's free text; the checkpoint only stock phrases, as rows do.
           freeText: [text.includes("Herr Beispiel"), kept.includes("Herr Beispiel")],
           // The exam's students, the account's own name, and the planted ones.
-          names: ["Schüler", '"S1"', '"S4"', '"S9"', "Konto A", "secretNote"].filter((name) =>
-            text.includes(name),
+          names: ["Schüler", '"S1"', '"S4"', '"S9"', "Konto A", "secretNote", "Lena"].filter(
+            (name) => text.includes(name),
           ),
         }).toEqual({
           outcome: "Published",

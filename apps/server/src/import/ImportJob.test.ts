@@ -485,15 +485,33 @@ describe.skipIf(Postgres18.socket === null)("ImportJob on PostgreSQL 18", () => 
             runWith("job-check-lost", { answer, at: minutesAfter(minutes) }),
           );
 
+        const sql = yield* SqlClient.SqlClient;
+
+        const pausedAt = sql<{ readonly at: Date | null }>`
+          select paused_at as at from import_school where school_id = 'job-check-lost'
+        `.pipe(Effect.map(([row]) => row?.at ?? null));
+
         const runs = [
           yield* lostIn("GET timetable/filter STUDENT", 0),
           yield* lostIn("GET app/data", 10),
         ];
 
-        expect(runs.map(({ outcome, pausedBy }) => [outcome, pausedBy])).toEqual([
-          [Option.some("Published"), null],
-          [Option.some("SessionLost"), ImportJob.pausedBy],
-        ]);
+        const paused = yield* pausedAt;
+        // A run while paused sends nothing, and the two losses before it don't pause again.
+        const whilePaused = yield* runWith("job-check-lost", { at: minutesAfter(20) });
+
+        expect({
+          runs: runs.map(({ outcome, pausedBy }) => [outcome, pausedBy]),
+          whilePaused: whilePaused.outcome,
+          pauseKept: (yield* pausedAt)?.getTime() === paused?.getTime(),
+        }).toEqual({
+          runs: [
+            [Option.some("Published"), null],
+            [Option.some("SessionLost"), ImportJob.pausedBy],
+          ],
+          whilePaused: Option.some("Paused"),
+          pauseKept: true,
+        });
       }),
     );
 
