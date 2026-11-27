@@ -157,7 +157,9 @@ export const layer = Layer.unwrap(
   Effect.gen(function* () {
     const found = yield* registration;
 
-    yield* Effect.logInfo(`The import job is ${describe(found)}`);
+    yield* Effect.logInfo("The import job's registration").pipe(
+      Effect.annotateLogs({ registration: found._tag }),
+    );
 
     if (found._tag !== "Registered") return Layer.empty;
 

@@ -473,6 +473,20 @@ describe.skipIf(Postgres18.socket === null)("Push on PostgreSQL 18", () => {
               args: {},
               at,
             }),
+            // A field the mutator's codec drops, which the log must drop too.
+            Command.Mutate.make({
+              mutationId: 8,
+              name: Fixture.setEnrollment.name,
+              version: 1,
+              args: {
+                notebook: lena.notebook,
+                school: world.school,
+                termId: world.term,
+                courseIds: [],
+                studentName: "MARKER-extra",
+              },
+              at,
+            }),
           ]),
         );
 
@@ -482,7 +496,7 @@ describe.skipIf(Postgres18.socket === null)("Push on PostgreSQL 18", () => {
         `;
 
         expect(outcomes).toEqual({
-          lastMutationId: 7,
+          lastMutationId: 8,
           outcomes: [
             "1 Sync.UnknownMutator",
             "2 Sync.InvalidArgs",
@@ -491,10 +505,11 @@ describe.skipIf(Postgres18.socket === null)("Push on PostgreSQL 18", () => {
             "5 Sync.BadEnvelope",
             "6 Sync.InvalidArgs",
             "7 Sync.InvalidArgs",
+            "8 Applied",
           ],
         });
 
-        expect(logged).toHaveLength(7);
+        expect(logged).toHaveLength(8);
         expect(logged.filter(({ row }) => row.includes("MARKER"))).toEqual([]);
       }),
     );

@@ -839,13 +839,19 @@ const checkSelf = Effect.fn("ImportRun.checkSelf")(function* (input: {
   if (checked.result._tag === "Measured") {
     for (const measure of SelfCheck.measures(checked.result, profile.thresholds)) {
       if (!measure.clears) {
-        yield* Effect.logWarning(
-          `The self-check is below its threshold: ${measure.label} ${measure.value}, ${measure.threshold}`,
+        yield* Effect.logWarning("The self-check is below its threshold").pipe(
+          Effect.annotateLogs({
+            measure: measure.label,
+            value: measure.value,
+            threshold: measure.threshold,
+          }),
         );
       }
     }
   } else {
-    yield* Effect.logWarning(`The self-check measured nothing: ${checked.result.reason}`);
+    yield* Effect.logWarning("The self-check measured nothing").pipe(
+      Effect.annotateLogs({ reason: checked.result.reason }),
+    );
   }
 });
 
