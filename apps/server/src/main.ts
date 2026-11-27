@@ -21,6 +21,7 @@ import { Connection } from "@stu/sync";
 import { SyncEpoch, SyncServer, Tables as SyncTables } from "@stu/sync/server";
 import packageJson from "../package.json" with { type: "json" };
 import { Auth } from "./auth/Auth.ts";
+import { Expiry } from "./auth/Expiry.ts";
 import { DemoAccounts } from "./demo/DemoAccounts.ts";
 import { Seed } from "./demo/Seed.ts";
 import { Deployment } from "./infra/config/Deployment.ts";
@@ -92,7 +93,7 @@ const serve = Effect.gen(function* () {
   return yield* Layer.launch(
     Layer.mergeAll(
       SyncServer.closeFirst.pipe(Layer.provide(http)),
-      Jobs.layer({ import: ImportJob.layer }),
+      Jobs.layer({ import: ImportJob.layer, expiry: Expiry.layer }),
     ),
   );
 }).pipe(Effect.provide(withDatabase(Database.layer)));
