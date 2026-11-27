@@ -331,12 +331,51 @@ export const publish = Effect.fn("Schools.publish")(function* (data: Data, remov
   // The data is the caller's own constant or the import's checked records.
 }, Effect.orDie);
 
+/**
+ * Removes the school's published lessons that `lesson` names, on the publish's versioned path and
+ * under its lock, so a publish never runs halfway through. Devices lose them with their next pull,
+ * and a call that removes nothing writes nothing.
+ */
+export const removeLessons = Effect.fn("Schools.removeLessons")(function* (
+  school: School.Id,
+  lesson: (entry: Tx.Entry<Lesson.Row>) => boolean,
+) {
+  const sql = yield* SqlClient.SqlClient;
+  const writer = yield* SyncWriter.Service;
+
+  return yield* sql.withTransaction(
+    Effect.gen(function* () {
+      yield* holdSpaces(school, "update");
+
+      // In id order, as a publish locks them.
+      const spaces = yield* sql<{ readonly id: string }>`
+        select id from space where parent_id = ${school} and kind = ${Course.Space.name}
+        order by id
+      `;
+
+      let removed = 0;
+
+      for (const { id } of spaces) {
+        removed += (yield* writer.reconcile(id, Lesson.Row, [], { covers: lesson })).removed;
+      }
+
+      return removed;
+    }),
+  );
+  // A database failure is a defect here, as in the publish.
+}, Effect.orDie);
+
 // Data holds rows in their encoded form, as constants and the import's records write them. A
 // school row encodes to itself, because a time zone is a string.
 const encode = {
   schoolYear: Schema.encodeEffect(Schema.Struct(SchoolYear.Row.fields)),
   term: Schema.encodeEffect(Schema.Struct(Term.Row.fields)),
 };
+
+/** The school's published row with its rules, if it has one. */
+export const row = Effect.fn("Schools.row")(function* (school: School.Id) {
+  return yield* reading(Effect.flatMap(Tx.Service, (read) => read.get(School.Row, school, school)));
+}, Effect.orDie);
 
 /** The school's published Stand, if it has one. */
 export const importStatus = Effect.fn("Schools.importStatus")(function* (school: School.Id) {
