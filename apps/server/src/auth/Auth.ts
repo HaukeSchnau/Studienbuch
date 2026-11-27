@@ -99,7 +99,7 @@ export interface Callbacks {
   /** Admits the account to the school of the reservation the confirming device carries. */
   readonly confirmed: (account: string, reservation: Option.Option<string>) => Promise<void>;
   readonly sessionDeleted: (sessionId: string) => void;
-  readonly log: (level: "debug" | "info" | "success" | "warn" | "error", message: string) => void;
+  readonly log: (level: "debug" | "info" | "success" | "warn" | "error") => void;
   readonly withoutAddress: WithoutAddress.Callbacks;
 }
 
@@ -1021,13 +1021,15 @@ const make = Effect.gen(function* () {
         PubSub.publishUnsafe(deleted, sessionId);
       },
       withoutAddress: { run, session: sessionOf },
-      log: (level, message) => {
+      // Better Auth formats its messages itself, and they can quote a request's values, such as a
+      // callback URL with an address in it. Only that it logged reaches the logs.
+      log: (level) => {
         Effect.runForkWith(services)(
           level === "error"
-            ? Effect.logError(message)
+            ? Effect.logError("Better Auth logged an error")
             : level === "warn"
-              ? Effect.logWarning(message)
-              : Effect.logDebug(message),
+              ? Effect.logWarning("Better Auth logged a warning")
+              : Effect.logDebug("Better Auth logged a message"),
         );
       },
     }),

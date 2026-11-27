@@ -280,7 +280,9 @@ describe.skipIf(Postgres18.socket === null)("Telemetry", () => {
           select row_to_json(c)::text as line from command_log c
         `;
 
-        const { lines } = yield* TelemetryTesting.Captured;
+        const { lines, served } = yield* TelemetryTesting.Captured;
+
+        yield* served;
         const all = [...lines, ...commandLog.map(({ line }) => `command_log ${line}`)];
 
         const seeded = [
@@ -321,8 +323,7 @@ describe.skipIf(Postgres18.socket === null)("Telemetry", () => {
             "span ImportJob.runOnce",
             "span TimetableClient.getFilter",
             "span AccessCodes.reserve",
-            // The request logger writes before the response leaves, unlike the server span.
-            `"http.url":"/api/auth/sign-in/email"`,
+            `attribute http.route="/api/auth/*"`,
             "span AccessCommand.admit",
             "span Push.process",
           ].filter((part) => !lines.some((line) => line.includes(part))),

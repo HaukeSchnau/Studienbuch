@@ -1,6 +1,7 @@
 import { defineRule, type ESTree } from "@oxlint/plugins";
 
 import { sources, tests, type Scope } from "../scope.ts";
+import { isStringLiteral } from "../syntax.ts";
 
 export const scope: Scope = { files: sources, excludeFiles: tests };
 
@@ -36,13 +37,31 @@ const isStringify = (node: ESTree.CallExpression) =>
         node.callee.object.type === "Identifier" &&
         node.callee.object.name === "JSON")));
 
+/** `+` with a string on either side; a sum of counts is no text. */
+const isConcatenation = (node: ESTree.Node): boolean =>
+  isStringLiteral(node) ||
+  node.type === "TemplateLiteral" ||
+  (node.type === "BinaryExpression" &&
+    node.operator === "+" &&
+    (isConcatenation(node.left) || isConcatenation(node.right)));
+
 /** The places inside a log call's argument where a value becomes text, without entering functions. */
 const textOf = (node: ESTree.Node | null | undefined): ReadonlyArray<ESTree.Node> => {
   if (node === null || node === undefined) return [];
 
   if (node.type === "TemplateLiteral") return node.expressions.length > 0 ? [node] : [];
 
-  if (node.type === "BinaryExpression") return node.operator === "+" ? [node] : [];
+  if (node.type === "BinaryExpression") return isConcatenation(node) ? [node] : [];
+
+  // An error's message can quote anything, a library's error body included.
+  if (
+    node.type === "MemberExpression" &&
+    !node.computed &&
+    node.property.type === "Identifier" &&
+    node.property.name === "message"
+  ) {
+    return [node];
+  }
 
   if (node.type === "CallExpression") return isStringify(node) ? [node] : [];
 

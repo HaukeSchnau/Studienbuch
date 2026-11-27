@@ -7,6 +7,7 @@ import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Formatter from "effect/Formatter";
+import * as Latch from "effect/Latch";
 import * as Layer from "effect/Layer";
 import * as Logger from "effect/Logger";
 import * as Tracer from "effect/Tracer";
@@ -14,10 +15,19 @@ import { Telemetry } from "./Telemetry.ts";
 
 export * as TelemetryTesting from "./TelemetryTesting.ts";
 
-/** What was written so far: one entry per log line, span attribute, span event or failed span. */
-export class Captured extends Context.Service<Captured, { readonly lines: Array<string> }>()(
-  "TelemetryTesting.Captured",
-) {}
+/**
+ * What was written so far: one entry per log line, span attribute, span event or failed span.
+ * `served` waits until every server span has ended, which happens after the client has its answer.
+ */
+export class Captured extends Context.Service<
+  Captured,
+  {
+    readonly lines: Array<string>;
+    readonly open: { servers: number };
+    readonly idle: Latch.Latch;
+    readonly served: Effect.Effect<void>;
+  }
+>()("TelemetryTesting.Captured") {}
 
 /**
  * Replaces the loggers with one that keeps each line as `formatJson` writes it, plus the full
@@ -43,13 +53,18 @@ const loggers = Layer.unwrap(
 
 /** A tracer whose spans are the native ones, and which keeps what an exporter would send. */
 const tracer = Layer.effect(Tracer.Tracer)(
-  Effect.map(Captured, ({ lines }) =>
+  Effect.map(Captured, ({ lines, open, idle }) =>
     Tracer.make({
       span: (options) => {
         const span = Tracer.nativeTracer.span(options);
         const name = options.name;
 
         lines.push(`span ${name}`);
+
+        if (options.kind === "server") {
+          open.servers += 1;
+          idle.closeUnsafe();
+        }
 
         const set = span.attribute.bind(span);
         const add = span.event.bind(span);
@@ -75,6 +90,12 @@ const tracer = Layer.effect(Tracer.Tracer)(
           }
 
           end(endTime, exit);
+
+          if (options.kind === "server") {
+            open.servers -= 1;
+
+            if (open.servers === 0) idle.openUnsafe();
+          }
         };
 
         return span;
@@ -86,7 +107,13 @@ const tracer = Layer.effect(Tracer.Tracer)(
 /** `Telemetry.textless` over loggers and a tracer that capture into `Captured`, which it provides. */
 export const layer = Telemetry.textless.pipe(
   Layer.provide(Layer.mergeAll(loggers, tracer)),
-  Layer.provideMerge(Layer.sync(Captured)(() => ({ lines: [] }))),
+  Layer.provideMerge(
+    Layer.sync(Captured)(() => {
+      const idle = Latch.makeUnsafe(true);
+
+      return { lines: [], open: { servers: 0 }, idle, served: idle.await };
+    }),
+  ),
 );
 
 /**

@@ -20,6 +20,13 @@ export const quoted = (name: string) =>
   // oxlint-disable-next-line studienbuch/constant-log-message -- fixture: a concatenated message
   Effect.logWarning("A teacher is missing: " + name);
 
+export const failed = (error: Error) =>
+  // oxlint-disable-next-line studienbuch/constant-log-message -- fixture: an error's message
+  Effect.logError("A read failed", error.message);
+
+export const counted = (written: number, removed: number) =>
+  Effect.logInfo("Rows changed").pipe(Effect.annotateLogs({ total: written + removed }));
+
 export const constant = (space: string, id: string) =>
   Effect.logWarning("A sealed row doesn't open", { space, id }).pipe(
     Effect.annotateLogs({ reason: "Malformed" }),

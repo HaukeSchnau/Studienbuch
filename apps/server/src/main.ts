@@ -180,13 +180,11 @@ const reported = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
   Effect.tapCause(effect, (cause) =>
     Cause.hasInterruptsOnly(cause) || !Runtime.getErrorReported(Cause.squash(cause))
       ? Effect.void
-      : Effect.logError(cause),
+      : Effect.logError(Telemetry.withoutText(cause)),
   );
 
 Command.run(cli, { version: packageJson.version }).pipe(
   reported,
-  Effect.provide(
-    Layer.merge(Telemetry.textless, SecretFiles.layer.pipe(Layer.provideMerge(NodeServices.layer))),
-  ),
+  Effect.provide(SecretFiles.layer.pipe(Layer.provideMerge(NodeServices.layer))),
   NodeRuntime.runMain({ teardown, disableErrorReporting: true }),
 );

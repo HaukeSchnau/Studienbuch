@@ -22,6 +22,29 @@ const constraintName = /^[a-z0-9_]{1,63}$/u;
 const frame = /^\s+at /u;
 
 /**
+ * The stack frames below a failure's message. V8 writes the message into the stack, a multi-line
+ * one included, so the frames start after it; without the message in the stack there are none.
+ */
+// oxlint-disable-next-line anti-slop/no-unknown-parameters -- a cause holds failures of any type, and this is where they are read.
+const framesOf = (failure: unknown): ReadonlyArray<string> => {
+  if (!Predicate.hasProperty(failure, "stack") || !Predicate.isString(failure.stack)) return [];
+
+  const message =
+    Predicate.hasProperty(failure, "message") && Predicate.isString(failure.message)
+      ? failure.message
+      : "";
+
+  const at = message === "" ? failure.stack.indexOf("\n") : failure.stack.indexOf(message);
+
+  if (at === -1) return [];
+
+  return failure.stack
+    .slice(message === "" ? at : at + message.length)
+    .split("\n")
+    .filter((line) => frame.test(line));
+};
+
+/**
  * `failure` as telemetry shows it: its tag, its code and constraint, where it was raised, and the
  * same for what caused it. Its message and fields go, because a library's message can quote a
  * value, such as Postgres's detail of a unique key or a WebUntis error body.
@@ -53,12 +76,7 @@ const shown = (failure: unknown, seen: Set<unknown> = new Set()): Error => {
 
   error.name = tag;
 
-  const frames =
-    Predicate.hasProperty(failure, "stack") && Predicate.isString(failure.stack)
-      ? failure.stack.split("\n").filter((line) => frame.test(line))
-      : [];
-
-  error.stack = [`${tag}: ${error.message}`, ...frames].join("\n");
+  error.stack = [`${tag}: ${error.message}`, ...framesOf(failure)].join("\n");
 
   return error;
 };
