@@ -63,6 +63,21 @@ export const classes = (input: {
   return Arr.dedupe([...listed, ...known]).sort((a, b) => a - b);
 };
 
+/** The WebUntis ids of the students whose own views the nightly run reads, in id order. */
+export const students = (
+  profile: SchoolProfile.SchoolProfile,
+  directory: ReadonlyArray<
+    Parameters<typeof SchoolProfile.readsStudent>[1] & {
+      readonly student: { readonly id: number };
+    }
+  >,
+) =>
+  Arr.dedupe(
+    directory.flatMap((each) =>
+      SchoolProfile.readsStudent(profile, each) ? [each.student.id] : [],
+    ),
+  ).sort((a, b) => a - b);
+
 /**
  * The WebUntis school year that holds the window's first day, its dates, and the window's last day
  * within it: a run's window ends with its school year, whose successor its own runs read.

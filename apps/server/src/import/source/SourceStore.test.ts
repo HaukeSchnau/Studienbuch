@@ -101,4 +101,24 @@ describe("SourceStore", () => {
 
     assert.isTrue(Result.isFailure(SourceStore.sanitize({ path, range, body })));
   });
+
+  // Its texts would be kept as a class view's are.
+  it("refuses a student's own view whose days say they are of another kind", () => {
+    const path = RecordedWebUntis.paths.entries(10, "STUDENT", 501);
+    const range = { start: "2026-11-02", end: "2026-11-02" };
+
+    const body = (kind: string) =>
+      NamedSchoolTesting.planted(TinySchool.corpus, path, (planted) => {
+        for (const day of NamedSchoolTesting.list(planted.days)) {
+          NamedSchoolTesting.object(day).resourceType = kind;
+        }
+      }).reads.get(path)?.versions[0]?.body ?? null;
+
+    assert.deepStrictEqual(
+      ["STUDENT", "CLASS"].map((kind) =>
+        Result.isSuccess(SourceStore.sanitize({ path, range, body: body(kind) })),
+      ),
+      [true, false],
+    );
+  });
 });

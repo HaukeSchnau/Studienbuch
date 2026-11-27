@@ -53,6 +53,8 @@ export interface Claim {
   readonly previous: unknown;
   /** `Projection.Candidate`s as JSON. */
   readonly pending: unknown;
+  /** The self-check's `SelfCheck.Kept` Kurswahlen as JSON. */
+  readonly kurswahl: unknown;
 }
 
 const row = (school: School.Id) =>
@@ -88,12 +90,13 @@ export const claim = Effect.fn("Lease.claim")(
       readonly revision: number;
       readonly previous: unknown;
       readonly pending: unknown;
+      readonly kurswahl: unknown;
     }>`
       update import_school
       set lease_until = ${DateTime.toDateUtc(until)}, lease_owner = gen_random_uuid()
       where school_id = ${school} and paused_by is null
         and (lease_until is null or lease_until <= ${DateTime.toDateUtc(now)})
-      returning lease_owner::text as owner, revision, previous, pending
+      returning lease_owner::text as owner, revision, previous, pending, kurswahl
     `;
 
     if (claimed !== undefined) return { ...claimed, until } satisfies Claim;

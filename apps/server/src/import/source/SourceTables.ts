@@ -70,6 +70,8 @@ export const importRun = pgTable(
     report: jsonb("report")
       .notNull()
       .default(sql`'{}'::jsonb`),
+    /** The nightly self-check's measures, or why it measured nothing: a `SelfCheck.Result`. */
+    selfCheck: jsonb("self_check"),
   },
   (table) => [index("import_run_school_date").on(table.schoolId, table.date)],
 );
@@ -92,6 +94,10 @@ export const importSchool = pgTable("import_school", {
   previous: jsonb("previous"),
   /** Lessons and closures waiting for a second snapshot: `Projection.Candidate`s. */
   pending: jsonb("pending")
+    .notNull()
+    .default(sql`'[]'::jsonb`),
+  /** Each student's Kurswahl per term, kept until the term ends: `SelfCheck.Kept`s. */
+  kurswahl: jsonb("kurswahl")
     .notNull()
     .default(sql`'[]'::jsonb`),
 });

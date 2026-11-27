@@ -4,7 +4,7 @@
  * the exams. It reads the corpus through the recorded client, as of the capture's end.
  */
 import type { WebUntisClient } from "@schnau/webuntis-api";
-import type { Schoolyear, TimetableEntryDay } from "@schnau/webuntis-api/schemas";
+import type { Schoolyear, TimetableEntryDay, TimetableFilter } from "@schnau/webuntis-api/schemas";
 import { CivilTime } from "@stu/core";
 import * as Arr from "effect/Array";
 import type * as DateTime from "effect/DateTime";
@@ -131,10 +131,16 @@ const within = (a: Range, b: Range): ReadonlyArray<Range> => {
   return start <= end ? [{ start, end }] : [];
 };
 
-/** Each student's, teacher's and room's timetable on the school days of `ranges`. */
-const readViews = Effect.fn("Truth.readViews")(function* (
+/**
+ * The timetables of the students `reads` names, of the teachers and of the rooms, those of `types`
+ * only, on the school days of `ranges`. Teachers and rooms are resolved through their directories
+ * whichever types are read.
+ */
+export const readViews = Effect.fn("Truth.readViews")(function* (
   client: WebUntisClient["Service"],
   ranges: ReadonlyArray<Range>,
+  types: ReadonlyArray<ViewType>,
+  reads: (student: TimetableFilter["students"][number]) => boolean,
 ) {
   const years = yield* client.schoolyears.list.pipe(Effect.mapError(incomplete("school years")));
   const views = new Map<string, View>();
@@ -162,10 +168,9 @@ const readViews = Effect.fn("Truth.readViews")(function* (
           .getFilter({ resourceType, start, end })
           .pipe(Effect.mapError(incomplete(`${resourceType} directory ${year.id}`)));
 
-      // The capture reads the upper school's students only, so only they have a truth.
-      const students = (yield* directory("STUDENT")).students
-        .filter(CapturePlan.upperSchool)
-        .map((each) => each.student);
+      const students = types.includes("STUDENT")
+        ? (yield* directory("STUDENT")).students.filter(reads).map((each) => each.student)
+        : [];
 
       const teachers = (yield* directory("TEACHER")).teachers.map((each) => each.teacher);
       const rooms = (yield* directory("ROOM")).rooms.map((each) => each.room);
@@ -196,11 +201,13 @@ const readViews = Effect.fn("Truth.readViews")(function* (
           }),
         );
 
-      for (const [type, resources] of [
-        ["STUDENT", students],
-        ["TEACHER", teachers],
-        ["ROOM", rooms],
-      ] as const) {
+      for (const [type, resources] of (
+        [
+          ["STUDENT", students],
+          ["TEACHER", teachers],
+          ["ROOM", rooms],
+        ] as const
+      ).filter(([type]) => types.includes(type))) {
         const names = new Map(resources.map(({ id, shortName }) => [id, shortName]));
 
         const timetables = yield* readEntries(
@@ -268,13 +275,29 @@ const halvesOf = Effect.fn("Truth.halvesOf")(function* (
   return halves;
 }, Effect.orDie);
 
+/**
+ * The kinds of views the corpus holds. An export of the source store has no teacher or room
+ * views, so their measures say they measured nothing instead of the truth failing.
+ */
+export const typesIn = (corpus: Corpus.Corpus): ReadonlyArray<ViewType> =>
+  viewTypes.filter((type) =>
+    [...corpus.reads.keys()].some((path) => path.includes(`/entries/${type}/`)),
+  );
+
 /** What WebUntis showed at the capture's end. */
 export const build = Effect.fn("Truth.build")(function* (corpus: Corpus.Corpus) {
   const { client } = yield* RecordedWebUntis.make(corpus.reads, {
     asOf: corpus.manifest.capturedAt,
   });
 
-  const { views, read, parts, entries, years } = yield* readViews(client, corpus.manifest.ranges);
+  const { views, read, parts, entries, years } = yield* readViews(
+    client,
+    corpus.manifest.ranges,
+    typesIn(corpus),
+    // The capture reads the upper school's students only, so only they have a truth.
+    CapturePlan.upperSchool,
+  );
+
   const exams: Array<Metrics.TruthExam> = [];
 
   for (const { year, start, end } of parts) {
@@ -330,5 +353,7 @@ export const entriesAt = Effect.fn("Truth.entriesAt")(function* (
   return (yield* readViews(
     client,
     corpus.manifest.ranges.flatMap((captured) => within(captured, range)),
+    typesIn(corpus),
+    CapturePlan.upperSchool,
   )).entries;
 });

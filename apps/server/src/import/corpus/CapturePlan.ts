@@ -13,7 +13,6 @@ import type {
 } from "@schnau/webuntis-api/schemas";
 import { CivilTime } from "@stu/core";
 import * as Effect from "effect/Effect";
-import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import { IgsLilienthal } from "../profiles/IgsLilienthal.ts";
 import { SchoolProfile } from "../profiles/SchoolProfile.ts";
@@ -38,15 +37,8 @@ export const aheadDays = 56;
  * Whether a capture reads this student's timetable: one of their classes is in a grade level the
  * school's profile imports, IGS's upper school. The harness scores the same students.
  */
-export const upperSchool = ({ classes }: TimetableFilter["students"][number]) =>
-  classes.some(({ class: each }) =>
-    Option.isSome(
-      SchoolProfile.gradeLevelRead(
-        IgsLilienthal.profile,
-        IgsLilienthal.profile.classify(each.shortName),
-      ),
-    ),
-  );
+export const upperSchool = (student: TimetableFilter["students"][number]) =>
+  SchoolProfile.readsStudent(IgsLilienthal.profile, student);
 
 /** School years, the app data and the time grid. */
 const masterReads = 3;

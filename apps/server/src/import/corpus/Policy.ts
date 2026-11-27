@@ -621,8 +621,8 @@ const placeholders: Readonly<Record<Tokens.Person, string>> = {
 
 /**
  * What the source store keeps (m2-import-path.md, section 3): school data, staff names and free
- * text as WebUntis sent them, every id, and in place of a student's or the account's name a
- * placeholder named after the id beside it, or one without an id where there is none.
+ * text as WebUntis sent them, but no text of a student's own view, every id, and in place of a
+ * student's or the account's name a placeholder named after the id beside it, or one without.
  */
 export const store: Handlers = {
   column: "store",
@@ -646,6 +646,12 @@ export const store: Handlers = {
     }
 
     if (!Predicate.isString(value)) return Result.fail("expected text");
+
+    // A student's own view is read for the self-check, which needs no text, and its lessons'
+    // texts could name the student.
+    if (leaf._tag === "Text" && ancestors.some((each) => each.resourceType === "STUDENT")) {
+      return Result.succeed("");
+    }
 
     if (leaf._tag !== "PersonName" || leaf.kind === "T") return Result.succeed(value);
 

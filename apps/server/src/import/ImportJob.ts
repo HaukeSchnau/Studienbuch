@@ -79,14 +79,25 @@ export const describe = Registration.$match({
  * the import first. Runs that sent nothing don't break the row.
  */
 const pauseAfter = Effect.fn("ImportJob.pauseAfter")(
-  function* (school: School.Id, outcome: ImportRun.Outcome) {
+  function* (school: School.Id, ran: ImportRun.Ran) {
     const sql = yield* SqlClient.SqlClient;
+    const { outcome } = ran;
 
-    if (outcome !== "CredentialsRefused" && outcome !== "SessionLost") return;
+    if (outcome !== "CredentialsRefused") {
+      // A session the nightly self-check lost after its publish counts as the run's own.
+      const [own] = Option.isSome(ran.run)
+        ? yield* sql<{ readonly lost: boolean }>`
+            select self_check->>'reason' = 'SessionLost' as lost from import_run
+            where id = ${ran.run.value}::uuid
+          `
+        : [];
 
-    if (outcome === "SessionLost") {
+      if (outcome !== "SessionLost" && own?.lost !== true) return;
+
       const recent = yield* sql<{ readonly outcome: string | null }>`
-        select outcome from import_run
+        select case when self_check->>'reason' = 'SessionLost' then 'SessionLost' else outcome end
+          as outcome
+        from import_run
         where school_id = ${school} and sent > 0
         order by started_at desc limit 2
       `;
@@ -136,7 +147,7 @@ export const runOnce = Effect.fn("ImportJob.runOnce")(function* (input: {
     return ran;
   }
 
-  yield* pauseAfter(profile.id, ran.value.outcome);
+  yield* pauseAfter(profile.id, ran.value);
 
   return ran;
 });

@@ -48,6 +48,48 @@ export const isExact = (
   );
 };
 
+/** A student's timetable as WebUntis shows it: their entries, and the days it hid from the account. */
+export interface View {
+  readonly entries: ReadonlyArray<Metrics.TruthEntry>;
+  readonly hidden: ReadonlySet<string>;
+}
+
+/**
+ * A student's Kurswahl from their entries of the opening days, and whether those courses' lessons
+ * on the opening days are exactly those entries.
+ */
+export const choose = (
+  student: View,
+  opening: (date: string) => boolean,
+  store: {
+    readonly lessons: ReadonlyArray<Metrics.Lesson>;
+    readonly index: ReadonlyMap<string, ReadonlyArray<Metrics.Lesson>>;
+  },
+) => {
+  const entries = student.entries.filter((entry) => opening(entry.date));
+  const courses = kurswahl(entries, store.index);
+
+  const lessons = store.lessons.filter(
+    (lesson) => opening(lesson.date) && !student.hidden.has(lesson.date),
+  );
+
+  return { courses, exact: isExact(entries, lessons, courses) };
+};
+
+/** A student's week: their entries of it against the lessons their Kurswahl gives them, hidden days aside. */
+export const week = (
+  student: View,
+  inWeek: (date: string) => boolean,
+  lessons: ReadonlyArray<Metrics.Lesson>,
+  chosen: ReadonlySet<string>,
+) =>
+  Metrics.scoreView(
+    student.entries.filter((entry) => inWeek(entry.date)),
+    lessonsOf(lessons, chosen).filter(
+      (lesson) => inWeek(lesson.date) && !student.hidden.has(lesson.date),
+    ),
+  );
+
 /**
  * The courses with lessons in some term that no Kurswahl of that term names, so no student sees
  * those lessons. A course chosen in one term is no excuse in another.

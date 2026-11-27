@@ -113,7 +113,7 @@ export const make = Effect.fn("WebUntisTesting.make")(function* (
             : notFound,
         );
       case "timetable/entries":
-        return resourceType === "CLASS"
+        return resourceType === "CLASS" || resourceType === "STUDENT"
           ? Effect.map(
               recorded.client.timetable.getEntriesForResources(
                 {

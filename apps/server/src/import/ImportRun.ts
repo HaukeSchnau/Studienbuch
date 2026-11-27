@@ -18,7 +18,9 @@ import {
   type TimetableResourceType,
 } from "@schnau/webuntis-api/schemas";
 import { CivilTime, School } from "@stu/core";
+import * as Arr from "effect/Array";
 import * as Cause from "effect/Cause";
+import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
@@ -33,13 +35,16 @@ import type { LiveWebUntis } from "../infra/webuntis/LiveWebUntis.ts";
 import { RecordedWebUntis } from "../infra/webuntis/RecordedWebUntis.ts";
 import { Schools } from "../school/Schools.ts";
 import { Policy } from "./corpus/Policy.ts";
+import { Metrics } from "./evaluation/Metrics.ts";
+import { Truth } from "./evaluation/Truth.ts";
 import { ImportIds } from "./ImportIds.ts";
 import { Lease } from "./Lease.ts";
 import { NaiveImport } from "./NaiveImport.ts";
 import { Plan } from "./Plan.ts";
-import type { SchoolProfile } from "./profiles/SchoolProfile.ts";
+import { SchoolProfile } from "./profiles/SchoolProfile.ts";
 import { Projection } from "./Projection.ts";
 import { SchoolImport } from "./SchoolImport.ts";
+import { SelfCheck } from "./SelfCheck.ts";
 import { SourceStore } from "./source/SourceStore.ts";
 
 export * as ImportRun from "./ImportRun.ts";
@@ -336,22 +341,15 @@ const directories = [
   "ROOM",
 ] as const satisfies ReadonlyArray<TimetableResourceType>;
 
-/**
- * Reads the plan's views for the window and returns every read that answered, as JSON, and every
- * one that didn't, by kind and tag. A read the plan depends on, such as the school years, ends the
- * reading when it fails, and so do more class views than `left` requests.
- */
-const readSnapshot = Effect.fn("ImportRun.readSnapshot")(function* (input: {
-  readonly client: WebUntisClient["Service"];
-  /** Requests the reservation has left. */
-  readonly left: Effect.Effect<number>;
-  readonly profile: SchoolProfile.SchoolProfile;
-  readonly previous: SchoolImport.ImportResult;
-  readonly window: CivilTime.DateRange;
-}) {
-  const { client, profile, previous } = input;
+interface Failure {
+  readonly read: string;
+  readonly tag: string;
+}
+
+/** Collects the reads that answered, as JSON, and the ones that didn't, by kind and tag. */
+const reader = () => {
   const reads: Array<SourceStore.Read> = [];
-  const failures: Array<{ readonly read: string; readonly tag: string }> = [];
+  const failures: Array<Failure> = [];
 
   const read = <A, E1 extends Tagged, E2 extends Tagged>(
     path: string,
@@ -377,7 +375,70 @@ const readSnapshot = Effect.fn("ImportRun.readSnapshot")(function* (input: {
       }),
     );
 
-  const done = { reads, failures };
+  return { reads, failures, read };
+};
+
+/** The school year a run reads, and the days of the window within it. */
+interface YearRead {
+  readonly id: number;
+  /** The year's first and last day, which its directories are read for. */
+  readonly start: string;
+  readonly end: string;
+  /** The window's first and last day within the year. */
+  readonly first: string;
+  readonly last: string;
+}
+
+/**
+ * One view of the window as WebUntis sent it. An answer with WebUntis's errors fails, because it
+ * may lack lessons it doesn't say it lacks.
+ */
+const viewRead = (
+  read: ReturnType<typeof reader>["read"],
+  client: WebUntisClient["Service"],
+  year: YearRead,
+  resourceType: "CLASS" | "STUDENT",
+  resource: number,
+) =>
+  read(
+    RecordedWebUntis.paths.entries(year.id, resourceType, resource),
+    withSchoolYear(year.id)(
+      client.timetable.getEntriesForResources(
+        { resourceType, resources: [resource], start: year.first, end: year.last },
+        { raw: true },
+      ),
+    ).pipe(
+      Effect.flatMap(
+        ([answer]): Effect.Effect<unknown, ReadFailed | AnsweredWithErrors | WebUntisError> => {
+          if (answer === undefined) return Effect.fail(new ReadFailed());
+
+          if (Result.isFailure(answer.result)) return Effect.fail(answer.result.failure);
+
+          return answer.result.success.errors.length > 0
+            ? Effect.fail(new AnsweredWithErrors())
+            : Effect.succeed(answer.raw);
+        },
+      ),
+    ),
+    decodeJson,
+    { start: year.first, end: year.last },
+  );
+
+/**
+ * Reads the plan's views for the window and returns every read that answered, as JSON, and every
+ * one that didn't, by kind and tag. A read the plan depends on, such as the school years, ends the
+ * reading when it fails, and so do more class views than `left` requests.
+ */
+const readSnapshot = Effect.fn("ImportRun.readSnapshot")(function* (input: {
+  readonly client: WebUntisClient["Service"];
+  /** Requests the reservation has left. */
+  readonly left: Effect.Effect<number>;
+  readonly profile: SchoolProfile.SchoolProfile;
+  readonly previous: SchoolImport.ImportResult;
+  readonly window: CivilTime.DateRange;
+}) {
+  const { client, profile, previous } = input;
+  const { reads, failures, read } = reader();
   const { paths } = RecordedWebUntis;
   const years = yield* read(paths.schoolYears, client.schoolyears.list, encodeYears);
   const held = Option.flatMap(years, (all) => Plan.schoolYear(all, input.window));
@@ -385,11 +446,13 @@ const readSnapshot = Effect.fn("ImportRun.readSnapshot")(function* (input: {
   if (Option.isNone(held)) {
     if (Option.isSome(years)) failures.push({ read: "schoolyears", tag: "NoSchoolYear" });
 
-    return done;
+    return { reads, failures, year: Option.none<YearRead>() };
   }
 
   const { year, start, end, last } = held.value;
   const first = CivilTime.format(input.window.start);
+  const yearRead: YearRead = { id: year.id, start, end, first, last };
+  const done = { reads, failures, year: Option.some(yearRead) };
   // WebUntis answers for the year a request names, else for the one it calls current.
   const ofYear = withSchoolYear(year.id);
 
@@ -428,36 +491,53 @@ const readSnapshot = Effect.fn("ImportRun.readSnapshot")(function* (input: {
     return done;
   }
 
-  yield* Effect.forEach(
-    views,
-    (resource) =>
-      read(
-        paths.entries(year.id, "CLASS", resource),
-        ofYear(
-          client.timetable.getEntriesForResources(
-            { resourceType: "CLASS", resources: [resource], start: first, end: last },
-            { raw: true },
-          ),
-        ).pipe(
-          Effect.flatMap(
-            ([answer]): Effect.Effect<unknown, ReadFailed | AnsweredWithErrors | WebUntisError> => {
-              if (answer === undefined) return Effect.fail(new ReadFailed());
-
-              if (Result.isFailure(answer.result)) return Effect.fail(answer.result.failure);
-
-              return answer.result.success.errors.length > 0
-                ? Effect.fail(new AnsweredWithErrors())
-                : Effect.succeed(answer.raw);
-            },
-          ),
-        ),
-        decodeJson,
-        { start: first, end: last },
-      ),
-    { concurrency: 2, discard: true },
-  );
+  yield* Effect.forEach(views, (resource) => viewRead(read, client, yearRead, "CLASS", resource), {
+    concurrency: 2,
+    discard: true,
+  });
 
   return done;
+});
+
+/**
+ * Reads the students' directory and the own views of the students the profile's grade levels
+ * hold, for the self-check. They are stored like the snapshot's reads, but the night's rows never
+ * depend on them: a failure leaves the self-check unmeasured, and so does a directory with more
+ * students than `left` requests.
+ */
+const readStudents = Effect.fn("ImportRun.readStudents")(function* (input: {
+  readonly client: WebUntisClient["Service"];
+  readonly left: Effect.Effect<number>;
+  readonly profile: SchoolProfile.SchoolProfile;
+  readonly year: YearRead;
+}) {
+  const { client, year } = input;
+  const { reads, failures, read } = reader();
+
+  const directory = yield* read(
+    RecordedWebUntis.paths.filter(year.id, "STUDENT"),
+    withSchoolYear(year.id)(
+      client.timetable.getFilter({ resourceType: "STUDENT", start: year.start, end: year.end }),
+    ),
+    encodeFilter,
+  );
+
+  if (Option.isNone(directory)) return { reads, failures };
+
+  const students = Plan.students(input.profile, directory.value.students);
+
+  if (students.length > (yield* input.left)) {
+    failures.push({ read: "plan", tag: new PlanTooLarge()._tag });
+
+    return { reads, failures };
+  }
+
+  yield* Effect.forEach(students, (resource) => viewRead(read, client, year, "STUDENT", resource), {
+    concurrency: 2,
+    discard: true,
+  });
+
+  return { reads, failures };
 });
 
 /**
@@ -584,6 +664,210 @@ const finish = Effect.fn("ImportRun.finish")(function* (
   return yield* decodeOutcome(row?.outcome ?? outcome);
 }, Effect.orDie);
 
+/** What the store needs of a set of reads, and what it says about them on the run's report. */
+const store = Effect.fn("ImportRun.store")(function* (
+  school: School.Id,
+  now: DateTime.Utc,
+  answered: {
+    readonly reads: ReadonlyArray<SourceStore.Read>;
+    readonly failures: ReadonlyArray<Failure>;
+  },
+  report: Ref.Ref<Report>,
+) {
+  const versions: Array<SourceStore.Version> = [];
+  const drift = new Set<string>();
+  const failures = [...answered.failures];
+
+  for (const read of answered.reads) {
+    const sanitized = SourceStore.sanitize(read);
+
+    if (Result.isFailure(sanitized)) {
+      failures.push({ read: Policy.readKind(read.path), tag: sanitized.failure._tag });
+    } else {
+      versions.push(...sanitized.success.versions);
+
+      for (const path of sanitized.success.drift)
+        drift.add(`${Policy.readKind(read.path)} ${path}`);
+    }
+  }
+
+  const versionsStored = yield* SourceStore.write(school, now, versions);
+
+  yield* Ref.update(report, (current) => {
+    const reads = { ...current.reads };
+    const tags = { ...current.failures };
+
+    for (const { path } of answered.reads) {
+      const kind = Policy.readKind(path);
+
+      reads[kind] = { ok: (reads[kind]?.ok ?? 0) + 1, failed: reads[kind]?.failed ?? 0 };
+    }
+
+    for (const { read, tag } of failures) {
+      reads[read] = { ok: reads[read]?.ok ?? 0, failed: (reads[read]?.failed ?? 0) + 1 };
+      tags[tag] = (tags[tag] ?? 0) + 1;
+    }
+
+    return {
+      ...current,
+      reads,
+      failures: tags,
+      drift: [...new Set([...current.drift, ...drift])].sort(),
+      versionsStored: current.versionsStored + versionsStored,
+    };
+  });
+
+  return { versions, failures };
+});
+
+const decodePlainDate = Schema.decodeEffect(CivilTime.PlainDate);
+const decodeKept = Schema.decodeUnknownEffect(Schema.toCodecJson(Schema.Array(SelfCheck.Kept)));
+const encodeKept = Schema.encodeEffect(Schema.fromJsonString(Schema.Array(SelfCheck.Kept)));
+const encodeSelfCheck = Schema.encodeEffect(Schema.fromJsonString(SelfCheck.Result));
+
+/**
+ * The nightly self-check, after the night's publish: the students' views, stored like the
+ * snapshot's, against the lessons the projection publishes, recorded on the run's row with the
+ * Kurswahlen kept for the next night. Whatever fails leaves it unmeasured and the run's outcome as
+ * it was.
+ */
+const checkSelf = Effect.fn("ImportRun.checkSelf")(function* (input: {
+  readonly options: Options;
+  readonly lease: Lease.Claim;
+  readonly run: string;
+  readonly requests: Effect.Success<ReturnType<typeof dispatch>>;
+  readonly report: Ref.Ref<Report>;
+  readonly client: WebUntisClient["Service"];
+  readonly year: YearRead;
+  readonly now: DateTime.Utc;
+  readonly today: CivilTime.PlainDate;
+  /** The snapshot's stored versions, which hold the directories the views need. */
+  readonly snapshot: ReadonlyArray<SourceStore.Version>;
+  readonly projection: Projection.Projection;
+}) {
+  const sql = yield* SqlClient.SqlClient;
+  const { options, requests, year, now, projection } = input;
+  const { profile } = options;
+  const left = Effect.map(requests.sent, (sent) => options.maximum - sent);
+
+  const read = yield* readStudents({ client: input.client, left, profile, year });
+  const { versions, failures } = yield* store(profile.id, now, read, input.report);
+  const account = yield* requests.account;
+
+  const unmeasured = (reason: string) =>
+    Effect.succeed({
+      result: SelfCheck.Result.cases.NotMeasured.make({ reason }),
+      kept: Option.none<ReadonlyArray<SelfCheck.Kept>>(),
+    });
+
+  const reason = Option.isSome(account)
+    ? Option.some(account.value)
+    : Arr.head(failures).pipe(Option.map(({ tag }) => tag));
+
+  const checked = Option.isSome(reason)
+    ? yield* unmeasured(reason.value)
+    : yield* Effect.gen(function* () {
+        const kept = yield* decodeKept(input.lease.kurswahl);
+
+        const { client } = yield* RecordedWebUntis.make(
+          SourceStore.recordingOf(
+            [...input.snapshot, ...versions].map((version) => ({ ...version, observedAt: now })),
+          ),
+          { asOf: now },
+        );
+
+        const { views } = yield* Truth.readViews(
+          client,
+          [{ start: year.first, end: year.last }],
+          ["STUDENT"],
+          (student) => SchoolProfile.readsStudent(profile, student),
+        );
+
+        const published = new Set(
+          Object.values(projection.data.lessons).flatMap((rows) => Object.keys(rows)),
+        );
+
+        const last = yield* decodePlainDate(year.last);
+
+        const scored = SelfCheck.score({
+          students: [...views.values()],
+          lessons: Metrics.lessonsOf({
+            lessons: projection.state.lessons.filter(({ id }) => published.has(id)),
+            links: projection.state.links,
+          }),
+          terms: projection.state.terms,
+          days: { start: input.today, end: last },
+          kept,
+        });
+
+        return {
+          result: SelfCheck.Result.cases.Measured.make(scored.measured),
+          kept: Option.some(scored.kept),
+        };
+      }).pipe(
+        Effect.catchCause((cause) =>
+          unmeasured(
+            Option.match(Cause.findErrorOption(cause), {
+              onNone: () => "Defect",
+              onSome: tagOf,
+            }),
+          ),
+        ),
+      );
+
+  const selfCheck = yield* encodeSelfCheck(checked.result);
+  const reportJson = yield* encodeReport(yield* Ref.get(input.report));
+  const sent = yield* requests.sent;
+
+  yield* sql.withTransaction(
+    Effect.gen(function* () {
+      yield* sql`
+        update import_run
+        set self_check = ${selfCheck}::jsonb, sent = ${sent}, report = ${reportJson}::jsonb
+        where id = ${input.run}::uuid
+      `;
+
+      if (Option.isSome(checked.kept)) {
+        yield* sql`
+          update import_school set kurswahl = ${yield* encodeKept(checked.kept.value)}::jsonb
+          where school_id = ${profile.id} and lease_owner = ${input.lease.owner}::uuid
+        `;
+      }
+    }),
+  );
+
+  if (checked.result._tag === "Measured") {
+    for (const measure of SelfCheck.measures(checked.result, profile.thresholds)) {
+      if (!measure.clears) {
+        yield* Effect.logWarning(
+          `The self-check is below its threshold: ${measure.label} ${measure.value}, ${measure.threshold}`,
+        );
+      }
+    }
+  } else {
+    yield* Effect.logWarning(`The self-check measured nothing: ${checked.result.reason}`);
+  }
+});
+
+/**
+ * A night's self-check that the deadline or a defect cut off after the publish says so, and the
+ * row counts the requests it sent. One that finished keeps its result.
+ */
+const unfinished = Effect.fn("ImportRun.unfinished")(function* (
+  run: string,
+  reason: string,
+  sent: number,
+) {
+  const sql = yield* SqlClient.SqlClient;
+  const selfCheck = yield* encodeSelfCheck(SelfCheck.Result.cases.NotMeasured.make({ reason }));
+
+  yield* sql`
+    update import_run
+    set self_check = coalesce(self_check, ${selfCheck}::jsonb), sent = greatest(sent, ${sent})
+    where id = ${run}::uuid
+  `;
+}, Effect.orDie);
+
 /** The run after it holds the lease and its requests. */
 const leased = Effect.fn("ImportRun.leased")(function* (
   options: Options,
@@ -616,62 +900,35 @@ const leased = Effect.fn("ImportRun.leased")(function* (
 
   const left = Effect.map(requests.sent, (sent) => options.maximum - sent);
 
-  const snapshot = yield* WebUntisClient.use((client) =>
-    readSnapshot({ client, left, profile, previous: known, window }),
-  ).pipe(
-    Effect.provide(options.source(requests.gate)),
-    Effect.catch((error) =>
-      Effect.succeed({ reads: [], failures: [{ read: "connect", tag: tagOf(error) }] }),
-    ),
-  );
+  // One connection for the whole run: the self-check reads after the publish, without a second login.
+  const connected = yield* Effect.result(Layer.build(options.source(requests.gate)));
+
+  const client = Result.match(connected, {
+    onSuccess: (context) => Option.some(Context.get(context, WebUntisClient)),
+    onFailure: () => Option.none<WebUntisClient["Service"]>(),
+  });
+
+  const snapshot = Result.isSuccess(connected)
+    ? yield* readSnapshot({
+        client: Context.get(connected.success, WebUntisClient),
+        left,
+        profile,
+        previous: known,
+        window,
+      })
+    : {
+        reads: [],
+        failures: [{ read: "connect", tag: tagOf(connected.failure) }],
+        year: Option.none<YearRead>(),
+      };
 
   if (snapshot.failures.some(({ tag }) => tag === "InvalidCredentials")) yield* requests.refuse;
 
   // Reads that answered are stored even when another failed: the store is a log.
-  const versions: Array<SourceStore.Version> = [];
-  const drift = new Set<string>();
-  const failures = [...snapshot.failures];
-
-  for (const read of snapshot.reads) {
-    const sanitized = SourceStore.sanitize(read);
-
-    if (Result.isFailure(sanitized)) {
-      failures.push({ read: Policy.readKind(read.path), tag: sanitized.failure._tag });
-    } else {
-      versions.push(...sanitized.success.versions);
-
-      for (const path of sanitized.success.drift)
-        drift.add(`${Policy.readKind(read.path)} ${path}`);
-    }
-  }
-
-  const reads: Record<string, { ok: number; failed: number }> = {};
-
-  for (const { path } of snapshot.reads) {
-    const kind = Policy.readKind(path);
-
-    reads[kind] = { ok: (reads[kind]?.ok ?? 0) + 1, failed: reads[kind]?.failed ?? 0 };
-  }
-
-  for (const { read } of failures) {
-    reads[read] = { ok: reads[read]?.ok ?? 0, failed: (reads[read]?.failed ?? 0) + 1 };
-  }
-
-  const tags: Record<string, number> = {};
-
-  for (const { tag } of failures) tags[tag] = (tags[tag] ?? 0) + 1;
-
-  const versionsStored = yield* SourceStore.write(school, now, versions);
+  const { versions, failures } = yield* store(school, now, snapshot, report);
   const versionsPruned = yield* SourceStore.prune(school, profile.school.timeZone, now);
 
-  yield* Ref.update(report, (current) => ({
-    ...current,
-    reads,
-    failures: tags,
-    drift: [...drift].sort(),
-    versionsStored,
-    versionsPruned,
-  }));
+  yield* Ref.update(report, (current) => ({ ...current, versionsPruned }));
 
   // A lost session ends the run whatever a view already in flight returned.
   const account = yield* requests.account;
@@ -727,7 +984,7 @@ const leased = Effect.fn("ImportRun.leased")(function* (
   const pendingJson = yield* encodePending(projection.pending);
   const outcome: Outcome = profile.publish ? "Published" : "Dark";
 
-  return yield* sql.withTransaction(
+  const settled = yield* sql.withTransaction(
     Effect.gen(function* () {
       // The checkpoint's row stays locked until the commit, so no other run's lands in between.
       const [moved] = yield* sql`
@@ -761,7 +1018,25 @@ const leased = Effect.fn("ImportRun.leased")(function* (
       return yield* finish(run, outcome, yield* requests.sent, yield* Ref.get(report));
     }),
   );
-});
+
+  if (options.nightly && Option.isSome(client) && Option.isSome(snapshot.year)) {
+    yield* checkSelf({
+      options,
+      lease,
+      run,
+      requests,
+      report,
+      client: client.value,
+      year: snapshot.year.value,
+      now,
+      today: window.start,
+      snapshot: versions,
+      projection,
+    });
+  }
+
+  return settled;
+}, Effect.scoped);
 
 /**
  * Runs one import of the school: lease, reservation, snapshot, store, import, publish. It always
@@ -836,6 +1111,14 @@ export const run = Effect.fn("ImportRun.run")(function* (options: Options) {
 
     // A run that published wrote its row in the same transaction, and that outcome stands.
     const settled = yield* finish(reservation.id, outcome, yield* requests.sent, recorded);
+
+    if (options.nightly && (settled === "Dark" || settled === "Published")) {
+      yield* unfinished(
+        reservation.id,
+        outcome === settled ? "Unfinished" : outcome,
+        yield* requests.sent,
+      );
+    }
 
     return { outcome: settled, run: Option.some(reservation.id), report: recorded } satisfies Ran;
   }).pipe(Effect.ensuring(Lease.release(school, lease.owner)));

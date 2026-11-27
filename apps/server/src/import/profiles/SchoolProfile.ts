@@ -39,6 +39,28 @@ export interface SchoolProfile {
    * its checkpoint, so the first publish starts from ids and removals that have held for weeks.
    */
   readonly publish: boolean;
+  readonly thresholds: Thresholds;
+}
+
+/**
+ * The bar each measure of the nightly self-check has to clear before students see the import
+ * (m2-import-path.md, section 7, and go 2). Nothing gates on it yet.
+ */
+export interface Thresholds {
+  /** Student-weeks exactly right, of those scored: a share from 0 to 1. */
+  readonly studentWeeks: number;
+  /** Students' entries their Kurswahl's lessons cover. */
+  readonly recall: number;
+  /** Lessons of a student's Kurswahl that cover one of their entries. */
+  readonly precision: number;
+  /** Kurswahlen that give their students exactly their entries of the weeks they were taken from. */
+  readonly kurswahl: number;
+  /** Real courses split over several of ours, at most. */
+  readonly split: number;
+  /** Courses of ours that join several real ones, at most. */
+  readonly merged: number;
+  /** Courses with lessons no student chose, at most. */
+  readonly ghostCourses: number;
 }
 
 /** One kind of a school's import runs. */
@@ -65,6 +87,18 @@ export const gradeLevelRead = (
   classification._tag !== "Collection" && profile.gradeLevels.includes(classification.gradeLevel)
     ? Option.some(classification.gradeLevel)
     : Option.none();
+
+/**
+ * Whether the nightly run reads this student's own timetable: one of their classes is of a grade
+ * level whose lessons the import reads.
+ */
+export const readsStudent = (
+  profile: SchoolProfile,
+  student: { readonly classes: ReadonlyArray<{ readonly class: { readonly shortName: string } }> },
+) =>
+  student.classes.some(({ class: each }) =>
+    Option.isSome(gradeLevelRead(profile, profile.classify(each.shortName))),
+  );
 
 // Compatibility forms such as full-width letters and composed umlauts compare as their plain forms.
 const comparable = (text: string) =>
