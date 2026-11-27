@@ -684,7 +684,14 @@ const build = Effect.fnUntraced(function* (calibration: Calibration.Calibration,
               (day) => date !== undefined && day.date < date.date,
             );
 
-            return to === from || date === undefined || !earlier
+            // One student must change a roster by less than the harness's half again, and two
+            // courses of one code would be one family to it.
+            return to === from ||
+              to.subject === from.subject ||
+              from.roster.length < 5 ||
+              to.roster.length < 3 ||
+              date === undefined ||
+              !earlier
               ? []
               : [{ student, from: from.id, to: to.id, date: date.date, kopplung }];
           });
@@ -717,20 +724,28 @@ const build = Effect.fnUntraced(function* (calibration: Calibration.Calibration,
   const joiners = joins === undefined ? 0 : perTerm(joins.people, terms);
 
   // Only a course of a Kopplung the student has nothing in, meeting in the join weeks, can be one.
-  const joinsOf = (student: Student) =>
-    kopplungen.flatMap((kopplung) =>
+  // A join shows as a new subject that meets every week from then on.
+  const joinsOf = (student: Student) => {
+    const subjectsHeld = new Set(
+      drafts.flatMap((draft) => (draft.roster.includes(student.id) ? [draft.subject] : [])),
+    );
+
+    return kopplungen.flatMap((kopplung) =>
       kopplung.grade !== student.grade ||
       kopplung.courses.some((c) => c.roster.includes(student.id))
         ? []
         : kopplung.courses.flatMap((to) =>
-            meetingDays(to, (week) => joinWeeks.has(week)).map((day) => ({
-              student: student.id,
-              from: undefined,
-              to: to.id,
-              date: day.date,
-            })),
+            subjectsHeld.has(to.subject) || !to.meetings.some((m) => m.only === undefined)
+              ? []
+              : meetingDays(to, (week) => joinWeeks.has(week)).map((day) => ({
+                  student: student.id,
+                  from: undefined,
+                  to: to.id,
+                  date: day.date,
+                })),
           ),
     );
+  };
 
   const joinable = students.flatMap((each) => {
     const found = moving.has(each.id) || hiddenFrom.has(each.id) ? [] : joinsOf(each);

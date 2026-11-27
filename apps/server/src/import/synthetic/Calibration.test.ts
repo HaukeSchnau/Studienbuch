@@ -69,9 +69,17 @@ describe("Calibration", () => {
         yield* changed((file) => {
           file["school"] = 1;
         }),
+        // A bin's ends may not be a real roster's size, as a bin of exactly three students was.
+        yield* changed((file) => {
+          const [cohort] = Array.isArray(file["cohorts"]) ? file["cohorts"] : [];
+
+          if (isObject(cohort)) {
+            Object.assign(cohort, { courseSize: [{ from: 3, to: 3, count: 2, people: 6 }] });
+          }
+        }),
       ];
 
-      assert.deepStrictEqual(refused.map(Exit.isFailure), [true, true, true]);
+      assert.deepStrictEqual(refused.map(Exit.isFailure), [true, true, true, true]);
     }),
   );
 });

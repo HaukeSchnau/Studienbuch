@@ -101,7 +101,7 @@ describe("SyntheticSchool", () => {
             (week) =>
               week > (full[1] ?? "") &&
               view.weeks.has(week) &&
-              !truth.days.some((day) => weekOf(day) === week && view.hidden.has(day)) &&
+              truth.days.some((day) => weekOf(day) === week && !view.hidden.has(day)) &&
               !Metrics.isExact(
                 Students.week(view, (date) => weekOf(date) === week, lessons, courses),
               ),
@@ -139,7 +139,7 @@ describe("SyntheticSchool", () => {
 
   // The calibration's pitfalls are what the generator is for: each must come back, about as
   // often per term, when the synthetic school is measured the way corpus v1 was.
-  it.effect.each([1, 6])(
+  it.effect.each([1, 3, 6, 21])(
     "plants every pitfall the calibration names, about as often, seed %i",
     (seed) =>
       Effect.gen(function* () {

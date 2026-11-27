@@ -590,7 +590,7 @@ export const observe = Effect.fn("Calibrate.observe")(function* (
         classCourses: histogram(units.classCourses),
         kopplungen: histogram(units.kopplungen),
         kopplungShare: histogram(units.kopplungShare, 10),
-        courseSize: histogram(units.courseSize, 5),
+        courseSize: histogram(units.courseSize, Calibration.courseSizeWidth),
         meetings: histogram(units.meetings),
       },
     ];
@@ -680,7 +680,11 @@ export const observe = Effect.fn("Calibrate.observe")(function* (
         ),
       },
       exams: histogram(examsPerCourse),
-      hidden: histogram(hidden, 10).map(({ from, to, people }) => ({ from, to, people })),
+      hidden: histogram(hidden, Calibration.hiddenWidth).map(({ from, to, people }) => ({
+        from,
+        to,
+        people,
+      })),
     },
   };
 });

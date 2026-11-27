@@ -34,6 +34,20 @@ export const PeopleBin = Schema.Struct({ from: Count, to: Count, people: People 
 /** A distribution as bins in ascending order. */
 export const Histogram = Schema.Array(Bin);
 
+/**
+ * Bins whose ends lie on multiples of `width`, for values that are a group's size: an end then
+ * never tells the size of a real roster.
+ */
+const onBounds = (width: number) =>
+  Schema.makeFilter<ReadonlyArray<{ readonly from: number; readonly to: number }>>(
+    (bins) => bins.every(({ from, to }) => from % width === 0 && (to + 1) % width === 0),
+    { expected: `bins whose ends are multiples of ${width}` },
+  );
+
+export const courseSizeWidth = 5;
+
+export const hiddenWidth = 10;
+
 export type Histogram = typeof Histogram.Type;
 
 /** `count` units holding `people` people together, such as courses whose roster changed. */
@@ -57,7 +71,7 @@ export const Cohort = Schema.Struct({
   /** The share of the cohort's students a Kopplung's courses hold, in percent. */
   kopplungShare: Histogram,
   /** Students per course, in bins of five, so no bin's ends are a small roster's size. */
-  courseSize: Histogram,
+  courseSize: Histogram.check(onBounds(courseSizeWidth)),
   /** A course's entries in a term's two opening weeks. */
   meetings: Histogram,
 });
@@ -92,7 +106,7 @@ export const Distributions = Schema.Struct({
   /** Exams per course and term. */
   exams: Histogram,
   /** Students whose timetable WebUntis hid from some day on, by the share of captured days hidden. */
-  hidden: Schema.Array(PeopleBin),
+  hidden: Schema.Array(PeopleBin).check(onBounds(hiddenWidth)),
   /**
    * The pitfalls that broke the import (M2.10's course identity table), added up over the terms
    * measured. `people` counts the students involved: every member of the groups, only the movers
