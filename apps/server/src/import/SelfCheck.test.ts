@@ -80,6 +80,20 @@ describe("SelfCheck", () => {
     }),
   );
 
+  it.effect("takes no Kurswahl while WebUntis hides one of its opening days", () =>
+    Effect.gen(function* () {
+      const input = yield* night;
+
+      const students = input.students.map((student) =>
+        student.id === 501 ? { ...student, hidden: new Set(["2026-11-04"]) } : student,
+      );
+
+      const { kept } = SelfCheck.score({ ...input, students });
+
+      assert.deepStrictEqual(kept.map(({ student }) => student).includes(501), false);
+    }),
+  );
+
   it.effect("drops the Kurswahlen of a term that ended", () =>
     Effect.gen(function* () {
       const input = yield* night;

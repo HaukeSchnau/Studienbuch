@@ -143,10 +143,12 @@ export const score = (input: Input) => {
 
       const shown = (week: Week) => student.entries.some(({ date }) => week.dates.has(date));
 
+      // A day WebUntis hides could hold a course, which the choice would then miss all term.
       if (
         kept.has(keyOf(student.id, term)) ||
         openingWeeks.length < 2 ||
-        !openingWeeks.every(shown)
+        !openingWeeks.every(shown) ||
+        [...student.hidden].some(within(openingWeeks))
       ) {
         continue;
       }
