@@ -51,7 +51,9 @@ const textOf = (node: ESTree.Node | null | undefined): ReadonlyArray<ESTree.Node
 
   if (node.type === "TemplateLiteral") return node.expressions.length > 0 ? [node] : [];
 
-  if (node.type === "BinaryExpression") return isConcatenation(node) ? [node] : [];
+  if (node.type === "BinaryExpression") {
+    return isConcatenation(node) ? [node] : [...textOf(node.left), ...textOf(node.right)];
+  }
 
   // An error's message can quote anything, a library's error body included.
   if (

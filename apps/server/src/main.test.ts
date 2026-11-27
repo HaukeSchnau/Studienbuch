@@ -128,6 +128,18 @@ const call = Effect.fnUntraced(function* (
   return response.status;
 });
 
+/** A browser opening `path`, as someone might who typed their address into the URL. */
+const visit = Effect.fnUntraced(function* (path: string) {
+  const client = yield* HttpClient.HttpClient;
+
+  // The browser's own spans aren't the server's, so only the server's are captured.
+  const response = yield* client
+    .execute(HttpClientRequest.get(path, { headers: { "user-agent": `Browser (${email})` } }))
+    .pipe(Effect.withTracerEnabled(false));
+
+  return response.status;
+});
+
 const codeFor = Effect.fnUntraced(function* (to: string) {
   const db = yield* Database.Drizzle;
 
@@ -234,6 +246,11 @@ describe.skipIf(Postgres18.socket === null)("Telemetry", () => {
         const wrongPassword = yield* call("/sign-in/email", { email, password: `${password}x` });
         const unknown = yield* call("/sign-in/email", { email: `x${email}`, password });
 
+        const typed = [
+          yield* visit(`${Accounts.path}/${email}`),
+          yield* visit(`/nirgends/${email}?code=${code}`),
+        ];
+
         yield* cli(["access", "admit", "--email", email, "--school", school]);
         yield* Effect.exit(cli(["access", "admit", "--email", `x${email}`, "--school", school]));
         yield* cli(["access", "code", "list", "--school", school]);
@@ -301,6 +318,7 @@ describe.skipIf(Postgres18.socket === null)("Telemetry", () => {
           outcomes,
           mistyped: mistyped._tag,
           auth: [signedUp, confirmed, signedIn, wrongPassword, unknown],
+          typed,
           pushed: pushed.outcomes.map((outcome) =>
             outcome._tag === "Rejected" ? outcome.reason._tag : outcome._tag,
           ),
@@ -313,6 +331,7 @@ describe.skipIf(Postgres18.socket === null)("Telemetry", () => {
           ],
           mistyped: "Failure",
           auth: [200, 200, 200, 401, 401],
+          typed: [404, 404],
           pushed: ["Enrollment.ClassRequired"],
           leaks: [],
         });

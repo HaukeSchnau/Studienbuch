@@ -24,6 +24,10 @@ export const failed = (error: Error) =>
   // oxlint-disable-next-line studienbuch/constant-log-message -- fixture: an error's message
   Effect.logError("A read failed", error.message);
 
+export const suffixed = (error: Error) =>
+  // oxlint-disable-next-line studienbuch/constant-log-message -- fixture: a message inside a sum
+  Effect.logError("A read failed", error.message + 1);
+
 export const counted = (written: number, removed: number) =>
   Effect.logInfo("Rows changed").pipe(Effect.annotateLogs({ total: written + removed }));
 
