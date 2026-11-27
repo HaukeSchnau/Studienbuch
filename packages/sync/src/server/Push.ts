@@ -73,6 +73,10 @@ const SealDetail = Schema.Struct({
   keys: Schema.Array(Schema.Struct({ space: Ids.Id, tbl: Schema.String, id: Schema.String })),
 });
 
+/** A `Mutate`'s arguments as its mutator's codec reads them, without the fields it drops. */
+const argsAsRead = (mutator: Sync.AnyMutator, args: Schema.Json) =>
+  Schema.decodeEffect(mutator.args)(args).pipe(Effect.flatMap(Schema.encodeEffect(mutator.args)));
+
 const encodeMutateDetail = Schema.encodeEffect(Schema.fromJsonString(MutateDetail));
 
 const encodeSealDetail = Schema.encodeEffect(Schema.fromJsonString(Schema.toCodecJson(SealDetail)));
@@ -218,10 +222,15 @@ export const make = Effect.fn("Push.make")(function* (minimum: Contract.Minimum)
       mutator !== undefined &&
       Result.isSuccess(yield* Effect.result(Sync.invoke(mutator, command.version, command.args)));
 
+    const args =
+      mutator !== undefined && decodes
+        ? yield* Effect.option(argsAsRead(mutator, command.args))
+        : Option.none();
+
     return {
       name: command.name,
       version: command.version,
-      detail: decodes ? yield* encodeMutateDetail({ args: command.args }) : yield* opaque,
+      detail: Option.isSome(args) ? yield* encodeMutateDetail({ args: args.value }) : yield* opaque,
     };
   });
 

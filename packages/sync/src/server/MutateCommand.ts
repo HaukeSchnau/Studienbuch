@@ -4,6 +4,7 @@
  * may refuse. As on the device, the account's role decides on the rows it wrote. Then the
  * membership rules of the tables it wrote apply.
  */
+import * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
@@ -86,8 +87,8 @@ export const decide = Effect.fn("MutateCommand.decide")(function* (
     // A defect is the server's bug, not the command's, so the command waits for a fix.
     Effect.catchDefect((defect) =>
       Effect.as(
-        Effect.logError("A mutator died on the server").pipe(
-          Effect.annotateLogs({ mutator: command.name, defect: String(defect) }),
+        Effect.logError("A mutator died on the server", Cause.die(defect)).pipe(
+          Effect.annotateLogs({ mutator: command.name }),
         ),
         undefined,
       ),
