@@ -57,8 +57,8 @@ const selfCheckLines = (startedAt: string, result: SelfCheck.Result) => {
 };
 
 /**
- * What `import status` prints: where the job runs, the pause and lease, today's budget, the last
- * self-check and the last runs.
+ * What `import status` prints: where the job runs, the pause and lease, the last retention sweep,
+ * today's budget, the last self-check and the last runs.
  */
 export const status = Effect.gen(function* () {
   const sql = yield* SqlClient.SqlClient;
@@ -101,6 +101,24 @@ export const status = Effect.gen(function* () {
     order by started_at desc limit 1
   `;
 
+  const [swept] = yield* sql<{
+    readonly sweptAt: Date;
+    readonly lessons: number | null;
+    readonly checkpoint: number | null;
+    readonly versions: number | null;
+    readonly failure: string | null;
+  }>`
+    select swept_at as "sweptAt", lessons, checkpoint, versions, failure
+    from retention_sweep where school_id = ${profile.id}
+  `;
+
+  const sweptLine =
+    swept === undefined
+      ? "swept       not yet"
+      : swept.failure === null
+        ? `swept       ${iso(swept.sweptAt)}: ${swept.lessons} lessons, ${swept.checkpoint} from the checkpoint, ${swept.versions} raw reads`
+        : `swept       ${iso(swept.sweptAt)} failed: ${swept.failure}`;
+
   const selfCheck =
     checked === undefined
       ? ["self-check  none yet"]
@@ -122,6 +140,7 @@ export const status = Effect.gen(function* () {
     }`,
     `reading     ${leased ? `a run holds the lease until ${iso(state?.leaseUntil ?? null)}` : "no"}`,
     `checkpoint  revision ${state?.revision ?? 0}, snapshot of ${iso(state?.observedAt ?? null)}`,
+    sweptLine,
     `today       ${today}: ${budget?.reserved ?? 0} of ${ImportRun.dailyCap} requests reserved by ${budget?.runs ?? 0} runs`,
     ...selfCheck,
     ...(runs.length === 0

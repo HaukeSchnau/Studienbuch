@@ -1,5 +1,5 @@
 import { describe, expect, it, layer } from "@effect/vitest";
-import { School, Studienbuch } from "@stu/core";
+import { CivilTime, School, Studienbuch } from "@stu/core";
 import { Pull } from "@stu/sync/server";
 import { Postgres18 } from "@stu/sync/testing";
 import * as DateTime from "effect/DateTime";
@@ -72,8 +72,8 @@ const publishNovember = (school: School.Id) =>
     Schools.publish(data, Schools.removeMissing(today)),
   ).pipe(ImportTesting.at(morning));
 
-/** The sweep's hourly slot at `at`, on the clock moved there. */
-const sweepAt = (at: DateTime.Utc) => RetentionSweep.sweepDue(at).pipe(ImportTesting.at(at));
+/** The sweep's hourly slot at `at`, on the live clock moved there. */
+const sweepAt = (at: DateTime.Utc) => RetentionSweep.sweepDue.pipe(ImportTesting.at(at));
 
 /** A student of the school with its courses, and her phone's first pull. */
 const enrolled = Effect.fn("RetentionSweepTest.enrolled")(function* (
@@ -127,11 +127,28 @@ describe.skipIf(Postgres18.socket === null)("RetentionSweep on PostgreSQL 18", (
 
           const claim = yield* Effect.flip(ImportTesting.at(slot)(Lease.claim(school)));
 
+          const recorded = yield* sql<{
+            readonly lessons: number | null;
+            readonly checkpoint: number | null;
+            readonly versions: number | null;
+            readonly failure: string | null;
+          }>`
+            select lessons, checkpoint, versions, failure from retention_sweep
+            where school_id = ${school}
+          `;
+
           expect({
             days: yield* lessonDays(school),
             stored: stored.map(({ day }) => day),
             claim: claim._tag,
-          }).toEqual({ days: ["2026-11-17"], stored: ["2026-11-11"], claim: "Lease.Paused" });
+            recorded,
+          }).toEqual({
+            days: ["2026-11-17"],
+            stored: ["2026-11-11"],
+            claim: "Lease.Paused",
+            // Two courses on 13 and 16 November; the paused import never wrote a checkpoint.
+            recorded: [{ lessons: 4, checkpoint: 0, versions: 1, failure: null }],
+          });
         }),
     );
 
@@ -149,6 +166,36 @@ describe.skipIf(Postgres18.socket === null)("RetentionSweep on PostgreSQL 18", (
         expect({ days: yield* lessonDays(school), imports }).toEqual({
           days: ["2026-11-17"],
           imports: [],
+        });
+      }),
+    );
+
+    it.effect("after a restart across 03:00, the next slot sweeps, and only once that day", () =>
+      Effect.gen(function* () {
+        const school = School.Id.make("sweep-restart");
+        const sql = yield* SqlClient.SqlClient;
+        yield* publishNovember(school);
+        // 02:00 in Berlin; the server is down for the slots at 03:00 and 04:00.
+        yield* sweepAt(DateTime.subtract(slot, { hours: 1 }));
+        const early = yield* lessonDays(school);
+        const late = DateTime.add(slot, { hours: 2 });
+        yield* sweepAt(late);
+        yield* sweepAt(DateTime.add(slot, { hours: 3 }));
+
+        const [row] = yield* sql<{ readonly sweptAt: Date }>`
+          select swept_at as "sweptAt" from retention_sweep where school_id = ${school}
+        `;
+
+        expect({
+          early,
+          days: yield* lessonDays(school),
+          once:
+            row !== undefined &&
+            Math.abs(row.sweptAt.getTime() - DateTime.toEpochMillis(late)) < 60_000,
+        }).toEqual({
+          early: ["2026-11-13", "2026-11-16", "2026-11-17"],
+          days: ["2026-11-17"],
+          once: true,
         });
       }),
     );
@@ -257,22 +304,31 @@ describe.skipIf(Postgres18.socket === null)("RetentionSweep on PostgreSQL 18", (
 });
 
 describe("RetentionSweep", () => {
-  const berlin = Option.some({ name: "Retention", timeZone: School.defaultTimeZone });
-
   // Germany's clocks change at 01:00 UTC, so 03:00 in Berlin moves from 02:00 UTC to 01:00 and
-  // back.
+  // back. Athens's change at 01:00 UTC skips its 03:00 in March and repeats it in October.
   it.each([
-    { day: "2026-03-28", due: "2026-03-28T02:00:00.000Z" },
-    { day: "2026-03-29", due: "2026-03-29T01:00:00.000Z" },
-    { day: "2026-10-24", due: "2026-10-24T01:00:00.000Z" },
-    { day: "2026-10-25", due: "2026-10-25T02:00:00.000Z" },
-  ])("on $day, one hourly slot is the sweep's, at 03:00 in Berlin", ({ day, due }) => {
+    { zone: "Europe/Berlin", day: "2026-03-28", sweeps: "2026-03-28T02:00:00.000Z" },
+    { zone: "Europe/Berlin", day: "2026-03-29", sweeps: "2026-03-29T01:00:00.000Z" },
+    { zone: "Europe/Berlin", day: "2026-10-24", sweeps: "2026-10-24T01:00:00.000Z" },
+    { zone: "Europe/Berlin", day: "2026-10-25", sweeps: "2026-10-25T02:00:00.000Z" },
+    { zone: "Europe/Athens", day: "2026-03-29", sweeps: "2026-03-29T01:00:00.000Z" },
+    { zone: "Europe/Athens", day: "2026-10-25", sweeps: "2026-10-25T00:00:00.000Z" },
+  ])("on $day in $zone, one hourly slot sweeps", ({ zone, day, sweeps }) => {
+    const school = Option.some({ name: "Retention", timeZone: CivilTime.TimeZone.make(zone) });
     const midnight = DateTime.makeUnsafe(`${day}T00:00:00Z`);
+    // The day before's sweep, at noon UTC.
+    let last = Option.some(DateTime.subtract(midnight, { hours: 12 }));
+    const swept: Array<string> = [];
 
-    const slots = Array.from({ length: 24 }, (_, hour) => DateTime.add(midnight, { hours: hour }))
-      .filter((at) => RetentionSweep.due(berlin, at))
-      .map(DateTime.formatIso);
+    for (let hour = 0; hour < 24; hour++) {
+      const at = DateTime.add(midnight, { hours: hour });
 
-    expect(slots).toEqual([due]);
+      if (RetentionSweep.due(school, at, last)) {
+        swept.push(DateTime.formatIso(at));
+        last = Option.some(at);
+      }
+    }
+
+    expect(swept).toEqual([sweeps]);
   });
 });

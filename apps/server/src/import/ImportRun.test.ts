@@ -1136,7 +1136,7 @@ describe.skipIf(Postgres18.socket === null)("ImportRun on PostgreSQL 18", () => 
           const before = yield* checkpointDays(school);
           // 03:00 in Berlin on 3 December, so 5 November is the oldest day kept.
           const slot = DateTime.makeUnsafe("2026-12-03T02:00:00Z");
-          yield* RetentionSweep.sweepDue(slot).pipe(ImportTesting.at(slot));
+          yield* RetentionSweep.sweepDue.pipe(ImportTesting.at(slot));
           const after = yield* checkpointDays(school);
 
           expect({
