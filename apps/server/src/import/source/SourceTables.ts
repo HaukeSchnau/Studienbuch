@@ -108,6 +108,8 @@ export const importSchool = pgTable("import_school", {
  */
 export const retentionSweep = pgTable("retention_sweep", {
   schoolId: text("school_id").primaryKey(),
+  /** The school's date the sweep deleted for, which the next sweep must be after. */
+  sweptOn: date("swept_on", { mode: "string" }).notNull(),
   sweptAt: timestamp("swept_at", { withTimezone: true, mode: "date" }).notNull(),
   lessons: integer("lessons"),
   checkpoint: integer("checkpoint"),

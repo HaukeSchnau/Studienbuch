@@ -30,34 +30,28 @@ export * as RetentionSweep from "./RetentionSweep.ts";
  */
 export const hour = 3;
 
-/** Whether the school is due at `now`: past `hour`, on a date of its own that `last` isn't on. */
+/** Whether the school is due at `now`: past `hour`, on a date of its own it wasn't swept on. */
 export const due = (
   school: Option.Option<School.Row>,
   now: DateTime.Utc,
-  last: Option.Option<DateTime.Utc>,
+  sweptOn: Option.Option<CivilTime.PlainDate>,
 ) => {
-  const zone = Option.getOrUndefined(school);
-  const { date, time } = School.now(zone, DateTime.toEpochMillis(now));
+  const { date, time } = School.now(Option.getOrUndefined(school), DateTime.toEpochMillis(now));
 
-  const swept = Option.exists(
-    last,
-    (at) => CivilTime.order(School.today(zone, DateTime.toEpochMillis(at)), date) === 0,
+  return (
+    time >= hour * 3_600_000 && !Option.exists(sweptOn, (last) => CivilTime.order(last, date) === 0)
   );
-
-  return time >= hour * 3_600_000 && !swept;
 };
 
 /**
- * Removes the school's lessons expired at `now`, drops them from its import's checkpoint, and
- * prunes its raw reads.
+ * Removes the school's lessons expired on `today`, its date, drops them from its import's
+ * checkpoint, and prunes its raw reads as of `now`.
  */
 export const sweep = Effect.fn("RetentionSweep.sweep")(function* (
   school: School.Id,
-  row: Option.Option<School.Row>,
+  today: CivilTime.PlainDate,
   now: DateTime.Utc,
 ) {
-  const today = School.today(Option.getOrUndefined(row), DateTime.toEpochMillis(now));
-
   return {
     lessons: yield* Schools.removeLessons(school, Retention.expired(today)),
     checkpoint: yield* ImportRun.trimCheckpoint(
@@ -87,19 +81,26 @@ interface Outcome {
 
 const record = Effect.fn("RetentionSweep.record")(function* (
   school: School.Id,
+  today: CivilTime.PlainDate,
   now: DateTime.Utc,
   outcome: Outcome,
 ) {
   const sql = yield* SqlClient.SqlClient;
   const { lessons, checkpoint, versions, failure } = outcome;
+  const on = CivilTime.format(today);
+  const at = DateTime.toDateUtc(now);
 
   yield* sql`
-    insert into retention_sweep (school_id, swept_at, lessons, checkpoint, versions, failure)
-    values (${school}, ${DateTime.toDateUtc(now)}, ${lessons}, ${checkpoint}, ${versions}, ${failure})
-    on conflict (school_id) do update set swept_at = excluded.swept_at, lessons = excluded.lessons,
-      checkpoint = excluded.checkpoint, versions = excluded.versions, failure = excluded.failure
+    insert into retention_sweep
+      (school_id, swept_on, swept_at, lessons, checkpoint, versions, failure)
+    values (${school}, ${on}::date, ${at}, ${lessons}, ${checkpoint}, ${versions}, ${failure})
+    on conflict (school_id) do update set swept_on = excluded.swept_on,
+      swept_at = excluded.swept_at, lessons = excluded.lessons, checkpoint = excluded.checkpoint,
+      versions = excluded.versions, failure = excluded.failure
   `;
 });
+
+const decodeDate = Schema.decodeUnknownOption(CivilTime.PlainDate);
 
 /**
  * Sweeps each school that is due by the clock: every School space, and every school an import ran
@@ -110,8 +111,8 @@ export const sweepDue = Effect.gen(function* () {
   const sql = yield* SqlClient.SqlClient;
   const now = yield* DateTime.now;
 
-  const schools = yield* sql<{ readonly id: string; readonly sweptAt: Date | null }>`
-    select s.id, r.swept_at as "sweptAt"
+  const schools = yield* sql<{ readonly id: string; readonly sweptOn: string | null }>`
+    select s.id, r.swept_on::text as "sweptOn"
     from (
       select id from space where kind = ${School.Space.name}
       union select school_id from import_school
@@ -120,16 +121,18 @@ export const sweepDue = Effect.gen(function* () {
     order by s.id
   `.pipe(Effect.orDie);
 
-  for (const { id, sweptAt } of schools) {
+  for (const { id, sweptOn } of schools) {
     const school = School.Id.make(id);
-    const last = Option.map(Option.fromNullishOr(sweptAt), DateTime.fromDateUnsafe);
+    const last = decodeDate(sweptOn);
 
     yield* Effect.gen(function* () {
       const row = yield* Schools.row(school);
 
       if (!due(row, now, last)) return;
 
-      const outcome = yield* sweep(school, row, now).pipe(
+      const today = School.today(Option.getOrUndefined(row), DateTime.toEpochMillis(now));
+
+      const outcome = yield* sweep(school, today, now).pipe(
         Effect.map((counts): Outcome => ({ ...counts, failure: null })),
         Effect.catchCause((cause) =>
           Effect.succeed<Outcome>({
@@ -141,7 +144,7 @@ export const sweepDue = Effect.gen(function* () {
         ),
       );
 
-      yield* record(school, now, outcome);
+      yield* record(school, today, now, outcome);
 
       yield* (
         outcome.failure === null
@@ -149,9 +152,9 @@ export const sweepDue = Effect.gen(function* () {
           : Effect.logWarning("A school's retention sweep failed, and its next date tries again")
       ).pipe(Effect.annotateLogs({ school, ...outcome }));
     }).pipe(
-      // Unrecorded, so the next slot tries again.
+      // Unrecorded, so the next slot sweeps again.
       Effect.catchCause((cause) =>
-        Effect.logWarning("A school's retention sweep didn't run").pipe(
+        Effect.logWarning("A school's retention sweep wasn't recorded").pipe(
           Effect.annotateLogs({ school, failure: tagOf(cause) }),
         ),
       ),
@@ -163,5 +166,7 @@ export const sweepDue = Effect.gen(function* () {
 export const layer = ClusterCron.make({
   name: "retention",
   cron: Cron.parseUnsafe("0 * * * *", "UTC"),
+  // One executor for every slot, so a slot replayed after a restart never overlaps a fresh one.
+  calculateNextRunFromPrevious: true,
   execute: sweepDue.pipe(Effect.andThen(Jobs.recordRun("retention"))),
 }).pipe(Layer.provide(SyncServer.writers(Studienbuch.schema)));

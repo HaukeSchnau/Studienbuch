@@ -314,18 +314,19 @@ describe("RetentionSweep", () => {
     { zone: "Europe/Athens", day: "2026-03-29", sweeps: "2026-03-29T01:00:00.000Z" },
     { zone: "Europe/Athens", day: "2026-10-25", sweeps: "2026-10-25T00:00:00.000Z" },
   ])("on $day in $zone, one hourly slot sweeps", ({ zone, day, sweeps }) => {
-    const school = Option.some({ name: "Retention", timeZone: CivilTime.TimeZone.make(zone) });
+    const row = { name: "Retention", timeZone: CivilTime.TimeZone.make(zone) };
     const midnight = DateTime.makeUnsafe(`${day}T00:00:00Z`);
+    const dateAt = (at: DateTime.Utc) => School.today(row, DateTime.toEpochMillis(at));
     // The day before's sweep, at noon UTC.
-    let last = Option.some(DateTime.subtract(midnight, { hours: 12 }));
+    let last = Option.some(dateAt(DateTime.subtract(midnight, { hours: 12 })));
     const swept: Array<string> = [];
 
     for (let hour = 0; hour < 24; hour++) {
       const at = DateTime.add(midnight, { hours: hour });
 
-      if (RetentionSweep.due(school, at, last)) {
+      if (RetentionSweep.due(Option.some(row), at, last)) {
         swept.push(DateTime.formatIso(at));
-        last = Option.some(at);
+        last = Option.some(dateAt(at));
       }
     }
 
