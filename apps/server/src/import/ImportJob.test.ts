@@ -478,6 +478,25 @@ describe.skipIf(Postgres18.socket === null)("ImportJob on PostgreSQL 18", () => 
       }),
     );
 
+    it.effect("a session the nightly self-check lost counts toward the pause", () =>
+      Effect.gen(function* () {
+        const lostIn = (name: string, minutes: number) =>
+          Effect.flatMap(firstAnswered(name, 401), (answer) =>
+            runWith("job-check-lost", { answer, at: minutesAfter(minutes) }),
+          );
+
+        const runs = [
+          yield* lostIn("GET timetable/filter STUDENT", 0),
+          yield* lostIn("GET app/data", 10),
+        ];
+
+        expect(runs.map(({ outcome, pausedBy }) => [outcome, pausedBy])).toEqual([
+          [Option.some("Published"), null],
+          [Option.some("SessionLost"), ImportJob.pausedBy],
+        ]);
+      }),
+    );
+
     it.effect(
       "a run sends no more than its reservation, and no view its reservation can't hold",
       () =>

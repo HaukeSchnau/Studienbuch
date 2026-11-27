@@ -82,11 +82,12 @@ const pauseAfter = Effect.fn("ImportJob.pauseAfter")(
   function* (school: School.Id, outcome: ImportRun.Outcome) {
     const sql = yield* SqlClient.SqlClient;
 
-    if (outcome !== "CredentialsRefused" && outcome !== "SessionLost") return;
-
-    if (outcome === "SessionLost") {
+    if (outcome !== "CredentialsRefused") {
+      // A session the nightly self-check lost after its publish counts as well.
       const recent = yield* sql<{ readonly outcome: string | null }>`
-        select outcome from import_run
+        select case when self_check->>'reason' = 'SessionLost' then 'SessionLost' else outcome end
+          as outcome
+        from import_run
         where school_id = ${school} and sent > 0
         order by started_at desc limit 2
       `;

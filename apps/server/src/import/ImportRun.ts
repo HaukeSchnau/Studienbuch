@@ -41,7 +41,7 @@ import { ImportIds } from "./ImportIds.ts";
 import { Lease } from "./Lease.ts";
 import { NaiveImport } from "./NaiveImport.ts";
 import { Plan } from "./Plan.ts";
-import type { SchoolProfile } from "./profiles/SchoolProfile.ts";
+import { SchoolProfile } from "./profiles/SchoolProfile.ts";
 import { Projection } from "./Projection.ts";
 import { SchoolImport } from "./SchoolImport.ts";
 import { SelfCheck } from "./SelfCheck.ts";
@@ -780,6 +780,7 @@ const checkSelf = Effect.fn("ImportRun.checkSelf")(function* (input: {
           client,
           [{ start: year.first, end: year.last }],
           ["STUDENT"],
+          (student) => SchoolProfile.readsStudent(profile, student),
         );
 
         const published = new Set(
@@ -847,6 +848,25 @@ const checkSelf = Effect.fn("ImportRun.checkSelf")(function* (input: {
     yield* Effect.logWarning(`The self-check measured nothing: ${checked.result.reason}`);
   }
 });
+
+/**
+ * A night's self-check that the deadline or a defect cut off after the publish says so, and the
+ * row counts the requests it sent. One that finished keeps its result.
+ */
+const unfinished = Effect.fn("ImportRun.unfinished")(function* (
+  run: string,
+  reason: string,
+  sent: number,
+) {
+  const sql = yield* SqlClient.SqlClient;
+  const selfCheck = yield* encodeSelfCheck(SelfCheck.Result.cases.NotMeasured.make({ reason }));
+
+  yield* sql`
+    update import_run
+    set self_check = coalesce(self_check, ${selfCheck}::jsonb), sent = greatest(sent, ${sent})
+    where id = ${run}::uuid
+  `;
+}, Effect.orDie);
 
 /** The run after it holds the lease and its requests. */
 const leased = Effect.fn("ImportRun.leased")(function* (
@@ -1091,6 +1111,14 @@ export const run = Effect.fn("ImportRun.run")(function* (options: Options) {
 
     // A run that published wrote its row in the same transaction, and that outcome stands.
     const settled = yield* finish(reservation.id, outcome, yield* requests.sent, recorded);
+
+    if (options.nightly && (settled === "Dark" || settled === "Published")) {
+      yield* unfinished(
+        reservation.id,
+        outcome === settled ? "Unfinished" : outcome,
+        yield* requests.sent,
+      );
+    }
 
     return { outcome: settled, run: Option.some(reservation.id), report: recorded } satisfies Ran;
   }).pipe(Effect.ensuring(Lease.release(school, lease.owner)));

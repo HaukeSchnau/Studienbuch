@@ -117,6 +117,16 @@ const failingStudent = withBatch(
       : client.timetable.getEntriesForResources(input, batchOptions),
 );
 
+/** The students' directory dies, as a defect after the publish would. */
+const dyingDirectory = (client: Client): Client => ({
+  ...client,
+  timetable: {
+    ...client.timetable,
+    getFilter: (input) =>
+      input.resourceType === "STUDENT" ? Effect.die("broken") : client.timetable.getFilter(input),
+  },
+});
+
 /** TinySchool with its term opening on Monday of 2026-W45, the day of the runs' first window. */
 const openingOnW45: Corpus.Corpus = {
   ...TinySchool.corpus,
@@ -351,34 +361,36 @@ describe.skipIf(Postgres18.socket === null)("ImportRun on PostgreSQL 18", () => 
         }),
     );
 
-    it.effect(
-      "a student view that fails leaves the self-check unmeasured and the night's rows",
-      () =>
-        Effect.gen(function* () {
-          const school = "tiny-check-failing";
-          const sql = yield* SqlClient.SqlClient;
+    it.effect.each([
+      { name: "a student view fails", change: failingStudent, reason: "TransportError" },
+      // A defect after the publish: the publish stands, and the self-check says the run failed.
+      { name: "the self-check dies", change: dyingDirectory, reason: "Failed" },
+    ])("when $name the self-check is unmeasured and the night's rows stand", ({ change, reason }) =>
+      Effect.gen(function* () {
+        const school = `tiny-check-${reason}`;
+        const sql = yield* SqlClient.SqlClient;
 
-          const ran = yield* runAt(
-            morning,
-            options(school, { source: recorded(TinySchool.corpus, failingStudent) }),
-          );
+        const ran = yield* runAt(
+          morning,
+          options(school, { source: recorded(TinySchool.corpus, change) }),
+        );
 
-          const [kept] = yield* sql<{ readonly kurswahl: string }>`
+        const [kept] = yield* sql<{ readonly kurswahl: string }>`
           select kurswahl::text as kurswahl from import_school where school_id = ${school}
         `;
 
-          expect({
-            outcome: ran.outcome,
-            lessons: (yield* idsOf(school, "Lesson")).size,
-            checks: yield* selfChecks(school),
-            kept: kept?.kurswahl,
-          }).toEqual({
-            outcome: "Published",
-            lessons: 60,
-            checks: [SelfCheck.Result.cases.NotMeasured.make({ reason: "TransportError" })],
-            kept: "[]",
-          });
-        }),
+        expect({
+          outcome: ran.outcome,
+          lessons: (yield* idsOf(school, "Lesson")).size,
+          checks: yield* selfChecks(school),
+          kept: kept?.kurswahl,
+        }).toEqual({
+          outcome: "Published",
+          lessons: 60,
+          checks: [SelfCheck.Result.cases.NotMeasured.make({ reason })],
+          kept: "[]",
+        });
+      }),
     );
 
     it.effect.each([

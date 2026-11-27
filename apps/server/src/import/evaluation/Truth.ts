@@ -4,7 +4,7 @@
  * the exams. It reads the corpus through the recorded client, as of the capture's end.
  */
 import type { WebUntisClient } from "@schnau/webuntis-api";
-import type { Schoolyear, TimetableEntryDay } from "@schnau/webuntis-api/schemas";
+import type { Schoolyear, TimetableEntryDay, TimetableFilter } from "@schnau/webuntis-api/schemas";
 import { CivilTime } from "@stu/core";
 import * as Arr from "effect/Array";
 import type * as DateTime from "effect/DateTime";
@@ -132,14 +132,15 @@ const within = (a: Range, b: Range): ReadonlyArray<Range> => {
 };
 
 /**
- * The timetables of the upper school's students, of the teachers and of the rooms, those of
- * `types` only, on the school days of `ranges`. Teachers and rooms are resolved through their
- * directories whichever types are read.
+ * The timetables of the students `reads` names, of the teachers and of the rooms, those of `types`
+ * only, on the school days of `ranges`. Teachers and rooms are resolved through their directories
+ * whichever types are read.
  */
 export const readViews = Effect.fn("Truth.readViews")(function* (
   client: WebUntisClient["Service"],
   ranges: ReadonlyArray<Range>,
-  types: ReadonlyArray<ViewType> = viewTypes,
+  types: ReadonlyArray<ViewType>,
+  reads: (student: TimetableFilter["students"][number]) => boolean,
 ) {
   const years = yield* client.schoolyears.list.pipe(Effect.mapError(incomplete("school years")));
   const views = new Map<string, View>();
@@ -167,11 +168,8 @@ export const readViews = Effect.fn("Truth.readViews")(function* (
           .getFilter({ resourceType, start, end })
           .pipe(Effect.mapError(incomplete(`${resourceType} directory ${year.id}`)));
 
-      // The capture reads the upper school's students only, so only they have a truth.
       const students = types.includes("STUDENT")
-        ? (yield* directory("STUDENT")).students
-            .filter(CapturePlan.upperSchool)
-            .map((each) => each.student)
+        ? (yield* directory("STUDENT")).students.filter(reads).map((each) => each.student)
         : [];
 
       const teachers = (yield* directory("TEACHER")).teachers.map((each) => each.teacher);
@@ -296,6 +294,8 @@ export const build = Effect.fn("Truth.build")(function* (corpus: Corpus.Corpus) 
     client,
     corpus.manifest.ranges,
     typesIn(corpus),
+    // The capture reads the upper school's students only, so only they have a truth.
+    CapturePlan.upperSchool,
   );
 
   const exams: Array<Metrics.TruthExam> = [];
@@ -354,5 +354,6 @@ export const entriesAt = Effect.fn("Truth.entriesAt")(function* (
     client,
     corpus.manifest.ranges.flatMap((captured) => within(captured, range)),
     typesIn(corpus),
+    CapturePlan.upperSchool,
   )).entries;
 });

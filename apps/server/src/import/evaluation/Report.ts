@@ -181,8 +181,13 @@ const rows: ReadonlyArray<ReadonlyArray<Row>> = [
 const sentences = (report: Aggregates) => [
   `${report.runs.failed} of ${report.runs.total} runs failed; they made ${report.reads.requests} requests, ${report.reads.outOfRange} for days outside the capture, and ${report.reads.decodeFailures} bodies didn't decode.`,
   `${report.invariants.danglingCourses} lessons and exams name a course the store lacks; the projection keeps ${report.invariants.unpublishedLessons} out of the publish.`,
-  `${report.ghostCourses} courses have lessons no student chose.`,
-  `Course identity: ${report.courseIdentity.split} of ${report.courseIdentity.realCourses} real courses are split over several of ours, and ${report.courseIdentity.merged} of ${report.courseIdentity.ourCourses} of ours join several real courses.`,
+  // Both come from students' own views, which a corpus can lack.
+  report.kurswahl.of === 0
+    ? "Courses no student chose: not measured."
+    : `${report.ghostCourses} courses have lessons no student chose.`,
+  report.courseIdentity.realCourses === 0
+    ? "Course identity: not measured."
+    : `Course identity: ${report.courseIdentity.split} of ${report.courseIdentity.realCourses} real courses are split over several of ours, and ${report.courseIdentity.merged} of ${report.courseIdentity.ourCourses} of ours join several real courses.`,
   `WebUntis hid ${report.hiddenDays} days of views from the capture's account; they aren't measured.`,
   `Repeating the first run: ${report.invariants.failedRuns} failed, a second run changed ${report.invariants.secondRunChanges} rows, reversed reads ${report.invariants.reversedReadChanges}, ${report.invariants.injectedFailures} failed reads ${report.invariants.failedReadChanges}.`,
   `Labelled cases passing: ${report.passingCases.length === 0 ? "none" : report.passingCases.join(", ")}`,

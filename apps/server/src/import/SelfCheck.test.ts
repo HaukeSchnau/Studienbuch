@@ -7,6 +7,7 @@ import { TinySchool } from "./evaluation/TinySchool.ts";
 import { Truth } from "./evaluation/Truth.ts";
 import { ImportIds } from "./ImportIds.ts";
 import { ImportTesting } from "./ImportTesting.ts";
+import { SchoolProfile } from "./profiles/SchoolProfile.ts";
 import { SchoolImport } from "./SchoolImport.ts";
 import { SelfCheck } from "./SelfCheck.ts";
 
@@ -23,6 +24,7 @@ const night = Effect.gen(function* () {
     client,
     [{ start: CivilTime.format(days.start), end: CivilTime.format(days.end) }],
     ["STUDENT"],
+    (student) => SchoolProfile.readsStudent(TinySchool.profile, student),
   );
 
   return {

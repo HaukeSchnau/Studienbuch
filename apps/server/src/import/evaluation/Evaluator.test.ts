@@ -653,6 +653,31 @@ describe("Evaluator", () => {
     }),
   );
 
+  it.effect("says a corpus without students' views measures no Kurswahl, ghost or identity", () =>
+    Effect.gen(function* () {
+      const withoutStudents = {
+        ...TinySchool.corpus,
+        reads: new Map(
+          [...TinySchool.corpus.reads].filter(([path]) => !path.includes("/entries/STUDENT/")),
+        ),
+      };
+
+      const text = Report.format(yield* evaluate(NaiveImport.layer, false, withoutStudents));
+
+      assert.deepStrictEqual(
+        text
+          .split("\n")
+          .filter((line) => /Kurswahl|chose|identity/u.test(line))
+          .map((line) => line.trim()),
+        [
+          "Kurswahl exactly right         not measured",
+          "Courses no student chose: not measured.",
+          "Course identity: not measured.",
+        ],
+      );
+    }),
+  );
+
   // An export of the source store holds no teacher or room views.
   it.effect("reports views the corpus lacks as not measured, and measures the rest alike", () =>
     Effect.gen(function* () {
