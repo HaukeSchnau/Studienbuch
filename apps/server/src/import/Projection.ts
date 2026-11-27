@@ -29,6 +29,12 @@ import { SchoolImport } from "./SchoolImport.ts";
 export * as Projection from "./Projection.ts";
 
 /**
+ * Days a lesson stays published after its day (D113). A longer history of substitutions is a list
+ * of teacher absences, which under the NPersVG needs the staff council's consent.
+ */
+export const keptDays = 28;
+
+/**
  * A published lesson or closure that a snapshot lacked without evidence of where it went. It goes
  * when the next snapshot that covers it lacks it too, so one wrong answer never deletes.
  */
@@ -173,9 +179,10 @@ const within = (
   });
 
 /**
- * Removals at once, the candidates from the last snapshot this one confirms, and the next ones. A
- * closure counts as listed only when it enters the publish, so a malformed one removes nothing,
- * and a confirmed one loses only the dates both snapshots covered.
+ * Removals at once, the candidates from the last snapshot this one confirms, the next ones, and
+ * every lesson more than `keptDays` past. A closure counts as listed only when it enters the
+ * publish, so a malformed one removes nothing, and a confirmed one loses only the dates both
+ * snapshots covered.
  */
 const removalsOf = (input: Input, published: Schools.Data, refused: ReadonlySet<string>) => {
   const { previous, result } = input;
@@ -228,9 +235,13 @@ const removalsOf = (input: Input, published: Schools.Data, refused: ReadonlySet<
     ),
   );
 
+  const oldest = CivilTime.addDays(input.today, -keptDays);
+
   const removals: Schools.Removals = {
     today: input.today,
-    lesson: ({ id }) => lessons.moved.has(id) || confirmed.has(id),
+    // A lesson before `oldest` goes with its change, whatever the snapshot says.
+    lesson: ({ id, row }) =>
+      CivilTime.order(row.date, oldest) < 0 || lessons.moved.has(id) || confirmed.has(id),
     // A closure WebUntis still lists may lose the dates it no longer names, when the holiday read
     // covers all of them.
     closureDates: ({ id, row }) => {

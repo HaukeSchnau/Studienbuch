@@ -259,9 +259,17 @@ export function Datenschutz() {
       <h2>5. Speicherdauer</h2>
       <p>
         Schuldaten werden gespeichert, solange die Schule die App einsetzt, und nach Beendigung nach
-        ihren Weisungen gelöscht oder zurückgegeben. Daten auf dem Gerät werden mit der
-        Deinstallation der App oder dem Löschen der Websitedaten im Browser entfernt. Gesetzliche
-        Aufbewahrungspflichten, etwa aus Handels- und Steuerrecht, bleiben unberührt.
+        ihren Weisungen gelöscht oder zurückgegeben. Vergangene Stunden mit ihren Vertretungen und
+        Entfällen löschen wir, sobald sie mehr als 28&nbsp;Tage zurückliegen, mit der nächsten
+        Aktualisierung des Stundenplans; die Geräte entfernen sie beim nächsten Abgleich. Die
+        Antworten des Stundenplansystems auf unsere Abrufe löschen wir mit dem nächsten Abruf,
+        sobald sie mehr als 35&nbsp;Tage alt sind. Länger behalten wir nur die jeweils neueste
+        Antwort auf Abrufe, die nicht nach Tagen gegliedert sind, etwa die Angaben zur Schule mit
+        ihren Ferien und, je Schuljahr, die Listen der Klassen, Fächer, Lehrkräfte, Räume und
+        Klausuren. In den Datensicherungen bleibt beides bis zu 35&nbsp;Tage länger. Daten auf dem
+        Gerät werden mit der Deinstallation der App oder dem Löschen der Websitedaten im Browser
+        entfernt. Gesetzliche Aufbewahrungspflichten, etwa aus Handels- und Steuerrecht, bleiben
+        unberührt.
       </p>
       <p>
         Konten und die zugehörigen Zugangsdaten speichern wir, solange das Konto besteht.

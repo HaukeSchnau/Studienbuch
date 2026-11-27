@@ -691,7 +691,12 @@ const store = Effect.fn("ImportRun.store")(function* (
     }
   }
 
-  const versionsStored = yield* SourceStore.write(school, now, versions);
+  const sql = yield* SqlClient.SqlClient;
+
+  // Pruned with every write, so a version a write supersedes never outlives its 35 days.
+  const [versionsStored, versionsPruned] = yield* sql.withTransaction(
+    Effect.all([SourceStore.write(school, now, versions), SourceStore.prune(school, now)]),
+  );
 
   yield* Ref.update(report, (current) => {
     const reads = { ...current.reads };
@@ -714,6 +719,7 @@ const store = Effect.fn("ImportRun.store")(function* (
       failures: tags,
       drift: [...new Set([...current.drift, ...drift])].sort(),
       versionsStored: current.versionsStored + versionsStored,
+      versionsPruned: current.versionsPruned + versionsPruned,
     };
   });
 
@@ -932,9 +938,6 @@ const leased = Effect.fn("ImportRun.leased")(function* (
 
   // Reads that answered are stored even when another failed: the store is a log.
   const { versions, failures } = yield* store(school, now, snapshot, report);
-  const versionsPruned = yield* SourceStore.prune(school, profile.school.timeZone, now);
-
-  yield* Ref.update(report, (current) => ({ ...current, versionsPruned }));
 
   // A lost session ends the run whatever a view already in flight returned.
   const account = yield* requests.account;
