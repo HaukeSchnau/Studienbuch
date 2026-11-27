@@ -100,6 +100,21 @@ export const sanitize = (
     );
   }
 
+  // The store keeps no text of a student's own view, which it knows by its days' kind.
+  const days = Policy.isObject(read.body) && Array.isArray(read.body.days) ? read.body.days : [];
+
+  if (
+    rules.view?.type === "STUDENT" &&
+    days.some((day) => !Policy.isObject(day) || day.resourceType !== "STUDENT")
+  ) {
+    return Result.fail(
+      new Unstorable({
+        read: Policy.readKind(read.path),
+        problems: [{ path: "days[].resourceType", problem: "a day of another kind of view" }],
+      }),
+    );
+  }
+
   const { value, problems } = Policy.walk(rules.node, read.body, Policy.store);
   const wrong = problems.filter(({ problem }) => problem !== Policy.withoutRule);
 
