@@ -185,6 +185,26 @@ const checks = [
 ];
 
 /**
+ * `import:eval` on one corpus against its numbers in baseline.json. Exit code 3 says numbers
+ * differ: the step passes its result on, and the gate comments it and fails.
+ */
+const evaluation = (corpus: "pinned" | "synthetic") => ({
+  run: [
+    'result="$PWD/import-eval.json"',
+    'rm -f "$result"',
+    "cd apps/server",
+    ...(corpus === "pinned" ? ["vp run corpus:fetch --pinned"] : []),
+    "status=0",
+    `vp run import:eval --corpus ${corpus} --against baseline --comment "$result" || status=$?`,
+    '[ "$status" -eq 0 ] || [ "$status" -eq 3 ]',
+  ],
+  value: {
+    path: "import-eval.json",
+    schema: Schema.Struct({ markdown: Schema.String, differences: Schema.Number }),
+  },
+});
+
+/**
  * The corpus gate (m2-import-corpus.md, section 6, "CI"): the import's numbers on the pinned private
  * corpus against baseline.json. It needs the corpus's deploy key and age identity, so it runs in
  * trusted runs only, and again only when the import, the recorded client, the harness or the pin
@@ -213,20 +233,28 @@ const importEval = Task.make("import-eval", {
     "set -euo pipefail",
     // The deploy key alone, against git.schnau.dev's pinned host key.
     'export GIT_SSH_COMMAND="ssh -F /dev/null -o IdentityAgent=none -o IdentitiesOnly=yes -i $CORPUS_DEPLOY_KEY -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$PWD/.calder/known_hosts -o GlobalKnownHostsFile=/dev/null"',
-    'result="$PWD/import-eval.json"',
-    'rm -f "$result"',
-    "cd apps/server",
-    "vp run corpus:fetch --pinned",
-    // Exit code 3 says numbers differ from the baseline: the step passes its result on, and the
-    // gate comments it and fails.
-    "status=0",
-    'vp run import:eval --corpus pinned --against baseline --comment "$result" || status=$?',
-    '[ "$status" -eq 0 ] || [ "$status" -eq 3 ]',
+    ...evaluation("pinned").run,
   ].join("\n")}`,
-  value: {
-    path: "import-eval.json",
-    schema: Schema.Struct({ markdown: Schema.String, differences: Schema.Number }),
-  },
+  value: evaluation("pinned").value,
+}).pipe(Step.timeout("30 minutes"));
+
+/**
+ * The same gate on the synthetic school (M2.11), generated from the committed calibration. It needs
+ * no secret, so every run measures it, and it stays once the pinned corpus is gone (D112).
+ */
+const importEvalSynthetic = Task.make("import-eval-synthetic", {
+  shell: flake.devShells.corpus,
+  setup: install,
+  inputs: Files.union(
+    Files.imports(["apps/server/src/import/evaluation/main.ts"]),
+    Files.of(
+      "apps/server/package.json",
+      "apps/server/src/import/synthetic/calibration.json",
+      "apps/server/src/import/evaluation/baseline.json",
+    ),
+  ),
+  run: cmd`bash -c ${["set -euo pipefail", ...evaluation("synthetic").run].join("\n")}`,
+  value: evaluation("synthetic").value,
 }).pipe(Step.timeout("30 minutes"));
 
 class BaselineDiffers extends Calder.Failure<BaselineDiffers>("studienbuch")("BaselineDiffers", {
@@ -239,18 +267,19 @@ class BaselineDiffers extends Calder.Failure<BaselineDiffers>("studienbuch")("Ba
   }
 }
 
-/** Comments the numbers on a pull request, and fails when any differs from the baseline. */
-const importEvalGate = Action.make(
-  "import-eval-gate",
-  { needs: { result: importEval } },
-  function* ({ result }) {
+/** Comments a gate's numbers on a pull request, and fails when any differs from the baseline. */
+const gateOf = (name: string, task: typeof importEval) =>
+  Action.make(name, { needs: { result: task } }, function* ({ result }) {
     const pullRequest = yield* Effect.serviceOption(PullRequest);
 
     if (Option.isSome(pullRequest)) yield* pullRequest.value.comment(result.markdown);
 
     if (result.differences > 0) return yield* new BaselineDiffers({ count: result.differences });
-  },
-);
+  });
+
+const importEvalGate = gateOf("import-eval-gate", importEval);
+
+const importEvalSyntheticGate = gateOf("import-eval-synthetic-gate", importEvalSynthetic);
 
 // The native app, from the TestFlight and Play internal builds of every push to main that changes it.
 
@@ -324,10 +353,23 @@ export default Environments.project({
   environments: { beta: { on: { push: "main" }, after: checks, then: storeBuilds } },
   nightly: "0 3 * * *",
   // A pull request shows its fingerprints, so a change to the native layer is visible before merging.
-  // The corpus gate runs where secrets reach: same-repo pull requests and pushes to main.
+  // The corpus gate runs where secrets reach: same-repo pull requests and pushes to main. The
+  // synthetic school's needs none.
   rules: [
-    On.pullRequest([pnpmDeps, runtimeIos, runtimeAndroid]),
+    On.pullRequest([
+      pnpmDeps,
+      runtimeIos,
+      runtimeAndroid,
+      importEvalSynthetic,
+      importEvalSyntheticGate,
+    ]),
     On.preview([importEval, importEvalGate]),
-    On.push("main", [pnpmDeps, importEval, importEvalGate]),
+    On.push("main", [
+      pnpmDeps,
+      importEval,
+      importEvalGate,
+      importEvalSynthetic,
+      importEvalSyntheticGate,
+    ]),
   ],
 });

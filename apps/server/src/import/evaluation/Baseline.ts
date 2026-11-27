@@ -1,8 +1,7 @@
 /**
- * The corpus gate's numbers (m2-import-corpus.md, section 6, "CI"): every aggregate of a weekly and
- * a timeline evaluation of the pinned corpus. `baseline.json` is public, so it holds aggregates
- * only, never names. Subjects key their counts by their codes as the corpus holds them: where the
- * pseudonymizer replaced a name in a code, the key holds its keyed token.
+ * The gates' numbers (m2-import-corpus.md, section 6, "CI"): a weekly and a timeline evaluation's
+ * aggregates per corpus in the public `baseline.json`, never names. Subjects key their counts by
+ * the corpus's codes, which hold a keyed token where the pseudonymizer replaced a name.
  */
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
@@ -19,7 +18,23 @@ export const Numbers = Schema.Struct({
 
 export type Numbers = typeof Numbers.Type;
 
-export const Json = Schema.fromJsonString(Numbers, { space: 2 });
+/** `baseline.json`: the numbers of each corpus a gate measures. */
+export const FileJson = Schema.fromJsonString(Schema.Array(Schema.Json), { space: 2 });
+
+const isEntry = Schema.is(Schema.Struct({ corpus: Schema.String }));
+
+/** The committed numbers of `corpus` in the file, if it has them. */
+export const entryOf = (file: ReadonlyArray<Schema.Json>, corpus: string) =>
+  file.find((entry) => isEntry(entry) && entry.corpus === corpus);
+
+/** The file with `measured` in the place of its corpus's numbers, or after the others. */
+export const withEntry = (file: ReadonlyArray<Schema.Json>, measured: Schema.Json) => {
+  const corpus = isEntry(measured) ? measured.corpus : "";
+
+  return entryOf(file, corpus) === undefined
+    ? [...file, measured]
+    : file.map((entry) => (isEntry(entry) && entry.corpus === corpus ? measured : entry));
+};
 
 /**
  * One number that differs, by its path in the file, such as `weekly.views.student.recall` or

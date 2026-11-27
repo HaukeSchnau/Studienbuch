@@ -10,27 +10,13 @@ import { RecordedWebUntis } from "../../infra/webuntis/RecordedWebUntis.ts";
 import type { Corpus } from "../corpus/Corpus.ts";
 import { IgsLilienthal } from "../profiles/IgsLilienthal.ts";
 import type { SchoolProfile } from "../profiles/SchoolProfile.ts";
+import { WebUntisBodies } from "../synthetic/WebUntisBodies.ts";
 
 export * as TinySchool from "./TinySchool.ts";
 
-interface Resource {
-  readonly id: number;
-  readonly shortName: string;
-  readonly longName: string;
-}
+type Resource = WebUntisBodies.Resource;
 
-const resource = (id: number, shortName: string, longName = shortName): Resource => ({
-  id,
-  shortName,
-  longName,
-});
-
-const display = ({ id, shortName, longName }: Resource) => ({
-  id,
-  shortName,
-  longName,
-  displayName: longName,
-});
+const { resource, display, position } = WebUntisBodies;
 
 const year = { id: 10, name: "2026/2027", start: "2026-08-13", end: "2027-07-07" };
 
@@ -292,19 +278,8 @@ const occurrences = (version: 1 | 2): ReadonlyArray<Occurrence> =>
     }),
   );
 
-const position = (type: string, status: string, { shortName, longName }: Resource) => ({
-  type,
-  status,
-  shortName,
-  longName,
-  displayName: longName,
-  displayNameLabel: null,
-});
-
 const positions = (type: string, now: Resource | undefined, before: Resource) =>
-  now === undefined || now === before
-    ? [{ current: position(type, "REGULAR", before), removed: null }]
-    : [{ current: position(type, "ADDED", now), removed: position(type, "REMOVED", before) }];
+  WebUntisBodies.positions(type, [now ?? before], [before]);
 
 const currentTeacher = ({ slot, change }: Occurrence) => change?.teacher ?? slot.teacher;
 
@@ -353,7 +328,7 @@ const entry =
     };
   };
 
-type ViewType = "CLASS" | "TEACHER" | "SUBJECT" | "ROOM" | "STUDENT";
+type ViewType = WebUntisBodies.ViewType;
 
 const views: ReadonlyArray<{
   readonly type: ViewType;
@@ -430,27 +405,7 @@ const entryReads = views.map((view): [string, RecordedWebUntis.Read] => {
   ];
 });
 
-const once = (body: RecordedWebUntis.Version["body"]): RecordedWebUntis.Read => ({
-  versions: [{ observedAt: firstSeen, body }],
-});
-
-const filter = (type: ViewType, lists: Record<string, RecordedWebUntis.Version["body"]>) =>
-  once({
-    resourceType: type,
-    preSelected: null,
-    buildings: [],
-    departments: [],
-    roomGroups: [],
-    resourceTypes: [],
-    assignmentGroups: [],
-    classes: [],
-    resources: [],
-    rooms: [],
-    subjects: [],
-    students: [],
-    teachers: [],
-    ...lists,
-  });
+const once = (body: RecordedWebUntis.Version["body"]) => WebUntisBodies.once(firstSeen, body);
 
 // Case: an exam for one `MA-E` group, which a course of both groups would show to the other.
 const exam = {
@@ -473,14 +428,7 @@ const exam = {
   classes: [display(c12)],
   teachers: [display(lc)],
   studentgroup: display(resource(801, "MA-E/1")),
-  students: [s4, s5].map((student) => ({
-    ...display(student),
-    gender: null,
-    klasse: null,
-    imageUrl: "",
-    gradeProtection: false,
-    disadvantageCompensation: false,
-  })),
+  students: [s4, s5].map(WebUntisBodies.examStudent),
   invigilators: [],
   rooms: [display(r103)],
   lessonId: 7001,
@@ -494,110 +442,16 @@ const exam = {
 };
 
 const reads: RecordedWebUntis.Recording = new Map([
-  [
-    RecordedWebUntis.paths.schoolYears,
-    once([{ id: year.id, name: year.name, dateRange: { start: year.start, end: year.end } }]),
-  ],
-  [
-    RecordedWebUntis.paths.appData,
-    once({
-      currentSchoolYear: {
-        id: year.id,
-        name: year.name,
-        dateRange: { start: year.start, end: year.end },
-        timeGrid: {
-          schoolyearId: year.id,
-          units: blocks.map(([start, end], index) => ({
-            unitOfDay: index + 1,
-            startTime: Number(start.replace(":", "")),
-            endTime: Number(end.replace(":", "")),
-          })),
-        },
-      },
-      tenant: { displayName: "Erfundene Schule", id: "1", name: "erfundene-schule" },
-      user: {
-        id: 1,
-        locale: "de",
-        name: "Konto A",
-        email: null,
-        permissions: { views: [] },
-        roles: [],
-      },
-      permissions: [],
-      settings: [],
-      holidays: [
-        { id: 1, name: "Herbstferien", start: "2026-10-12", end: "2026-10-23", bookable: false },
-        { id: 2, name: "Ferientag", start: freeDay, end: freeDay, bookable: false },
-      ],
-    }),
-  ],
-  [
-    RecordedWebUntis.paths.timeGrid,
-    once({
-      schoolyearId: year.id,
-      units: blocks.map(([start, end], index) => ({
-        unitOfDay: index + 1,
-        startTime: Number(start.replace(":", "")),
-        endTime: Number(end.replace(":", "")),
-      })),
-    }),
-  ],
-  [
-    RecordedWebUntis.paths.filter(year.id, "CLASS"),
-    filter("CLASS", {
-      classes: classes.map((each) => ({
-        class: display(each),
-        classTeacher1: null,
-        classTeacher2: null,
-        department: null,
-      })),
-    }),
-  ],
-  [
-    RecordedWebUntis.paths.filter(year.id, "TEACHER"),
-    filter("TEACHER", {
-      teachers: teachers.map((each) => ({
-        teacher: display(each),
-        departments: [],
-        imageUrl: null,
-      })),
-    }),
-  ],
-  [
-    RecordedWebUntis.paths.filter(year.id, "SUBJECT"),
-    filter("SUBJECT", {
-      subjects: subjects.map((each) => ({ subject: display(each), departments: [] })),
-    }),
-  ],
-  [
-    RecordedWebUntis.paths.filter(year.id, "ROOM"),
-    filter("ROOM", {
-      rooms: rooms.map((each) => ({
-        room: display(each),
-        capacity: 30,
-        roomGroups: [],
-        building: null,
-        department: null,
-      })),
-    }),
-  ],
-  [
-    RecordedWebUntis.paths.filter(year.id, "STUDENT"),
-    filter("STUDENT", {
-      students: students.map((each) => ({
-        student: display(each),
-        classes: [
-          {
-            class: display(each.schoolClass),
-            dateRange: { start: year.start, end: year.end },
-            department: null,
-          },
-        ],
-        assignmentGroups: [],
-        imageUrl: null,
-      })),
-    }),
-  ],
+  ...WebUntisBodies.masterReads(firstSeen, {
+    year,
+    blocks,
+    tenant: "Erfundene Schule",
+    holidays: [
+      { id: 1, name: "Herbstferien", start: "2026-10-12", end: "2026-10-23" },
+      { id: 2, name: "Ferientag", start: freeDay, end: freeDay },
+    ],
+  }),
+  ...WebUntisBodies.directories(firstSeen, year, { classes, teachers, subjects, rooms, students }),
   [RecordedWebUntis.paths.exams(year.id), once({ exams: [exam], withDeleted: true })],
   ...entryReads,
 ]);
