@@ -76,7 +76,9 @@ export const whenEnabled = Effect.gen(function* () {
   if (Option.isNone(enabled)) return;
 
   const seeded = yield* run;
-  yield* Effect.logInfo(`Seeded ${seeded.school} for ${seeded.term}`);
+  yield* Effect.logInfo("Seeded the demo school").pipe(
+    Effect.annotateLogs({ school: seeded.school, term: seeded.term }),
+  );
 });
 
 export const command = Command.make("demo").pipe(

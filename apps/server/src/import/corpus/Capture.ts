@@ -192,7 +192,8 @@ export const run = Effect.fn("Capture.run")(function* <E, R>(input: {
         yield* Effect.logInfo("Capture read timetables", {
           year: year.name,
           type: resourceType,
-          chunk: `${chunk.start}..${chunk.end}`,
+          start: chunk.start,
+          end: chunk.end,
           requests,
         });
       }

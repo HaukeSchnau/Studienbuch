@@ -100,8 +100,8 @@ const serve = Effect.gen(function* () {
 const prepare = Effect.gen(function* () {
   const applied = yield* Migrations.apply(yield* Migrations.Release);
   yield* SyncEpoch.initialize;
-  yield* Effect.logInfo(
-    applied.length === 0 ? "The schema is at head" : `Applied ${applied.join(", ")}`,
+  yield* Effect.logInfo(applied.length === 0 ? "The schema is at head" : "Applied migrations").pipe(
+    Effect.annotateLogs({ applied }),
   );
   yield* Seed.whenEnabled.pipe(Effect.provide(DemoAccounts.seeding));
 }).pipe(Effect.provide(runtime));
@@ -175,7 +175,18 @@ const teardown: Runtime.Teardown = (exit, onExit) =>
     ? onExit(0)
     : Runtime.defaultTeardown(exit, onExit);
 
+// `runMain` would log a failure itself, outside every layer and so with its causes' messages.
+const reported = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+  Effect.tapCause(effect, (cause) =>
+    Cause.hasInterruptsOnly(cause) || !Runtime.getErrorReported(Cause.squash(cause))
+      ? Effect.void
+      : Effect.logError(cause),
+  );
+
 Command.run(cli, { version: packageJson.version }).pipe(
-  Effect.provide(SecretFiles.layer.pipe(Layer.provideMerge(NodeServices.layer))),
-  NodeRuntime.runMain({ teardown }),
+  reported,
+  Effect.provide(
+    Layer.merge(Telemetry.textless, SecretFiles.layer.pipe(Layer.provideMerge(NodeServices.layer))),
+  ),
+  NodeRuntime.runMain({ teardown, disableErrorReporting: true }),
 );
