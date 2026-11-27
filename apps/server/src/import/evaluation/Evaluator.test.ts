@@ -19,6 +19,7 @@ import { ImportIds } from "../ImportIds.ts";
 import { NaiveImport } from "../NaiveImport.ts";
 import { SchoolImport } from "../SchoolImport.ts";
 import { Evaluator } from "./Evaluator.ts";
+import { Report } from "./Report.ts";
 import { TinySchool } from "./TinySchool.ts";
 
 const of = (right: number, total: number) => ({ right, of: total });
@@ -649,6 +650,53 @@ describe("Evaluator", () => {
       );
 
       assert.deepStrictEqual(withLowerSchool, whole);
+    }),
+  );
+
+  // An export of the source store holds no teacher or room views.
+  it.effect("reports views the corpus lacks as not measured, and measures the rest alike", () =>
+    Effect.gen(function* () {
+      const withoutStaff = {
+        ...TinySchool.corpus,
+        reads: new Map(
+          [...TinySchool.corpus.reads].filter(
+            ([path]) => !/\/entries\/(?:TEACHER|ROOM)\//u.test(path),
+          ),
+        ),
+      };
+
+      const whole = yield* evaluate(NaiveImport.layer);
+      const partial = yield* evaluate(NaiveImport.layer, false, withoutStaff);
+
+      const nothing = {
+        weeks: of(0, 0),
+        recall: of(0, 0),
+        precision: of(0, 0),
+        attributes: of(0, 0),
+      };
+
+      assert.deepStrictEqual(
+        {
+          views: partial.views,
+          kurswahl: partial.kurswahl,
+          notMeasured: Report.format(partial)
+            .split("\n")
+            .filter((line) => line.endsWith("not measured"))
+            .map((line) => line.replace("not measured", "").trim()),
+        },
+        {
+          views: { ...whole.views, teacher: nothing, room: nothing },
+          kurswahl: whole.kurswahl,
+          notMeasured: [
+            "Teacher lesson recall",
+            "Teacher lesson precision",
+            "Room lesson recall",
+            "Room lesson precision",
+            "Teacher-weeks exactly right",
+            "Room-weeks exactly right",
+          ],
+        },
+      );
     }),
   );
 

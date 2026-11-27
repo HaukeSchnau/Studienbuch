@@ -92,11 +92,12 @@ describe("IgsLilienthal", () => {
 
       expect({
         runs: runs.map(({ count }) => count),
+        reserved,
         fits: reserved <= ImportRun.dailyCap,
         beforeMidnight: lastEnd.every((at) =>
           DateTime.isLessThan(at, DateTime.subtractDuration(end, Duration.minutes(1))),
         ),
-      }).toEqual({ runs: [96, 1], fits: true, beforeMidnight: true });
+      }).toEqual({ runs: [96, 1], reserved: 2796, fits: true, beforeMidnight: true });
     },
   );
 });

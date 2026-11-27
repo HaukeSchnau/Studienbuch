@@ -1,0 +1,63 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "1ed3ed95-c02a-49c0-8dbf-fc4a839e0a35",
+  "prevIds": ["cc0a1fdc-4024-4bd7-8055-a05fb570e92d"],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": ["column", "public", "import_run", "self_check"],
+      "writes": [
+        "s|col|public.import_run.self_check",
+        "n|col|public.import_run.self_check",
+        "e|col|public.import_run.self_check"
+      ],
+      "reads": ["n|tbl|public.import_run", "n|sch|public"]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": ["column", "public", "import_school", "kurswahl"],
+      "writes": [
+        "s|col|public.import_school.kurswahl",
+        "n|col|public.import_school.kurswahl",
+        "e|col|public.import_school.kurswahl"
+      ],
+      "reads": ["n|tbl|public.import_school", "n|sch|public"]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "import_run",
+        "name": "self_check",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "import_school",
+        "name": "kurswahl",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'[]'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    }
+  ]
+}

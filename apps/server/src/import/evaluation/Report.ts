@@ -12,7 +12,7 @@ export const Fraction = Schema.Struct({ right: Schema.Int, of: Schema.Int });
 
 export type Fraction = typeof Fraction.Type;
 
-const Identity = Schema.Struct({
+export const Identity = Schema.Struct({
   realCourses: Schema.Int,
   /** Real courses whose entries are in more than one of our courses. */
   split: Schema.Int,
@@ -40,7 +40,7 @@ const CourseCase = Schema.Struct({
   ourCourses: Schema.Array(Schema.String),
 });
 
-const View = Schema.Struct({
+export const View = Schema.Struct({
   /** Weeks exactly right: every entry covered once, every lesson needed, every attribute right. */
   weeks: Fraction,
   recall: Fraction,
@@ -134,10 +134,16 @@ export const aggregates = (report: Evaluation): Aggregates => Struct.omit(report
 
 export type Aggregates = typeof Aggregates.Type;
 
-const percent = ({ right, of }: Fraction) =>
-  of === 0 ? "   n/a" : `${((100 * right) / of).toFixed(1).padStart(5)}%`;
+const percent = ({ right, of }: Fraction) => `${((100 * right) / of).toFixed(1).padStart(5)}%`;
 
 const right = ({ right: count, of }: Fraction) => `${count} of ${of}`;
+
+/**
+ * A fraction of nothing is a measure the corpus can't support, such as teacher views in an export
+ * of the source store, which holds none.
+ */
+const measured = (fraction: Fraction, line: (value: Fraction) => string) =>
+  fraction.of === 0 ? "not measured" : line(fraction);
 
 type Row = readonly [label: string, value: (report: Aggregates) => Fraction];
 
@@ -231,7 +237,7 @@ export const format = (report: Evaluation) =>
       "",
       ...group.map(
         ([label, value]) =>
-          `  ${label.padEnd(30)} ${percent(value(report))}  ${right(value(report))}`,
+          `  ${label.padEnd(30)} ${measured(value(report), (each) => `${percent(each)}  ${right(each)}`)}`,
       ),
     ]),
     "",
@@ -252,6 +258,10 @@ export const format = (report: Evaluation) =>
         ]),
   ].join("\n");
 
+/** A fraction as `93.4% (52192 of 55890)`, or as not measured. */
+export const text = (fraction: Fraction) =>
+  measured(fraction, (each) => `${percent(each).trim()} (${right(each)})`);
+
 /** A weekly and a timeline evaluation side by side, as a Markdown table for a pull request. */
 export const markdown = (weekly: Aggregates, timeline: Aggregates) =>
   [
@@ -259,10 +269,7 @@ export const markdown = (weekly: Aggregates, timeline: Aggregates) =>
     "| --- | ---: | ---: |",
     ...rows
       .flat()
-      .map(
-        ([label, value]) =>
-          `| ${label} | ${percent(value(weekly)).trim()} (${right(value(weekly))}) | ${percent(value(timeline)).trim()} (${right(value(timeline))}) |`,
-      ),
+      .map(([label, value]) => `| ${label} | ${text(value(weekly))} | ${text(value(timeline))} |`),
     "",
     ...sentences(weekly).map((sentence) => `- Weekly: ${sentence}`),
     ...sentences(timeline).map((sentence) => `- Timeline: ${sentence}`),

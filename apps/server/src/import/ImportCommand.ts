@@ -15,6 +15,7 @@ import * as SqlClient from "effect/sql/SqlClient";
 import { ImportJob } from "./ImportJob.ts";
 import { ImportRun } from "./ImportRun.ts";
 import { Lease } from "./Lease.ts";
+import { SelfCheck } from "./SelfCheck.ts";
 
 export * as ImportCommand from "./ImportCommand.ts";
 
@@ -33,7 +34,32 @@ export class Refused extends Schema.TaggedError<Refused, { readonly brand: uniqu
 const iso = (date: Date | null) =>
   date === null ? "never" : DateTime.formatIso(DateTime.fromDateUnsafe(date));
 
-/** What `import status` prints: where the job runs, the pause and lease, today's budget, the last runs. */
+const decodeSelfCheck = Schema.decodeUnknownEffect(Schema.toCodecJson(SelfCheck.Result));
+
+/** The last self-check's headline numbers and course identity, each against its threshold. */
+const selfCheckLines = (startedAt: string, result: SelfCheck.Result) => {
+  if (result._tag === "NotMeasured") {
+    return [`self-check  of the run at ${startedAt} measured nothing: ${result.reason}`];
+  }
+
+  const measures = SelfCheck.measures(result, profile.thresholds);
+  const width = Math.max(...measures.map(({ label }) => label.length));
+  const { courseIdentity: identity } = result;
+
+  return [
+    `self-check  of the run at ${startedAt}: ${result.students} students, ${result.chosen} Kurswahlen taken, ${result.hiddenDays} days hidden; thresholds gate nothing until go 2`,
+    ...measures.map(
+      ({ label, value, threshold, clears }) =>
+        `  ${label.padEnd(width)}  ${value}, ${threshold}${clears ? "" : ", below"}`,
+    ),
+    `  course identity: ${identity.split} of ${identity.realCourses} real courses split, ${identity.merged} of our ${identity.ourCourses} merge real ones`,
+  ];
+};
+
+/**
+ * What `import status` prints: where the job runs, the pause and lease, today's budget, the last
+ * self-check and the last runs.
+ */
 export const status = Effect.gen(function* () {
   const sql = yield* SqlClient.SqlClient;
   const now = yield* DateTime.now;
@@ -69,6 +95,17 @@ export const status = Effect.gen(function* () {
     order by started_at desc limit 5
   `;
 
+  const [checked] = yield* sql<{ readonly startedAt: Date; readonly selfCheck: unknown }>`
+    select started_at as "startedAt", self_check as "selfCheck"
+    from import_run where school_id = ${profile.id} and self_check is not null
+    order by started_at desc limit 1
+  `;
+
+  const selfCheck =
+    checked === undefined
+      ? ["self-check  none yet"]
+      : selfCheckLines(iso(checked.startedAt), yield* decodeSelfCheck(checked.selfCheck));
+
   const leased =
     state?.leaseUntil !== undefined &&
     state.leaseUntil !== null &&
@@ -86,6 +123,7 @@ export const status = Effect.gen(function* () {
     `reading     ${leased ? `a run holds the lease until ${iso(state?.leaseUntil ?? null)}` : "no"}`,
     `checkpoint  revision ${state?.revision ?? 0}, snapshot of ${iso(state?.observedAt ?? null)}`,
     `today       ${today}: ${budget?.reserved ?? 0} of ${ImportRun.dailyCap} requests reserved by ${budget?.runs ?? 0} runs`,
+    ...selfCheck,
     ...(runs.length === 0
       ? ["last runs   none"]
       : [

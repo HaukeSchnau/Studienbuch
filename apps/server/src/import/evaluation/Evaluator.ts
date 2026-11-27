@@ -290,11 +290,7 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
     const key = `${student.id} ${term}`;
 
     const courses =
-      enrollments.get(key) ??
-      Students.kurswahl(
-        student.entries.filter((entry) => inOpening(term)(entry.date)),
-        openingStore(term).index,
-      );
+      enrollments.get(key) ?? Students.choose(student, inOpening(term), openingStore(term)).courses;
 
     enrollments.set(key, courses);
 
@@ -328,15 +324,25 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
               view.weeks.has(week) && shownIn(view, week) && (type !== "STUDENT" || held(week)),
           )
           .map((week) => {
-            const courses =
-              type === "STUDENT" ? enrollmentOf(view, termOfWeek(week)) : new Set<string>();
+            const lessons = lessonsIn.get(week) ?? [];
 
-            const mine = (lessonsIn.get(week) ?? []).filter(
+            if (type === "STUDENT") {
+              return {
+                view,
+                week,
+                score: Students.week(
+                  view,
+                  inWeek(week),
+                  lessons,
+                  enrollmentOf(view, termOfWeek(week)),
+                ),
+              };
+            }
+
+            const mine = lessons.filter(
               (lesson) =>
                 !view.hidden.has(lesson.date) &&
-                (type === "STUDENT"
-                  ? courses.has(lesson.courseId)
-                  : (type === "TEACHER" ? lesson.teachers : lesson.rooms).includes(view.id)),
+                (type === "TEACHER" ? lesson.teachers : lesson.rooms).includes(view.id),
             );
 
             return {
@@ -362,15 +368,7 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
           [...opening(term)].every((week) => student.weeks.has(week)) &&
           truth.days.some((day) => inOpening(term)(day) && !student.hidden.has(day)),
       )
-      .map((student) =>
-        Students.isExact(
-          student.entries.filter((entry) => inOpening(term)(entry.date)),
-          openingStore(term).lessons.filter(
-            (lesson) => inOpening(term)(lesson.date) && !student.hidden.has(lesson.date),
-          ),
-          enrollmentOf(student, term),
-        ),
-      ),
+      .map((student) => Students.choose(student, inOpening(term), openingStore(term)).exact),
   );
 
   const ghostCourses = Students.ghosts(

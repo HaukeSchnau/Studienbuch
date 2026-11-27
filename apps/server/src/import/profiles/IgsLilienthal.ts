@@ -57,12 +57,24 @@ export const profile: SchoolProfile.SchoolProfile = {
   ],
   // Go 2 (m2-import-path.md, "What needs Hauke") turns it on, in a reviewed pull request.
   publish: false,
+  // What a student needs before seeing the import: about one wrong lesson in two weeks of 30, no
+  // course that shows them another group's lessons, and a Kurswahl that just works for nine in
+  // ten. Go 2 approves or changes them.
+  thresholds: {
+    studentWeeks: 0.9,
+    recall: 0.98,
+    precision: 0.98,
+    kurswahl: 0.9,
+    split: 0,
+    merged: 0,
+    ghostCourses: 0,
+  },
 };
 
 /**
- * Every ten minutes from 06:00 to 21:50, and nightly at 05:30. A run sends 17 requests (a login
- * of four, eight reads, five class views) and keeps the rest of its 26 for retries: 2,522 a day
- * of the cap's 3,000, and none near midnight, where a reservation's requests stop.
+ * Every ten minutes from 06:00 to 21:50, and nightly at 05:30. A run sends 17 of its 26 requests;
+ * the nightly one adds the self-check's student directory and 181 student views, 199 of its 300.
+ * 2,796 a day of the cap's 3,000, and none near midnight, where a reservation's requests stop.
  */
 export const schedule: SchoolProfile.Schedule = {
   daytime: {
@@ -73,6 +85,6 @@ export const schedule: SchoolProfile.Schedule = {
   nightly: {
     cron: Cron.parseUnsafe("30 5 * * *", profile.school.timeZone),
     nightly: true,
-    maximum: 26,
+    maximum: 300,
   },
 };

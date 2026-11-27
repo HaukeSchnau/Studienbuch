@@ -13,7 +13,9 @@ import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Ref from "effect/Ref";
 import * as Result from "effect/Result";
+import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
+import * as Struct from "effect/Struct";
 import * as TestClock from "effect/testing/TestClock";
 import { DatabaseTesting } from "../infra/database/DatabaseTesting.ts";
 import { RecordedWebUntis } from "../infra/webuntis/RecordedWebUntis.ts";
@@ -22,11 +24,14 @@ import { SchoolTesting } from "../school/SchoolTesting.ts";
 import { Schools } from "../school/Schools.ts";
 import type { Corpus } from "./corpus/Corpus.ts";
 import { NamedSchoolTesting } from "./corpus/NamedSchoolTesting.ts";
+import { Evaluator } from "./evaluation/Evaluator.ts";
 import { TinySchool } from "./evaluation/TinySchool.ts";
 import { ImportIds } from "./ImportIds.ts";
 import { ImportRun } from "./ImportRun.ts";
 import { ImportTesting } from "./ImportTesting.ts";
 import { Lease } from "./Lease.ts";
+import { NaiveImport } from "./NaiveImport.ts";
+import { SelfCheck } from "./SelfCheck.ts";
 import { SourceStore } from "./source/SourceStore.ts";
 
 const { list, object, planted } = NamedSchoolTesting;
@@ -97,6 +102,30 @@ const erringTwelve = withBatch(
       : client.timetable.getEntriesForResources(input, batchOptions),
 );
 
+/** The view of the student `S1` fails, as one resource of a batch can. */
+const failingStudent = withBatch(
+  (client) => (input, batchOptions) =>
+    input.resourceType === "STUDENT" && input.resources.includes(501)
+      ? Effect.succeed([
+          {
+            resource: 501,
+            result: Result.fail(
+              new TransportError({ method: "GET", path: "timetable", message: "unavailable" }),
+            ),
+          },
+        ])
+      : client.timetable.getEntriesForResources(input, batchOptions),
+);
+
+/** TinySchool with its term opening on Monday of 2026-W45, the day of the runs' first window. */
+const openingOnW45: Corpus.Corpus = {
+  ...TinySchool.corpus,
+  cases: {
+    ...TinySchool.corpus.cases,
+    terms: [{ id: "after-break", start: "2026-11-02", end: "2027-01-31" }],
+  },
+};
+
 const options = (
   school: string,
   overrides: Partial<ImportRun.Options> = {},
@@ -151,6 +180,20 @@ const checkpoint = (school: string) =>
       from import_school where school_id = ${school}
     `,
   ).pipe(Effect.map(([row]) => row));
+
+const decodeSelfCheck = Schema.decodeUnknownEffect(Schema.fromJsonString(SelfCheck.Result));
+
+/** The school's self-checks, run by run. */
+const selfChecks = (school: string) =>
+  Effect.flatMap(
+    SqlClient.SqlClient,
+    (sql) => sql<{ readonly selfCheck: string }>`
+      select self_check::text as "selfCheck" from import_run
+      where school_id = ${school} and self_check is not null order by started_at, id
+    `,
+  ).pipe(
+    Effect.flatMap((rows) => Effect.forEach(rows, ({ selfCheck }) => decodeSelfCheck(selfCheck))),
+  );
 
 const outcomes = (school: string) =>
   Effect.flatMap(
@@ -252,6 +295,88 @@ describe.skipIf(Postgres18.socket === null)("ImportRun on PostgreSQL 18", () => 
             ],
             // WebUntis leaves out weekends, so the window's last Sunday counts as covered.
             status: Option.some(["2026-11-02T05:31", "2026-11-29"]),
+          });
+        }),
+    );
+
+    // The harness takes each Kurswahl from 2026-W45 and W46 and scores W47 and W48, as the night's
+    // self-check does on its first window in the import's term.
+    it.effect(
+      "the nightly self-check measures as the harness does, before and after publishing",
+      () =>
+        Effect.gen(function* () {
+          const harness = yield* Evaluator.evaluate({
+            corpus: openingOnW45,
+            corpusName: "tiny-school",
+            profile: TinySchool.profile,
+            importName: "naive",
+            importLayer: NaiveImport.layer,
+            weeks: Option.none(),
+            timeline: false,
+          });
+
+          const nights = yield* Effect.forEach([false, true], (publish) =>
+            Effect.gen(function* () {
+              const school = publish ? "tiny-check-live" : "tiny-check-dark";
+              const run = options(school, { profile: { ...options(school).profile, publish } });
+              const first = yield* runAt(morning, run);
+              const again = yield* runAt(minutesAfter(10), run);
+
+              return {
+                outcomes: [first.outcome, again.outcome],
+                checks: yield* selfChecks(school),
+              };
+            }),
+          );
+
+          const measured = SelfCheck.Result.cases.Measured.make({
+            students: 8,
+            chosen: 8,
+            studentWeeks: harness.views.student,
+            kurswahl: harness.kurswahl,
+            ghostCourses: harness.ghostCourses,
+            courseIdentity: Struct.omit(harness.courseIdentity, ["subjects"]),
+            hiddenDays: 0,
+          });
+
+          // The second night takes no Kurswahl: it keeps the first night's.
+          const checks = [measured, { ...measured, chosen: 0 }];
+
+          assert.isAbove(harness.views.student.weeks.of, 0);
+
+          expect(nights).toEqual([
+            { outcomes: ["Dark", "Dark"], checks },
+            { outcomes: ["Published", "Published"], checks },
+          ]);
+        }),
+    );
+
+    it.effect(
+      "a student view that fails leaves the self-check unmeasured and the night's rows",
+      () =>
+        Effect.gen(function* () {
+          const school = "tiny-check-failing";
+          const sql = yield* SqlClient.SqlClient;
+
+          const ran = yield* runAt(
+            morning,
+            options(school, { source: recorded(TinySchool.corpus, failingStudent) }),
+          );
+
+          const [kept] = yield* sql<{ readonly kurswahl: string }>`
+          select kurswahl::text as kurswahl from import_school where school_id = ${school}
+        `;
+
+          expect({
+            outcome: ran.outcome,
+            lessons: (yield* idsOf(school, "Lesson")).size,
+            checks: yield* selfChecks(school),
+            kept: kept?.kurswahl,
+          }).toEqual({
+            outcome: "Published",
+            lessons: 60,
+            checks: [SelfCheck.Result.cases.NotMeasured.make({ reason: "TransportError" })],
+            kept: "[]",
           });
         }),
     );

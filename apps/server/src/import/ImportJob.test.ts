@@ -15,6 +15,7 @@ import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Redacted from "effect/Redacted";
 import * as Ref from "effect/Ref";
+import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import * as TestClock from "effect/testing/TestClock";
 import { Deployment } from "../infra/config/Deployment.ts";
@@ -25,10 +26,12 @@ import type { Corpus } from "./corpus/Corpus.ts";
 import { NamedSchoolTesting } from "./corpus/NamedSchoolTesting.ts";
 import { TinySchool } from "./evaluation/TinySchool.ts";
 import { ImportCommand } from "./ImportCommand.ts";
+import { SelfCheck } from "./SelfCheck.ts";
 import { ImportJob } from "./ImportJob.ts";
 import { ImportTesting } from "./ImportTesting.ts";
 
 const { morning } = ImportTesting;
+const encodeSelfCheck = Schema.encodeEffect(Schema.fromJsonString(SelfCheck.Result));
 const minutesAfter = (minutes: number) => DateTime.add(morning, { minutes });
 
 const connection = {
@@ -120,6 +123,14 @@ const reads = [
   "GET exams",
 ];
 
+/** The nightly self-check, after the publish: the students' directory and each student's view. */
+const students = [
+  "GET timetable/filter STUDENT",
+  ...[501, 502, 503, 504, 505, 506, 507, 508].map(
+    (student) => `GET timetable/entries STUDENT ${student}`,
+  ),
+];
+
 /** The recording, with its school year ending in the window and the next one starting after it. */
 const crossing: Corpus.Corpus = (() => {
   const path = RecordedWebUntis.paths.schoolYears;
@@ -153,18 +164,26 @@ describe.skipIf(Postgres18.socket === null)("ImportJob on PostgreSQL 18", () => 
   layer(SchoolTesting.database, { excludeTestServices: true })((it) => {
     it.effect("a run logs in once and reads its plan: fifteen requests, then a publish", () =>
       Effect.gen(function* () {
+        const sql = yield* SqlClient.SqlClient;
         const ran = yield* runWith("job-full");
+
+        const [checked] = yield* sql<{ readonly tag: string | null; readonly sent: number }>`
+          select self_check->>'_tag' as tag, sent from import_run where school_id = 'job-full'
+        `;
 
         expect({
           outcome: ran.outcome,
           sent: ran.sent,
           unplanned: Option.map(ran.report, ({ unplanned }) => unplanned),
           published: ran.rows > 0,
+          checked,
         }).toEqual({
           outcome: Option.some("Published"),
-          sent: [...login, ...reads, entries(111), entries(112), entries(113)],
+          sent: [...login, ...reads, entries(111), entries(112), entries(113), ...students],
           unplanned: Option.some([]),
           published: true,
+          // The self-check reads over the run's one login, and its requests count.
+          checked: { tag: "Measured", sent: 24 },
         });
       }),
     );
@@ -175,7 +194,7 @@ describe.skipIf(Postgres18.socket === null)("ImportJob on PostgreSQL 18", () => 
 
         expect({ outcome: ran.outcome, sent: ran.sent.length }).toEqual({
           outcome: Option.some("Published"),
-          sent: login.length + reads.length + 3,
+          sent: login.length + reads.length + 3 + students.length,
         });
       }),
     );
@@ -204,6 +223,7 @@ describe.skipIf(Postgres18.socket === null)("ImportJob on PostgreSQL 18", () => 
             "timetable/entries CLASS 111: 10",
             "timetable/entries CLASS 112: 10",
             "timetable/entries CLASS 113: 10",
+            ...students.map((request) => `${request.slice("GET ".length)}: 10`),
           ],
         ]);
       }),
@@ -486,6 +506,65 @@ describe.skipIf(Postgres18.socket === null)("ImportJob on PostgreSQL 18", () => 
             ],
           });
         }),
+    );
+
+    it.effect("import status shows the last self-check against its thresholds", () =>
+      Effect.gen(function* () {
+        const sql = yield* SqlClient.SqlClient;
+        const school = ImportJob.school.profile.id;
+        const fraction = (right: number, of: number) => ({ right, of });
+
+        const measured = yield* encodeSelfCheck(
+          SelfCheck.Result.cases.Measured.make({
+            students: 181,
+            chosen: 181,
+            studentWeeks: {
+              weeks: fraction(300, 362),
+              recall: fraction(9900, 10000),
+              precision: fraction(9500, 10000),
+              attributes: fraction(9900, 9900),
+            },
+            kurswahl: fraction(170, 181),
+            ghostCourses: 0,
+            courseIdentity: { realCourses: 120, split: 0, ourCourses: 118, merged: 2 },
+            hiddenDays: 0,
+          }),
+        );
+
+        // A later run that measured nothing, as a daytime run never does.
+        for (const [startedAt, selfCheck] of [
+          ["2026-11-02T04:30:00Z", measured],
+          ["2026-11-02T05:00:00Z", null],
+        ] as const) {
+          yield* sql`
+            insert into import_run (id, school_id, date, nightly, started_at, reserved, outcome, self_check)
+            values (gen_random_uuid(), ${school}, '2026-11-02', ${selfCheck !== null},
+              ${startedAt}::timestamptz, 300, 'Dark', ${selfCheck}::jsonb)
+          `;
+        }
+
+        const lines = yield* ImportCommand.status.pipe(
+          Effect.provide(Deployment.layer),
+          Effect.provideService(
+            ConfigProvider.ConfigProvider,
+            ConfigProvider.fromEnv({ env: { STUDIENBUCH_ENVIRONMENT: "beta" } }),
+          ),
+        );
+
+        const start = lines.findIndex((line) => line.startsWith("self-check"));
+
+        expect(lines.slice(start, start + 9).map((line) => line.replaceAll(/\s+/gu, " "))).toEqual([
+          "self-check of the run at 2026-11-02T04:30:00.000Z: 181 students, 181 Kurswahlen taken, 0 days hidden; thresholds gate nothing until go 2",
+          " Student-weeks exactly right 82.9% (300 of 362), at least 90%, below",
+          " Student lesson recall 99.0% (9900 of 10000), at least 98%",
+          " Student lesson precision 95.0% (9500 of 10000), at least 98%, below",
+          " Kurswahl exactly right 93.9% (170 of 181), at least 90%",
+          " Real courses split 0, at most 0",
+          " Our courses merging real ones 2, at most 0, below",
+          " Courses no student chose 0, at most 0",
+          " course identity: 0 of 120 real courses split, 2 of our 118 merge real ones",
+        ]);
+      }),
     );
 
     it.effect("the console's commands never reach WebUntis, even with credentials at hand", () =>
