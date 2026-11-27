@@ -88,3 +88,9 @@ export const schedule: SchoolProfile.Schedule = {
     maximum: 300,
   },
 };
+
+/**
+ * The weekly export of the source store into the corpus: Sunday night at 00:30, after Sunday's
+ * last run and before Monday's nightly one, so no run writes the store while the export reads it.
+ */
+export const weeklyExport = Cron.parseUnsafe("30 0 * * 1", profile.school.timeZone);

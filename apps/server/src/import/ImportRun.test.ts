@@ -35,7 +35,7 @@ import { RetentionSweep } from "./RetentionSweep.ts";
 import { SelfCheck } from "./SelfCheck.ts";
 import { SourceStore } from "./source/SourceStore.ts";
 
-const { list, object, planted } = NamedSchoolTesting;
+const { dayOf, firstEntryOn, list, object, planted } = NamedSchoolTesting;
 const { lessonDays, lessonOps, pullOnce } = SchoolTesting;
 const { morning } = ImportTesting;
 const entriesOf = (resource: number) => RecordedWebUntis.paths.entries(10, "CLASS", resource);
@@ -254,12 +254,6 @@ const mondayDe = (school: string) =>
     "2026-11-09",
     8 * 3_600_000,
   );
-
-const dayOf = (body: NamedSchoolTesting.Mutable, date: string) =>
-  object(list(body.days).find((day) => object(day).date === date));
-
-const firstEntryOn = (body: NamedSchoolTesting.Mutable, date: string) =>
-  object(list(dayOf(body, date).gridEntries)[0]);
 
 /** `11.1`'s view without its first entry of 9 November. */
 const withoutMondayDe = planted(TinySchool.corpus, entriesOf(111), (body) => {

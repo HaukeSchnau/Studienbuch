@@ -79,6 +79,47 @@ describe.skipIf(Postgres18.socket === null)("SourceStore on PostgreSQL 18", () =
         });
       }),
     );
+
+    it.effect(
+      "a window holds what each day showed at its start and every change up to its end",
+      () =>
+        Effect.gen(function* () {
+          const school = School.Id.make("store-window");
+          const body = (value: number) => ({ days: [], value });
+
+          const write = (iso: string, value: number, days: ReadonlyArray<string>) =>
+            SourceStore.write(school, at(iso), [
+              { path: "directory", body: body(value) },
+              ...days.map((day) => ({ path: "view", day, body: body(value) })),
+            ]);
+
+          yield* write("2026-11-01T05:00:00Z", 1, ["2026-11-01", "2026-11-02", "2026-11-03"]);
+          yield* write("2026-11-01T06:00:00Z", 2, ["2026-11-03"]);
+          yield* write("2026-11-02T06:00:00Z", 3, ["2026-11-03", "2026-11-04"]);
+          yield* write("2026-11-09T06:00:00Z", 4, ["2026-11-04"]);
+
+          const window = { since: at("2026-11-02T00:00:00Z"), until: at("2026-11-09T00:00:00Z") };
+          const recording = yield* SourceStore.between(school, School.defaultTimeZone, window);
+
+          const held = [...recording].flatMap(([path, read]) =>
+            read.versions.map(
+              (version) =>
+                `${path} ${version.start ?? "-"} ${DateTime.formatIso(version.observedAt).slice(0, 13)}`,
+            ),
+          );
+
+          expect(held.toSorted()).toEqual([
+            // At its start, and its change during the window; not the one after it.
+            "directory - 2026-11-01T06",
+            "directory - 2026-11-02T06",
+            // The days before the window's first are left out, and so is what a day showed earlier.
+            "view 2026-11-02 2026-11-01T05",
+            "view 2026-11-03 2026-11-01T06",
+            "view 2026-11-03 2026-11-02T06",
+            "view 2026-11-04 2026-11-02T06",
+          ]);
+        }),
+    );
   });
 });
 
