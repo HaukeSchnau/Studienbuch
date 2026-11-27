@@ -3,8 +3,11 @@ import * as NodeRuntime from "@effect/platform-node/NodeRuntime";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import * as Cause from "effect/Cause";
 import * as Command from "effect/cli/Command";
+import * as ClusterCron from "effect/cluster/ClusterCron";
 import * as Config from "effect/Config";
 import * as Console from "effect/Console";
+import * as Cron from "effect/Cron";
+import * as DateTime from "effect/DateTime";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
@@ -88,13 +91,23 @@ const http = HttpRouter.serve(
   ),
 );
 
+// Every full hour, auth's expired sessions and codes and keys' seal fetches older than 12 months
+// go, as the privacy notice promises. The next run deletes whatever a failed one left.
+const expiry = ClusterCron.make({
+  name: "expiry",
+  cron: Cron.parseUnsafe("0 * * * *"),
+  execute: Effect.flatMap(DateTime.now, (now) =>
+    Effect.andThen(Expiry.sweep(now), KeyStore.sweepFetches(now)),
+  ).pipe(Effect.andThen(Jobs.recordRun("expiry"))),
+});
+
 const serve = Effect.gen(function* () {
   yield* Migrations.requireHead(yield* Migrations.Release);
 
   return yield* Layer.launch(
     Layer.mergeAll(
       SyncServer.closeFirst.pipe(Layer.provide(http)),
-      Jobs.layer({ import: ImportJob.layer, expiry: Expiry.layer(KeyStore.sweepFetches) }),
+      Jobs.layer({ import: ImportJob.layer, expiry }),
     ),
   );
 }).pipe(Effect.provide(withDatabase(Database.layer)));
