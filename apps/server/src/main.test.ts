@@ -1,3 +1,4 @@
+import * as NodeHttpClient from "@effect/platform-node/NodeHttpClient";
 import * as NodeHttpServer from "@effect/platform-node/NodeHttpServer";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import * as PgClient from "@effect/sql-pg/PgClient";
@@ -19,6 +20,7 @@ import * as Effect from "effect/Effect";
 import * as HttpClient from "effect/http/HttpClient";
 import * as HttpClientRequest from "effect/http/HttpClientRequest";
 import * as HttpRouter from "effect/http/HttpRouter";
+import * as HttpServer from "effect/http/HttpServer";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Redacted from "effect/Redacted";
@@ -128,14 +130,18 @@ const call = Effect.fnUntraced(function* (
   return response.status;
 });
 
-/** A browser opening `path`, as someone might who typed their address into the URL. */
-const visit = Effect.fnUntraced(function* (path: string) {
-  const client = yield* HttpClient.HttpClient;
+/**
+ * A browser opening `path` at `host`, as someone might who typed their address into the URL. It
+ * goes through node:http, because fetch sends the URL's own host whatever the headers say.
+ */
+const visit = Effect.fnUntraced(function* (path: string, host = "localhost") {
+  const origin = yield* HttpServer.addressFormattedWith(Effect.succeed);
+  const headers = { "user-agent": `Browser (${email})`, host };
 
   // The browser's own spans aren't the server's, so only the server's are captured.
-  const response = yield* client
-    .execute(HttpClientRequest.get(path, { headers: { "user-agent": `Browser (${email})` } }))
-    .pipe(Effect.withTracerEnabled(false));
+  const response = yield* HttpClient.HttpClient.use((client) =>
+    client.execute(HttpClientRequest.get(`${origin}${path}`, { headers })),
+  ).pipe(Effect.provide(NodeHttpClient.layerNodeHttp), Effect.withTracerEnabled(false));
 
   return response.status;
 });
@@ -248,7 +254,7 @@ describe.skipIf(Postgres18.socket === null)("Telemetry", () => {
 
         const typed = [
           yield* visit(`${Accounts.path}/${email}`),
-          yield* visit(`/nirgends/${email}?code=${code}`),
+          yield* visit(`/nirgends/${email}?code=${code}`, `${code.toLowerCase()}.example.test`),
         ];
 
         yield* cli(["access", "admit", "--email", email, "--school", school]);

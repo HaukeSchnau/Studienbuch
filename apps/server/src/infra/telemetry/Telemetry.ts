@@ -100,13 +100,13 @@ export const withoutText = <E>(cause: Cause.Cause<E>): Cause.Cause<unknown> =>
   );
 
 /**
- * Span attributes that hold what a client sent: a URL's query, a request's path and its user
- * agent. Requests to WebUntis keep their path, which the import chose.
+ * Span attributes that hold what a client sent: a URL's query, a request's path, host and user
+ * agent. Requests to WebUntis keep their path and host, which the import chose.
  */
 const dropped = (kind: Tracer.SpanKind, key: string) =>
   key === "url.query" ||
   key === "user_agent.original" ||
-  (kind === "server" && (key === "url.full" || key === "url.path"));
+  (kind === "server" && (key === "url.full" || key === "url.path" || key === "server.address"));
 
 /**
  * `fiber` as a logger sees it, with the request logger's `http.url` as the route the request
