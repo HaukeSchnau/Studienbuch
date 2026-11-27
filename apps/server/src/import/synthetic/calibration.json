@@ -1,0 +1,925 @@
+{
+  "terms": 3,
+  "cohorts": [
+    {
+      "grade": 11,
+      "people": 67,
+      "classes": 3,
+      "classCourses": [
+        {
+          "from": 6,
+          "to": 8,
+          "count": 4,
+          "people": 53
+        },
+        {
+          "from": 10,
+          "to": 10,
+          "count": 6,
+          "people": 120
+        }
+      ],
+      "kopplungen": [
+        {
+          "from": 1,
+          "to": 1,
+          "count": 5,
+          "people": 21
+        },
+        {
+          "from": 2,
+          "to": 2,
+          "count": 6,
+          "people": 95
+        },
+        {
+          "from": 3,
+          "to": 3,
+          "count": 6,
+          "people": 119
+        },
+        {
+          "from": 4,
+          "to": 4,
+          "count": 2,
+          "people": 110
+        },
+        {
+          "from": 7,
+          "to": 7,
+          "count": 1,
+          "people": 53
+        }
+      ],
+      "kopplungShare": [
+        {
+          "from": 0,
+          "to": 19,
+          "count": 5,
+          "people": 21
+        },
+        {
+          "from": 60,
+          "to": 69,
+          "count": 3,
+          "people": 76
+        },
+        {
+          "from": 80,
+          "to": 89,
+          "count": 3,
+          "people": 52
+        },
+        {
+          "from": 90,
+          "to": 99,
+          "count": 8,
+          "people": 118
+        },
+        {
+          "from": 100,
+          "to": 109,
+          "count": 1,
+          "people": 66
+        }
+      ],
+      "courseSize": [
+        {
+          "from": 1,
+          "to": 4,
+          "count": 12,
+          "people": 5
+        },
+        {
+          "from": 6,
+          "to": 6,
+          "count": 2,
+          "people": 6
+        },
+        {
+          "from": 7,
+          "to": 7,
+          "count": 3,
+          "people": 14
+        },
+        {
+          "from": 8,
+          "to": 8,
+          "count": 2,
+          "people": 16
+        },
+        {
+          "from": 9,
+          "to": 9,
+          "count": 2,
+          "people": 9
+        },
+        {
+          "from": 11,
+          "to": 11,
+          "count": 2,
+          "people": 22
+        },
+        {
+          "from": 15,
+          "to": 15,
+          "count": 1,
+          "people": 15
+        },
+        {
+          "from": 16,
+          "to": 16,
+          "count": 11,
+          "people": 71
+        },
+        {
+          "from": 17,
+          "to": 17,
+          "count": 43,
+          "people": 55
+        },
+        {
+          "from": 18,
+          "to": 18,
+          "count": 10,
+          "people": 66
+        },
+        {
+          "from": 19,
+          "to": 19,
+          "count": 2,
+          "people": 31
+        },
+        {
+          "from": 21,
+          "to": 21,
+          "count": 14,
+          "people": 78
+        },
+        {
+          "from": 22,
+          "to": 22,
+          "count": 11,
+          "people": 44
+        },
+        {
+          "from": 23,
+          "to": 23,
+          "count": 13,
+          "people": 69
+        },
+        {
+          "from": 24,
+          "to": 24,
+          "count": 2,
+          "people": 47
+        },
+        {
+          "from": 26,
+          "to": 26,
+          "count": 1,
+          "people": 26
+        },
+        {
+          "from": 27,
+          "to": 27,
+          "count": 2,
+          "people": 27
+        },
+        {
+          "from": 30,
+          "to": 30,
+          "count": 1,
+          "people": 30
+        },
+        {
+          "from": 33,
+          "to": 33,
+          "count": 1,
+          "people": 33
+        },
+        {
+          "from": 34,
+          "to": 34,
+          "count": 1,
+          "people": 34
+        }
+      ],
+      "meetings": [
+        {
+          "from": 1,
+          "to": 1,
+          "count": 17,
+          "people": 53
+        },
+        {
+          "from": 2,
+          "to": 2,
+          "count": 87,
+          "people": 120
+        },
+        {
+          "from": 3,
+          "to": 3,
+          "count": 22,
+          "people": 119
+        },
+        {
+          "from": 4,
+          "to": 4,
+          "count": 10,
+          "people": 96
+        }
+      ]
+    },
+    {
+      "grade": 12,
+      "people": 51,
+      "classes": 0,
+      "classCourses": [],
+      "kopplungen": [
+        {
+          "from": 3,
+          "to": 3,
+          "count": 12,
+          "people": 101
+        },
+        {
+          "from": 4,
+          "to": 4,
+          "count": 18,
+          "people": 101
+        },
+        {
+          "from": 5,
+          "to": 5,
+          "count": 3,
+          "people": 58
+        }
+      ],
+      "kopplungShare": [
+        {
+          "from": 60,
+          "to": 69,
+          "count": 3,
+          "people": 75
+        },
+        {
+          "from": 70,
+          "to": 79,
+          "count": 8,
+          "people": 101
+        },
+        {
+          "from": 80,
+          "to": 89,
+          "count": 9,
+          "people": 91
+        },
+        {
+          "from": 90,
+          "to": 99,
+          "count": 13,
+          "people": 58
+        }
+      ],
+      "courseSize": [
+        {
+          "from": 3,
+          "to": 3,
+          "count": 2,
+          "people": 6
+        },
+        {
+          "from": 4,
+          "to": 4,
+          "count": 7,
+          "people": 20
+        },
+        {
+          "from": 5,
+          "to": 5,
+          "count": 4,
+          "people": 15
+        },
+        {
+          "from": 6,
+          "to": 6,
+          "count": 4,
+          "people": 16
+        },
+        {
+          "from": 7,
+          "to": 7,
+          "count": 5,
+          "people": 19
+        },
+        {
+          "from": 8,
+          "to": 8,
+          "count": 5,
+          "people": 25
+        },
+        {
+          "from": 9,
+          "to": 9,
+          "count": 5,
+          "people": 23
+        },
+        {
+          "from": 10,
+          "to": 10,
+          "count": 1,
+          "people": 10
+        },
+        {
+          "from": 11,
+          "to": 11,
+          "count": 5,
+          "people": 32
+        },
+        {
+          "from": 12,
+          "to": 12,
+          "count": 6,
+          "people": 41
+        },
+        {
+          "from": 13,
+          "to": 13,
+          "count": 13,
+          "people": 72
+        },
+        {
+          "from": 14,
+          "to": 14,
+          "count": 12,
+          "people": 80
+        },
+        {
+          "from": 15,
+          "to": 15,
+          "count": 10,
+          "people": 72
+        },
+        {
+          "from": 16,
+          "to": 16,
+          "count": 16,
+          "people": 87
+        },
+        {
+          "from": 17,
+          "to": 17,
+          "count": 5,
+          "people": 56
+        },
+        {
+          "from": 18,
+          "to": 18,
+          "count": 5,
+          "people": 41
+        },
+        {
+          "from": 19,
+          "to": 19,
+          "count": 4,
+          "people": 31
+        },
+        {
+          "from": 20,
+          "to": 20,
+          "count": 3,
+          "people": 38
+        },
+        {
+          "from": 21,
+          "to": 21,
+          "count": 4,
+          "people": 56
+        },
+        {
+          "from": 22,
+          "to": 22,
+          "count": 4,
+          "people": 44
+        },
+        {
+          "from": 24,
+          "to": 24,
+          "count": 3,
+          "people": 37
+        }
+      ],
+      "meetings": [
+        {
+          "from": 1,
+          "to": 1,
+          "count": 4,
+          "people": 44
+        },
+        {
+          "from": 2,
+          "to": 2,
+          "count": 38,
+          "people": 100
+        },
+        {
+          "from": 3,
+          "to": 3,
+          "count": 33,
+          "people": 101
+        },
+        {
+          "from": 4,
+          "to": 4,
+          "count": 14,
+          "people": 58
+        },
+        {
+          "from": 5,
+          "to": 5,
+          "count": 9,
+          "people": 58
+        },
+        {
+          "from": 6,
+          "to": 6,
+          "count": 25,
+          "people": 101
+        }
+      ]
+    },
+    {
+      "grade": 13,
+      "people": 63,
+      "classes": 0,
+      "classCourses": [],
+      "kopplungen": [
+        {
+          "from": 2,
+          "to": 2,
+          "count": 7,
+          "people": 28
+        },
+        {
+          "from": 3,
+          "to": 3,
+          "count": 10,
+          "people": 80
+        },
+        {
+          "from": 4,
+          "to": 4,
+          "count": 11,
+          "people": 87
+        },
+        {
+          "from": 5,
+          "to": 5,
+          "count": 4,
+          "people": 74
+        }
+      ],
+      "kopplungShare": [
+        {
+          "from": 20,
+          "to": 29,
+          "count": 2,
+          "people": 8
+        },
+        {
+          "from": 50,
+          "to": 59,
+          "count": 1,
+          "people": 37
+        },
+        {
+          "from": 60,
+          "to": 69,
+          "count": 9,
+          "people": 66
+        },
+        {
+          "from": 70,
+          "to": 79,
+          "count": 9,
+          "people": 79
+        },
+        {
+          "from": 80,
+          "to": 89,
+          "count": 10,
+          "people": 81
+        },
+        {
+          "from": 100,
+          "to": 109,
+          "count": 1,
+          "people": 63
+        }
+      ],
+      "courseSize": [
+        {
+          "from": 2,
+          "to": 3,
+          "count": 7,
+          "people": 11
+        },
+        {
+          "from": 4,
+          "to": 4,
+          "count": 8,
+          "people": 23
+        },
+        {
+          "from": 5,
+          "to": 5,
+          "count": 12,
+          "people": 34
+        },
+        {
+          "from": 6,
+          "to": 6,
+          "count": 8,
+          "people": 23
+        },
+        {
+          "from": 7,
+          "to": 7,
+          "count": 11,
+          "people": 34
+        },
+        {
+          "from": 8,
+          "to": 8,
+          "count": 15,
+          "people": 51
+        },
+        {
+          "from": 9,
+          "to": 9,
+          "count": 5,
+          "people": 33
+        },
+        {
+          "from": 10,
+          "to": 10,
+          "count": 2,
+          "people": 20
+        },
+        {
+          "from": 11,
+          "to": 11,
+          "count": 6,
+          "people": 41
+        },
+        {
+          "from": 12,
+          "to": 12,
+          "count": 5,
+          "people": 38
+        },
+        {
+          "from": 13,
+          "to": 13,
+          "count": 4,
+          "people": 45
+        },
+        {
+          "from": 14,
+          "to": 14,
+          "count": 9,
+          "people": 57
+        },
+        {
+          "from": 15,
+          "to": 15,
+          "count": 4,
+          "people": 38
+        },
+        {
+          "from": 16,
+          "to": 16,
+          "count": 3,
+          "people": 40
+        },
+        {
+          "from": 17,
+          "to": 17,
+          "count": 3,
+          "people": 38
+        },
+        {
+          "from": 18,
+          "to": 18,
+          "count": 1,
+          "people": 18
+        },
+        {
+          "from": 19,
+          "to": 19,
+          "count": 1,
+          "people": 19
+        },
+        {
+          "from": 20,
+          "to": 20,
+          "count": 1,
+          "people": 20
+        },
+        {
+          "from": 21,
+          "to": 21,
+          "count": 2,
+          "people": 33
+        },
+        {
+          "from": 63,
+          "to": 63,
+          "count": 1,
+          "people": 63
+        }
+      ],
+      "meetings": [
+        {
+          "from": 2,
+          "to": 2,
+          "count": 28,
+          "people": 80
+        },
+        {
+          "from": 3,
+          "to": 3,
+          "count": 30,
+          "people": 83
+        },
+        {
+          "from": 4,
+          "to": 4,
+          "count": 17,
+          "people": 42
+        },
+        {
+          "from": 5,
+          "to": 5,
+          "count": 8,
+          "people": 25
+        },
+        {
+          "from": 6,
+          "to": 6,
+          "count": 24,
+          "people": 80
+        },
+        {
+          "from": 8,
+          "to": 8,
+          "count": 1,
+          "people": 7
+        }
+      ]
+    }
+  ],
+  "teachers": {
+    "people": 62,
+    "perCourse": [
+      {
+        "from": 1,
+        "to": 1,
+        "count": 362,
+        "people": 76
+      },
+      {
+        "from": 2,
+        "to": 2,
+        "count": 5,
+        "people": 10
+      }
+    ]
+  },
+  "rooms": {
+    "count": 24,
+    "perCourse": [
+      {
+        "from": 0,
+        "to": 0,
+        "count": 9,
+        "people": 42
+      },
+      {
+        "from": 1,
+        "to": 1,
+        "count": 347,
+        "people": 209
+      },
+      {
+        "from": 2,
+        "to": 2,
+        "count": 11,
+        "people": 79
+      }
+    ]
+  },
+  "lowerSchool": {
+    "classes": 39,
+    "share": 56
+  },
+  "changes": {
+    "cancelled": [
+      {
+        "from": 0,
+        "to": 19,
+        "count": 3
+      },
+      {
+        "from": 20,
+        "to": 39,
+        "count": 1
+      },
+      {
+        "from": 60,
+        "to": 79,
+        "count": 3
+      },
+      {
+        "from": 80,
+        "to": 99,
+        "count": 1
+      },
+      {
+        "from": 100,
+        "to": 119,
+        "count": 1
+      },
+      {
+        "from": 120,
+        "to": 139,
+        "count": 4
+      },
+      {
+        "from": 140,
+        "to": 159,
+        "count": 4
+      },
+      {
+        "from": 160,
+        "to": 179,
+        "count": 1
+      },
+      {
+        "from": 180,
+        "to": 199,
+        "count": 2
+      },
+      {
+        "from": 200,
+        "to": 219,
+        "count": 1
+      },
+      {
+        "from": 320,
+        "to": 339,
+        "count": 1
+      },
+      {
+        "from": 380,
+        "to": 399,
+        "count": 1
+      },
+      {
+        "from": 500,
+        "to": 519,
+        "count": 1
+      },
+      {
+        "from": 540,
+        "to": 559,
+        "count": 1
+      }
+    ],
+    "substituted": [
+      {
+        "from": 0,
+        "to": 9,
+        "count": 2
+      },
+      {
+        "from": 10,
+        "to": 19,
+        "count": 2
+      },
+      {
+        "from": 20,
+        "to": 29,
+        "count": 9
+      },
+      {
+        "from": 30,
+        "to": 39,
+        "count": 5
+      },
+      {
+        "from": 40,
+        "to": 49,
+        "count": 1
+      },
+      {
+        "from": 50,
+        "to": 59,
+        "count": 2
+      },
+      {
+        "from": 60,
+        "to": 69,
+        "count": 4
+      }
+    ],
+    "roomChanged": [
+      {
+        "from": 0,
+        "to": 4,
+        "count": 21
+      },
+      {
+        "from": 5,
+        "to": 9,
+        "count": 4
+      }
+    ],
+    "added": [
+      {
+        "from": 0,
+        "to": 4,
+        "count": 22
+      },
+      {
+        "from": 5,
+        "to": 9,
+        "count": 1
+      },
+      {
+        "from": 10,
+        "to": 14,
+        "count": 1
+      },
+      {
+        "from": 20,
+        "to": 24,
+        "count": 1
+      }
+    ]
+  },
+  "exams": [
+    {
+      "from": 0,
+      "to": 0,
+      "count": 322,
+      "people": 209
+    },
+    {
+      "from": 1,
+      "to": 1,
+      "count": 36,
+      "people": 181
+    },
+    {
+      "from": 2,
+      "to": 2,
+      "count": 9,
+      "people": 81
+    }
+  ],
+  "hidden": [
+    {
+      "from": 60,
+      "to": 69,
+      "count": 18,
+      "people": 18
+    },
+    {
+      "from": 70,
+      "to": 109,
+      "count": 10,
+      "people": 10
+    }
+  ],
+  "pitfalls": {
+    "sameCodeParallel": {
+      "count": 11,
+      "people": 127
+    },
+    "sharedEntries": {
+      "count": 6,
+      "people": 116
+    },
+    "rosterChanges": {
+      "count": 27,
+      "people": 6
+    },
+    "lateJoins": {
+      "count": 19,
+      "people": 17
+    }
+  }
+}

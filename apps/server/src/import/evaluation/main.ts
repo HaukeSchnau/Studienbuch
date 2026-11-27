@@ -17,6 +17,8 @@ import { Pin } from "../corpus/Pin.ts";
 import { Sanitized } from "../corpus/Sanitized.ts";
 import { NaiveImport } from "../NaiveImport.ts";
 import { IgsLilienthal } from "../profiles/IgsLilienthal.ts";
+import { Committed } from "../synthetic/Committed.ts";
+import { SyntheticSchool } from "../synthetic/SyntheticSchool.ts";
 import { Baseline } from "./Baseline.ts";
 import { Evaluator } from "./Evaluator.ts";
 import { TinySchool } from "./TinySchool.ts";
@@ -67,8 +69,8 @@ const sanitized = Sanitized.only(
 );
 
 const encodeReport = Schema.encodeEffect(Report.Json);
-const encodeBaseline = Schema.encodeEffect(Baseline.Json);
-const decodeJson = Schema.decodeEffect(Schema.fromJsonString(Schema.Json));
+const decodeFile = Schema.decodeEffect(Baseline.FileJson);
+const encodeFile = Schema.encodeEffect(Baseline.FileJson);
 
 const encodeComment = Schema.encodeEffect(
   Schema.fromJsonString(Schema.Struct({ markdown: Schema.String, differences: Schema.Int })),
@@ -112,18 +114,27 @@ const evaluate = Effect.fn("ImportEval.evaluate")(function* (flags: {
 
   const weeks = yield* Effect.transposeOption(Option.map(flags.weeks, parseWeeks));
 
-  const tiny = flags.corpus === "tiny";
-
-  const corpus = tiny
-    ? TinySchool.corpus
-    : yield* Corpus.read(flags.corpus === "pinned" ? yield* Pin.cached : flags.corpus);
+  const { corpus, profile } =
+    flags.corpus === "tiny"
+      ? { corpus: TinySchool.corpus, profile: TinySchool.profile }
+      : flags.corpus === "synthetic"
+        ? yield* Effect.map(Committed.school, ({ corpus }) => ({
+            corpus,
+            profile: SyntheticSchool.profile(corpus),
+          }))
+        : {
+            corpus: yield* Corpus.read(
+              flags.corpus === "pinned" ? yield* Pin.cached : flags.corpus,
+            ),
+            // Every captured corpus is of the one school so far.
+            profile: IgsLilienthal.profile,
+          };
 
   const run = (timeline: boolean) =>
     Evaluator.evaluate({
       corpus,
       corpusName: corpus.manifest.id,
-      // Every captured corpus is of the one school so far.
-      profile: tiny ? TinySchool.profile : IgsLilienthal.profile,
+      profile,
       importName: flags.import,
       importLayer,
       timeline,
@@ -165,15 +176,18 @@ const evaluate = Effect.fn("ImportEval.evaluate")(function* (flags: {
       ? yield* path.fromFileUrl(new URL("baseline.json", import.meta.url))
       : flags.against.value;
 
-  const found = Baseline.differences(
-    yield* decodeJson(yield* fs.readFileString(file)),
-    yield* Baseline.toJson(measured),
-  );
+  const committed = yield* decodeFile(yield* fs.readFileString(file));
+  const numbers = yield* Baseline.toJson(measured);
+  const found = Baseline.differences(Baseline.entryOf(committed, measured.corpus) ?? {}, numbers);
 
   const summary = Baseline.summary(found);
 
+  // The file to commit: the baseline with this corpus's numbers in their place.
   if (Option.isSome(flags.json)) {
-    yield* fs.writeFileString(flags.json.value, `${yield* encodeBaseline(measured)}\n`);
+    yield* fs.writeFileString(
+      flags.json.value,
+      `${yield* encodeFile(Baseline.withEntry(committed, numbers))}\n`,
+    );
   }
 
   if (Option.isSome(flags.comment)) {
@@ -206,7 +220,7 @@ const command = Command.make(
   {
     corpus: Flag.String("corpus").pipe(
       Flag.withDescription(
-        "`tiny` for the invented school, `pinned` for the fetched pin.json, or a corpus directory",
+        "`tiny` or `synthetic` for an invented school, `pinned` for the fetched pin.json, or a corpus directory",
       ),
       Flag.withDefault("tiny"),
     ),
@@ -225,7 +239,9 @@ const command = Command.make(
       Flag.withDefault(false),
     ),
     json: Flag.String("json").pipe(
-      Flag.withDescription("Also write the numbers to this file, with --against as a baseline"),
+      Flag.withDescription(
+        "Also write the numbers to this file; with --against, the baseline with them in place",
+      ),
       Flag.optional,
     ),
     against: Flag.String("against").pipe(

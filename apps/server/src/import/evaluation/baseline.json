@@ -1,1317 +1,2568 @@
-{
-  "corpus": "capture-20261118-1946",
-  "weekly": {
+[
+  {
     "corpus": "capture-20261118-1946",
-    "import": "naive",
-    "mode": "weekly",
-    "weeks": [
-      "2025-W41",
-      "2025-W45",
-      "2025-W50",
-      "2026-W04",
-      "2026-W05",
-      "2026-W06",
-      "2026-W07",
-      "2026-W20",
-      "2026-W21",
-      "2026-W22",
-      "2026-W33",
-      "2026-W34",
-      "2026-W35",
-      "2026-W36",
-      "2026-W37",
-      "2026-W38",
-      "2026-W39",
-      "2026-W40",
-      "2026-W41",
-      "2026-W42",
-      "2026-W43",
-      "2026-W44",
-      "2026-W45",
-      "2026-W46",
-      "2026-W47",
-      "2026-W48",
-      "2026-W49",
-      "2026-W50",
-      "2026-W51",
-      "2026-W52",
-      "2026-W53",
-      "2027-W01",
-      "2027-W02"
-    ],
-    "views": {
-      "student": {
-        "weeks": {
-          "right": 3366,
-          "of": 4196
+    "weekly": {
+      "corpus": "capture-20261118-1946",
+      "import": "naive",
+      "mode": "weekly",
+      "weeks": [
+        "2025-W41",
+        "2025-W45",
+        "2025-W50",
+        "2026-W04",
+        "2026-W05",
+        "2026-W06",
+        "2026-W07",
+        "2026-W20",
+        "2026-W21",
+        "2026-W22",
+        "2026-W33",
+        "2026-W34",
+        "2026-W35",
+        "2026-W36",
+        "2026-W37",
+        "2026-W38",
+        "2026-W39",
+        "2026-W40",
+        "2026-W41",
+        "2026-W42",
+        "2026-W43",
+        "2026-W44",
+        "2026-W45",
+        "2026-W46",
+        "2026-W47",
+        "2026-W48",
+        "2026-W49",
+        "2026-W50",
+        "2026-W51",
+        "2026-W52",
+        "2026-W53",
+        "2027-W01",
+        "2027-W02"
+      ],
+      "views": {
+        "student": {
+          "weeks": {
+            "right": 3366,
+            "of": 4196
+          },
+          "recall": {
+            "right": 54602,
+            "of": 55890
+          },
+          "precision": {
+            "right": 54602,
+            "of": 55972
+          },
+          "attributes": {
+            "right": 54602,
+            "of": 54602
+          }
         },
+        "teacher": {
+          "weeks": {
+            "right": 1558,
+            "of": 1566
+          },
+          "recall": {
+            "right": 5089,
+            "of": 5089
+          },
+          "precision": {
+            "right": 5089,
+            "of": 5089
+          },
+          "attributes": {
+            "right": 5081,
+            "of": 5089
+          }
+        },
+        "room": {
+          "weeks": {
+            "right": 626,
+            "of": 628
+          },
+          "recall": {
+            "right": 4849,
+            "of": 4849
+          },
+          "precision": {
+            "right": 4847,
+            "of": 4847
+          },
+          "attributes": {
+            "right": 4845,
+            "of": 4849
+          }
+        }
+      },
+      "kurswahl": {
+        "right": 300,
+        "of": 473
+      },
+      "ghostCourses": 4,
+      "courseIdentity": {
+        "realCourses": 377,
+        "split": 0,
+        "ourCourses": 357,
+        "merged": 9,
+        "subjects": {
+          "Biologie": {
+            "realCourses": 8,
+            "split": 0,
+            "ourCourses": 8,
+            "merged": 0
+          },
+          "CH1": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "CH23": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "Chemie": {
+            "realCourses": 8,
+            "split": 0,
+            "ourCourses": 8,
+            "merged": 0
+          },
+          "Darstellendes Spiel": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "EK": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "EK1": {
+            "realCourses": 5,
+            "split": 0,
+            "ourCourses": 5,
+            "merged": 0
+          },
+          "EN": {
+            "realCourses": 9,
+            "split": 0,
+            "ourCourses": 9,
+            "merged": 0
+          },
+          "EN1": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "EN2": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "Französisch": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "GE1": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "GE2": {
+            "realCourses": 5,
+            "split": 0,
+            "ourCourses": 5,
+            "merged": 0
+          },
+          "GSL": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 0,
+            "merged": 0
+          },
+          "Geschichte": {
+            "realCourses": 9,
+            "split": 0,
+            "ourCourses": 9,
+            "merged": 0
+          },
+          "IGL": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 0,
+            "merged": 0
+          },
+          "Informatik": {
+            "realCourses": 4,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "KU": {
+            "realCourses": 4,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "Latein": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "MA": {
+            "realCourses": 10,
+            "split": 0,
+            "ourCourses": 9,
+            "merged": 1
+          },
+          "MA1": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "MA23": {
+            "realCourses": 5,
+            "split": 0,
+            "ourCourses": 5,
+            "merged": 0
+          },
+          "MU": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "NW- PHY G": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 0,
+            "merged": 0
+          },
+          "O-Sporthalle": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 0,
+            "merged": 0
+          },
+          "PH1": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "PW1": {
+            "realCourses": 5,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 2
+          },
+          "PW23": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "Physik": {
+            "realCourses": 8,
+            "split": 0,
+            "ourCourses": 8,
+            "merged": 0
+          },
+          "Politik-Wirtschaft": {
+            "realCourses": 9,
+            "split": 0,
+            "ourCourses": 9,
+            "merged": 0
+          },
+          "Präsenz": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 0,
+            "merged": 0
+          },
+          "REL": {
+            "realCourses": 4,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "SP": {
+            "realCourses": 10,
+            "split": 0,
+            "ourCourses": 9,
+            "merged": 0
+          },
+          "Spanisch-A": {
+            "realCourses": 4,
+            "split": 0,
+            "ourCourses": 4,
+            "merged": 0
+          },
+          "Spanisch-F": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "Tutorium": {
+            "realCourses": 11,
+            "split": 0,
+            "ourCourses": 9,
+            "merged": 2
+          },
+          "WPK O": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "XCFJTF5TO1": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "XCFJTF5TO2": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "XCFJTF5TO3": {
+            "realCourses": 5,
+            "split": 0,
+            "ourCourses": 5,
+            "merged": 0
+          },
+          "XHDOIQVNL": {
+            "realCourses": 10,
+            "split": 0,
+            "ourCourses": 9,
+            "merged": 0
+          },
+          "XHDOIQVNL1": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "XHDOIQVNL2": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "XHDOIQVNL3": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "XHDOIQVNL4": {
+            "realCourses": 4,
+            "split": 0,
+            "ourCourses": 4,
+            "merged": 0
+          },
+          "XKHJUDFHE": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 0,
+            "merged": 0
+          },
+          "ch2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "ch23": {
+            "realCourses": 5,
+            "split": 0,
+            "ourCourses": 5,
+            "merged": 0
+          },
+          "ds1": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "en3": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "en4": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "fr1": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "fr23": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "ge2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "ge3": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "if23": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "ku1": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "ku2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "la1": {
+            "realCourses": 8,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 2
+          },
+          "ma1": {
+            "realCourses": 5,
+            "split": 0,
+            "ourCourses": 5,
+            "merged": 0
+          },
+          "ma2": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "ma3": {
+            "realCourses": 4,
+            "split": 0,
+            "ourCourses": 4,
+            "merged": 0
+          },
+          "mu1": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "ph2": {
+            "realCourses": 4,
+            "split": 0,
+            "ourCourses": 4,
+            "merged": 0
+          },
+          "pw1": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "pw2": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "re1": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "re2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "sf1": {
+            "realCourses": 4,
+            "split": 0,
+            "ourCourses": 4,
+            "merged": 0
+          },
+          "sf2": {
+            "realCourses": 5,
+            "split": 0,
+            "ourCourses": 5,
+            "merged": 0
+          },
+          "sf3": {
+            "realCourses": 5,
+            "split": 0,
+            "ourCourses": 5,
+            "merged": 0
+          },
+          "sf4": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "sn1": {
+            "realCourses": 8,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 2
+          },
+          "sp1": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "sp2": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "sp3": {
+            "realCourses": 4,
+            "split": 0,
+            "ourCourses": 4,
+            "merged": 0
+          },
+          "st1": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "wn1": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "wn2": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "wn23": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          }
+        }
+      },
+      "changes": {
+        "right": 975,
+        "of": 978
+      },
+      "courses": {
+        "right": 0,
+        "of": 0
+      },
+      "closures": {
         "recall": {
-          "right": 54602,
-          "of": 55890
+          "right": 28,
+          "of": 28
         },
         "precision": {
-          "right": 54602,
-          "of": 55972
-        },
-        "attributes": {
-          "right": 54602,
-          "of": 54602
+          "right": 28,
+          "of": 28
         }
       },
-      "teacher": {
-        "weeks": {
-          "right": 1558,
-          "of": 1566
-        },
+      "links": {
+        "right": 5095,
+        "of": 5095
+      },
+      "exams": {
+        "right": 36,
+        "of": 54
+      },
+      "examStudents": {
         "recall": {
-          "right": 5089,
-          "of": 5089
+          "right": 822,
+          "of": 830
         },
         "precision": {
-          "right": 5089,
-          "of": 5089
-        },
-        "attributes": {
-          "right": 5081,
-          "of": 5089
+          "right": 822,
+          "of": 934
         }
       },
-      "room": {
-        "weeks": {
-          "right": 626,
-          "of": 628
+      "weekLabels": {
+        "right": 0,
+        "of": 0
+      },
+      "courseIdsKept": {
+        "right": 98064,
+        "of": 98064
+      },
+      "lookahead": {
+        "right": 5053,
+        "of": 5054
+      },
+      "runs": {
+        "total": 33,
+        "failed": 0
+      },
+      "hiddenDays": 1970,
+      "invariants": {
+        "failedRuns": 0,
+        "danglingCourses": 324,
+        "unpublishedLessons": 0,
+        "secondRunChanges": 0,
+        "reversedReadChanges": 8,
+        "failedReadChanges": 0,
+        "injectedFailures": 1
+      },
+      "reads": {
+        "requests": 901,
+        "outOfRange": 195,
+        "decodeFailures": 0
+      },
+      "passingCases": []
+    },
+    "timeline": {
+      "corpus": "capture-20261118-1946",
+      "import": "naive",
+      "mode": "timeline",
+      "weeks": [
+        "2025-W41",
+        "2025-W45",
+        "2025-W50",
+        "2026-W04",
+        "2026-W05",
+        "2026-W06",
+        "2026-W07",
+        "2026-W20",
+        "2026-W21",
+        "2026-W22",
+        "2026-W33",
+        "2026-W34",
+        "2026-W35",
+        "2026-W36",
+        "2026-W37",
+        "2026-W38",
+        "2026-W39",
+        "2026-W40",
+        "2026-W41",
+        "2026-W42",
+        "2026-W43",
+        "2026-W44",
+        "2026-W45",
+        "2026-W46",
+        "2026-W47",
+        "2026-W48",
+        "2026-W49",
+        "2026-W50",
+        "2026-W51",
+        "2026-W52",
+        "2026-W53",
+        "2027-W01",
+        "2027-W02"
+      ],
+      "views": {
+        "student": {
+          "weeks": {
+            "right": 3366,
+            "of": 4196
+          },
+          "recall": {
+            "right": 54602,
+            "of": 55890
+          },
+          "precision": {
+            "right": 54602,
+            "of": 55972
+          },
+          "attributes": {
+            "right": 54602,
+            "of": 54602
+          }
         },
+        "teacher": {
+          "weeks": {
+            "right": 1558,
+            "of": 1566
+          },
+          "recall": {
+            "right": 5089,
+            "of": 5089
+          },
+          "precision": {
+            "right": 5089,
+            "of": 5089
+          },
+          "attributes": {
+            "right": 5081,
+            "of": 5089
+          }
+        },
+        "room": {
+          "weeks": {
+            "right": 626,
+            "of": 628
+          },
+          "recall": {
+            "right": 4849,
+            "of": 4849
+          },
+          "precision": {
+            "right": 4847,
+            "of": 4847
+          },
+          "attributes": {
+            "right": 4845,
+            "of": 4849
+          }
+        }
+      },
+      "kurswahl": {
+        "right": 300,
+        "of": 473
+      },
+      "ghostCourses": 4,
+      "courseIdentity": {
+        "realCourses": 377,
+        "split": 0,
+        "ourCourses": 357,
+        "merged": 9,
+        "subjects": {
+          "Biologie": {
+            "realCourses": 8,
+            "split": 0,
+            "ourCourses": 8,
+            "merged": 0
+          },
+          "CH1": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "CH23": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "Chemie": {
+            "realCourses": 8,
+            "split": 0,
+            "ourCourses": 8,
+            "merged": 0
+          },
+          "Darstellendes Spiel": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "EK": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "EK1": {
+            "realCourses": 5,
+            "split": 0,
+            "ourCourses": 5,
+            "merged": 0
+          },
+          "EN": {
+            "realCourses": 9,
+            "split": 0,
+            "ourCourses": 9,
+            "merged": 0
+          },
+          "EN1": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "EN2": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "Französisch": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "GE1": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "GE2": {
+            "realCourses": 5,
+            "split": 0,
+            "ourCourses": 5,
+            "merged": 0
+          },
+          "GSL": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 0,
+            "merged": 0
+          },
+          "Geschichte": {
+            "realCourses": 9,
+            "split": 0,
+            "ourCourses": 9,
+            "merged": 0
+          },
+          "IGL": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 0,
+            "merged": 0
+          },
+          "Informatik": {
+            "realCourses": 4,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "KU": {
+            "realCourses": 4,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "Latein": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "MA": {
+            "realCourses": 10,
+            "split": 0,
+            "ourCourses": 9,
+            "merged": 1
+          },
+          "MA1": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "MA23": {
+            "realCourses": 5,
+            "split": 0,
+            "ourCourses": 5,
+            "merged": 0
+          },
+          "MU": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "NW- PHY G": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 0,
+            "merged": 0
+          },
+          "O-Sporthalle": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 0,
+            "merged": 0
+          },
+          "PH1": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "PW1": {
+            "realCourses": 5,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 2
+          },
+          "PW23": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "Physik": {
+            "realCourses": 8,
+            "split": 0,
+            "ourCourses": 8,
+            "merged": 0
+          },
+          "Politik-Wirtschaft": {
+            "realCourses": 9,
+            "split": 0,
+            "ourCourses": 9,
+            "merged": 0
+          },
+          "Präsenz": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 0,
+            "merged": 0
+          },
+          "REL": {
+            "realCourses": 4,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "SP": {
+            "realCourses": 10,
+            "split": 0,
+            "ourCourses": 9,
+            "merged": 0
+          },
+          "Spanisch-A": {
+            "realCourses": 4,
+            "split": 0,
+            "ourCourses": 4,
+            "merged": 0
+          },
+          "Spanisch-F": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "Tutorium": {
+            "realCourses": 11,
+            "split": 0,
+            "ourCourses": 9,
+            "merged": 2
+          },
+          "WPK O": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "XCFJTF5TO1": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "XCFJTF5TO2": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "XCFJTF5TO3": {
+            "realCourses": 5,
+            "split": 0,
+            "ourCourses": 5,
+            "merged": 0
+          },
+          "XHDOIQVNL": {
+            "realCourses": 10,
+            "split": 0,
+            "ourCourses": 9,
+            "merged": 0
+          },
+          "XHDOIQVNL1": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "XHDOIQVNL2": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "XHDOIQVNL3": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "XHDOIQVNL4": {
+            "realCourses": 4,
+            "split": 0,
+            "ourCourses": 4,
+            "merged": 0
+          },
+          "XKHJUDFHE": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 0,
+            "merged": 0
+          },
+          "ch2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "ch23": {
+            "realCourses": 5,
+            "split": 0,
+            "ourCourses": 5,
+            "merged": 0
+          },
+          "ds1": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "en3": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "en4": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "fr1": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "fr23": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "ge2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "ge3": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "if23": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "ku1": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "ku2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "la1": {
+            "realCourses": 8,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 2
+          },
+          "ma1": {
+            "realCourses": 5,
+            "split": 0,
+            "ourCourses": 5,
+            "merged": 0
+          },
+          "ma2": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "ma3": {
+            "realCourses": 4,
+            "split": 0,
+            "ourCourses": 4,
+            "merged": 0
+          },
+          "mu1": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "ph2": {
+            "realCourses": 4,
+            "split": 0,
+            "ourCourses": 4,
+            "merged": 0
+          },
+          "pw1": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "pw2": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "re1": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "re2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "sf1": {
+            "realCourses": 4,
+            "split": 0,
+            "ourCourses": 4,
+            "merged": 0
+          },
+          "sf2": {
+            "realCourses": 5,
+            "split": 0,
+            "ourCourses": 5,
+            "merged": 0
+          },
+          "sf3": {
+            "realCourses": 5,
+            "split": 0,
+            "ourCourses": 5,
+            "merged": 0
+          },
+          "sf4": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "sn1": {
+            "realCourses": 8,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 2
+          },
+          "sp1": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "sp2": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "sp3": {
+            "realCourses": 4,
+            "split": 0,
+            "ourCourses": 4,
+            "merged": 0
+          },
+          "st1": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "wn1": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          },
+          "wn2": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "wn23": {
+            "realCourses": 6,
+            "split": 0,
+            "ourCourses": 6,
+            "merged": 0
+          }
+        }
+      },
+      "changes": {
+        "right": 975,
+        "of": 978
+      },
+      "courses": {
+        "right": 0,
+        "of": 0
+      },
+      "closures": {
         "recall": {
-          "right": 4849,
-          "of": 4849
+          "right": 28,
+          "of": 28
         },
         "precision": {
-          "right": 4847,
-          "of": 4847
-        },
-        "attributes": {
-          "right": 4845,
-          "of": 4849
+          "right": 28,
+          "of": 28
         }
-      }
-    },
-    "kurswahl": {
-      "right": 300,
-      "of": 473
-    },
-    "ghostCourses": 4,
-    "courseIdentity": {
-      "realCourses": 377,
-      "split": 0,
-      "ourCourses": 357,
-      "merged": 9,
-      "subjects": {
-        "Biologie": {
-          "realCourses": 8,
-          "split": 0,
-          "ourCourses": 8,
-          "merged": 0
-        },
-        "CH1": {
-          "realCourses": 1,
-          "split": 0,
-          "ourCourses": 1,
-          "merged": 0
-        },
-        "CH23": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "Chemie": {
-          "realCourses": 8,
-          "split": 0,
-          "ourCourses": 8,
-          "merged": 0
-        },
-        "Darstellendes Spiel": {
-          "realCourses": 3,
-          "split": 0,
-          "ourCourses": 3,
-          "merged": 0
-        },
-        "EK": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "EK1": {
-          "realCourses": 5,
-          "split": 0,
-          "ourCourses": 5,
-          "merged": 0
-        },
-        "EN": {
-          "realCourses": 9,
-          "split": 0,
-          "ourCourses": 9,
-          "merged": 0
-        },
-        "EN1": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "EN2": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "Französisch": {
-          "realCourses": 2,
-          "split": 0,
-          "ourCourses": 2,
-          "merged": 0
-        },
-        "GE1": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "GE2": {
-          "realCourses": 5,
-          "split": 0,
-          "ourCourses": 5,
-          "merged": 0
-        },
-        "GSL": {
-          "realCourses": 1,
-          "split": 0,
-          "ourCourses": 0,
-          "merged": 0
-        },
-        "Geschichte": {
-          "realCourses": 9,
-          "split": 0,
-          "ourCourses": 9,
-          "merged": 0
-        },
-        "IGL": {
-          "realCourses": 1,
-          "split": 0,
-          "ourCourses": 0,
-          "merged": 0
-        },
-        "Informatik": {
-          "realCourses": 4,
-          "split": 0,
-          "ourCourses": 3,
-          "merged": 0
-        },
-        "KU": {
-          "realCourses": 4,
-          "split": 0,
-          "ourCourses": 3,
-          "merged": 0
-        },
-        "Latein": {
-          "realCourses": 2,
-          "split": 0,
-          "ourCourses": 2,
-          "merged": 0
-        },
-        "MA": {
-          "realCourses": 10,
-          "split": 0,
-          "ourCourses": 9,
-          "merged": 1
-        },
-        "MA1": {
-          "realCourses": 1,
-          "split": 0,
-          "ourCourses": 1,
-          "merged": 0
-        },
-        "MA23": {
-          "realCourses": 5,
-          "split": 0,
-          "ourCourses": 5,
-          "merged": 0
-        },
-        "MU": {
-          "realCourses": 3,
-          "split": 0,
-          "ourCourses": 3,
-          "merged": 0
-        },
-        "NW- PHY G": {
-          "realCourses": 1,
-          "split": 0,
-          "ourCourses": 0,
-          "merged": 0
-        },
-        "O-Sporthalle": {
-          "realCourses": 1,
-          "split": 0,
-          "ourCourses": 0,
-          "merged": 0
-        },
-        "PH1": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "PW1": {
-          "realCourses": 5,
-          "split": 0,
-          "ourCourses": 3,
-          "merged": 2
-        },
-        "PW23": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "Physik": {
-          "realCourses": 8,
-          "split": 0,
-          "ourCourses": 8,
-          "merged": 0
-        },
-        "Politik-Wirtschaft": {
-          "realCourses": 9,
-          "split": 0,
-          "ourCourses": 9,
-          "merged": 0
-        },
-        "Präsenz": {
-          "realCourses": 1,
-          "split": 0,
-          "ourCourses": 0,
-          "merged": 0
-        },
-        "REL": {
-          "realCourses": 4,
-          "split": 0,
-          "ourCourses": 3,
-          "merged": 0
-        },
-        "SP": {
-          "realCourses": 10,
-          "split": 0,
-          "ourCourses": 9,
-          "merged": 0
-        },
-        "Spanisch-A": {
-          "realCourses": 4,
-          "split": 0,
-          "ourCourses": 4,
-          "merged": 0
-        },
-        "Spanisch-F": {
-          "realCourses": 2,
-          "split": 0,
-          "ourCourses": 2,
-          "merged": 0
-        },
-        "Tutorium": {
-          "realCourses": 11,
-          "split": 0,
-          "ourCourses": 9,
-          "merged": 2
-        },
-        "WPK O": {
-          "realCourses": 3,
-          "split": 0,
-          "ourCourses": 3,
-          "merged": 0
-        },
-        "XCFJTF5TO1": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "XCFJTF5TO2": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "XCFJTF5TO3": {
-          "realCourses": 5,
-          "split": 0,
-          "ourCourses": 5,
-          "merged": 0
-        },
-        "XHDOIQVNL": {
-          "realCourses": 10,
-          "split": 0,
-          "ourCourses": 9,
-          "merged": 0
-        },
-        "XHDOIQVNL1": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "XHDOIQVNL2": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "XHDOIQVNL3": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "XHDOIQVNL4": {
-          "realCourses": 4,
-          "split": 0,
-          "ourCourses": 4,
-          "merged": 0
-        },
-        "XKHJUDFHE": {
-          "realCourses": 1,
-          "split": 0,
-          "ourCourses": 0,
-          "merged": 0
-        },
-        "ch2": {
-          "realCourses": 1,
-          "split": 0,
-          "ourCourses": 1,
-          "merged": 0
-        },
-        "ch23": {
-          "realCourses": 5,
-          "split": 0,
-          "ourCourses": 5,
-          "merged": 0
-        },
-        "ds1": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "en3": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "en4": {
-          "realCourses": 3,
-          "split": 0,
-          "ourCourses": 3,
-          "merged": 0
-        },
-        "fr1": {
-          "realCourses": 2,
-          "split": 0,
-          "ourCourses": 2,
-          "merged": 0
-        },
-        "fr23": {
-          "realCourses": 2,
-          "split": 0,
-          "ourCourses": 2,
-          "merged": 0
-        },
-        "ge2": {
-          "realCourses": 1,
-          "split": 0,
-          "ourCourses": 1,
-          "merged": 0
-        },
-        "ge3": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "if23": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "ku1": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "ku2": {
-          "realCourses": 1,
-          "split": 0,
-          "ourCourses": 1,
-          "merged": 0
-        },
-        "la1": {
-          "realCourses": 8,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 2
-        },
-        "ma1": {
-          "realCourses": 5,
-          "split": 0,
-          "ourCourses": 5,
-          "merged": 0
-        },
-        "ma2": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "ma3": {
-          "realCourses": 4,
-          "split": 0,
-          "ourCourses": 4,
-          "merged": 0
-        },
-        "mu1": {
-          "realCourses": 3,
-          "split": 0,
-          "ourCourses": 3,
-          "merged": 0
-        },
-        "ph2": {
-          "realCourses": 4,
-          "split": 0,
-          "ourCourses": 4,
-          "merged": 0
-        },
-        "pw1": {
-          "realCourses": 1,
-          "split": 0,
-          "ourCourses": 1,
-          "merged": 0
-        },
-        "pw2": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "re1": {
-          "realCourses": 3,
-          "split": 0,
-          "ourCourses": 3,
-          "merged": 0
-        },
-        "re2": {
-          "realCourses": 1,
-          "split": 0,
-          "ourCourses": 1,
-          "merged": 0
-        },
-        "sf1": {
-          "realCourses": 4,
-          "split": 0,
-          "ourCourses": 4,
-          "merged": 0
-        },
-        "sf2": {
-          "realCourses": 5,
-          "split": 0,
-          "ourCourses": 5,
-          "merged": 0
-        },
-        "sf3": {
-          "realCourses": 5,
-          "split": 0,
-          "ourCourses": 5,
-          "merged": 0
-        },
-        "sf4": {
-          "realCourses": 3,
-          "split": 0,
-          "ourCourses": 3,
-          "merged": 0
-        },
-        "sn1": {
-          "realCourses": 8,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 2
-        },
-        "sp1": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "sp2": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "sp3": {
-          "realCourses": 4,
-          "split": 0,
-          "ourCourses": 4,
-          "merged": 0
-        },
-        "st1": {
-          "realCourses": 3,
-          "split": 0,
-          "ourCourses": 3,
-          "merged": 0
-        },
-        "wn1": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "wn2": {
-          "realCourses": 3,
-          "split": 0,
-          "ourCourses": 3,
-          "merged": 0
-        },
-        "wn23": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
+      },
+      "links": {
+        "right": 5095,
+        "of": 5095
+      },
+      "exams": {
+        "right": 36,
+        "of": 54
+      },
+      "examStudents": {
+        "recall": {
+          "right": 822,
+          "of": 830
+        },
+        "precision": {
+          "right": 822,
+          "of": 934
         }
-      }
-    },
-    "changes": {
-      "right": 975,
-      "of": 978
-    },
-    "courses": {
-      "right": 0,
-      "of": 0
-    },
-    "closures": {
-      "recall": {
-        "right": 28,
-        "of": 28
       },
-      "precision": {
-        "right": 28,
-        "of": 28
-      }
-    },
-    "links": {
-      "right": 5095,
-      "of": 5095
-    },
-    "exams": {
-      "right": 36,
-      "of": 54
-    },
-    "examStudents": {
-      "recall": {
-        "right": 822,
-        "of": 830
+      "weekLabels": {
+        "right": 0,
+        "of": 0
       },
-      "precision": {
-        "right": 822,
-        "of": 934
-      }
-    },
-    "weekLabels": {
-      "right": 0,
-      "of": 0
-    },
-    "courseIdsKept": {
-      "right": 98064,
-      "of": 98064
-    },
-    "lookahead": {
-      "right": 5053,
-      "of": 5054
-    },
-    "runs": {
-      "total": 33,
-      "failed": 0
-    },
-    "hiddenDays": 1970,
-    "invariants": {
-      "failedRuns": 0,
-      "danglingCourses": 324,
-      "unpublishedLessons": 0,
-      "secondRunChanges": 0,
-      "reversedReadChanges": 8,
-      "failedReadChanges": 0,
-      "injectedFailures": 1
-    },
-    "reads": {
-      "requests": 901,
-      "outOfRange": 195,
-      "decodeFailures": 0
-    },
-    "passingCases": []
+      "courseIdsKept": {
+        "right": 988372,
+        "of": 988372
+      },
+      "lookahead": {
+        "right": 44662,
+        "of": 44672
+      },
+      "runs": {
+        "total": 310,
+        "failed": 0
+      },
+      "hiddenDays": 1970,
+      "invariants": {
+        "failedRuns": 0,
+        "danglingCourses": 342,
+        "unpublishedLessons": 0,
+        "secondRunChanges": 0,
+        "reversedReadChanges": 8,
+        "failedReadChanges": 0,
+        "injectedFailures": 1
+      },
+      "reads": {
+        "requests": 9610,
+        "outOfRange": 2110,
+        "decodeFailures": 0
+      },
+      "passingCases": []
+    }
   },
-  "timeline": {
-    "corpus": "capture-20261118-1946",
-    "import": "naive",
-    "mode": "timeline",
-    "weeks": [
-      "2025-W41",
-      "2025-W45",
-      "2025-W50",
-      "2026-W04",
-      "2026-W05",
-      "2026-W06",
-      "2026-W07",
-      "2026-W20",
-      "2026-W21",
-      "2026-W22",
-      "2026-W33",
-      "2026-W34",
-      "2026-W35",
-      "2026-W36",
-      "2026-W37",
-      "2026-W38",
-      "2026-W39",
-      "2026-W40",
-      "2026-W41",
-      "2026-W42",
-      "2026-W43",
-      "2026-W44",
-      "2026-W45",
-      "2026-W46",
-      "2026-W47",
-      "2026-W48",
-      "2026-W49",
-      "2026-W50",
-      "2026-W51",
-      "2026-W52",
-      "2026-W53",
-      "2027-W01",
-      "2027-W02"
-    ],
-    "views": {
-      "student": {
-        "weeks": {
-          "right": 3366,
-          "of": 4196
+  {
+    "corpus": "synthetic-1",
+    "weekly": {
+      "corpus": "synthetic-1",
+      "import": "naive",
+      "mode": "weekly",
+      "weeks": [
+        "2026-W33",
+        "2026-W34",
+        "2026-W35",
+        "2026-W36",
+        "2026-W37",
+        "2026-W38",
+        "2026-W39",
+        "2026-W40",
+        "2026-W41",
+        "2026-W42",
+        "2026-W43",
+        "2026-W44",
+        "2026-W45"
+      ],
+      "views": {
+        "student": {
+          "weeks": {
+            "right": 817,
+            "of": 1575
+          },
+          "recall": {
+            "right": 17638,
+            "of": 17697
+          },
+          "precision": {
+            "right": 17638,
+            "of": 19047
+          },
+          "attributes": {
+            "right": 17638,
+            "of": 17638
+          }
         },
+        "teacher": {
+          "weeks": {
+            "right": 668,
+            "of": 668
+          },
+          "recall": {
+            "right": 1891,
+            "of": 1891
+          },
+          "precision": {
+            "right": 1891,
+            "of": 1891
+          },
+          "attributes": {
+            "right": 1891,
+            "of": 1891
+          }
+        },
+        "room": {
+          "weeks": {
+            "right": 263,
+            "of": 263
+          },
+          "recall": {
+            "right": 1844,
+            "of": 1844
+          },
+          "precision": {
+            "right": 1844,
+            "of": 1844
+          },
+          "attributes": {
+            "right": 1844,
+            "of": 1844
+          }
+        }
+      },
+      "kurswahl": {
+        "right": 76,
+        "of": 181
+      },
+      "ghostCourses": 1,
+      "courseIdentity": {
+        "realCourses": 120,
+        "split": 0,
+        "ourCourses": 118,
+        "merged": 2,
+        "subjects": {
+          "BI": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "CH": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "CH2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "CH4": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "DE": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "DS2": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "EK": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "EK1": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "EN": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "EN3": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "ES2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "GE": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "IF3": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "KU2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "LA2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "MA": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "PH": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "PH1": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 1
+          },
+          "PO": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "PO2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "RE2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "SP": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "SP1": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "TU": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "WN3": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "bi1": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "bi2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "bi3": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "ch1": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "ch3": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "ch5": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "de1": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "de2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "de3": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "ds1": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "ds3": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "ds4": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "ek1": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "ek2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "en1": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "en2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "es1": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "es3": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "fr1": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "fr2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "fr3": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "ge1": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "ge2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "if1": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "if2": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "ku1": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "la1": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "la2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "la3": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "la4": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "la5": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "la6": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "la7": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "ma1": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "ma2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "mu1": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "mu2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "mu3": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "po1": {
+            "realCourses": 4,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 1
+          },
+          "re1": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "re2": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "re3": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "re4": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "sp1": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "sp2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "wn1": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "wn2": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "wn3": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "wn4": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          }
+        }
+      },
+      "changes": {
+        "right": 434,
+        "of": 434
+      },
+      "courses": {
+        "right": 10,
+        "of": 12
+      },
+      "closures": {
         "recall": {
-          "right": 54602,
-          "of": 55890
+          "right": 10,
+          "of": 10
         },
         "precision": {
-          "right": 54602,
-          "of": 55972
-        },
-        "attributes": {
-          "right": 54602,
-          "of": 54602
+          "right": 10,
+          "of": 10
         }
       },
-      "teacher": {
-        "weeks": {
-          "right": 1558,
-          "of": 1566
-        },
+      "links": {
+        "right": 1886,
+        "of": 1886
+      },
+      "exams": {
+        "right": 13,
+        "of": 15
+      },
+      "examStudents": {
         "recall": {
-          "right": 5089,
-          "of": 5089
+          "right": 232,
+          "of": 236
         },
         "precision": {
-          "right": 5089,
-          "of": 5089
-        },
-        "attributes": {
-          "right": 5081,
-          "of": 5089
+          "right": 232,
+          "of": 232
         }
       },
-      "room": {
-        "weeks": {
-          "right": 626,
-          "of": 628
+      "weekLabels": {
+        "right": 11,
+        "of": 11
+      },
+      "courseIdsKept": {
+        "right": 16930,
+        "of": 16930
+      },
+      "lookahead": {
+        "right": 1953,
+        "of": 1953
+      },
+      "runs": {
+        "total": 13,
+        "failed": 0
+      },
+      "hiddenDays": 1303,
+      "invariants": {
+        "failedRuns": 0,
+        "danglingCourses": 0,
+        "unpublishedLessons": 0,
+        "secondRunChanges": 0,
+        "reversedReadChanges": 0,
+        "failedReadChanges": 0,
+        "injectedFailures": 6
+      },
+      "reads": {
+        "requests": 356,
+        "outOfRange": 50,
+        "decodeFailures": 0
+      },
+      "passingCases": [
+        "roster-change-1-joined",
+        "roster-change-1-left",
+        "roster-change-2-joined",
+        "roster-change-2-left",
+        "roster-change-3-joined",
+        "roster-change-3-left",
+        "roster-change-4-joined",
+        "roster-change-4-left",
+        "same-code-1",
+        "same-code-2",
+        "week-2026-W33",
+        "week-2026-W34",
+        "week-2026-W35",
+        "week-2026-W36",
+        "week-2026-W37",
+        "week-2026-W38",
+        "week-2026-W39",
+        "week-2026-W40",
+        "week-2026-W41",
+        "week-2026-W44",
+        "week-2026-W45"
+      ]
+    },
+    "timeline": {
+      "corpus": "synthetic-1",
+      "import": "naive",
+      "mode": "timeline",
+      "weeks": [
+        "2026-W33",
+        "2026-W34",
+        "2026-W35",
+        "2026-W36",
+        "2026-W37",
+        "2026-W38",
+        "2026-W39",
+        "2026-W40",
+        "2026-W41",
+        "2026-W42",
+        "2026-W43",
+        "2026-W44",
+        "2026-W45"
+      ],
+      "views": {
+        "student": {
+          "weeks": {
+            "right": 817,
+            "of": 1575
+          },
+          "recall": {
+            "right": 17638,
+            "of": 17697
+          },
+          "precision": {
+            "right": 17638,
+            "of": 19047
+          },
+          "attributes": {
+            "right": 17638,
+            "of": 17638
+          }
         },
+        "teacher": {
+          "weeks": {
+            "right": 668,
+            "of": 668
+          },
+          "recall": {
+            "right": 1891,
+            "of": 1891
+          },
+          "precision": {
+            "right": 1891,
+            "of": 1891
+          },
+          "attributes": {
+            "right": 1891,
+            "of": 1891
+          }
+        },
+        "room": {
+          "weeks": {
+            "right": 263,
+            "of": 263
+          },
+          "recall": {
+            "right": 1844,
+            "of": 1844
+          },
+          "precision": {
+            "right": 1844,
+            "of": 1844
+          },
+          "attributes": {
+            "right": 1844,
+            "of": 1844
+          }
+        }
+      },
+      "kurswahl": {
+        "right": 76,
+        "of": 181
+      },
+      "ghostCourses": 1,
+      "courseIdentity": {
+        "realCourses": 120,
+        "split": 0,
+        "ourCourses": 118,
+        "merged": 2,
+        "subjects": {
+          "BI": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "CH": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "CH2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "CH4": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "DE": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "DS2": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "EK": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "EK1": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "EN": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "EN3": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "ES2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "GE": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "IF3": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "KU2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "LA2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "MA": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "PH": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "PH1": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 1
+          },
+          "PO": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "PO2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "RE2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "SP": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "SP1": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "TU": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "WN3": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "bi1": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "bi2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "bi3": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "ch1": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "ch3": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "ch5": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "de1": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "de2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "de3": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "ds1": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "ds3": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "ds4": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "ek1": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "ek2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "en1": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "en2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "es1": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "es3": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "fr1": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "fr2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "fr3": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "ge1": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "ge2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "if1": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "if2": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "ku1": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "la1": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "la2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "la3": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "la4": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "la5": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "la6": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "la7": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "ma1": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "ma2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "mu1": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "mu2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "mu3": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "po1": {
+            "realCourses": 4,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 1
+          },
+          "re1": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "re2": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "re3": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "re4": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "sp1": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "sp2": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "wn1": {
+            "realCourses": 3,
+            "split": 0,
+            "ourCourses": 3,
+            "merged": 0
+          },
+          "wn2": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          },
+          "wn3": {
+            "realCourses": 1,
+            "split": 0,
+            "ourCourses": 1,
+            "merged": 0
+          },
+          "wn4": {
+            "realCourses": 2,
+            "split": 0,
+            "ourCourses": 2,
+            "merged": 0
+          }
+        }
+      },
+      "changes": {
+        "right": 434,
+        "of": 434
+      },
+      "courses": {
+        "right": 10,
+        "of": 12
+      },
+      "closures": {
         "recall": {
-          "right": 4849,
-          "of": 4849
+          "right": 10,
+          "of": 10
         },
         "precision": {
-          "right": 4847,
-          "of": 4847
-        },
-        "attributes": {
-          "right": 4845,
-          "of": 4849
+          "right": 10,
+          "of": 10
         }
-      }
-    },
-    "kurswahl": {
-      "right": 300,
-      "of": 473
-    },
-    "ghostCourses": 4,
-    "courseIdentity": {
-      "realCourses": 377,
-      "split": 0,
-      "ourCourses": 357,
-      "merged": 9,
-      "subjects": {
-        "Biologie": {
-          "realCourses": 8,
-          "split": 0,
-          "ourCourses": 8,
-          "merged": 0
-        },
-        "CH1": {
-          "realCourses": 1,
-          "split": 0,
-          "ourCourses": 1,
-          "merged": 0
-        },
-        "CH23": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "Chemie": {
-          "realCourses": 8,
-          "split": 0,
-          "ourCourses": 8,
-          "merged": 0
-        },
-        "Darstellendes Spiel": {
-          "realCourses": 3,
-          "split": 0,
-          "ourCourses": 3,
-          "merged": 0
-        },
-        "EK": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "EK1": {
-          "realCourses": 5,
-          "split": 0,
-          "ourCourses": 5,
-          "merged": 0
-        },
-        "EN": {
-          "realCourses": 9,
-          "split": 0,
-          "ourCourses": 9,
-          "merged": 0
-        },
-        "EN1": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "EN2": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "Französisch": {
-          "realCourses": 2,
-          "split": 0,
-          "ourCourses": 2,
-          "merged": 0
-        },
-        "GE1": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "GE2": {
-          "realCourses": 5,
-          "split": 0,
-          "ourCourses": 5,
-          "merged": 0
-        },
-        "GSL": {
-          "realCourses": 1,
-          "split": 0,
-          "ourCourses": 0,
-          "merged": 0
-        },
-        "Geschichte": {
-          "realCourses": 9,
-          "split": 0,
-          "ourCourses": 9,
-          "merged": 0
-        },
-        "IGL": {
-          "realCourses": 1,
-          "split": 0,
-          "ourCourses": 0,
-          "merged": 0
-        },
-        "Informatik": {
-          "realCourses": 4,
-          "split": 0,
-          "ourCourses": 3,
-          "merged": 0
-        },
-        "KU": {
-          "realCourses": 4,
-          "split": 0,
-          "ourCourses": 3,
-          "merged": 0
-        },
-        "Latein": {
-          "realCourses": 2,
-          "split": 0,
-          "ourCourses": 2,
-          "merged": 0
-        },
-        "MA": {
-          "realCourses": 10,
-          "split": 0,
-          "ourCourses": 9,
-          "merged": 1
-        },
-        "MA1": {
-          "realCourses": 1,
-          "split": 0,
-          "ourCourses": 1,
-          "merged": 0
-        },
-        "MA23": {
-          "realCourses": 5,
-          "split": 0,
-          "ourCourses": 5,
-          "merged": 0
-        },
-        "MU": {
-          "realCourses": 3,
-          "split": 0,
-          "ourCourses": 3,
-          "merged": 0
-        },
-        "NW- PHY G": {
-          "realCourses": 1,
-          "split": 0,
-          "ourCourses": 0,
-          "merged": 0
-        },
-        "O-Sporthalle": {
-          "realCourses": 1,
-          "split": 0,
-          "ourCourses": 0,
-          "merged": 0
-        },
-        "PH1": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "PW1": {
-          "realCourses": 5,
-          "split": 0,
-          "ourCourses": 3,
-          "merged": 2
-        },
-        "PW23": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "Physik": {
-          "realCourses": 8,
-          "split": 0,
-          "ourCourses": 8,
-          "merged": 0
-        },
-        "Politik-Wirtschaft": {
-          "realCourses": 9,
-          "split": 0,
-          "ourCourses": 9,
-          "merged": 0
-        },
-        "Präsenz": {
-          "realCourses": 1,
-          "split": 0,
-          "ourCourses": 0,
-          "merged": 0
-        },
-        "REL": {
-          "realCourses": 4,
-          "split": 0,
-          "ourCourses": 3,
-          "merged": 0
-        },
-        "SP": {
-          "realCourses": 10,
-          "split": 0,
-          "ourCourses": 9,
-          "merged": 0
-        },
-        "Spanisch-A": {
-          "realCourses": 4,
-          "split": 0,
-          "ourCourses": 4,
-          "merged": 0
-        },
-        "Spanisch-F": {
-          "realCourses": 2,
-          "split": 0,
-          "ourCourses": 2,
-          "merged": 0
-        },
-        "Tutorium": {
-          "realCourses": 11,
-          "split": 0,
-          "ourCourses": 9,
-          "merged": 2
-        },
-        "WPK O": {
-          "realCourses": 3,
-          "split": 0,
-          "ourCourses": 3,
-          "merged": 0
-        },
-        "XCFJTF5TO1": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "XCFJTF5TO2": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "XCFJTF5TO3": {
-          "realCourses": 5,
-          "split": 0,
-          "ourCourses": 5,
-          "merged": 0
-        },
-        "XHDOIQVNL": {
-          "realCourses": 10,
-          "split": 0,
-          "ourCourses": 9,
-          "merged": 0
-        },
-        "XHDOIQVNL1": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "XHDOIQVNL2": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "XHDOIQVNL3": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "XHDOIQVNL4": {
-          "realCourses": 4,
-          "split": 0,
-          "ourCourses": 4,
-          "merged": 0
-        },
-        "XKHJUDFHE": {
-          "realCourses": 1,
-          "split": 0,
-          "ourCourses": 0,
-          "merged": 0
-        },
-        "ch2": {
-          "realCourses": 1,
-          "split": 0,
-          "ourCourses": 1,
-          "merged": 0
-        },
-        "ch23": {
-          "realCourses": 5,
-          "split": 0,
-          "ourCourses": 5,
-          "merged": 0
-        },
-        "ds1": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "en3": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "en4": {
-          "realCourses": 3,
-          "split": 0,
-          "ourCourses": 3,
-          "merged": 0
-        },
-        "fr1": {
-          "realCourses": 2,
-          "split": 0,
-          "ourCourses": 2,
-          "merged": 0
-        },
-        "fr23": {
-          "realCourses": 2,
-          "split": 0,
-          "ourCourses": 2,
-          "merged": 0
-        },
-        "ge2": {
-          "realCourses": 1,
-          "split": 0,
-          "ourCourses": 1,
-          "merged": 0
-        },
-        "ge3": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "if23": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "ku1": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "ku2": {
-          "realCourses": 1,
-          "split": 0,
-          "ourCourses": 1,
-          "merged": 0
-        },
-        "la1": {
-          "realCourses": 8,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 2
-        },
-        "ma1": {
-          "realCourses": 5,
-          "split": 0,
-          "ourCourses": 5,
-          "merged": 0
-        },
-        "ma2": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "ma3": {
-          "realCourses": 4,
-          "split": 0,
-          "ourCourses": 4,
-          "merged": 0
-        },
-        "mu1": {
-          "realCourses": 3,
-          "split": 0,
-          "ourCourses": 3,
-          "merged": 0
-        },
-        "ph2": {
-          "realCourses": 4,
-          "split": 0,
-          "ourCourses": 4,
-          "merged": 0
-        },
-        "pw1": {
-          "realCourses": 1,
-          "split": 0,
-          "ourCourses": 1,
-          "merged": 0
-        },
-        "pw2": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "re1": {
-          "realCourses": 3,
-          "split": 0,
-          "ourCourses": 3,
-          "merged": 0
-        },
-        "re2": {
-          "realCourses": 1,
-          "split": 0,
-          "ourCourses": 1,
-          "merged": 0
-        },
-        "sf1": {
-          "realCourses": 4,
-          "split": 0,
-          "ourCourses": 4,
-          "merged": 0
-        },
-        "sf2": {
-          "realCourses": 5,
-          "split": 0,
-          "ourCourses": 5,
-          "merged": 0
-        },
-        "sf3": {
-          "realCourses": 5,
-          "split": 0,
-          "ourCourses": 5,
-          "merged": 0
-        },
-        "sf4": {
-          "realCourses": 3,
-          "split": 0,
-          "ourCourses": 3,
-          "merged": 0
-        },
-        "sn1": {
-          "realCourses": 8,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 2
-        },
-        "sp1": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "sp2": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "sp3": {
-          "realCourses": 4,
-          "split": 0,
-          "ourCourses": 4,
-          "merged": 0
-        },
-        "st1": {
-          "realCourses": 3,
-          "split": 0,
-          "ourCourses": 3,
-          "merged": 0
-        },
-        "wn1": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
-        },
-        "wn2": {
-          "realCourses": 3,
-          "split": 0,
-          "ourCourses": 3,
-          "merged": 0
-        },
-        "wn23": {
-          "realCourses": 6,
-          "split": 0,
-          "ourCourses": 6,
-          "merged": 0
+      },
+      "links": {
+        "right": 1886,
+        "of": 1886
+      },
+      "exams": {
+        "right": 13,
+        "of": 15
+      },
+      "examStudents": {
+        "recall": {
+          "right": 232,
+          "of": 236
+        },
+        "precision": {
+          "right": 232,
+          "of": 232
         }
-      }
-    },
-    "changes": {
-      "right": 975,
-      "of": 978
-    },
-    "courses": {
-      "right": 0,
-      "of": 0
-    },
-    "closures": {
-      "recall": {
-        "right": 28,
-        "of": 28
       },
-      "precision": {
-        "right": 28,
-        "of": 28
-      }
-    },
-    "links": {
-      "right": 5095,
-      "of": 5095
-    },
-    "exams": {
-      "right": 36,
-      "of": 54
-    },
-    "examStudents": {
-      "recall": {
-        "right": 822,
-        "of": 830
+      "weekLabels": {
+        "right": 11,
+        "of": 11
       },
-      "precision": {
-        "right": 822,
-        "of": 934
-      }
-    },
-    "weekLabels": {
-      "right": 0,
-      "of": 0
-    },
-    "courseIdsKept": {
-      "right": 988372,
-      "of": 988372
-    },
-    "lookahead": {
-      "right": 44662,
-      "of": 44672
-    },
-    "runs": {
-      "total": 310,
-      "failed": 0
-    },
-    "hiddenDays": 1970,
-    "invariants": {
-      "failedRuns": 0,
-      "danglingCourses": 342,
-      "unpublishedLessons": 0,
-      "secondRunChanges": 0,
-      "reversedReadChanges": 8,
-      "failedReadChanges": 0,
-      "injectedFailures": 1
-    },
-    "reads": {
-      "requests": 9610,
-      "outOfRange": 2110,
-      "decodeFailures": 0
-    },
-    "passingCases": []
+      "courseIdsKept": {
+        "right": 186354,
+        "of": 186354
+      },
+      "lookahead": {
+        "right": 17800,
+        "of": 17800
+      },
+      "runs": {
+        "total": 124,
+        "failed": 0
+      },
+      "hiddenDays": 1303,
+      "invariants": {
+        "failedRuns": 0,
+        "danglingCourses": 0,
+        "unpublishedLessons": 0,
+        "secondRunChanges": 0,
+        "reversedReadChanges": 0,
+        "failedReadChanges": 0,
+        "injectedFailures": 6
+      },
+      "reads": {
+        "requests": 3848,
+        "outOfRange": 660,
+        "decodeFailures": 0
+      },
+      "passingCases": [
+        "roster-change-1-joined",
+        "roster-change-1-left",
+        "roster-change-2-joined",
+        "roster-change-2-left",
+        "roster-change-3-joined",
+        "roster-change-3-left",
+        "roster-change-4-joined",
+        "roster-change-4-left",
+        "same-code-1",
+        "same-code-2",
+        "week-2026-W33",
+        "week-2026-W34",
+        "week-2026-W35",
+        "week-2026-W36",
+        "week-2026-W37",
+        "week-2026-W38",
+        "week-2026-W39",
+        "week-2026-W40",
+        "week-2026-W41",
+        "week-2026-W44",
+        "week-2026-W45"
+      ]
+    }
   }
-}
+]

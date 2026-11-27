@@ -11,6 +11,8 @@
     "corpus:fetch": "node src/import/corpus/main.ts fetch",
     "db:generate": "drizzle-kit generate",
     "import:eval": "node src/import/evaluation/main.ts",
+    "synthetic:calibrate": "node src/import/synthetic/main.ts calibrate",
+    "synthetic:generate": "node src/import/synthetic/main.ts generate",
     "start": "node src/main.ts"
   },
   "dependencies": {
