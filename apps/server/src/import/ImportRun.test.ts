@@ -128,6 +128,21 @@ const dyingDirectory = (client: Client): Client => ({
   },
 });
 
+/** The students' directory without its last student, which only the nightly self-check reads. */
+const shorterDirectory = (client: Client): Client => ({
+  ...client,
+  timetable: {
+    ...client.timetable,
+    getFilter: (input) =>
+      input.resourceType === "STUDENT"
+        ? Effect.map(client.timetable.getFilter(input), (filter) => ({
+            ...filter,
+            students: filter.students.slice(0, -1),
+          }))
+        : client.timetable.getFilter(input),
+  },
+});
+
 /** TinySchool with its term opening on Monday of 2026-W45, the day of the runs' first window. */
 const openingOnW45: Corpus.Corpus = {
   ...TinySchool.corpus,
@@ -1131,6 +1146,28 @@ describe.skipIf(Postgres18.socket === null)("ImportRun on PostgreSQL 18", () => 
           held: [true, true],
           second: expired.map((key) => `${key} Deleted`).sort(),
         });
+      }),
+    );
+
+    it.effect("a night whose students' directory changed keeps none older than 35 days", () =>
+      Effect.gen(function* () {
+        const school = School.Id.make("tiny-directory");
+        const sql = yield* SqlClient.SqlClient;
+        const corpus = throughJanuary(TinySchool.corpus);
+        yield* runAt(morning, options(school, { source: recorded(corpus) }));
+        const changed = options(school, { source: recorded(corpus, shorterDirectory) });
+        const ran = yield* runAt(DateTime.add(morning, { days: 36 }), changed);
+
+        const kept = yield* sql<{ readonly observed: string }>`
+          select to_char(observed_at at time zone 'UTC', 'YYYY-MM-DD') as observed
+          from source_version
+          where school_id = ${school} and path = ${RecordedWebUntis.paths.filter(10, "STUDENT")}
+        `;
+
+        expect([ran.outcome, kept.map(({ observed }) => observed)]).toEqual([
+          "Published",
+          ["2026-12-08"],
+        ]);
       }),
     );
 
