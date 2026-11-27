@@ -17,6 +17,7 @@ const entry = (
   previousTeachers: [],
   previousRooms: [],
   subjects: ["MA"],
+  classes: ["12"],
   ...changes,
 });
 

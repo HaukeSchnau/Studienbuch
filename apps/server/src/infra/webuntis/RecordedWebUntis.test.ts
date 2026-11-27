@@ -156,6 +156,29 @@ describe("RecordedWebUntis", () => {
     }),
   );
 
+  it.effect("answers the captured days of a read that reaches past the capture, and lists it", () =>
+    Effect.gen(function* () {
+      const recorded = yield* RecordedWebUntis.make(recording, {
+        asOf: DateTime.makeUnsafe("2026-11-06T17:00:00Z"),
+        captured: [{ start: "2026-10-26", end: "2026-11-08" }],
+      });
+
+      const answered = yield* recorded.client.timetable.getEntries({
+        resourceType: "STUDENT",
+        resource: student.id,
+        start: day,
+        end: "2026-11-09",
+      });
+
+      const { outOfRange, notCaptured } = yield* recorded.log;
+
+      assert.deepStrictEqual(
+        { days: answered.days.map((each) => each.date), outOfRange, notCaptured },
+        { days: [day], outOfRange: ["10/entries/STUDENT/501 2026-11-09"], notCaptured: [] },
+      );
+    }),
+  );
+
   it.effect.each([
     {
       name: "a day it didn't capture as a gap",

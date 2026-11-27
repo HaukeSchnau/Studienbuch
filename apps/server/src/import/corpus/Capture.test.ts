@@ -46,7 +46,7 @@ const client = (reads: RecordedWebUntis.Recording) =>
   );
 
 layer(NodeServices.layer)("Capture.run", (it) => {
-  it.effect("plans 189 requests for the invented school without reading a timetable", () =>
+  it.effect("plans 195 requests for the invented school without reading a timetable", () =>
     Effect.gen(function* () {
       yield* TestClock.setTime(DateTime.toEpochMillis(capturedAt));
 
@@ -57,7 +57,7 @@ layer(NodeServices.layer)("Capture.run", (it) => {
       }).pipe(Effect.provide(client(TinySchool.corpus.reads)));
 
       assert.isUndefined(manifest);
-      assert.strictEqual(plan.requests, 189);
+      assert.strictEqual(plan.requests, 195);
       assert.deepStrictEqual(
         plan.years.map(({ windows, chunks, resources }) => ({
           windows: windows.map(({ start, end }) => `${start}..${end}`),
@@ -81,7 +81,7 @@ layer(NodeServices.layer)("Capture.run", (it) => {
       );
 
       assert.isDefined(manifest);
-      assert.strictEqual(manifest.requests, 189);
+      assert.strictEqual(manifest.requests, 195);
       assert.deepStrictEqual(manifest.ranges, [{ start: "2026-08-13", end: "2027-01-08" }]);
 
       const captured = yield* Corpus.read(directory);

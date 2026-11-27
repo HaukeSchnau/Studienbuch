@@ -180,11 +180,26 @@ export const readViews = Effect.fn("Truth.readViews")(function* (
       const idsOf = (names: ReadonlyArray<string>, directory_: ReadonlyMap<string, number>) =>
         names.flatMap((name) => Option.toArray(Option.fromNullishOr(directory_.get(name))));
 
-      const entriesOf = (timetable: ReadonlyArray<TimetableEntryDay>) =>
+      // A teacher's or room's view leaves out the view's own resource unless a change added it,
+      // as a class's view does its class, so it counts among the current ones.
+      const withOwn = (
+        ids: ReadonlyArray<number>,
+        removed: ReadonlyArray<number>,
+        own: number | undefined,
+      ) => (own === undefined || ids.includes(own) || removed.includes(own) ? ids : [...ids, own]);
+
+      const entriesOf = (
+        timetable: ReadonlyArray<TimetableEntryDay>,
+        type: ViewType,
+        resource: number,
+      ) =>
         timetable.flatMap((day) =>
           day.gridEntries.map((entry): Metrics.TruthEntry => {
             const teacherNames = WebUntisEntry.names(entry, "TEACHER");
             const roomNames = WebUntisEntry.names(entry, "ROOM");
+            const classNames = WebUntisEntry.names(entry, "CLASS");
+            const previousTeachers = idsOf(teacherNames.removed, teacherIds);
+            const previousRooms = idsOf(roomNames.removed, roomIds);
 
             return {
               date: day.date.slice(0, 10),
@@ -192,11 +207,20 @@ export const readViews = Effect.fn("Truth.readViews")(function* (
               start: Option.getOrElse(WebUntisEntry.timeOfDay(entry.duration.start), () => -1),
               end: Option.getOrElse(WebUntisEntry.timeOfDay(entry.duration.end), () => -1),
               status: WebUntisEntry.status(entry),
-              teachers: idsOf(teacherNames.current, teacherIds),
-              rooms: idsOf(roomNames.current, roomIds),
-              previousTeachers: idsOf(teacherNames.removed, teacherIds),
-              previousRooms: idsOf(roomNames.removed, roomIds),
+              teachers: withOwn(
+                idsOf(teacherNames.current, teacherIds),
+                previousTeachers,
+                type === "TEACHER" ? resource : undefined,
+              ),
+              rooms: withOwn(
+                idsOf(roomNames.current, roomIds),
+                previousRooms,
+                type === "ROOM" ? resource : undefined,
+              ),
+              previousTeachers,
+              previousRooms,
               subjects: WebUntisEntry.names(entry, "SUBJECT").current,
+              classes: [...new Set([...classNames.current, ...classNames.removed])].sort(),
             };
           }),
         );
@@ -231,10 +255,9 @@ export const readViews = Effect.fn("Truth.readViews")(function* (
             // Overlapping ranges read some days twice; each entry counts once.
             entries: [
               ...new Map(
-                [...(earlier?.entries ?? []), ...entriesOf(timetable)].map((entry) => [
-                  `${entry.date} ${entry.ids.join("+")}`,
-                  entry,
-                ]),
+                [...(earlier?.entries ?? []), ...entriesOf(timetable, type, resource)].map(
+                  (entry) => [`${entry.date} ${entry.ids.join("+")}`, entry],
+                ),
               ).values(),
             ],
             weeks: new Set([...(earlier?.weeks ?? []), ...weeks]),

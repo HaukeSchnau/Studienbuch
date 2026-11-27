@@ -23,6 +23,7 @@ const entry = (
   previousTeachers: [],
   previousRooms: [],
   subjects: [subject],
+  classes: ["12"],
 });
 
 /** A lesson of `courseId` that claims the entries. */

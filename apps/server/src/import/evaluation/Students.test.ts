@@ -33,6 +33,7 @@ const entry = (id: number, start: number): Metrics.TruthEntry => ({
   previousTeachers: [],
   previousRooms: [],
   subjects: ["MA"],
+  classes: ["12"],
 });
 
 describe("Students.isExact", () => {

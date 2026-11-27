@@ -38,7 +38,11 @@ const year = { id: 10, name: "2026/2027", start: "2026-08-13", end: "2027-07-07"
 const c11 = resource(111, "11.1");
 const c12 = resource(112, "12");
 const c13 = resource(113, "13");
-const classes = [c11, c12, c13];
+
+// Case: `8.1` is a lower-school class, whose lessons the import never reads.
+const c81 = resource(181, "8.1");
+
+const classes = [c11, c12, c13, c81];
 
 const teacher = (id: number, letter: string) => resource(id, `L${letter}`, `Lehrkraft ${letter}`);
 const la = teacher(201, "A");
@@ -215,6 +219,8 @@ const plan: ReadonlyArray<Slot> = [
   },
   // Case: S8 takes two `DE` courses, which only a label tells apart from one.
   { weekday: 2, block: 3, subject: de, teacher: la, room: r101, classes: [c13], students: [s8] },
+  // Case: `LA` and `R101` also teach `8.1`, which their views show and no measure may count.
+  { weekday: 4, block: 3, subject: de, teacher: la, room: r101, classes: [c81], students: [] },
 ];
 
 // Case: the weeks after the autumn break, 2026-W44 to W48, alternate from A, against ISO parity,
@@ -252,6 +258,7 @@ const changes = (version: 1 | 2): ReadonlyMap<string, Change> =>
       ? [["2026-11-04 6", { status: "CANCELLED" }] as const]
       : [["2026-11-04 7", { status: "CHANGED", teacher: lb, text: "Vertretung" }] as const]),
     ["2026-11-06 11", { status: "CHANGED", teacher: ld, text: "Betreuung" }],
+    ["2026-11-12 16", { status: "CANCELLED" }],
   ]);
 
 interface Occurrence {
@@ -303,37 +310,48 @@ const currentTeacher = ({ slot, change }: Occurrence) => change?.teacher ?? slot
 
 const currentRoom = ({ slot, change }: Occurrence) => change?.room ?? slot.room;
 
-const entry = ({ ids, date, slot, change }: Occurrence) => {
-  const [start, end] = blocks[slot.block - 1] ?? blocks[0];
+/**
+ * An occurrence as `view` shows it. Like WebUntis, a teacher's or room's view leaves out its own
+ * teacher or room unless a change added it.
+ */
+const entry =
+  (view: (typeof views)[number]) =>
+  ({ ids, date, slot, change }: Occurrence) => {
+    const [start, end] = blocks[slot.block - 1] ?? blocks[0];
 
-  return {
-    ids,
-    duration: { start: `${date}T${start}`, end: `${date}T${end}` },
-    type: "NORMAL_TEACHING_PERIOD",
-    status: change?.status ?? "REGULAR",
-    statusDetail: null,
-    name: null,
-    layoutStartPosition: 0,
-    layoutWidth: 1000,
-    layoutGroup: 0,
-    color: "#f4c430",
-    // WebUntis writes an empty note as `null` in some entries and `""` in others.
-    notesAll: (ids[0] ?? 0) % 4 === 0 ? null : "",
-    icons: [],
-    position1:
-      slot.teacher === undefined ? null : positions("TEACHER", change?.teacher, slot.teacher),
-    position2: [{ current: position("SUBJECT", "REGULAR", slot.subject), removed: null }],
-    position3: positions("ROOM", change?.room, slot.room),
-    position4: slot.classes.map((each) => ({
-      current: position("CLASS", "REGULAR", each),
-      removed: null,
-    })),
-    texts: [],
-    lessonText: "",
-    lessonInfo: null,
-    substitutionText: change?.text ?? null,
+    return {
+      ids,
+      duration: { start: `${date}T${start}`, end: `${date}T${end}` },
+      type: "NORMAL_TEACHING_PERIOD",
+      status: change?.status ?? "REGULAR",
+      statusDetail: null,
+      name: null,
+      layoutStartPosition: 0,
+      layoutWidth: 1000,
+      layoutGroup: 0,
+      color: "#f4c430",
+      // WebUntis writes an empty note as `null` in some entries and `""` in others.
+      notesAll: (ids[0] ?? 0) % 4 === 0 ? null : "",
+      icons: [],
+      position1:
+        slot.teacher === undefined || (view.type === "TEACHER" && change?.teacher === undefined)
+          ? null
+          : positions("TEACHER", change?.teacher, slot.teacher),
+      position2: [{ current: position("SUBJECT", "REGULAR", slot.subject), removed: null }],
+      position3:
+        view.type === "ROOM" && change?.room === undefined
+          ? null
+          : positions("ROOM", change?.room, slot.room),
+      position4: slot.classes.map((each) => ({
+        current: position("CLASS", "REGULAR", each),
+        removed: null,
+      })),
+      texts: [],
+      lessonText: "",
+      lessonInfo: null,
+      substitutionText: change?.text ?? null,
+    };
   };
-};
 
 type ViewType = "CLASS" | "TEACHER" | "SUBJECT" | "ROOM" | "STUDENT";
 
@@ -385,7 +403,7 @@ const timetable = (view: (typeof views)[number], version: 1 | 2, dates: Readonly
     dayEntries: [],
     gridEntries: occurrences(version)
       .filter((occurrence) => occurrence.date === date && view.shows(occurrence))
-      .map(entry),
+      .map(entry(view)),
     backEntries: [],
   })),
   errors: [],

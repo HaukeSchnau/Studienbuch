@@ -322,7 +322,9 @@ export const make = Effect.fn("RecordedWebUntis.make")(function* (
     const missing: Array<readonly [string, string]> = [];
     const undecodable: Array<string> = [];
 
-    for (const day of yield* datesBetween(input.start, input.end)) {
+    const dates = yield* datesBetween(input.start, input.end);
+
+    for (const day of dates) {
       const year = yearIn(years, day);
 
       const path =
@@ -364,7 +366,9 @@ export const make = Effect.fn("RecordedWebUntis.make")(function* (
     }
 
     // A gap in the capture fails the read first, day by day, then a body that doesn't decode. Days
-    // past the capture come last and count once, because lookahead makes them normal.
+    // past the capture come last and count once, because lookahead makes them normal. A read that
+    // also reaches captured days answers with those, as WebUntis does when it leaves days out, so
+    // the import keeps their lessons and can't count the read complete.
     const [firstGap, ...moreGaps] = missing.filter(([, day]) => inRange(day));
 
     if (firstGap !== undefined) return yield* notCaptured(firstGap[0], firstGap[1], moreGaps);
@@ -375,7 +379,11 @@ export const make = Effect.fn("RecordedWebUntis.make")(function* (
 
     const [firstMissing] = missing;
 
-    if (firstMissing !== undefined) return yield* notCaptured(firstMissing[0], firstMissing[1]);
+    if (firstMissing !== undefined && missing.length === dates.length) {
+      return yield* notCaptured(firstMissing[0], firstMissing[1]);
+    }
+
+    if (firstMissing !== undefined) yield* note("outOfRange", firstMissing[0]);
 
     yield* inject(key);
 

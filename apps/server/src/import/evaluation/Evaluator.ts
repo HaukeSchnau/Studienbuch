@@ -13,7 +13,7 @@ import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import { RecordedWebUntis } from "../../infra/webuntis/RecordedWebUntis.ts";
 import type { Corpus } from "../corpus/Corpus.ts";
-import type { SchoolProfile } from "../profiles/SchoolProfile.ts";
+import { SchoolProfile } from "../profiles/SchoolProfile.ts";
 import { Projection } from "../Projection.ts";
 import { SchoolImport } from "../SchoolImport.ts";
 import { CourseIdentity } from "./CourseIdentity.ts";
@@ -180,6 +180,13 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
 
   const measuredEntries = truth.entries.filter((entry) => measuredDays.has(entry.date));
 
+  // Teachers, rooms and the lookahead count only what the import reads: entries taught to a class
+  // of the profile's grade levels. A student's view is theirs whole.
+  const upperSchool = (entry: Metrics.TruthEntry) =>
+    entry.classes.some((name) =>
+      Option.isSome(SchoolProfile.gradeLevelRead(options.profile, options.profile.classify(name))),
+    );
+
   /**
    * What a student can look up after a run: the lessons of the next seven days in the store,
    * against what WebUntis showed when the run read them. Later changes are later runs' business.
@@ -192,7 +199,7 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
       DateTime.formatIsoDate(DateTime.setZoneNamedUnsafe(DateTime.add(now, { days }), timeZone));
 
     return Metrics.held(
-      yield* Truth.entriesAt(corpus, now, { start: dayIn(1), end: dayIn(7) }),
+      (yield* Truth.entriesAt(corpus, now, { start: dayIn(1), end: dayIn(7) })).filter(upperSchool),
       store,
     );
   });
@@ -314,6 +321,7 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
   const shownIn = (view: Truth.View, week: string) =>
     truth.days.some((day) => inWeek(week)(day) && !view.hidden.has(day));
 
+  // A teacher's or room's week with no upper-school entry and none of our lessons measures nothing.
   const viewWeeks = (type: Truth.ViewType) =>
     truth.views
       .filter((view) => view.type === type)
@@ -323,20 +331,22 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
             (week) =>
               view.weeks.has(week) && shownIn(view, week) && (type !== "STUDENT" || held(week)),
           )
-          .map((week) => {
+          .flatMap((week) => {
             const lessons = lessonsIn.get(week) ?? [];
 
             if (type === "STUDENT") {
-              return {
-                view,
-                week,
-                score: Students.week(
+              return [
+                {
                   view,
-                  inWeek(week),
-                  lessons,
-                  enrollmentOf(view, termOfWeek(week)),
-                ),
-              };
+                  week,
+                  score: Students.week(
+                    view,
+                    inWeek(week),
+                    lessons,
+                    enrollmentOf(view, termOfWeek(week)),
+                  ),
+                },
+              ];
             }
 
             const mine = lessons.filter(
@@ -345,14 +355,13 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
                 (type === "TEACHER" ? lesson.teachers : lesson.rooms).includes(view.id),
             );
 
-            return {
-              view,
-              week,
-              score: Metrics.scoreView(
-                view.entries.filter((entry) => inWeek(week)(entry.date)),
-                mine,
-              ),
-            };
+            const entries = view.entries.filter(
+              (entry) => inWeek(week)(entry.date) && upperSchool(entry),
+            );
+
+            return entries.length === 0 && mine.length === 0
+              ? []
+              : [{ view, week, score: Metrics.scoreView(entries, mine) }];
           }),
       );
 
@@ -424,7 +433,7 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
   ).length;
 
   const changes = Metrics.scoreChanges(
-    truth.changes.filter((entry) => measuredDays.has(entry.date)),
+    truth.changes.filter((entry) => measuredDays.has(entry.date) && upperSchool(entry)),
     corpus.cases.changes,
     index,
   );
