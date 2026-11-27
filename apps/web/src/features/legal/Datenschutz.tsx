@@ -47,10 +47,9 @@ export function Datenschutz() {
       <h3>Server-Logfiles</h3>
       <p>
         Bei jedem Aufruf der Website protokolliert unser Server Datum und Uhrzeit, die abgerufene
-        Adresse und den HTTP-Statuscode. Schlägt eine Verbindung fehl, hält unser Webserver
-        zusätzlich die IP-Adresse und die übrigen Angaben der Anfrage fest, etwa die Kennung Ihres
-        Browsers. Um wiederholte Anmeldeversuche zu begrenzen, zählt der Server außerdem Anfragen je
-        IP-Adresse für 15&nbsp;Minuten im Arbeitsspeicher.
+        Adresse und den HTTP-Statuscode. Um wiederholte Versuche bei Anmeldung, Registrierung und
+        Zugangscodes zu begrenzen, zählt der Server außerdem Anfragen je IP-Adresse in Zeitfenstern
+        von 15&nbsp;Minuten, nur im Arbeitsspeicher.
       </p>
       <p>
         Rechtsgrundlage ist Artikel&nbsp;6 Absatz&nbsp;1 Buchstabe&nbsp;f DSGVO. Unser berechtigtes
