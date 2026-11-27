@@ -49,7 +49,8 @@ export function Datenschutz() {
         Bei jedem Aufruf der Website protokolliert unser Server Datum und Uhrzeit, die abgerufene
         Adresse und den HTTP-Statuscode. Um wiederholte Versuche bei Anmeldung, Registrierung und
         Zugangscodes zu begrenzen, zählt der Server außerdem Anfragen je IP-Adresse in Zeitfenstern
-        von 15&nbsp;Minuten, nur im Arbeitsspeicher.
+        von bis zu 15&nbsp;Minuten. Diese Zählungen liegen nur im Arbeitsspeicher; abgelaufene
+        löscht der Server bei späteren Anfragen, spätestens bei seinem nächsten Neustart.
       </p>
       <p>
         Rechtsgrundlage ist Artikel&nbsp;6 Absatz&nbsp;1 Buchstabe&nbsp;f DSGVO. Unser berechtigtes
@@ -266,9 +267,8 @@ export function Datenschutz() {
         ihre Kopie, sobald sie sich wieder verbinden. Auf anderen Geräten bleiben Ihre Einträge, bis
         Sie dort die App oder die Websitedaten löschen. Datensicherungen bewahren wir bis zu
         35&nbsp;Tage auf, Server-Protokolle bis zu 10&nbsp;Tage. Mit einem Konto löschen wir auch
-        die Sicherungen seiner Schlüssel. Spätestens 35&nbsp;Tage später sind sie auch aus den
-        Datensicherungen gelöscht, und ältere Kopien verschlüsselter Inhalte kann danach niemand
-        mehr öffnen.
+        die Sicherungen seiner Schlüssel. In den Datensicherungen bleiben sie, bis wir diese
+        löschen.
       </p>
 
       <h2>6. Ihre Rechte</h2>
