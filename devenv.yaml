@@ -1,7 +1,7 @@
 inputs:
-  # nix-infra-modules, the flake's input at the same revision, for nix/toolchain.nix.
+  # projects-sdk, the flake's input at the same revision, for nix/toolchain.nix.
   projectSdk:
-    url: github:HaukeSchnau/nix-infra-modules/b365d13637b9dc83c397df542b5112a50ac8cbb9
+    url: github:HaukeSchnau/projects-sdk/v0.1.0
     flake: false
   # The same revision as flake.lock's nixpkgs, so devenv and CI run one Node, pnpm and PostgreSQL.
   nixpkgs:
