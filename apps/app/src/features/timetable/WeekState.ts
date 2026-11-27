@@ -57,7 +57,7 @@ export const screen = Atom.family((accountId: string) =>
   Atom.family((requested: string) =>
     Atom.make((get): Option.Option<Screen> => {
       const current = get(HomeworkState.screen(accountId));
-      const now = AsyncResult.value(get(DeviceStatus.now));
+      const now = get(DeviceStatus.now(accountId));
 
       if (Option.isNone(current) || Option.isNone(now)) return Option.none();
 
@@ -90,20 +90,14 @@ export const screen = Atom.family((accountId: string) =>
                 return Card.NoTimetable();
               }
 
-              const moment = CivilTime.momentIn(now.value, reading.timeZone);
               const shown = Timetable.week(reading.plan, monday);
 
               return Card.Week({
-                week: WeekItem.week(shown, reading.names, moment, homework),
+                week: WeekItem.week(shown, reading.names, now.value, homework),
                 days: shown.columns.map((_, index) =>
-                  WeekItem.day(shown, index, reading.names, moment, homework),
+                  WeekItem.day(shown, index, reading.names, now.value, homework),
                 ),
-                stand: AgendaItem.staleStand(
-                  reading.observedAt,
-                  now.value,
-                  reading.timeZone,
-                  disconnected,
-                ),
+                stand: AgendaItem.staleStand(reading.observedAt, now.value, disconnected),
               });
             },
           });

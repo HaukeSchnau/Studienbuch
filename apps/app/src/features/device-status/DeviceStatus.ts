@@ -1,5 +1,5 @@
-import { CivilTime, School } from "@stu/core";
-import { SyncClient } from "@stu/sync/client";
+import { CivilTime, Notebook, School } from "@stu/core";
+import { DeviceDatabase, DeviceSchema, SyncClient, SyncQuery } from "@stu/sync/client";
 import * as Clock from "effect/Clock";
 import * as Cron from "effect/Cron";
 import * as Effect from "effect/Effect";
@@ -10,6 +10,7 @@ import * as Schedule from "effect/Schedule";
 import * as Stream from "effect/Stream";
 
 import { AccountEngine } from "../../infra/runtime/AccountEngine.ts";
+import { Schema as Device } from "../../infra/sqlite/Schema.ts";
 import { Account } from "../account/Account.ts";
 import { AccountState } from "../account/AccountState.ts";
 import { KeysState } from "../keys/KeysState.ts";
@@ -26,23 +27,60 @@ const runtime = Atom.family((accountId: string) => Atom.runtime(AccountEngine.ap
 const everyMinute = Cron.make({ minutes: [], hours: [], days: [], months: [], weekdays: [] });
 
 /** The device's clock in epoch milliseconds, read at once and then as each minute begins. */
-const minutes = Stream.concat(
-  Stream.make(undefined),
-  Stream.fromSchedule(Schedule.cron(everyMinute)),
-).pipe(Stream.mapEffect(() => Clock.currentTimeMillis));
+const clock = Atom.make(
+  Stream.concat(Stream.make(undefined), Stream.fromSchedule(Schedule.cron(everyMinute))).pipe(
+    Stream.mapEffect(() => Clock.currentTimeMillis),
+  ),
+);
 
-/** Now, read again as each minute begins, so "Noch 50 Minuten" counts down on the minute. */
-export const now = Atom.make(minutes);
+const decode = {
+  notebook: DeviceSchema.decodeView(Notebook.Row),
+  school: DeviceSchema.decodeView(School.Row),
+};
+
+/** The row of the notebook's school, which holds its time zone. */
+const readSchool = Effect.fn("DeviceStatus.readSchool")(function* () {
+  const db = yield* DeviceDatabase.make;
+  const [notebook] = yield* Effect.flatMap(db.select().from(Device.Notebook), decode.notebook);
+  const schools = yield* Effect.flatMap(db.select().from(Device.School), decode.school);
+
+  return Option.fromNullishOr(schools.find((row) => row.space === notebook?.schoolId));
+});
+
+const schoolQuery = SyncQuery.read({
+  tables: [Notebook.Row, School.Row],
+  run: () => readSchool().pipe(Effect.catchTags({ SchemaError: Effect.die })),
+});
+
+const school = Atom.family((accountId: string) =>
+  SyncQuery.family(runtime(accountId), schoolQuery)(),
+);
 
 /**
- * Today at the school, read again as each minute begins, so "Bis morgen" turns into "Heute fällig"
- * at midnight on a screen that stays open.
+ * Now at the account's school (`School.now`), from the one clock every screen reads, again as each
+ * minute begins, so "Noch 50 Minuten" counts down on the minute. `None` until the device has read
+ * its clock and looked for the school's row; a device without one counts in the default zone.
  */
-export const today = Atom.family((timeZone: CivilTime.TimeZone) =>
-  Atom.make(
-    minutes.pipe(
-      Stream.map((millis) => School.today({ timeZone }, millis)),
-      Stream.changesWith((a, b) => CivilTime.order(a, b) === 0),
+export const now = Atom.family((accountId: string) =>
+  Atom.make((get): Option.Option<School.Now> => {
+    const held = get(school(accountId));
+
+    if (AsyncResult.isInitial(held)) return Option.none();
+
+    const row = Option.getOrUndefined(Option.flatten(AsyncResult.value(held)));
+
+    return Option.map(AsyncResult.value(get(clock)), (at) => School.now(row, at));
+  }),
+);
+
+/**
+ * Today at the account's school, from `now`. It changes only at the school's midnight, so "Bis
+ * morgen" turns into "Heute fällig" then on a screen that stays open, and nothing else redraws.
+ */
+export const today = Atom.family((accountId: string) =>
+  Atom.make((get) => Option.map(get(now(accountId)), (current) => current.date)).pipe(
+    Atom.withEquality(
+      Option.makeEquivalence<CivilTime.PlainDate>((a, b) => CivilTime.order(a, b) === 0),
     ),
   ),
 );
