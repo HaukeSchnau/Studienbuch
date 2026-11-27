@@ -1,7 +1,7 @@
 /**
  * The source store (m2-import-path.md, section 3): every read a run made, through the storage
  * policy, as one version per day of a timetable and one per read without a range, written only
- * when it changed and kept three months. It is a log for exports and for the history of a change,
+ * when it changed and kept 35 days. It is a log for exports and for the history of a change,
  * never an import's input: each run imports its own snapshot.
  */
 import { CivilTime, type School } from "@stu/core";
@@ -41,8 +41,11 @@ export class Unstorable extends Schema.TaggedError<Unstorable, { readonly brand:
   },
 ) {}
 
-/** Months a version stays after it was observed. */
-export const keptMonths = 3;
+/**
+ * Days a version stays after it was observed (D113). A run first reads a day when it enters the
+ * window, `Plan.windowDays` ahead, so a day from today on keeps every version it has.
+ */
+export const keptDays = 35;
 
 const decodeDay = Schema.decodeOption(CivilTime.PlainDate);
 
@@ -208,28 +211,26 @@ export const write = Effect.fn("SourceStore.write")(function* (
 }, Effect.orDie);
 
 /**
- * Deletes versions observed more than three months before `now`, except the newest of each path
- * and day whose day is less than three months past. A read without a range keeps its newest.
+ * Deletes versions observed more than `keptDays` before `now`, except the newest of each read
+ * without a range. A directory is written only when it changes, so its newest version can be
+ * older and still be what WebUntis answers.
  */
 export const prune = Effect.fn("SourceStore.prune")(function* (
   school: School.Id,
-  timeZone: School.Row["timeZone"],
   now: DateTime.Utc,
 ) {
   const sql = yield* SqlClient.SqlClient;
-  const before = DateTime.subtract(now, { months: keptMonths });
-  const lastDay = CivilTime.format(CivilTime.dateIn(DateTime.toEpochMillis(before), timeZone));
+  const before = DateTime.subtract(now, { days: keptDays });
 
   const [row] = yield* sql<{ readonly deleted: number }>`
     with deleted as (
       delete from source_version v
       where v.school_id = ${school} and v.observed_at < ${DateTime.toDateUtc(before)}
         and not (
-          (v.day is null or v.day >= ${lastDay}::date)
+          v.day is null
           and v.observed_at = (
             select max(w.observed_at) from source_version w
-            where w.school_id = v.school_id and w.path = v.path
-              and (w.day = v.day or (w.day is null and v.day is null))
+            where w.school_id = v.school_id and w.path = v.path and w.day is null
           )
         )
       returning 1

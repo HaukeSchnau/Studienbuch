@@ -932,7 +932,7 @@ const leased = Effect.fn("ImportRun.leased")(function* (
 
   // Reads that answered are stored even when another failed: the store is a log.
   const { versions, failures } = yield* store(school, now, snapshot, report);
-  const versionsPruned = yield* SourceStore.prune(school, profile.school.timeZone, now);
+  const versionsPruned = yield* SourceStore.prune(school, now);
 
   yield* Ref.update(report, (current) => ({ ...current, versionsPruned }));
 

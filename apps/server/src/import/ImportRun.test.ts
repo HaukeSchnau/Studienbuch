@@ -1,7 +1,8 @@
 import { TransportError, WebUntisClient } from "@schnau/webuntis-api";
 import { assert, describe, expect, it, layer } from "@effect/vitest";
-import { CivilTime, Enrollment, School } from "@stu/core";
-import { SyncWriter } from "@stu/sync/server";
+import { CivilTime, Enrollment, School, Studienbuch } from "@stu/core";
+import type { Protocol } from "@stu/sync";
+import { Pull, SyncWriter } from "@stu/sync/server";
 import { Postgres18 } from "@stu/sync/testing";
 import * as Clock from "effect/Clock";
 import * as DateTime from "effect/DateTime";
@@ -243,20 +244,46 @@ const movedMondayDe = planted(TinySchool.corpus, entriesOf(111), (body) => {
   };
 });
 
-/** The recording answering a week longer, without lessons, so a run on Tuesday reads a window. */
-const throughDecember = (corpus: Corpus.Corpus): Corpus.Corpus => ({
+/** The recording answering until January's end, without lessons after November, for later runs. */
+const throughJanuary = (corpus: Corpus.Corpus): Corpus.Corpus => ({
   ...corpus,
   reads: new Map(
     [...corpus.reads].map(([path, read]) => [
       path,
       {
         versions: read.versions.map((version) =>
-          version.end === "2026-11-29" ? { ...version, end: "2026-12-06" } : version,
+          version.end === "2026-11-29" ? { ...version, end: "2027-01-31" } : version,
         ),
       },
     ]),
   ),
 });
+
+/** The days of the school's published lessons, in order. */
+const lessonDays = (school: string) =>
+  Effect.flatMap(
+    SqlClient.SqlClient,
+    (sql) => sql<{ readonly date: string }>`
+      select distinct r.data->>'date' as date from sync_row r join space s on s.id = r.space_id
+      where s.parent_id = ${school} and r.tbl = 'Lesson' and r.data is not null
+      order by date
+    `,
+  ).pipe(Effect.map((rows) => rows.map(({ date }) => date)));
+
+const decodeDated = Schema.decodeUnknownOption(Schema.Struct({ date: Schema.String }));
+
+/** One pull of the account's phone from `cursors`, which must fit on one page. */
+const pullOnce = (account: string, cursors: ReadonlyArray<typeof Protocol.Cursor.Type>) =>
+  Effect.flatMap(Pull.Service, (service) =>
+    service.pull(account, {
+      clientId: `${account}-phone`,
+      syncEpoch: null,
+      contract: Studienbuch.schema.contract,
+      cursors,
+      settledMutationId: 0,
+      limit: 1000,
+    }),
+  ).pipe(Effect.tap((response) => Effect.sync(() => assert.isFalse(response.more))));
 
 const bridgeDay = {
   id: 3,
@@ -272,7 +299,9 @@ const withBridgeDay = planted(TinySchool.corpus, RecordedWebUntis.paths.appData,
 
 describe.skipIf(Postgres18.socket === null)("ImportRun on PostgreSQL 18", () => {
   // The live clock, moved to the invented school's dates for each run (`ImportTesting.at`).
-  layer(SchoolTesting.database, { excludeTestServices: true })((it) => {
+  layer(Pull.layer(Studienbuch.schema.contract).pipe(Layer.provideMerge(SchoolTesting.database)), {
+    excludeTestServices: true,
+  })((it) => {
     it.effect(
       "publishes a snapshot, and the same snapshot again writes only the Stand's step",
       () =>
@@ -1003,7 +1032,7 @@ describe.skipIf(Postgres18.socket === null)("ImportRun on PostgreSQL 18", () => 
         const school = "tiny-dark-monday";
         const sql = yield* SqlClient.SqlClient;
         const dark = { ...options(school).profile, publish: false };
-        const source = recorded(throughDecember(TinySchool.corpus));
+        const source = recorded(throughJanuary(TinySchool.corpus));
         yield* runAt(morning, options(school, { profile: dark, source }));
 
         const tuesday = yield* runAt(
@@ -1017,6 +1046,83 @@ describe.skipIf(Postgres18.socket === null)("ImportRun on PostgreSQL 18", () => 
         `;
 
         expect([tuesday.outcome, monday?.lessons]).toEqual(["Published", 0]);
+      }),
+    );
+
+    // 3 December is day 29 after 4 November, whose lessons hold an Entfall. Each row runs where the
+    // school's date is a day ahead of UTC's, and Auckland's also of Berlin's.
+    it.effect.each([
+      { school: "tiny-kept-berlin", zone: "Europe/Berlin", at: "2026-12-02T23:30:00Z" },
+      { school: "tiny-kept-auckland", zone: "Pacific/Auckland", at: "2026-12-02T12:00:00Z" },
+    ])(
+      "on 3 December in $zone, removes 4 November's lessons and keeps 5 November's",
+      ({ school, zone, at }) =>
+        Effect.gen(function* () {
+          const tiny = options(school).profile;
+          const timeZone = CivilTime.TimeZone.make(zone);
+          const profile = { ...tiny, school: { ...tiny.school, timeZone } };
+          const source = recorded(throughJanuary(TinySchool.corpus));
+          yield* runAt(morning, options(school, { profile, source }));
+          const before = yield* lessonDays(school);
+          const later = yield* runAt(DateTime.makeUnsafe(at), options(school, { profile, source }));
+          const after = yield* lessonDays(school);
+
+          expect({
+            outcome: later.outcome,
+            removed: before.filter((day) => !after.includes(day)),
+            first: after[0],
+          }).toEqual({
+            outcome: "Published",
+            removed: ["2026-11-02", "2026-11-03", "2026-11-04"],
+            first: "2026-11-05",
+          });
+        }),
+    );
+
+    it.effect("a device offline for six weeks loses the lessons more than 28 days past", () =>
+      Effect.gen(function* () {
+        const school = School.Id.make("tiny-offline");
+        const source = recorded(throughJanuary(TinySchool.corpus));
+        yield* runAt(morning, options(school, { source }));
+        yield* SchoolTesting.account("lena-offline");
+        const { notebook } = yield* Access.admit("lena-offline", school, Option.none());
+        const offered = yield* ImportTesting.at(morning)(Schools.offered(school, 11));
+        yield* Access.enroll(notebook, Option.getOrThrow(offered));
+
+        // Her phone's lessons, by space and id, with their days.
+        const held = new Map<string, string>();
+
+        const apply = (response: Effect.Success<ReturnType<typeof pullOnce>>) => {
+          for (const { space, ops } of response.patches) {
+            for (const { tbl, id, row } of ops) {
+              if (tbl !== "Lesson") continue;
+
+              if (row._tag === "Readable") {
+                held.set(`${space} ${id}`, Option.getOrThrow(decodeDated(row.data)).date);
+              } else {
+                held.delete(`${space} ${id}`);
+              }
+            }
+          }
+
+          return response.patches.map(({ space, to }) => ({ space, version: to }));
+        };
+
+        const days = () => [...new Set(held.values())].sort();
+        const cursors = apply(yield* pullOnce("lena-offline", []));
+        const before = days();
+        const later = yield* runAt(
+          DateTime.add(morning, { days: 42 }),
+          options(school, { source }),
+        );
+        apply(yield* pullOnce("lena-offline", cursors));
+
+        expect({ outcome: later.outcome, first: [before[0], days()[0]], after: days() }).toEqual({
+          outcome: "Published",
+          first: ["2026-11-02", "2026-11-16"],
+          // 14 December less 28 days, and everything her phone held from it on.
+          after: before.filter((day) => day >= "2026-11-16"),
+        });
       }),
     );
 
