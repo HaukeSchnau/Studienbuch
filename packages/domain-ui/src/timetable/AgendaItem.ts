@@ -4,7 +4,7 @@
  * shows it. The app builds them from its rows through `Timetable`, and a page with demo data builds
  * the items directly.
  */
-import { CivilTime, HomeworkDates, type Subject, Timetable } from "@stu/core";
+import { CivilTime, HomeworkDates, type School, type Subject, Timetable } from "@stu/core";
 import * as Option from "effect/Option";
 import * as PlainDateFns from "temporal-polyfill/fns/PlainDate";
 
@@ -315,16 +315,15 @@ export interface Stand {
 
 /**
  * The Stand for a card's foot at `now`, once the import's last read at `observedAt` is old
- * (`Timetable.staleSince`), in the school's `timeZone`.
+ * (`Timetable.staleSince`).
  */
 export const staleStand = (
   observedAt: Option.Option<number>,
-  now: number,
-  timeZone: CivilTime.TimeZone,
+  now: School.Now,
   offline: boolean,
 ): Stand | undefined =>
-  Option.flatMap(observedAt, (read) => Timetable.staleSince(read, now, timeZone)).pipe(
-    Option.map((read) => stand(read, CivilTime.momentIn(now, timeZone).date, offline)),
+  Option.flatMap(observedAt, (read) => Timetable.staleSince(read, now)).pipe(
+    Option.map((read) => stand(read, now.date, offline)),
     Option.getOrUndefined,
   );
 

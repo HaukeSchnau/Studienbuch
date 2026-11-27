@@ -53,10 +53,25 @@ export type Row = Sync.Row<typeof Row>;
 export const defaultTimeZone = CivilTime.TimeZone.make("Europe/Berlin");
 
 /**
- * The date at the school at the instant `now`, in epoch milliseconds, which the caller reads from
- * its clock. A device that holds no school row yet counts in {@link defaultTimeZone}.
+ * Now at a school: an instant with the date and the wall-clock time it is there. The date turns at
+ * the school's midnight and the time follows the school's clocks, whatever zone the device is in.
  */
-export const today = (
-  school: Pick<Row, "timeZone"> | undefined,
-  now: number,
-): CivilTime.PlainDate => CivilTime.dateIn(now, school?.timeZone ?? defaultTimeZone);
+export interface Now extends CivilTime.Moment {
+  /** In epoch milliseconds. */
+  readonly at: number;
+  readonly timeZone: CivilTime.TimeZone;
+}
+
+/**
+ * Now at the school at the instant `at`, in epoch milliseconds, which the caller reads from its
+ * clock. A device that holds no school row yet counts in {@link defaultTimeZone}.
+ */
+export const now = (school: Pick<Row, "timeZone"> | undefined, at: number): Now => {
+  const timeZone = school?.timeZone ?? defaultTimeZone;
+
+  return { at, timeZone, ...CivilTime.momentIn(at, timeZone) };
+};
+
+/** The date at the school at the instant `at` ({@link now}). */
+export const today = (school: Pick<Row, "timeZone"> | undefined, at: number): CivilTime.PlainDate =>
+  now(school, at).date;
