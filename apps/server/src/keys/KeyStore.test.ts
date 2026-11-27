@@ -6,6 +6,7 @@ import { Postgres18 } from "@stu/sync/testing";
 import * as Cause from "effect/Cause";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";
+import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Fiber from "effect/Fiber";
@@ -388,7 +389,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
     );
 
     it.effect(
-      "refuses the 21st seal fetch in 24 hours, and records exactly the fetches that found a seal",
+      "refuses the 21st seal fetch in 24 hours, records exactly the fetches that found a seal, and the sweep deletes only those older than 12 months",
       () =>
         Effect.gen(function* () {
           const sql = yield* SqlClient.SqlClient;
@@ -414,6 +415,13 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
             values ('ben', 'sealsFetched', 'code', now() - interval '25 hours')
           `;
 
+          // One second inside and outside 12 months before the sweep's time.
+          yield* sql`
+            insert into recovery_event (account_id, kind, method, credential_id, at)
+            values ('ben', 'sealsFetched', 'prf', 'inside', '2025-11-27T12:00:01Z'),
+              ('ben', 'sealsFetched', 'prf', 'outside', '2025-11-27T11:59:59Z')
+          `;
+
           const byCode = Keys.RecoveryCode.make({});
           const byPasskey = Keys.Passkey.make({ credentialId: "x" });
           const passkey = yield* KeyStore.fetchSeals("ben", byPasskey);
@@ -433,7 +441,13 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
           );
 
           yield* Effect.repeat(KeyStore.fetchSeals("ben", byCode), { times: 18 });
+          yield* KeyStore.sweepFetches(DateTime.makeUnsafe("2026-11-27T12:00:00Z"));
           const refused = yield* Effect.flip(KeyStore.fetchSeals("ben", byCode));
+
+          const old = yield* sql<{ readonly credential_id: string }>`
+            select credential_id from recovery_event
+            where account_id = 'ben' and credential_id is not null
+          `;
 
           expect({
             passkey: passkey.wrappers.length,
@@ -441,12 +455,14 @@ describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18
             recovered: AccountKey.matches(recovered, ben.record),
             refused: refused._tag,
             fetches: yield* fetches("ben"),
+            old: old.map((row) => row.credential_id),
           }).toEqual({
             passkey: 0,
             afterPasskey: 0,
             recovered: true,
             refused: "Keys.TooManyAttempts",
             fetches: 20,
+            old: ["inside"],
           });
         }),
     );

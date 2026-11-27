@@ -33,6 +33,7 @@ import { Mail } from "./infra/mail/Mail.ts";
 import { Telemetry } from "./infra/telemetry/Telemetry.ts";
 import { ImportCommand } from "./import/ImportCommand.ts";
 import { ImportJob } from "./import/ImportJob.ts";
+import { KeyStore } from "./keys/KeyStore.ts";
 import { Health } from "./routes/Health.ts";
 import { DevServers } from "./routes/DevServers.ts";
 import { Rpc } from "./routes/Rpc.ts";
@@ -93,7 +94,7 @@ const serve = Effect.gen(function* () {
   return yield* Layer.launch(
     Layer.mergeAll(
       SyncServer.closeFirst.pipe(Layer.provide(http)),
-      Jobs.layer({ import: ImportJob.layer, expiry: Expiry.layer }),
+      Jobs.layer({ import: ImportJob.layer, expiry: Expiry.layer(KeyStore.sweepFetches) }),
     ),
   );
 }).pipe(Effect.provide(withDatabase(Database.layer)));

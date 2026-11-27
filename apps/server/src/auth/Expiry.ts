@@ -1,8 +1,8 @@
 /**
  * Deletes the sessions and short-lived values (email codes, passkey challenges) past their
  * `expiresAt`, which Better Auth refuses from that moment and otherwise deletes only when a request
- * happens to read them: a session unused for 90 days would stay for good. The privacy notice's
- * "Speicherdauer" promises this deletion.
+ * happens to read them: a session unused for 90 days would stay for good. The same hourly run
+ * deletes old seal fetches. The privacy notice's "Speicherdauer" promises both.
  */
 import * as ClusterCron from "effect/cluster/ClusterCron";
 import * as Cron from "effect/Cron";
@@ -26,9 +26,15 @@ export const sweep = Effect.fn("Expiry.sweep")(function* (now: DateTime.Utc) {
   yield* sql`delete from auth_verification where "expiresAt" < ${before}`;
 });
 
-/** The sweep at every full hour. The next run deletes whatever expired rows a failed one left. */
-export const layer = ClusterCron.make({
-  name: "expiry",
-  cron: Cron.parseUnsafe("0 * * * *"),
-  execute: Effect.andThen(Effect.flatMap(DateTime.now, sweep), Jobs.recordRun("expiry")),
-});
+/**
+ * The sweep and `alsoSweep` at every full hour. keys may import auth but not the reverse, so
+ * `main.ts` hands over `KeyStore.sweepFetches`. The next run deletes whatever a failed one left.
+ */
+export const layer = <E, R>(alsoSweep: (now: DateTime.Utc) => Effect.Effect<void, E, R>) =>
+  ClusterCron.make({
+    name: "expiry",
+    cron: Cron.parseUnsafe("0 * * * *"),
+    execute: Effect.flatMap(DateTime.now, (now) => Effect.andThen(sweep(now), alsoSweep(now))).pipe(
+      Effect.andThen(Jobs.recordRun("expiry")),
+    ),
+  });

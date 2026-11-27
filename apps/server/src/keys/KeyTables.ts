@@ -113,8 +113,9 @@ export const keyWrapperSeal = pgTable(
 );
 
 /**
- * What happened to an account's keys, kept so the student can see every unlock. M1 records seal
- * fetches only, which `Keys.fetchSeals` also counts against its daily limit.
+ * What happened to an account's keys. M1 records seal fetches only, for `Keys.fetchSeals`'s daily
+ * limit and so that on the student's request we can tell whether a fetch wasn't theirs. No screen
+ * shows them. The hourly `expiry` job deletes them after 12 months, an account's deletion at once.
  */
 export const recoveryEvent = pgTable(
   "recovery_event",
