@@ -531,11 +531,12 @@ export const shown = (
  */
 export const screen = Atom.family((accountId: string) =>
   Atom.make((get): Option.Option<Screen> => {
+    // Read before today, so the notebook's read runs beside the school's rather than after it.
+    const held = Option.flatten(AsyncResult.value(get(reading(accountId))));
     const today = get(DeviceStatus.today(accountId));
 
     if (Option.isNone(today)) return Option.none();
 
-    const held = Option.flatten(AsyncResult.value(get(reading(accountId))));
     const device = get(DeviceStatus.status(accountId));
 
     return Option.some({

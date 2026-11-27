@@ -51,6 +51,12 @@ describe("School.now", () => {
       now: "2026-03-29 03:00",
     },
     {
+      name: "midnight an hour earlier in UTC after the clocks go forward",
+      school: berlin,
+      at: "2026-03-29T22:00:00Z",
+      now: "2026-03-30 00:00",
+    },
+    {
       name: "the first 02:30 when the clocks go back",
       school: berlin,
       at: "2026-10-25T00:30:00Z",
@@ -67,6 +73,12 @@ describe("School.now", () => {
       school: berlin,
       at: "2026-10-25T07:00:00Z",
       now: "2026-10-25 08:00",
+    },
+    {
+      name: "the same day until its midnight after the clocks go back",
+      school: berlin,
+      at: "2026-10-25T22:59:00Z",
+      now: "2026-10-25 23:59",
     },
   ])("is $now at $at for $name", ({ school, at, now }) => {
     const instant = Date.parse(at);

@@ -1,4 +1,4 @@
-import { assert, it } from "@effect/vitest";
+import { assert, it, vi } from "@effect/vitest";
 import { CivilTime, Course, Homework, Notebook } from "@stu/core";
 import { Refusal } from "@stu/sync";
 import { SyncClient } from "@stu/sync/client";
@@ -11,6 +11,7 @@ import type * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Atom from "effect/reactivity/Atom";
 import * as AtomRegistry from "effect/reactivity/AtomRegistry";
 import * as Schema from "effect/Schema";
+import * as SqlClient from "effect/sql/SqlClient";
 import * as Stream from "effect/Stream";
 
 import { SessionStore } from "../../infra/auth/SessionStore.ts";
@@ -137,10 +138,10 @@ const signedIn = (accountId: string) =>
   );
 
 /**
- * A fresh account on this device whose engine stays offline and holds no notebook, so the device
+ * A fresh account on this device whose engine stays offline. Until it holds a notebook, the device
  * refuses every tick and delete itself.
  */
-const refusingAccount = (accountId: string) =>
+const offlineAccount = (accountId: string) =>
   Effect.gen(function* () {
     const registry = AtomRegistry.make();
     yield* Effect.addFinalizer(() => Effect.sync(() => registry.dispose()));
@@ -165,7 +166,7 @@ const homeworkB = "1b4e28ba-2fa1-41d2-883f-0016d3cca427";
 it.effect("refusals that arrive together all stay, and cards dismissed together all go", () =>
   Effect.gen(function* () {
     const accountId = "refusals-together";
-    const { registry, result } = yield* refusingAccount(accountId);
+    const { registry, result } = yield* offlineAccount(accountId);
     const setDone = HomeworkState.setDone(accountId);
     const remove = HomeworkState.remove(accountId);
 
@@ -205,7 +206,7 @@ it.effect("refusals that arrive together all stay, and cards dismissed together 
 it.effect("signing in again after a sign-out shows no refusal from before, and no error", () =>
   Effect.gen(function* () {
     const accountId = "refusals-sign-out";
-    const { registry, result } = yield* refusingAccount(accountId);
+    const { registry, result } = yield* offlineAccount(accountId);
 
     const setDone = HomeworkState.setDone(accountId);
     registry.set(setDone, { notebook, id: homeworkA, doneOn: dueOn });
@@ -228,5 +229,57 @@ it.effect("signing in again after a sign-out shows no refusal from before, and n
     );
 
     assert.deepStrictEqual(yield* AtomRegistry.getResult(registry, refusals), []);
+  }),
+);
+
+// A school in New York, on a device whose clock reads Saturday 04:00 in Berlin: Friday 22:00 at the
+// school. Until the device has read the School row, it doesn't know the school's day.
+it.effect("today is the school's day from its first value, in the zone of its row", () =>
+  Effect.gen(function* () {
+    // Without fake timers, this fakes only `Date`, which the device's clock reads.
+    vi.setSystemTime("2026-11-28T03:00:00Z");
+    yield* Effect.addFinalizer(() => Effect.sync(() => vi.useRealTimers()));
+
+    const accountId = "today-school-zone";
+    const { registry, result } = yield* offlineAccount(accountId);
+    const engine = Atom.runtime(AccountEngine.app(accountId));
+    registry.mount(engine);
+
+    yield* result(
+      engine.atom(
+        Effect.gen(function* () {
+          const sql = yield* SqlClient.SqlClient;
+
+          yield* sql`
+            insert into sync_space (id, kind, role, version) values
+              ('nb-lena', 'notebook', 'owner', 1), ('ny', 'school', 'reader', 1)
+          `;
+
+          yield* sql`
+            insert into base_row (space, tbl, id, version, data) values
+              ('nb-lena', 'Notebook', 'nb-lena', 1, '{"schoolId":"ny"}'),
+              ('ny', 'School', 'ny', 1, '{"name":"Demo","timeZone":"America/New_York"}')
+          `;
+        }),
+      ),
+    );
+
+    const screen = HomeworkState.screen(accountId);
+    const days: Array<string> = [];
+
+    registry.subscribe(
+      screen,
+      (value) => {
+        for (const each of Option.toArray(value)) days.push(CivilTime.format(each.today));
+      },
+      { immediate: true },
+    );
+
+    yield* AtomRegistry.toStream(registry, screen).pipe(
+      Stream.filter((value) => Option.exists(value, (each) => Option.isSome(each.reading))),
+      Stream.runHead,
+    );
+
+    assert.deepStrictEqual([...new Set(days)], ["2026-11-27"]);
   }),
 );
