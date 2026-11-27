@@ -515,6 +515,17 @@ export const addWrapper = Effect.fn("KeyStore.addWrapper")(function* (
 });
 
 /**
+ * Deletes the seal fetches recorded more than 12 months before `now`, as the privacy notice
+ * promises. The daily limit counts only the last 24 hours of them.
+ */
+export const sweepFetches = Effect.fn("KeyStore.sweepFetches")(function* (now: DateTime.Utc) {
+  const sql = yield* SqlClient.SqlClient;
+  const before = DateTime.toDateUtc(DateTime.subtract(now, { months: 12 }));
+
+  yield* sql`delete from recovery_event where at < ${before}`;
+});
+
+/**
  * The seals of the newest generation for one unlock method, with the whole chain to check them
  * against. A fetch that finds a seal writes a `recovery_event` in the same transaction, and the
  * account gets `Keys.fetchesPerDay` of those in 24 hours.

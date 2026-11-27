@@ -3,8 +3,11 @@ import * as NodeRuntime from "@effect/platform-node/NodeRuntime";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import * as Cause from "effect/Cause";
 import * as Command from "effect/cli/Command";
+import * as ClusterCron from "effect/cluster/ClusterCron";
 import * as Config from "effect/Config";
 import * as Console from "effect/Console";
+import * as Cron from "effect/Cron";
+import * as DateTime from "effect/DateTime";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
@@ -21,6 +24,7 @@ import { Connection } from "@stu/sync";
 import { SyncEpoch, SyncServer, Tables as SyncTables } from "@stu/sync/server";
 import packageJson from "../package.json" with { type: "json" };
 import { Auth } from "./auth/Auth.ts";
+import { Expiry } from "./auth/Expiry.ts";
 import { DemoAccounts } from "./demo/DemoAccounts.ts";
 import { Seed } from "./demo/Seed.ts";
 import { Deployment } from "./infra/config/Deployment.ts";
@@ -32,6 +36,7 @@ import { Mail } from "./infra/mail/Mail.ts";
 import { Telemetry } from "./infra/telemetry/Telemetry.ts";
 import { ImportCommand } from "./import/ImportCommand.ts";
 import { ImportJob } from "./import/ImportJob.ts";
+import { KeyStore } from "./keys/KeyStore.ts";
 import { Health } from "./routes/Health.ts";
 import { DevServers } from "./routes/DevServers.ts";
 import { Rpc } from "./routes/Rpc.ts";
@@ -86,13 +91,23 @@ const http = HttpRouter.serve(
   ),
 );
 
+// Every full hour, auth's expired sessions and codes and keys' seal fetches older than 12 months
+// go, as the privacy notice promises. The next run deletes whatever a failed one left.
+const expiry = ClusterCron.make({
+  name: "expiry",
+  cron: Cron.parseUnsafe("0 * * * *"),
+  execute: Effect.flatMap(DateTime.now, (now) =>
+    Effect.andThen(Expiry.sweep(now), KeyStore.sweepFetches(now)),
+  ).pipe(Effect.andThen(Jobs.recordRun("expiry"))),
+});
+
 const serve = Effect.gen(function* () {
   yield* Migrations.requireHead(yield* Migrations.Release);
 
   return yield* Layer.launch(
     Layer.mergeAll(
       SyncServer.closeFirst.pipe(Layer.provide(http)),
-      Jobs.layer({ import: ImportJob.layer }),
+      Jobs.layer({ import: ImportJob.layer, expiry }),
     ),
   );
 }).pipe(Effect.provide(withDatabase(Database.layer)));

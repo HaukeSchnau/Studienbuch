@@ -13,7 +13,7 @@ export function Datenschutz() {
   return (
     <LegalPage title="Datenschutzerklärung">
       <p>
-        Diese Erklärung gilt für die Website <strong>studienbuch.app</strong> und für die
+        Diese Erklärung gilt für die Website <strong>beta.studienbuch.app</strong> und für die
         Studienbuch-App für Android, iOS und den Browser. Beide werden getrennt beschrieben, weil
         sich unterscheidet, wer über die Verarbeitung entscheidet.
       </p>
@@ -47,10 +47,14 @@ export function Datenschutz() {
       <h3>Server-Logfiles</h3>
       <p>
         Bei jedem Aufruf der Website protokolliert unser Server Datum und Uhrzeit, die abgerufene
-        Adresse und den HTTP-Statuscode. Um wiederholte Versuche bei Anmeldung, Registrierung und
-        Zugangscodes zu begrenzen, zählt der Server außerdem Anfragen je IP-Adresse in Zeitfenstern
-        von bis zu 15&nbsp;Minuten. Diese Zählungen liegen nur im Arbeitsspeicher; abgelaufene
-        löscht der Server bei späteren Anfragen, spätestens bei seinem nächsten Neustart.
+        Adresse und den HTTP-Statuscode. Um wiederholte Versuche bei Registrierung, Anmeldung,
+        Passwörtern, E-Mail-Codes und Zugangscodes zu begrenzen, zählt der Server außerdem in
+        Zeitfenstern von 10&nbsp;Sekunden bis zu einer Stunde: Anfragen je IP-Adresse und Funktion,
+        bei Registrierungen auch je IP-Adresse und Zugangscode; falsche Passwörter und angeforderte
+        Code-E-Mails je E-Mail-Adresse; und fehlgeschlagene Einlösungen von Zugangscodes je
+        IP-Adresse und je eingegebenem Code, den er dafür nur als kryptografischen Hash festhält.
+        Diese Zählungen liegen nur im Arbeitsspeicher; abgelaufene löscht der Server bei späteren
+        Anfragen, spätestens bei seinem nächsten Neustart.
       </p>
       <p>
         Rechtsgrundlage ist Artikel&nbsp;6 Absatz&nbsp;1 Buchstabe&nbsp;f DSGVO. Unser berechtigtes
@@ -132,9 +136,16 @@ export function Datenschutz() {
           interne Kennung, an die nie eine E-Mail geht.
         </li>
         <li>
-          Sitzungs- und Gerätedaten wie Ablaufzeit, IP-Adresse, Browser- und Gerätekennung, die
-          Zeitpunkte, zu denen sich Ihre Geräte melden, sowie kurzlebige Bestätigungs- und
-          Wiederherstellungstoken
+          Sitzungs- und Gerätedaten wie Anmelde- und Ablaufzeit, die Kennung des Browsers oder der
+          App (User-Agent), eine zufällige Kennung je Gerät für den Abgleich, die Zeitpunkte, zu
+          denen sich Ihre Geräte melden, sowie kurzlebige Bestätigungs- und Wiederherstellungstoken.
+          IP-Adressen speichern wir dabei nicht.
+        </li>
+        <li>
+          Öffnet ein Gerät die Schlüsselsicherung Ihres Kontos, mit einem Passkey oder der
+          Notfallkarte, speichern wir den Zeitpunkt und das Verfahren, bei einem Passkey auch dessen
+          Kennung. Damit begrenzen wir diese Öffnungen auf 20 am Tag, und auf Ihre Anfrage können
+          wir nachvollziehen, ob es Öffnungen gab, die Sie nicht selbst vorgenommen haben.
         </li>
         <li>
           beim Versand von Konto-E-Mails die Empfängeradresse, den Nachrichteninhalt und technische
@@ -265,8 +276,9 @@ export function Datenschutz() {
       </p>
       <p>
         Konten und die zugehörigen Zugangsdaten speichern wir, solange das Konto besteht.
-        Abgelaufene Sitzungen sowie Bestätigungs- und Wiederherstellungstoken werden gelöscht,
-        sobald sie für ihren Sicherheitszweck nicht mehr benötigt werden. Ihr Konto können Sie
+        Abgelaufene Sitzungen sowie Bestätigungs- und Wiederherstellungstoken löscht der Server
+        stündlich. Diese Einträge zu Öffnungen der Schlüsselsicherung löschen wir nach
+        12&nbsp;Monaten; löschen Sie Ihr Konto, löschen wir sie mit ihm. Ihr Konto können Sie
         jederzeit in der App löschen. Geräte, die bei der Löschung noch angemeldet sind, löschen
         ihre Kopie, sobald sie sich wieder verbinden. Auf anderen Geräten bleiben Ihre Einträge, bis
         Sie dort die App oder die Websitedaten löschen. Datensicherungen bewahren wir bis zu
