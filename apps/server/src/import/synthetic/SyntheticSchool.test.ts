@@ -121,13 +121,13 @@ describe("SyntheticSchool", () => {
             .sort(),
         );
 
-        // A late joiner's Kurswahl lacks the course they join, so only weeks from then on miss it.
-        for (const { view, weeksWrong } of wrong.filter(({ view }) => !movers.has(view.id))) {
-          const from = weekOf(joinedOn.get(view.id) ?? "");
-
+        // A late joiner chose right, and misses the course they join from its week on.
+        for (const { view, exact, weeksWrong } of wrong.filter(
+          ({ view }) => !movers.has(view.id),
+        )) {
           assert.deepStrictEqual(
-            weeksWrong.filter((week) => week < from),
-            [],
+            { exact, first: weeksWrong[0] },
+            { exact: true, first: weekOf(joinedOn.get(view.id) ?? "") },
             view.name,
           );
         }
@@ -139,7 +139,7 @@ describe("SyntheticSchool", () => {
 
   // The calibration's pitfalls are what the generator is for: each must come back, about as
   // often per term, when the synthetic school is measured the way corpus v1 was.
-  it.effect.each([1, 3, 6, 21])(
+  it.effect.each([1, 3, 6, 21, 54])(
     "plants every pitfall the calibration names, about as often, seed %i",
     (seed) =>
       Effect.gen(function* () {

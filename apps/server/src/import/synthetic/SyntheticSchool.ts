@@ -704,6 +704,9 @@ const build = Effect.fnUntraced(function* (calibration: Calibration.Calibration,
     return new Set(found.map((one) => one.kopplung)).size >= switches ? [found] : [];
   });
 
+  // Each switch changes two courses no other switch touches, so every change counts once.
+  const touched = new Set<string>();
+
   for (const found of (yield* Random.shuffle(eligible)).slice(0, movers)) {
     const done = new Set<number>();
 
@@ -712,7 +715,10 @@ const build = Effect.fnUntraced(function* (calibration: Calibration.Calibration,
 
       if (done.has(index) || done.size >= switches) continue;
 
+      if (touched.has(move.from) || touched.has(move.to)) continue;
+
       done.add(index);
+      touched.add(move.from).add(move.to);
       moving.add(move.student);
       moves.push(move);
     }
