@@ -613,11 +613,18 @@ export const personOfView = (type: string): Tokens.Person | undefined =>
 export const entriesPath = (view: NonNullable<Read["view"]>, resource: number) =>
   `${view.year}/entries/${view.type}/${resource}`;
 
-const placeholders: Readonly<Record<Tokens.Person, string>> = {
-  T: "teacher",
-  S: "student",
-  P: "person",
-};
+const placeholders = { S: "student", P: "person" } as const;
+
+/**
+ * What the store writes in place of a student's or the account's name: `student-12` after the id
+ * beside it, or `student` where there is none. Staff names stay, so a teacher has none.
+ */
+export const placeholder = (kind: Tokens.Person, id: Json | undefined) =>
+  kind === "T"
+    ? undefined
+    : Predicate.isNumber(id)
+      ? `${placeholders[kind]}-${id}`
+      : placeholders[kind];
 
 /**
  * What the source store keeps (m2-import-path.md, section 3): school data, staff names and free
@@ -653,11 +660,10 @@ export const store: Handlers = {
       return Result.succeed("");
     }
 
-    if (leaf._tag !== "PersonName" || leaf.kind === "T") return Result.succeed(value);
+    if (leaf._tag !== "PersonName") return Result.succeed(value);
 
-    const id = leaf.by === "id" ? ancestors[0]?.id : undefined;
-    const name = placeholders[leaf.kind];
-
-    return Result.succeed(Predicate.isNumber(id) ? `${name}-${id}` : name);
+    return Result.succeed(
+      placeholder(leaf.kind, leaf.by === "id" ? ancestors[0]?.id : undefined) ?? value,
+    );
   },
 };

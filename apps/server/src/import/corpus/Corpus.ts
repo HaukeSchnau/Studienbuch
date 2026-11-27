@@ -37,6 +37,11 @@ export const Manifest = Schema.Struct({
   kept: Schema.optional(
     Schema.Struct({ vocabulary: Schema.Array(Counted), phrases: Schema.Array(Counted) }),
   ),
+  /**
+   * `per-export` when an export drew its tokens' key at random and dropped it, so they match no
+   * other corpus. Without it, the capture's kept key made them, as for corpus v1.
+   */
+  key: Schema.optional(Schema.Literal("per-export")),
 });
 
 export type Manifest = typeof Manifest.Type;

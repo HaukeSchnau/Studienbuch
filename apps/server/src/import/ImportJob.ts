@@ -12,13 +12,17 @@ import * as ClusterCron from "effect/cluster/ClusterCron";
 import * as Data from "effect/Data";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
+import * as FetchHttpClient from "effect/http/FetchHttpClient";
 import type * as HttpClient from "effect/http/HttpClient";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import type * as Redacted from "effect/Redacted";
 import * as SqlClient from "effect/sql/SqlClient";
 import { Deployment } from "../infra/config/Deployment.ts";
+import { Gitea } from "../infra/gitea/Gitea.ts";
 import { Jobs } from "../infra/jobs/Jobs.ts";
 import { LiveWebUntis } from "../infra/webuntis/LiveWebUntis.ts";
+import { Export } from "./corpus/Export.ts";
 import { ImportRun } from "./ImportRun.ts";
 import { Lease } from "./Lease.ts";
 import { IgsLilienthal } from "./profiles/IgsLilienthal.ts";
@@ -26,8 +30,12 @@ import type { SchoolProfile } from "./profiles/SchoolProfile.ts";
 
 export * as ImportJob from "./ImportJob.ts";
 
-/** The school the job imports, and when. */
-export const school = { profile: IgsLilienthal.profile, schedule: IgsLilienthal.schedule };
+/** The school the job imports, when, and when it exports the week's store into the corpus. */
+export const school = {
+  profile: IgsLilienthal.profile,
+  schedule: IgsLilienthal.schedule,
+  weeklyExport: IgsLilienthal.weeklyExport,
+};
 
 /** The owner of the job's own pause. `import resume --by import` ends it. */
 export const pausedBy = "import";
@@ -152,18 +160,50 @@ export const runOnce = Effect.fn("ImportJob.runOnce")(function* (input: {
   return ran;
 });
 
-/** The job's two crons where it is registered, and nothing elsewhere. */
+/** The corpus repository through Node's fetch, for the export's one commit. */
+export const corpusRepository = (token: Redacted.Redacted) =>
+  Gitea.layer(Export.repository, token).pipe(Layer.provide(FetchHttpClient.layer));
+
+/**
+ * The week's export at its slot: the observations up to the slot, also when it runs late after a
+ * restart. A failure is on its `import_export` row; the log names its tag only.
+ */
+const exportWeek = Effect.fn("ImportJob.exportWeek")(function* (token: Redacted.Redacted) {
+  const until = yield* ClusterCron.CurrentScheduledTime;
+
+  yield* Export.run({
+    profile: school.profile,
+    until,
+    recipients: Export.recipients,
+  }).pipe(
+    Effect.provide(corpusRepository(token)),
+    Effect.catchTags({
+      "Gitea.CommitUnconfirmed": () =>
+        Effect.logWarning(
+          "The weekly corpus export is unconfirmed: the corpus repository may hold it",
+        ),
+    }),
+    Effect.catch((error) =>
+      Effect.logWarning("The weekly corpus export pushed nothing").pipe(
+        Effect.annotateLogs({ failure: error._tag }),
+      ),
+    ),
+  );
+});
+
+/** The job's crons where it is registered, and nothing elsewhere. */
 export const layer = Layer.unwrap(
   Effect.gen(function* () {
     const found = yield* registration;
+    const pushToken = yield* Export.pushToken;
 
     yield* Effect.logInfo("The import job's registration").pipe(
-      Effect.annotateLogs({ registration: found._tag }),
+      Effect.annotateLogs({ registration: found._tag, weeklyExport: Option.isSome(pushToken) }),
     );
 
     if (found._tag !== "Registered") return Layer.empty;
 
-    const { profile, schedule } = school;
+    const { profile, schedule, weeklyExport } = school;
 
     const cron = (name: string, run: SchoolProfile.Run) =>
       ClusterCron.make({
@@ -179,9 +219,23 @@ export const layer = Layer.unwrap(
         }).pipe(Effect.andThen(Jobs.recordRun("import"))),
       });
 
+    const weekly = Option.match(pushToken, {
+      onNone: () => Layer.empty,
+      onSome: (token) =>
+        ClusterCron.make({
+          name: "import-export",
+          cron: weeklyExport,
+          // A restart exports each missed week from its own slot, in order, up to a week late.
+          calculateNextRunFromPrevious: true,
+          skipIfOlderThan: "7 days",
+          execute: exportWeek(token),
+        }),
+    });
+
     return Layer.mergeAll(
       cron("import-daytime", schedule.daytime),
       cron("import-nightly", schedule.nightly),
+      weekly,
     ).pipe(Layer.provide(SyncServer.writers(Studienbuch.schema)));
   }),
 );

@@ -270,6 +270,14 @@ export const firstEntry = (body: Mutable): Mutable =>
       .find((entries) => entries.length > 0)?.[0],
   );
 
+/** The day `date` of an entries body. */
+export const dayOf = (body: Mutable, date: string): Mutable =>
+  object(list(body.days).find((day) => object(day).date === date));
+
+/** The first lesson of `date` in an entries body. */
+export const firstEntryOn = (body: Mutable, date: string): Mutable =>
+  object(list(dayOf(body, date).gridEntries)[0]);
+
 /** `corpus` with a copy of one read's first version changed by `plant`. */
 export const planted = (
   corpus: Corpus.Corpus,

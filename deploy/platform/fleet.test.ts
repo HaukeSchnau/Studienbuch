@@ -50,7 +50,7 @@ describe("Platform.spec", () => {
     });
   });
 
-  it("keeps beta's database and reads its mail, demo password, WebUntis account and keys from SOPS", () => {
+  it("keeps beta's database and reads its mail, demo password, WebUntis account, corpus token and keys from SOPS", () => {
     const beta = environment("beta");
     const spec = Platform.spec(beta, release, storage, Platform.sopsSecrets(beta));
 
@@ -67,6 +67,7 @@ describe("Platform.spec", () => {
       DEMO_PASSWORD: { sops: "projects/studienbuch/beta/demo-password" },
       WEBUNTIS_USERNAME: { sops: "projects/studienbuch/beta/webuntis-username" },
       WEBUNTIS_PASSWORD: { sops: "projects/studienbuch/beta/webuntis-password" },
+      CORPUS_PUSH_TOKEN: { sops: "projects/studienbuch/beta/corpus-push-token" },
       S3_ACCESS_KEY_ID: { sops: "projects/studienbuch/r2/beta/access-key-id" },
       S3_SECRET_ACCESS_KEY: { sops: "projects/studienbuch/r2/beta/secret-access-key" },
     });
@@ -90,13 +91,13 @@ describe("Platform.spec", () => {
     });
   });
 
-  it("gives production neither the WebUntis account nor the school", () => {
+  it("gives production neither the WebUntis account, the school nor the corpus token", () => {
     const prod = environment("prod");
     const spec = Platform.spec(prod, release, storage, Platform.sopsSecrets(prod));
     const names = [...Object.keys(spec.secrets), ...Object.keys(spec.env)];
 
     assert.deepStrictEqual(
-      names.filter((name) => name.startsWith("WEBUNTIS_")),
+      names.filter((name) => name.startsWith("WEBUNTIS_") || name.startsWith("CORPUS_")),
       [],
     );
   });

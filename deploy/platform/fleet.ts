@@ -115,11 +115,14 @@ export const spec = (
       sops: `projects/studienbuch/r2/${environment.storage}/secret-access-key`,
     },
     // With the school in `env` from the same field, because the server needs all four or none.
+    // The import's weekly export pushes to the corpus repository with a token of a Gitea user who
+    // can write nothing else (infra holds it), so only an environment that imports has it.
     ...Option.match(environment.webuntis, {
       onNone: () => ({}),
       onSome: () => ({
         WEBUNTIS_USERNAME: { sops: `projects/studienbuch/${environment.stage}/webuntis-username` },
         WEBUNTIS_PASSWORD: { sops: `projects/studienbuch/${environment.stage}/webuntis-password` },
+        CORPUS_PUSH_TOKEN: { sops: `projects/studienbuch/${environment.stage}/corpus-push-token` },
       }),
     }),
   },

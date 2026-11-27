@@ -241,25 +241,64 @@ export const prune = Effect.fn("SourceStore.prune")(function* (
   return row?.deleted ?? 0;
 }, Effect.orDie);
 
-/** Every version the store holds for the school, as a recording an import can replay. */
-export const recording = Effect.fn("SourceStore.recording")(function* (school: School.Id) {
-  const sql = yield* SqlClient.SqlClient;
+interface Row {
+  readonly path: string;
+  readonly day: string | null;
+  readonly observedAt: Date;
+  readonly body: Schema.Json;
+}
 
-  const rows = yield* sql<{
-    readonly path: string;
-    readonly day: string | null;
-    readonly observedAt: Date;
-    readonly body: Schema.Json;
-  }>`
-    select path, day::text as day, observed_at as "observedAt", body from source_version
-    where school_id = ${school} order by path, observed_at, day
-  `;
-
-  return recordingOf(
+const recordingOfRows = (rows: ReadonlyArray<Row>) =>
+  recordingOf(
     rows.map(({ path, day, observedAt, body }) => {
       const at = DateTime.fromDateUnsafe(observedAt);
 
       return day === null ? { path, observedAt: at, body } : { path, day, observedAt: at, body };
     }),
   );
+
+/** Every version the store holds for the school, as a recording an import can replay. */
+export const recording = Effect.fn("SourceStore.recording")(function* (school: School.Id) {
+  const sql = yield* SqlClient.SqlClient;
+
+  const rows = yield* sql<Row>`
+    select path, day::text as day, observed_at as "observedAt", body from source_version
+    where school_id = ${school} order by path, observed_at, day
+  `;
+
+  return recordingOfRows(rows);
+}, Effect.orDie);
+
+/**
+ * What the store saw after `since` up to `until`, as a recording: each version observed then whose
+ * day is `since`'s date or later, and the version each such path and day had at `since`, so a
+ * replay at any time in between answers as WebUntis did. A read without a range counts as a day.
+ */
+export const between = Effect.fn("SourceStore.between")(function* (
+  school: School.Id,
+  timeZone: School.Row["timeZone"],
+  window: { readonly since: DateTime.Utc; readonly until: DateTime.Utc },
+) {
+  const sql = yield* SqlClient.SqlClient;
+  const since = DateTime.toDateUtc(window.since);
+  const until = DateTime.toDateUtc(window.until);
+  const first = CivilTime.format(CivilTime.dateIn(DateTime.toEpochMillis(window.since), timeZone));
+
+  const rows = yield* sql<Row>`
+    select path, day::text as day, observed_at as "observedAt", body from source_version v
+    where v.school_id = ${school} and v.observed_at <= ${until}
+      and (v.day is null or v.day >= ${first}::date)
+      and (
+        v.observed_at > ${since}
+        or v.observed_at = (
+          select max(w.observed_at) from source_version w
+          where w.school_id = v.school_id and w.path = v.path
+            and (w.day = v.day or (w.day is null and v.day is null))
+            and w.observed_at <= ${since}
+        )
+      )
+    order by path, observed_at, day
+  `;
+
+  return recordingOfRows(rows);
 }, Effect.orDie);
