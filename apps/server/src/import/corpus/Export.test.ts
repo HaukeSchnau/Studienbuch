@@ -1,8 +1,9 @@
 import { WebUntisClient } from "@schnau/webuntis-api";
-import { assert, describe, expect, layer } from "@effect/vitest";
+import { assert, describe, expect, it, layer } from "@effect/vitest";
 import { School } from "@stu/core";
 import { Postgres18 } from "@stu/sync/testing";
 import * as Age from "age-encryption";
+import * as Cause from "effect/Cause";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
@@ -357,14 +358,45 @@ describe.skipIf(Postgres18.socket === null)("Export on PostgreSQL 18", () => {
           failed: failed._tag,
           pushed: (yield* Ref.get(target.files)).length,
           rows: rows.map(({ outcome }) => outcome),
-          problems: rows.map(({ report }) => isFailure(report) && report.problems),
+          // What `import status` shows: where and what, never the value.
+          found: rows.flatMap(({ report }) =>
+            (isFailure(report) ? (report.found ?? []) : []).map(
+              ({ read, path, problem }) =>
+                `${read} ${path.replace("days[].gridEntries[].", "")}: ${problem}`,
+            ),
+          ),
         }).toEqual({
           failed: "Pseudonymizer.PolicyFailed",
           pushed: 0,
           rows: ["Pseudonymizer.PolicyFailed"],
-          problems: [expect.any(Number)],
+          found: [
+            "<year>/entries/CLASS/<id> position4[].current.displayName: a field without a rule",
+            "<year>/entries/CLASS/<id> position4[].current.displayNameLabel: a field without a rule",
+            "<year>/entries/CLASS/<id> position4[].current.longName: a field without a rule",
+            "<year>/entries/CLASS/<id> position4[].current.shortName: a field without a rule",
+            "<year>/entries/CLASS/<id> position4[].current.status: a field without a rule",
+            "<year>/entries/CLASS/<id> position4[].current.type: expected an object",
+          ],
         });
       }),
     );
+  });
+});
+
+describe("Export", () => {
+  it("lists what a check found only from that check's own failure, never from a defect", () => {
+    const hit = { read: "app-data", path: "user.name", problem: "a teacher longName", count: 1 };
+    const hits = [hit];
+
+    assert.deepStrictEqual(Export.failureOf(Cause.fail(new Checks.LeakFound({ hits }))), {
+      failure: "Checks.LeakFound",
+      problems: 1,
+      found: hits,
+    });
+
+    // A defect can carry a check's error and any value in it, and stays a tag.
+    const forged = new Checks.LeakFound({ hits: [{ ...hit, problem: "Wiebke" }] });
+
+    assert.deepStrictEqual(Export.failureOf(Cause.die(forged)), { failure: "Checks.LeakFound" });
   });
 });
