@@ -219,6 +219,7 @@ export const readViews = Effect.fn("Truth.readViews")(function* (
               ),
               previousTeachers,
               previousRooms,
+              plannedTeachers: idsOf(teacherNames.planned, teacherIds),
               subjects: WebUntisEntry.names(entry, "SUBJECT").current,
               classes: [...new Set([...classNames.current, ...classNames.removed])].sort(),
             };

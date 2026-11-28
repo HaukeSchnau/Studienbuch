@@ -21,6 +21,8 @@ export interface TruthEntry {
   readonly rooms: ReadonlyArray<number>;
   readonly previousTeachers: ReadonlyArray<number>;
   readonly previousRooms: ReadonlyArray<number>;
+  /** The teachers the plan gives it: the current ones a change didn't add, and the removed ones. */
+  readonly plannedTeachers: ReadonlyArray<number>;
   /** Its subjects' codes as WebUntis writes them, such as `MA-E`. */
   readonly subjects: ReadonlyArray<string>;
   /** The short names of the classes it is taught to, a change's removed ones included. */
@@ -28,7 +30,10 @@ export interface TruthEntry {
 }
 
 /** One of our lessons, in the truth's terms. */
-export interface Lesson extends Omit<TruthEntry, "ids" | "subjects" | "classes"> {
+export interface Lesson extends Omit<
+  TruthEntry,
+  "ids" | "subjects" | "classes" | "plannedTeachers"
+> {
   readonly id: string;
   readonly courseId: string;
   readonly kind: Lesson.ChangeKind | undefined;

@@ -17,15 +17,13 @@ const regular = <A extends { readonly status: string }>(rows: ReadonlyArray<A>) 
 
 const decodeDate = Schema.decodeOption(CivilTime.PlainDate);
 
-/** A teaching group in a term: its subjects, classes and planned teachers, a substitute counting as the one replaced. */
+/** A teaching group in a term: its subjects, classes and the teachers the plan gives it. */
 const groupOf = (entry: Metrics.TruthEntry, term: string | undefined) =>
   [
     term,
     entry.subjects.join("+"),
     entry.classes.join("+"),
-    [...(entry.previousTeachers.length > 0 ? entry.previousTeachers : entry.teachers)]
-      .sort((a, b) => a - b)
-      .join("+"),
+    [...entry.plannedTeachers].sort((a, b) => a - b).join("+"),
   ].join("\n");
 
 /** The weekly slot an entry meets in: its weekday, start and end. */
@@ -34,6 +32,10 @@ const slotOf = (entry: Metrics.TruthEntry) =>
     decodeDate(entry.date),
     (date) => `${CivilTime.dayOfWeek(date)} ${entry.start} ${entry.end}`,
   );
+
+/** A lesson of the plan that takes place: neither cancelled nor added. */
+const planned = (entry: Metrics.TruthEntry) =>
+  entry.status === "Regular" || entry.status === "Changed";
 
 const overlap = (a: Metrics.TruthEntry, b: Metrics.TruthEntry) =>
   a.date === b.date && a.start < b.end && b.start < a.end;
@@ -92,7 +94,7 @@ export const attended = (
         onSome: (slot) =>
           judged(entry) &&
           view.entries.some(
-            (other) => other !== entry && other.status !== "Cancelled" && overlap(entry, other),
+            (other) => other !== entry && planned(other) && overlap(entry, other),
           ) &&
           [...ofGroup].some(([each, dates]) => elsewhere(slot)(each) && [...dates].some(shown)) &&
           ![...(seen.get(group) ?? [])].some(elsewhere(slot)),

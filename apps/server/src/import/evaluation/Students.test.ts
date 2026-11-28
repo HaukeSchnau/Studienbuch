@@ -32,6 +32,7 @@ const entry = (id: number, start: number): Metrics.TruthEntry => ({
   teachers: [],
   rooms: [],
   previousTeachers: [],
+  plannedTeachers: [],
   previousRooms: [],
   subjects: ["MA"],
   classes: ["12"],
@@ -92,6 +93,7 @@ describe("Students.attended", () => {
       date,
       subjects: [subject],
       teachers: [teacher],
+      plannedTeachers: [teacher],
     }));
 
   const view = (
@@ -120,6 +122,18 @@ describe("Students.attended", () => {
 
   const cancelled = (entries: ReadonlyArray<Metrics.TruthEntry>) =>
     entries.map((each): Metrics.TruthEntry => ({ ...each, status: "Cancelled" }));
+
+  const added = (entries: ReadonlyArray<Metrics.TruthEntry>) =>
+    entries.map((each): Metrics.TruthEntry => ({ ...each, status: "Added" }));
+
+  const coTaught = (entries: ReadonlyArray<Metrics.TruthEntry>) =>
+    entries.map((each) => ({ ...each, teachers: [1, 7], plannedTeachers: [1, 7] }));
+
+  // Teacher 9 stands in for teacher 1 on the first date.
+  const substituted = (entries: ReadonlyArray<Metrics.TruthEntry>) =>
+    entries.map((each, n): Metrics.TruthEntry =>
+      n === 0 ? { ...each, status: "Changed", teachers: [9, 7], previousTeachers: [1] } : each,
+    );
 
   it.each([
     {
@@ -162,6 +176,26 @@ describe("Students.attended", () => {
         [...latin, ...latinLunch],
         [...latinLunch, ...cancelled(meets(thursdays, "MA", 6, 13))],
       ],
+    },
+    {
+      name: "an added entry at the same time says nothing",
+      views: [
+        view(1, [...latin, ...latinLunch]),
+        view(3, [...latinLunch, ...added(meets(thursdays, "MA", 6, 13))]),
+      ],
+      kept: [
+        [...latin, ...latinLunch],
+        [...latinLunch, ...added(meets(thursdays, "MA", 6, 13))],
+      ],
+    },
+    {
+      // Two teachers share Latin, and a substitute stands in for one of them on one Thursday.
+      name: "a substituted entry belongs to the group the plan gives it",
+      views: [
+        view(1, [...coTaught(latin), ...coTaught(latinLunch), ...spanishLunch]),
+        view(3, [...substituted(coTaught(latinLunch)), ...spanishLunch]),
+      ],
+      kept: [[...coTaught(latin), ...coTaught(latinLunch), ...spanishLunch], spanishLunch],
     },
     {
       // Latin's other slot was on days WebUntis hid from the student, Spanish's wasn't.
