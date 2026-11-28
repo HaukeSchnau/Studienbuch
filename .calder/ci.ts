@@ -27,6 +27,18 @@ const knip = Task.make("knip", { shell, setup: install, run: cmd`knip` });
 const atlas = Task.make("atlas", { shell, setup: install, run: cmd`vp run check:atlas` });
 
 /**
+ * A migration that sorts before main's newest fails, naming the rename. It reads main from Gitea,
+ * because a sibling may have merged after this branch's base, so it runs every time. It runs for
+ * pull requests and their merge trains only: a push to main holds no migration main lacks.
+ */
+const migrationOrder = Task.make("migration-order", {
+  shell,
+  setup: install,
+  run: cmd`vp run check:migrations`,
+  reuse: "never",
+}).pipe(Step.timeout("15 minutes"));
+
+/**
  * Every project, which check:changed takes to be a directory under apps, packages or tools with its
  * own tsconfig.json. All of them take seconds together, less than a task of its own costs each.
  */
@@ -357,6 +369,7 @@ export default Environments.project({
   // synthetic school's needs none.
   rules: [
     On.pullRequest([
+      migrationOrder,
       pnpmDeps,
       runtimeIos,
       runtimeAndroid,

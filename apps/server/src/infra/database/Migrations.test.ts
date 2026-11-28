@@ -1,10 +1,13 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import { assert, describe, layer } from "@effect/vitest";
+import * as PgClient from "@effect/sql-pg/PgClient";
+import { assert, describe, expect, layer } from "@effect/vitest";
+import type { System } from "@stu/api/System";
 import { Postgres18 } from "@stu/sync/testing";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Path from "effect/Path";
 import * as SqlClient from "effect/sql/SqlClient";
+import { Deployment } from "../config/Deployment.ts";
 import { Migrations } from "./Migrations.ts";
 
 const release = Effect.fnUntraced(function* (migrations: Record<string, string>) {
@@ -24,6 +27,29 @@ const a = "CREATE TABLE a (id int);\n--> statement-breakpoint\nINSERT INTO a VAL
 const b = "CREATE TABLE b (id int);\n";
 const first = { "20260101000000_a": a };
 const second = { "20260101000000_a": a, "20260102000000_b": b };
+
+/**
+ * Runs `effect` in a database of its own as the host creates one for `environment`'s server: a
+ * login role without other privileges that owns its database.
+ */
+const asServer = <A, E, R>(
+  environment: System.Environment,
+  effect: Effect.Effect<A, E, R | SqlClient.SqlClient | Deployment.Current>,
+) =>
+  Effect.gen(function* () {
+    const sql = yield* SqlClient.SqlClient;
+    const [test] = yield* sql<{ readonly name: string }>`select current_database() as name`;
+    const role = `${test?.name ?? ""}_${environment}`;
+    yield* sql.unsafe(`create role ${role} login`);
+    yield* sql.unsafe(`create database ${role} owner ${role}`);
+
+    return yield* effect.pipe(
+      Effect.provideService(Deployment.Current, { revision: "test", environment }),
+      Effect.provide(
+        PgClient.layer({ host: Postgres18.socket ?? "", username: role, database: role }),
+      ),
+    );
+  });
 
 describe.skipIf(Postgres18.socket === null)("Migrations", () => {
   layer(NodeServices.layer)((it) => {
@@ -106,6 +132,67 @@ describe.skipIf(Postgres18.socket === null)("Migrations", () => {
 
           assert.deepStrictEqual(behind, ["20260102000000_b"]);
         }),
+      );
+
+      it.effect(
+        "starts a preview's database over on a history it can't continue, and only a preview's",
+        () =>
+          Effect.gen(function* () {
+            const applied = yield* release(second);
+            // As when a pull request renames its migration after its preview applied it.
+            const renamed = yield* release({ "20260101000000_a": a, "20260103000000_b": b });
+
+            const prepared = (environment: System.Environment) =>
+              asServer(
+                environment,
+                Effect.gen(function* () {
+                  const sql = yield* SqlClient.SqlClient;
+                  yield* Migrations.apply(applied);
+                  yield* sql`INSERT INTO b VALUES (7)`;
+
+                  const outcome = yield* Migrations.prepare(renamed).pipe(
+                    Effect.catchTags({
+                      "Migrations.HistoryMismatch": ({ _tag, migration }) =>
+                        Effect.succeed(`${_tag} ${migration}`),
+                    }),
+                  );
+
+                  const history = yield* sql<{ readonly name: string }>`
+                  SELECT name FROM studienbuch_migration ORDER BY name`;
+
+                  return {
+                    outcome,
+                    history: history.map(({ name }) => name),
+                    a: yield* sql`SELECT id FROM a`,
+                    b: yield* sql`SELECT id FROM b`,
+                  };
+                }),
+              );
+
+            const kept = {
+              outcome: "Migrations.HistoryMismatch 20260102000000_b",
+              history: ["20260101000000_a", "20260102000000_b"],
+              a: [{ id: 1 }],
+              b: [{ id: 7 }],
+            };
+
+            expect({
+              preview: yield* prepared("preview"),
+              development: yield* prepared("development"),
+              beta: yield* prepared("beta"),
+              production: yield* prepared("production"),
+            }).toEqual({
+              preview: {
+                outcome: ["20260101000000_a", "20260103000000_b"],
+                history: ["20260101000000_a", "20260103000000_b"],
+                a: [{ id: 1 }],
+                b: [],
+              },
+              development: kept,
+              beta: kept,
+              production: kept,
+            });
+          }),
       );
 
       // Beta has codes minted without a limit before every code needed one (D97).

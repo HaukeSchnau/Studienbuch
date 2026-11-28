@@ -1,10 +1,10 @@
 // Ported from T3 Code's `scripts/check-changed.ts` (github.com/pingdotgg/t3code, MIT, copyright T3
 // Tools Inc.; see tools/T3CODE-LICENSE).
 
-// Format and lint of the changed files, knip, the atlas's paths, a typecheck of the affected
-// projects and their dependents, and the tests a changed file brings. The change is the jj diff from
-// `fork_point(trunk() | @)` to `@`, or in git the diff from the merge base with origin/main plus
-// untracked files. `vp run check:changed <rev>` compares with another jj revset or git ref.
+// Format and lint of the changed files, knip, the atlas's paths, the order of new migrations, a
+// typecheck of the affected projects and their dependents, and the tests a changed file brings, over
+// the jj diff from `fork_point(trunk() | @)` to `@` (in git, from the merge base with origin/main,
+// plus untracked files). `vp run check:changed <rev>` compares with another jj revset or git ref.
 import * as NodeChildProcess from "node:child_process";
 import * as NodeFS from "node:fs";
 import * as NodePath from "node:path";
@@ -168,7 +168,9 @@ const schemaInputs = new Set([
 
 const migrations = NodePath.join("apps/server", drizzle.out ?? "migrations", "/");
 
-if (files.some((file) => schemaInputs.has(file) || file.startsWith(migrations))) {
+const migrationsChanged = files.some((file) => file.startsWith(migrations));
+
+if (migrationsChanged || files.some((file) => schemaInputs.has(file))) {
   tests.add("apps/server/src/infra/database/Schema.test.ts");
 }
 
@@ -234,6 +236,11 @@ const runAtlas = files.some(
 );
 
 if (runAtlas) steps.push({ name: "atlas paths", args: ["run", "check:atlas"] });
+
+// It reads main's migrations from Gitea, so it runs only when this change touches migrations.
+if (migrationsChanged || files.some((file) => file.startsWith("tools/check-migrations/"))) {
+  steps.push({ name: "migration order", args: ["run", "check:migrations"] });
+}
 
 for (const dir of affected) {
   steps.push({ name: `typecheck ${dir}`, args: ["exec", "tsrs", "--noEmit", "-p", dir] });

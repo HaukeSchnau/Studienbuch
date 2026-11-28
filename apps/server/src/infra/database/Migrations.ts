@@ -7,6 +7,7 @@ import * as Layer from "effect/Layer";
 import * as Path from "effect/Path";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
+import { Deployment } from "../config/Deployment.ts";
 
 /**
  * One drizzle-kit migration: `<folder>/<name>/migration.sql`, its statements split where drizzle-kit
@@ -28,7 +29,8 @@ export class Unreadable extends Schema.TaggedError<Unreadable, { readonly brand:
 
 /**
  * An applied migration differs from this release's copy, or is missing from it while older than
- * this release's newest. Applied migrations are immutable, so this needs a person.
+ * this release's newest. Applied migrations are immutable, so this needs a person, except on a
+ * preview (`prepare`).
  */
 export class HistoryMismatch extends Schema.TaggedError<
   HistoryMismatch,
@@ -116,10 +118,10 @@ const readApplied = Effect.gen(function* () {
 });
 
 /**
- * Fails on the first applied migration that this release edited or deleted. An applied migration
- * newer than every local one is fine: it means an older release runs after a newer one migrated.
+ * The first applied migration that this release edited or deleted. An applied migration newer than
+ * every local one is fine: it means an older release runs after a newer one migrated.
  */
-const checkHistory = (local: ReadonlyArray<Migration>, applied: ReadonlyArray<Applied>) => {
+const mismatchOf = (local: ReadonlyArray<Migration>, applied: ReadonlyArray<Applied>) => {
   const localHashes = new Map(local.map(({ name, hash }) => [name, hash]));
   const head = local.at(-1)?.name;
 
@@ -129,12 +131,14 @@ const checkHistory = (local: ReadonlyArray<Migration>, applied: ReadonlyArray<Ap
     if (localHash === hash || (localHash === undefined && head !== undefined && name > head))
       continue;
 
-    return Effect.fail(
-      new HistoryMismatch({ migration: name, appliedHash: hash, localHash: localHash ?? null }),
-    );
+    return new HistoryMismatch({
+      migration: name,
+      appliedHash: hash,
+      localHash: localHash ?? null,
+    });
   }
 
-  return Effect.void;
+  return undefined;
 };
 
 /** The newest applied migration, and the local migrations not applied yet. */
@@ -159,27 +163,49 @@ export const requireHead = Effect.fn("Migrations.requireHead")(function* (
 
 /** `requireHead`, and no applied migration was edited or deleted. */
 export const verify = Effect.fn("Migrations.verify")(function* (local: ReadonlyArray<Migration>) {
-  yield* checkHistory(local, yield* readApplied);
+  const mismatch = mismatchOf(local, yield* readApplied);
+
+  if (mismatch !== undefined) return yield* mismatch;
   yield* requireHead(local);
 });
 
 /**
  * Applies every pending migration in one transaction and returns their names. An advisory lock
- * makes concurrent runs wait, so each migration applies once.
+ * makes concurrent runs wait, so each migration applies once. With `startOver`, a history this
+ * release can't continue doesn't fail: everything the database's role owns is dropped first.
  */
-export const apply = Effect.fn("Migrations.apply")(function* (local: ReadonlyArray<Migration>) {
+export const apply = Effect.fn("Migrations.apply")(function* (
+  local: ReadonlyArray<Migration>,
+  options?: { readonly startOver: boolean },
+) {
   const sql = yield* SqlClient.SqlClient;
+
+  const createHistory = sql`CREATE TABLE IF NOT EXISTS ${sql(historyTable)} (
+    name text PRIMARY KEY,
+    hash text NOT NULL,
+    applied_at timestamptz NOT NULL DEFAULT now()
+  )`;
 
   return yield* sql.withTransaction(
     Effect.gen(function* () {
       yield* sql`SELECT pg_advisory_xact_lock(hashtext(${historyTable}))`;
-      yield* sql`CREATE TABLE IF NOT EXISTS ${sql(historyTable)} (
-        name text PRIMARY KEY,
-        hash text NOT NULL,
-        applied_at timestamptz NOT NULL DEFAULT now()
-      )`;
-      const applied = yield* readApplied;
-      yield* checkHistory(local, applied);
+      yield* createHistory;
+      let applied = yield* readApplied;
+      const mismatch = mismatchOf(local, applied);
+
+      if (mismatch !== undefined) {
+        if (options?.startOver !== true) return yield* mismatch;
+
+        yield* Effect.logWarning(
+          "The migration history doesn't match, so the database starts over",
+        ).pipe(Effect.annotateLogs({ migration: mismatch.migration }));
+        // The host creates the role and its database, so the role may drop what it created in it
+        // but not the database itself.
+        yield* sql`DROP OWNED BY CURRENT_USER`;
+        yield* createHistory;
+        applied = [];
+      }
+
       const appliedNames = new Set(applied.map(({ name }) => name));
       const pending = local.filter(({ name }) => !appliedNames.has(name));
 
@@ -191,6 +217,17 @@ export const apply = Effect.fn("Migrations.apply")(function* (local: ReadonlyArr
       return pending.map(({ name }) => name);
     }),
   );
+});
+
+/**
+ * `apply` as `prepare` runs it. A preview holds only the demo school, which `prepare` seeds again,
+ * so there a history the release can't continue starts over, such as a pull request's migration
+ * that was renamed after its preview applied it. Anywhere else it needs a person.
+ */
+export const prepare = Effect.fn("Migrations.prepare")(function* (local: ReadonlyArray<Migration>) {
+  const { environment } = yield* Deployment.Current;
+
+  return yield* apply(local, { startOver: environment === "preview" });
 });
 
 export * as Migrations from "./Migrations.ts";

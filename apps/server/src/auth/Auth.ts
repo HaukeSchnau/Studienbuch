@@ -32,7 +32,6 @@ import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import * as Stream from "effect/Stream";
-import { Pool } from "pg";
 import { Deletion } from "../account/Deletion.ts";
 import { DemoAccounts } from "../demo/DemoAccounts.ts";
 import { Deployment } from "../infra/config/Deployment.ts";
@@ -636,9 +635,6 @@ const make = Effect.gen(function* () {
 
   if (settings.rpId !== host) return yield* new ForeignRpId({ rpId: settings.rpId, host });
 
-  const databaseUrl = yield* Config.Redacted("DATABASE_URL");
-  const { auth: authConnections } = yield* Database.connections;
-
   // Better Auth's callbacks run outside Effect, with this layer's logger and tracer.
   const services = yield* Effect.context();
 
@@ -949,13 +945,7 @@ const make = Effect.gen(function* () {
   const sessionOf: WithoutAddress.Callbacks["session"] = (headers) =>
     auth.api.getSession({ headers });
 
-  // Better Auth's own pool, beside Effect's client: auth queries are rare (stack.md).
-  const pool = yield* Effect.acquireRelease(
-    Effect.sync(
-      () => new Pool({ connectionString: Redacted.value(databaseUrl), max: authConnections }),
-    ),
-    (pool) => Effect.promise(() => pool.end()),
-  );
+  const pool = yield* Database.authPool;
 
   const auth = betterAuth({
     ...options(settings, {

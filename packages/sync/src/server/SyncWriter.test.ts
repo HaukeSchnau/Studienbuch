@@ -200,6 +200,17 @@ describe.skipIf(Postgres18.socket === null)("SyncWriter on PostgreSQL 18", () =>
           expect((yield* rows("school-reconcile", "Lesson")).map(({ id }) => id)).toEqual([
             "tue-1",
           ]);
+
+          // A delete-only call reads the table once, as a call without `covers` does.
+          const deleteOnly = yield* statements(
+            writer.reconcile("school-reconcile", Fixture.Lesson, [], { covers: () => false }),
+          );
+
+          const unchanged = yield* statements(
+            writer.reconcile("school-reconcile", Fixture.Lesson, lessons({ "tue-1": "B2" })),
+          );
+
+          expect(deleteOnly).toBe(unchanged);
         }),
     );
 
