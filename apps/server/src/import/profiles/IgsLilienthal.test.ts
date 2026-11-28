@@ -3,6 +3,8 @@ import * as Cron from "effect/Cron";
 import * as DateTime from "effect/DateTime";
 import * as Duration from "effect/Duration";
 import * as Option from "effect/Option";
+import { Export } from "../corpus/Export.ts";
+import { ImportJob } from "../ImportJob.ts";
 import { ImportRun } from "../ImportRun.ts";
 import { Lease } from "../Lease.ts";
 import { IgsLilienthal } from "./IgsLilienthal.ts";
@@ -98,6 +100,63 @@ describe("IgsLilienthal", () => {
           DateTime.isLessThan(at, DateTime.subtractDuration(end, Duration.minutes(1))),
         ),
       }).toEqual({ runs: [96, 1], reserved: 2796, fits: true, beforeMidnight: true });
+    },
+  );
+
+  // Eight weeks across the spring and the autumn change of the clocks.
+  it.each(["2026-03-16", "2026-10-12"])(
+    "exports once a week from %s on, Mondays at 00:30, while no run reads or writes the store",
+    (date) => {
+      const { timeZone } = IgsLilienthal.profile.school;
+      const from = DateTime.makeUnsafe(`${date}T00:00:00Z`);
+
+      const startsOf = (cron: Cron.Cron, until: DateTime.Utc) => {
+        const starts: Array<DateTime.Utc> = [];
+
+        for (const next of Cron.sequence(cron, DateTime.subtract(from, { days: 1 }))) {
+          const at = DateTime.makeUnsafe(next);
+
+          if (!DateTime.isLessThan(at, until)) break;
+
+          starts.push(at);
+        }
+
+        return starts;
+      };
+
+      const slots = startsOf(IgsLilienthal.weeklyExport, DateTime.add(from, { weeks: 8 })).filter(
+        (slot) => !DateTime.isLessThan(slot, from),
+      );
+
+      const runs = Object.values(IgsLilienthal.schedule).flatMap((run) =>
+        startsOf(run.cron, DateTime.add(from, { weeks: 9 })),
+      );
+
+      // A run reads and stores until its deadline; an export gets an hour.
+      const clashes = slots.filter((slot) =>
+        runs.some(
+          (start) =>
+            DateTime.isLessThan(slot, DateTime.addDuration(start, ImportJob.deadline)) &&
+            DateTime.isLessThan(start, DateTime.add(slot, { hours: 1 })),
+        ),
+      );
+
+      const local = slots.map((slot) => {
+        const parts = DateTime.toParts(DateTime.makeZonedUnsafe(slot, { timeZone }));
+
+        return `${parts.weekDay} ${parts.hour}:${parts.minute}`;
+      });
+
+      // On time, the store still holds everything each week can need.
+      const held = slots.every((slot) =>
+        Export.holds(timeZone, DateTime.subtract(slot, { days: Export.days }), slot),
+      );
+
+      expect({ local, clashes, held }).toEqual({
+        local: Array(8).fill("1 0:30"),
+        clashes: [],
+        held: true,
+      });
     },
   );
 });

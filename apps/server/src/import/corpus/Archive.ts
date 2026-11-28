@@ -24,6 +24,9 @@ export * as Archive from "./Archive.ts";
  */
 export const owner = "age18q0vl05uxfugy0wemxwgd5y0rnrcxw9l5srkf3nhhf3ju4klufhq9vcwk3";
 
+/** Studienbuch CI's recipient, whose identity is the Calder secret `import-corpus-age-identity`. */
+export const ci = "age1d46554xaj6azlmgpd02ktv9znfslhn5yjfe3wz8sv8u96urkhg4qnkcs0f";
+
 export class ArchiveFailed extends Schema.TaggedError<
   ArchiveFailed,
   { readonly brand: unique symbol }

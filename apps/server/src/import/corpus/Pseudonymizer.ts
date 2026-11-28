@@ -184,6 +184,12 @@ export const run = Effect.fn("Pseudonymizer.run")(function* <E, R, E2, R2>(input
   readonly manifest: Corpus.Manifest;
   readonly reads: Stream.Stream<readonly [string, RecordedWebUntis.Read], E, R>;
   readonly write: (name: string, read: RecordedWebUntis.Read) => Effect.Effect<void, E2, R2>;
+  /**
+   * Whether the reads name the students, as a capture's do, so the dictionary knows every name.
+   * The source store's name none, so for its exports any word could be a student's: free text
+   * stays only as a stock phrase, and a code's or room's word only in capitals (`MA-E`, `NW 2`).
+   */
+  readonly students?: "named" | "unnamed";
 }) {
   if (input.manifest.policy !== 0) return yield* new NotRaw({ policy: input.manifest.policy });
 
@@ -229,7 +235,12 @@ export const run = Effect.fn("Pseudonymizer.run")(function* <E, R, E2, R2>(input
         }
 
         if (leaf._tag === "PersonName" && Predicate.isString(value)) {
-          learnWords(value, `${people[leaf.kind]} ${field(path)}`);
+          // The store's placeholder for a name names nobody, and `student` is a word of its paths.
+          const stored = Policy.placeholder(leaf.kind, leaf.by === "id" ? parent?.id : undefined);
+
+          if (input.students !== "unnamed" || value !== stored) {
+            learnWords(value, `${people[leaf.kind]} ${field(path)}`);
+          }
 
           const id = parent?.id;
 
@@ -326,6 +337,19 @@ export const run = Effect.fn("Pseudonymizer.run")(function* <E, R, E2, R2>(input
     );
   };
 
+  /**
+   * Whether an unnamed export can read a code or a room at all: Latin letters, ASCII digits,
+   * spaces and ASCII marks, as a school writes its codes. Any other character, such as a letter of
+   * another script, a combining or circled letter, or a Roman numeral, could spell a name.
+   */
+  const unreadable = (value: string) =>
+    input.students === "unnamed" && !/^[A-Za-zÀ-ÖØ-öø-ÿ0-9 !-/:-@[-`{-~]*$/u.test(value);
+
+  /** A run of letters that could be a student's name the dictionary lacks: any but capitals. */
+  const mayName = (run: string) => input.students === "unnamed" && !/^[\p{Lu}\p{M}]+$/u.test(run);
+
+  const letterRuns = (value: string) => value.normalize("NFC").match(/\p{L}[\p{L}\p{M}]*/gu) ?? [];
+
   const stock = new Set(
     IgsLilienthal.profile.stockPhrases.map((phrase) => phrase.toLocaleLowerCase("de")),
   );
@@ -333,7 +357,8 @@ export const run = Effect.fn("Pseudonymizer.run")(function* <E, R, E2, R2>(input
   const phrases = new Set(
     [...texts].flatMap(([value, seen]) =>
       stock.has(value.trim().toLocaleLowerCase("de")) ||
-      (seen.dates.size >= frequent.dates &&
+      (input.students !== "unnamed" &&
+        seen.dates.size >= frequent.dates &&
         new Set(
           [...seen.teachers].map((seenAs) => {
             const [year = "", name = ""] = seenAs.split(/\|(.*)/su);
@@ -354,9 +379,13 @@ export const run = Effect.fn("Pseudonymizer.run")(function* <E, R, E2, R2>(input
   const count = (counts: Map<string, number>, value: string) =>
     counts.set(value, (counts.get(value) ?? 0) + 1);
 
-  const code = (year: number | undefined, value: string) =>
-    value
-      .normalize("NFC")
+  const code = (year: number | undefined, raw: string) => {
+    const value = raw.normalize("NFC");
+
+    // Judged as WebUntis sent it: NFC turns some signs into letters, the Kelvin sign (U+212A) into `K`.
+    if (unreadable(raw)) return tokens.token("X", value);
+
+    return value
       .split(/([^\p{L}\p{M}\p{N}]+)/u)
       .map((segment, index) => {
         if (index % 2 !== 0) return segment;
@@ -369,10 +398,11 @@ export const run = Effect.fn("Pseudonymizer.run")(function* <E, R, E2, R2>(input
 
         // A name glued to digits, as in `Kunz12`, is still a name.
         return segment.replace(/\p{L}[\p{L}\p{M}]*/gu, (run) =>
-          names.has(normalized(run)) ? tokens.token("X", normalized(run)) : run,
+          names.has(normalized(run)) || mayName(run) ? tokens.token("X", normalized(run)) : run,
         );
       })
       .join("");
+  };
 
   const pseudonymize = (read: string, body: Policy.Json, node: Policy.Node) => {
     const year = yearOf(read);
@@ -415,7 +445,12 @@ export const run = Effect.fn("Pseudonymizer.run")(function* <E, R, E2, R2>(input
           case "Room": {
             if (!Predicate.isString(value)) return unexpected(value, "expected a room name");
 
-            if (value !== "" && !isRoomNumber(value)) return kept(tokens.token("R", value));
+            if (
+              value !== "" &&
+              (!isRoomNumber(value) || unreadable(value) || letterRuns(value).some(mayName))
+            ) {
+              return kept(tokens.token("R", value));
+            }
 
             if (value !== "") count(vocabulary, value);
 

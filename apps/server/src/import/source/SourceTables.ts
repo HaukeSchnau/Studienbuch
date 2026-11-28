@@ -76,6 +76,24 @@ export const importRun = pgTable(
   (table) => [index("import_run_school_date").on(table.schoolId, table.date)],
 );
 
+/** One export of the store into the corpus repository, and what it pushed or why it didn't. */
+export const importExport = pgTable(
+  "import_export",
+  {
+    id: uuid("id").primaryKey(),
+    schoolId: text("school_id").notNull(),
+    startedAt: timestamp("started_at", { withTimezone: true, mode: "date" }).notNull(),
+    endedAt: timestamp("ended_at", { withTimezone: true, mode: "date" }),
+    /** `Pushed`, the failure's tag, or null while it runs or when its process died. */
+    outcome: text("outcome"),
+    /** The archive's name, size, hash and counts, and the commit. Never a body or a name. */
+    report: jsonb("report")
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+  },
+  (table) => [index("import_export_school_started").on(table.schoolId, table.startedAt)],
+);
+
 /** One school's import: who may read WebUntis now, who paused it, and what the last run left. */
 export const importSchool = pgTable("import_school", {
   schoolId: text("school_id").primaryKey(),
