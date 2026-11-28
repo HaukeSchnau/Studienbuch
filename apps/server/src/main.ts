@@ -99,7 +99,7 @@ const serve = Effect.gen(function* () {
 }).pipe(Effect.provide(withDatabase(Database.layer)));
 
 const prepare = Effect.gen(function* () {
-  const applied = yield* Migrations.apply(yield* Migrations.Release);
+  const applied = yield* Migrations.prepare(yield* Migrations.Release);
   yield* SyncEpoch.initialize;
   yield* Effect.logInfo(applied.length === 0 ? "The schema is at head" : "Applied migrations").pipe(
     Effect.annotateLogs({ applied }),
