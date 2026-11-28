@@ -73,7 +73,8 @@ AGENTS.md's "Architecture" and "Effect" sections hold the rules. `studienbuch/im
 ## Migrations
 
 - drizzle-kit generates the server's migrations from the Drizzle declarations (`vp run db:generate` in `apps/server`). A hand-written or hand-edited `migration.sql` is a finding.
-- An applied migration never changes. The runner checks hashes and stops `prepare` on a mismatch (`apps/server/src/infra/database/Migrations.ts`).
+- An applied migration never changes. The runner checks hashes and stops `prepare` on a mismatch (`apps/server/src/infra/database/Migrations.ts`). A preview starts over instead, because it holds only the demo school.
+- A new migration sorts after main's newest. CI's `migration-order` step checks it against main on Gitea and names the rename.
 - Migrations expand, then contract. A release adds tables and columns and stops reading the old shape; a later release drops it. Dropping or renaming what the previous release reads breaks rollback.
 - Effect's `cluster_*` tables migrate themselves and stay out of drizzle-kit.
 - Device migrations come from drizzle-kit too. A phone may skip releases and sit offline for weeks, so its migrations run from any older schema and keep the outbox.
