@@ -570,7 +570,7 @@ export const observe = Effect.fn("Calibrate.observe")(function* (
         (view) =>
           view.weeks.has(weekOf(entry.date)) &&
           !view.hidden.has(entry.date) &&
-          classesOn(view.id, entry.date).some((name) => entry.classes.includes(name)),
+          Truth.classesOn(view, entry.date).some((name) => entry.classes.includes(name)),
       );
 
       const attended = ofClasses.filter((view) => seen.has(view.id));

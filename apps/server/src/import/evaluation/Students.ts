@@ -145,6 +145,17 @@ export const joined = (
   );
 };
 
+/** The courses the term of `date` requires of whoever its offerings are for, such as events. */
+export const required = (offered: Offered, date: string): ReadonlySet<string> => {
+  const term = offered.terms.find(({ start, end }) => start <= date && date <= end);
+
+  return new Set(
+    offered.offerings.flatMap(({ courseId, termId, groupKey }) =>
+      termId === term?.id && groupKey === undefined ? [courseId] : [],
+    ),
+  );
+};
+
 /** The courses a student chooses: those whose lessons in `index` cover their entries, added ones aside. */
 export const kurswahl = (
   entries: ReadonlyArray<Metrics.TruthEntry>,
@@ -188,10 +199,16 @@ export interface View {
   readonly hidden: ReadonlySet<string>;
 }
 
+/** Of `lessons`, those of the courses a student takes on each lesson's date. */
+const takenOf = (
+  lessons: ReadonlyArray<Metrics.Lesson>,
+  coursesOn: (date: string) => ReadonlySet<string>,
+) => lessons.filter(({ courseId, date }) => coursesOn(date).has(courseId));
+
 /**
- * A student's Kurswahl from their entries of the opening days, and whether those courses' lessons
- * on the opening days, with those of the courses their class `joined` them to, are exactly those
- * entries.
+ * A student's Kurswahl from their entries of the opening days, the courses no class requires, and
+ * whether its lessons on the opening days, with those of the courses their classes join them to
+ * on each day, are exactly those entries.
  */
 export const choose = (
   student: View,
@@ -200,46 +217,61 @@ export const choose = (
     readonly lessons: ReadonlyArray<Metrics.Lesson>;
     readonly index: ReadonlyMap<string, ReadonlyArray<Metrics.Lesson>>;
   },
-  joined: ReadonlySet<string>,
+  classes: {
+    readonly required: ReadonlySet<string>;
+    readonly joinedOn: (date: string) => ReadonlySet<string>;
+  },
 ) => {
   const entries = student.entries.filter((entry) => opening(entry.date));
-  const courses = kurswahl(entries, store.index);
 
-  const lessons = store.lessons.filter(
-    (lesson) => opening(lesson.date) && !student.hidden.has(lesson.date),
+  const courses = new Set(
+    [...kurswahl(entries, store.index)].filter((id) => !classes.required.has(id)),
   );
 
-  return { courses, exact: isExact(entries, lessons, new Set([...courses, ...joined])) };
+  const lessons = takenOf(
+    store.lessons.filter((lesson) => opening(lesson.date) && !student.hidden.has(lesson.date)),
+    (date) => new Set([...courses, ...classes.joinedOn(date)]),
+  );
+
+  return {
+    courses,
+    exact: isExact(entries, lessons, new Set(lessons.map(({ courseId }) => courseId))),
+  };
 };
 
-/** A student's week: their entries of it against the lessons their Kurswahl gives them, hidden days aside. */
+/**
+ * A student's week: their entries of it against the lessons of the courses they take on each
+ * day, hidden days aside.
+ */
 export const week = (
   student: View,
   inWeek: (date: string) => boolean,
   lessons: ReadonlyArray<Metrics.Lesson>,
-  chosen: ReadonlySet<string>,
+  coursesOn: (date: string) => ReadonlySet<string>,
 ) =>
   Metrics.scoreView(
     student.entries.filter((entry) => inWeek(entry.date)),
-    lessonsOf(lessons, chosen).filter(
-      (lesson) => inWeek(lesson.date) && !student.hidden.has(lesson.date),
+    takenOf(
+      lessons.filter((lesson) => inWeek(lesson.date) && !student.hidden.has(lesson.date)),
+      coursesOn,
     ),
   );
 
 /**
- * The courses with lessons in some term that no Kurswahl of that term names, so no student sees
- * those lessons. A course chosen in one term is no excuse in another.
+ * The courses with lessons in some term of which no student takes one on its date, so no student
+ * sees them. A course taken in one term is no excuse in another.
  */
 export const ghosts = (
   terms: ReadonlyArray<{
     readonly lessons: ReadonlyArray<Metrics.Lesson>;
-    readonly kurswahls: ReadonlyArray<ReadonlySet<string>>;
+    /** The courses some student takes on the date. */
+    readonly takenOn: (date: string) => ReadonlySet<string>;
   }>,
 ) =>
   new Set(
-    terms.flatMap(({ lessons, kurswahls }) => {
-      const chosen = new Set(kurswahls.flatMap((each) => [...each]));
+    terms.flatMap(({ lessons, takenOn }) => {
+      const taken = new Set(takenOf(lessons, takenOn).map(({ courseId }) => courseId));
 
-      return lessons.flatMap(({ courseId }) => (chosen.has(courseId) ? [] : [courseId]));
+      return lessons.flatMap(({ courseId }) => (taken.has(courseId) ? [] : [courseId]));
     }),
   ).size;

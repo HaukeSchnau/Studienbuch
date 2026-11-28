@@ -113,7 +113,12 @@ describe("SyntheticSchool", () => {
 
         const wrong = attending.flatMap((view) => {
           const joined = eventsOf(view);
-          const chosen = Students.choose(view, inOpening, store, joined);
+
+          const chosen = Students.choose(view, inOpening, store, {
+            required: joined,
+            joinedOn: () => joined,
+          });
+
           const { exact } = chosen;
           const courses = new Set([...chosen.courses, ...joined]);
 
@@ -123,7 +128,12 @@ describe("SyntheticSchool", () => {
               view.weeks.has(week) &&
               truth.days.some((day) => weekOf(day) === week && !view.hidden.has(day)) &&
               !Metrics.isExact(
-                Students.week(view, (date) => weekOf(date) === week, lessons, courses),
+                Students.week(
+                  view,
+                  (date) => weekOf(date) === week,
+                  lessons,
+                  () => courses,
+                ),
               ),
           );
 

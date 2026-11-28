@@ -296,18 +296,14 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
 
   const inOpening = (term: string | undefined) => (date: string) => opening(term).has(weekOf(date));
 
-  const chooseIn = (student: Truth.View, term: string | undefined) =>
-    Students.choose(
-      student,
-      inOpening(term),
-      openingStore(term),
-      Students.joined(
-        openingStates.get(term) ?? SchoolImport.empty,
-        options.profile.classify,
-        student,
-        truth.days.find(inOpening(term)) ?? "",
-      ),
-    );
+  const chooseIn = (student: Truth.View, term: string | undefined) => {
+    const state = openingStates.get(term) ?? SchoolImport.empty;
+
+    return Students.choose(student, inOpening(term), openingStore(term), {
+      required: Students.required(state, truth.days.find(inOpening(term)) ?? ""),
+      joinedOn: (date) => Students.joined(state, options.profile.classify, student, date),
+    });
+  };
 
   const enrollments = new Map<string, ReadonlySet<string>>();
 
@@ -320,15 +316,35 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
     return courses;
   };
 
+  const byDay = new Map<string, ReadonlySet<string>>();
+
   // A student's courses on `day`: their Kurswahl, held from the term's opening weeks, and those
   // their classes join them to in the last store, so an event course created later still counts.
-  const coursesOn = (student: Truth.View, day: string) =>
-    new Set([
-      ...enrollmentOf(student, termOf(day)),
-      ...Students.joined(final, options.profile.classify, student, day),
-    ]);
+  const coursesOn = (student: Truth.View, day: string) => {
+    const key = `${student.id} ${day}`;
 
-  const mondayOf = (week: string) => truth.days.find(inWeek(week)) ?? "";
+    const known =
+      byDay.get(key) ??
+      new Set([
+        ...enrollmentOf(student, termOf(day)),
+        ...Students.joined(final, options.profile.classify, student, day),
+      ]);
+
+    byDay.set(key, known);
+
+    return known;
+  };
+
+  const taken = new Map<string, ReadonlySet<string>>();
+
+  // The courses some student takes on `day`.
+  const takenOn = (day: string) => {
+    const known = taken.get(day) ?? new Set(students.flatMap((each) => [...coursesOn(each, day)]));
+
+    taken.set(day, known);
+
+    return known;
+  };
 
   const lessonsIn = new Map<string, Array<Metrics.Lesson>>();
 
@@ -364,12 +380,7 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
                 {
                   view,
                   week,
-                  score: Students.week(
-                    view,
-                    inWeek(week),
-                    lessons,
-                    coursesOn(view, mondayOf(week)),
-                  ),
+                  score: Students.week(view, inWeek(week), lessons, (day) => coursesOn(view, day)),
                 },
               ];
             }
@@ -410,9 +421,7 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
       lessons: ours.filter(
         ({ date }) => measured.has(weekOf(date)) && held(weekOf(date)) && termOf(date) === term,
       ),
-      kurswahls: weeks
-        .filter((week) => held(week) && termOfWeek(week) === term)
-        .flatMap((week) => students.map((student) => coursesOn(student, mondayOf(week)))),
+      takenOn,
     })),
   );
 

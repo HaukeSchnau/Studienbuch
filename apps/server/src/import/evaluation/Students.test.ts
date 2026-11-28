@@ -2,7 +2,7 @@ import { assert, describe, it } from "@effect/vitest";
 import { Course, SchoolClass, SchoolYear, Term } from "@stu/core";
 import { IgsLilienthal } from "../profiles/IgsLilienthal.ts";
 import { SchoolImport } from "../SchoolImport.ts";
-import type { Metrics } from "./Metrics.ts";
+import { Metrics } from "./Metrics.ts";
 import { Students } from "./Students.ts";
 import type { Truth } from "./Truth.ts";
 
@@ -147,18 +147,54 @@ describe("Students.joined", () => {
   });
 });
 
+describe("Students.choose", () => {
+  // An event and maths in the opening week, both shown to the student.
+  const lessons = [lesson("event", "2026-11-02", 8, [1]), lesson("ma", "2026-11-02", 10, [2])];
+  const store = { lessons, index: Metrics.byEntry(lessons) };
+  const student = { entries: [entry(1, 8), entry(2, 10)], hidden: new Set<string>() };
+
+  it.each([
+    { name: "the student's class joins them to it", joined: ["event"], exact: true },
+    { name: "it is another class's", joined: [], exact: false },
+  ])("leaves a required course out of the choice when $name", ({ joined, exact }) => {
+    const choice = Students.choose(student, () => true, store, {
+      required: new Set(["event"]),
+      joinedOn: () => new Set(joined),
+    });
+
+    assert.deepStrictEqual(
+      { courses: [...choice.courses], exact: choice.exact },
+      { courses: ["ma"], exact },
+    );
+  });
+});
+
 describe("Students.ghosts", () => {
-  it("counts a course nobody chose in a term, even when someone chose it in another", () => {
-    assert.strictEqual(
-      Students.ghosts([
-        { lessons: [lesson("ma", "2026-11-02")], kurswahls: [new Set(["ma"])] },
+  const always = (courses: ReadonlyArray<string>) => () => new Set(courses);
+
+  it.each([
+    {
+      name: "a course nobody chose in a term, even when someone chose it in another",
+      terms: [
+        { lessons: [lesson("ma", "2026-11-02")], takenOn: always(["ma"]) },
         {
           lessons: [lesson("ma", "2027-02-01"), lesson("de", "2027-02-01")],
-          kurswahls: [new Set(["de"])],
+          takenOn: always(["de"]),
         },
-      ]),
-      1,
-    );
+      ],
+    },
+    {
+      // A student joins the event's class the day after it.
+      name: "a course students take only on days it has no lesson",
+      terms: [
+        {
+          lessons: [lesson("event", "2026-11-02"), lesson("de", "2026-11-02")],
+          takenOn: (date: string) => new Set(date > "2026-11-02" ? ["event", "de"] : ["de"]),
+        },
+      ],
+    },
+  ])("counts $name", ({ terms }) => {
+    assert.strictEqual(Students.ghosts(terms), 1);
   });
 });
 
