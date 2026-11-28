@@ -114,6 +114,11 @@ export const score = (input: Input) => {
   const weeks = fullWeeks(input.days, input.terms);
   const today = CivilTime.format(input.days.start);
 
+  const students = Students.attended(
+    input.students,
+    (date) => input.terms.find(({ start, end }) => start <= date && date <= end)?.id,
+  );
+
   const weekOf = new Map(
     weeks.flatMap(({ week, dates }) => [...dates].map((date) => [date, week])),
   );
@@ -137,7 +142,7 @@ export const score = (input: Input) => {
 
   let chosen = 0;
 
-  for (const student of input.students) {
+  for (const student of students) {
     for (const term of terms) {
       const openingWeeks = opening.get(term) ?? [];
 
@@ -169,7 +174,7 @@ export const score = (input: Input) => {
 
   const lessonsIn = Map.groupBy(input.lessons, ({ date }) => weekOf.get(date) ?? "");
 
-  const scored = input.students.flatMap((student) =>
+  const scored = students.flatMap((student) =>
     weeks.flatMap((week) => {
       const choice = kept.get(keyOf(student.id, week.term));
 
@@ -195,7 +200,7 @@ export const score = (input: Input) => {
     }),
   );
 
-  const tonight = new Set(input.students.map(({ id }) => id));
+  const tonight = new Set(students.map(({ id }) => id));
 
   const choices = [...kept.values()].filter(
     ({ student, term }) => tonight.has(student) && terms.includes(term),
@@ -225,7 +230,7 @@ export const score = (input: Input) => {
         : [
             CourseIdentity.measure({
               term,
-              attendance: input.students
+              attendance: students
                 .filter((student) => ![...student.hidden].some(inOpening))
                 .map((student) => ({
                   student: String(student.id),
@@ -241,7 +246,7 @@ export const score = (input: Input) => {
 
   return {
     measured: {
-      students: input.students.length,
+      students: students.length,
       chosen,
       studentWeeks: Metrics.summarize(scored.map(({ score: each }) => each)),
       kurswahl: Metrics.fraction(choices.filter(({ exact }) => exact).length, choices.length),
@@ -252,7 +257,7 @@ export const score = (input: Input) => {
         ourCourses: identity.ourCourses,
         merged: identity.merged,
       },
-      hiddenDays: input.students.reduce((count, { hidden }) => count + hidden.size, 0),
+      hiddenDays: students.reduce((count, { hidden }) => count + hidden.size, 0),
     },
     kept: [...kept.values()].toSorted(
       (a, b) => a.term.localeCompare(b.term) || a.student - b.student,
