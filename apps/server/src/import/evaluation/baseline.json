@@ -48,7 +48,7 @@
           },
           "recall": {
             "right": 54368,
-            "of": 55652
+            "of": 55666
           },
           "precision": {
             "right": 54368,
@@ -705,7 +705,7 @@
           },
           "recall": {
             "right": 54368,
-            "of": 55652
+            "of": 55666
           },
           "precision": {
             "right": 54368,
@@ -1399,10 +1399,10 @@
       },
       "ghostCourses": 0,
       "courseIdentity": {
-        "realCourses": 121,
+        "realCourses": 119,
         "split": 0,
         "ourCourses": 119,
-        "merged": 2,
+        "merged": 0,
         "subjects": {
           "BI": {
             "realCourses": 3,
@@ -1507,10 +1507,10 @@
             "merged": 0
           },
           "PH1": {
-            "realCourses": 2,
+            "realCourses": 1,
             "split": 0,
             "ourCourses": 1,
-            "merged": 1
+            "merged": 0
           },
           "PO": {
             "realCourses": 3,
@@ -1627,10 +1627,10 @@
             "merged": 0
           },
           "ek1": {
-            "realCourses": 2,
+            "realCourses": 1,
             "split": 0,
             "ourCourses": 1,
-            "merged": 1
+            "merged": 0
           },
           "ek2": {
             "realCourses": 1,
@@ -1855,7 +1855,7 @@
         "of": 420
       },
       "courses": {
-        "right": 10,
+        "right": 12,
         "of": 12
       },
       "closures": {
@@ -1928,6 +1928,8 @@
         "roster-change-4-left",
         "same-code-1",
         "same-code-2",
+        "shared-1",
+        "shared-2",
         "week-2026-W33",
         "week-2026-W34",
         "week-2026-W35",
@@ -2022,10 +2024,10 @@
       },
       "ghostCourses": 0,
       "courseIdentity": {
-        "realCourses": 121,
+        "realCourses": 119,
         "split": 0,
         "ourCourses": 119,
-        "merged": 2,
+        "merged": 0,
         "subjects": {
           "BI": {
             "realCourses": 3,
@@ -2130,10 +2132,10 @@
             "merged": 0
           },
           "PH1": {
-            "realCourses": 2,
+            "realCourses": 1,
             "split": 0,
             "ourCourses": 1,
-            "merged": 1
+            "merged": 0
           },
           "PO": {
             "realCourses": 3,
@@ -2250,10 +2252,10 @@
             "merged": 0
           },
           "ek1": {
-            "realCourses": 2,
+            "realCourses": 1,
             "split": 0,
             "ourCourses": 1,
-            "merged": 1
+            "merged": 0
           },
           "ek2": {
             "realCourses": 1,
@@ -2478,7 +2480,7 @@
         "of": 420
       },
       "courses": {
-        "right": 10,
+        "right": 12,
         "of": 12
       },
       "closures": {
@@ -2551,6 +2553,8 @@
         "roster-change-4-left",
         "same-code-1",
         "same-code-2",
+        "shared-1",
+        "shared-2",
         "week-2026-W33",
         "week-2026-W34",
         "week-2026-W35",

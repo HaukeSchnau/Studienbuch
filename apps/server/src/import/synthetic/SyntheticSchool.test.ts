@@ -64,7 +64,12 @@ describe("SyntheticSchool", () => {
         const inOpening = (date: string) => opening.has(weekOf(date));
         const openingLessons = lessons.filter((lesson) => inOpening(lesson.date));
         const store = { lessons: openingLessons, index: Metrics.byEntry(openingLessons) };
-        const students = truth.views.filter((view) => view.type === "STUDENT");
+
+        // As the harness measures them: without the shared entries of other students' groups.
+        const students = Students.attended(
+          truth.views.filter((view) => view.type === "STUDENT"),
+          () => "1",
+        );
 
         const attending = students.filter(
           (view) => !truth.days.some((day) => inOpening(day) && view.hidden.has(day)),

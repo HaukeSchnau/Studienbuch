@@ -40,9 +40,9 @@ const overlap = (a: Metrics.TruthEntry, b: Metrics.TruthEntry) =>
 
 /**
  * The views without the entries WebUntis shows beyond their group, such as a lesson without a
- * student group, which every student of its classes sees: an entry at the same time as another,
- * of a group that meets in other weekly slots, none of which the student sees (m2-import-corpus.md,
- * section 6). A student attends one lesson at a time, and the group's other slots say whose it is.
+ * student group, which every student of its classes sees: an entry at the same time as a lesson
+ * that takes place, of a group that met in other weekly slots while the student's view was shown,
+ * none of which the student sees (m2-import-corpus.md, section 6).
  */
 export const attended = (
   views: ReadonlyArray<Truth.View>,
@@ -65,16 +65,10 @@ export const attended = (
     }
   }
 
-  const recurring = (group: string, slot: string) => (slots.get(group)?.get(slot)?.size ?? 0) >= 2;
-
-  // A slot found beyond its group no longer says the student is in it, which can show another of
-  // the group's slots beyond it too, so the check repeats until nothing changes.
-  const theirs = (
-    entries: ReadonlyArray<Metrics.TruthEntry>,
-  ): ReadonlyArray<Metrics.TruthEntry> => {
+  return views.map((view) => {
     const seen = new Map<string, Set<string>>();
 
-    for (const entry of entries.filter(judged)) {
+    for (const entry of view.entries.filter(judged)) {
       const group = groupOf(entry, termOf(entry.date));
 
       for (const slot of Option.toArray(slotOf(entry))) {
@@ -82,28 +76,31 @@ export const attended = (
       }
     }
 
+    const shown = (date: string) =>
+      !view.hidden.has(date) &&
+      Option.exists(decodeDate(date), (each) => view.weeks.has(CivilTime.isoWeek(each)));
+
     const beyond = (entry: Metrics.TruthEntry) => {
       const group = groupOf(entry, termOf(entry.date));
-      const others = (slot: string) => (each: string) => each !== slot && recurring(group, each);
+      const ofGroup = slots.get(group) ?? new Map<string, Set<string>>();
+
+      const elsewhere = (slot: string) => (each: string) =>
+        each !== slot && (ofGroup.get(each)?.size ?? 0) >= 2;
 
       return Option.match(slotOf(entry), {
         onNone: () => false,
         onSome: (slot) =>
           judged(entry) &&
-          entries.some(
-            (other) => other !== entry && other.status !== "Added" && overlap(entry, other),
+          view.entries.some(
+            (other) => other !== entry && other.status !== "Cancelled" && overlap(entry, other),
           ) &&
-          [...(slots.get(group)?.keys() ?? [])].some(others(slot)) &&
-          ![...(seen.get(group) ?? [])].some(others(slot)),
+          [...ofGroup].some(([each, dates]) => elsewhere(slot)(each) && [...dates].some(shown)) &&
+          ![...(seen.get(group) ?? [])].some(elsewhere(slot)),
       });
     };
 
-    const kept = entries.filter((entry) => !beyond(entry));
-
-    return kept.length === entries.length ? entries : theirs(kept);
-  };
-
-  return views.map((view) => ({ ...view, entries: theirs(view.entries) }));
+    return { ...view, entries: view.entries.filter((entry) => !beyond(entry)) };
+  });
 };
 
 /** The courses a student chooses: those whose lessons in `index` cover their entries, added ones aside. */

@@ -1327,7 +1327,7 @@ const encode = Effect.fnUntraced(function* (school: {
     })),
     ...[...school.sharedOf].map(([wide, group], n) => ({
       id: `shared-${n + 1}`,
-      same: false,
+      same: true,
       entries: [...ref(firstIn(wide, inOpening)), ...ref(firstIn(group, inOpening))],
     })),
     ...school.moves
@@ -1371,7 +1371,14 @@ const encode = Effect.fnUntraced(function* (school: {
   return {
     corpus,
     courseOf: new Map(
-      occurrences.map((each) => [`${each.date} ${each.ids.join("+")}`, each.course.id] as const),
+      // A shared entry is its group's lesson, which WebUntis shows to the whole cohort.
+      occurrences.map(
+        (each) =>
+          [
+            `${each.date} ${each.ids.join("+")}`,
+            school.sharedOf.get(each.course.id) ?? each.course.id,
+          ] as const,
+      ),
     ),
   };
 });

@@ -94,13 +94,17 @@ describe("Students.attended", () => {
       teachers: [teacher],
     }));
 
-  const view = (id: number, entries: ReadonlyArray<Metrics.TruthEntry>): Truth.View => ({
+  const view = (
+    id: number,
+    entries: ReadonlyArray<Metrics.TruthEntry>,
+    hidden: ReadonlyArray<string> = [],
+  ): Truth.View => ({
     type: "STUDENT",
     id,
     name: `student ${id}`,
     entries,
     weeks: new Set(["2026-W45", "2026-W46"]),
-    hidden: new Set(),
+    hidden: new Set(hidden),
   });
 
   // Latin meets on Tuesdays for its students, and WebUntis shows its Thursday lunch slot to the
@@ -112,12 +116,10 @@ describe("Students.attended", () => {
 
   const tutor = meets(mondays, "Tutorium", 4, 13);
   const tutorWide = meets(tuesdays, "Tutorium", 4, 8);
-  const tutorOnce = meets(thursdays.slice(0, 1), "Tutorium", 4, 8);
+  const ownTutor = meets(tuesdays, "Tutorium", 5, 8);
 
-  const ownTutor = [
-    ...meets(tuesdays, "Tutorium", 5, 8),
-    ...meets(thursdays.slice(0, 1), "Tutorium", 5, 8),
-  ];
+  const cancelled = (entries: ReadonlyArray<Metrics.TruthEntry>) =>
+    entries.map((each): Metrics.TruthEntry => ({ ...each, status: "Cancelled" }));
 
   it.each([
     {
@@ -144,14 +146,32 @@ describe("Students.attended", () => {
       ],
     },
     {
-      // 25/26's Tutorium: one tutor's group meets on Mondays, and WebUntis shows its other slots,
-      // one of them in a single week, to another group meeting at the same time.
-      name: "every slot shown beyond the group goes, also once the others went",
+      // 25/26's Tutorium: one tutor's group meets on Mondays, and WebUntis shows its Tuesday slot
+      // to another group meeting at the same time.
+      name: "a slot shown to a parallel group stays with the tutor's own",
+      views: [view(1, [...tutor, ...tutorWide]), view(2, [...tutorWide, ...ownTutor])],
+      kept: [[...tutor, ...tutorWide], ownTutor],
+    },
+    {
+      name: "a cancelled lesson at the same time says nothing",
       views: [
-        view(1, [...tutor, ...tutorWide, ...tutorOnce]),
-        view(2, [...tutorWide, ...tutorOnce, ...ownTutor]),
+        view(1, [...latin, ...latinLunch]),
+        view(3, [...latinLunch, ...cancelled(meets(thursdays, "MA", 6, 13))]),
       ],
-      kept: [[...tutor, ...tutorWide, ...tutorOnce], ownTutor],
+      kept: [
+        [...latin, ...latinLunch],
+        [...latinLunch, ...cancelled(meets(thursdays, "MA", 6, 13))],
+      ],
+    },
+    {
+      // Latin's other slot was on days WebUntis hid from the student, Spanish's wasn't.
+      name: "a slot on hidden days says nothing",
+      views: [
+        view(1, [...latin, ...latinLunch, ...spanishLunch]),
+        view(2, [...spanish, ...latinLunch, ...spanishLunch]),
+        view(3, [...latinLunch, ...spanishLunch], tuesdays),
+      ],
+      kept: [[...latin, ...latinLunch], [...spanish, ...spanishLunch], latinLunch],
     },
     {
       // Study time shown to all of grade 13 in every slot, at the time of their maths.
