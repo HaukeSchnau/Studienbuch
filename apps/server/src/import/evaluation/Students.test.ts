@@ -99,28 +99,49 @@ describe("Students.joined", () => {
     ],
   };
 
-  const student = (names: ReadonlyArray<string>) => ({
-    classes: [{ start: "2026-08-13", end: "2027-07-07", names }],
-  });
+  const student = (names: ReadonlyArray<string>) =>
+    names.map((name) => ({ name, start: "2026-08-13", end: "2027-07-07" }));
+
+  // Moved from 11.1 to 11.2 on 1 October.
+  const moved = [
+    { name: "11.1", start: "2026-08-13", end: "2026-09-30" },
+    { name: "11.2", start: "2026-10-01", end: "2027-07-07" },
+  ];
 
   it.each([
     {
       name: "a class's required courses, and the whole grade's",
-      classes: ["11.1"],
+      classes: student(["11.1"]),
       date: "2026-11-02",
       joined: ["project-week-11.1", "school-day"],
     },
     {
+      name: "the class a student is in on the day, not one they left",
+      classes: moved,
+      date: "2026-11-02",
+      joined: ["project-week-11.2", "school-day"],
+    },
+    {
       name: "a cohort without classes",
-      classes: ["12"],
+      classes: student(["12"]),
       date: "2026-11-02",
       joined: ["school-day"],
     },
-    { name: "a day outside every term", classes: ["11.1"], date: "2027-03-01", joined: [] },
-    { name: "a resource that is no class", classes: ["8"], date: "2026-11-02", joined: [] },
+    {
+      name: "a day outside every term",
+      classes: student(["11.1"]),
+      date: "2027-03-01",
+      joined: [],
+    },
+    {
+      name: "a resource that is no class",
+      classes: student(["8"]),
+      date: "2026-11-02",
+      joined: [],
+    },
   ])("$name", ({ classes, date, joined }) => {
     assert.deepStrictEqual(
-      [...Students.joined(offered, IgsLilienthal.classify, student(classes), date)].sort(),
+      [...Students.joined(offered, IgsLilienthal.classify, { classes }, date)].sort(),
       joined,
     );
   });

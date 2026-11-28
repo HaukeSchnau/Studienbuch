@@ -34,20 +34,23 @@ export interface View {
   readonly weeks: ReadonlySet<string>;
   /** Days WebUntis hid from the capture's account. They hold no entries and aren't measured. */
   readonly hidden: ReadonlySet<string>;
-  /** A student's classes by their short names, per school year read. Empty for other views. */
-  readonly classes: ReadonlyArray<SchoolYearClasses>;
+  /** A student's classes, as the student directory of each school year read dates them. */
+  readonly classes: ReadonlyArray<ClassAssignment>;
 }
 
-/** The classes a student was in from `start` to `end`, the days of one school year. */
-export interface SchoolYearClasses {
+/** A student in a class, by its short name, from `start` to `end`, both inclusive. */
+export interface ClassAssignment {
+  readonly name: string;
   readonly start: string;
   readonly end: string;
-  readonly names: ReadonlyArray<string>;
 }
 
 /** A student's classes on `date`. */
-export const classesOn = (view: Pick<View, "classes">, date: string) =>
-  view.classes.find(({ start, end }) => start <= date && date <= end)?.names ?? [];
+export const classesOn = (view: Pick<View, "classes">, date: string) => [
+  ...new Set(
+    view.classes.flatMap(({ name, start, end }) => (start <= date && date <= end ? [name] : [])),
+  ),
+];
 
 export interface Truth {
   /** Monday to Friday of every captured range, within a school year. */
@@ -190,7 +193,11 @@ export const readViews = Effect.fn("Truth.readViews")(function* (
       const classesOf = new Map(
         ofStudents.map((each) => [
           each.student.id,
-          each.classes.map(({ class: ofStudent }) => ofStudent.shortName).sort(),
+          each.classes.map(({ class: ofStudent, dateRange }): ClassAssignment => ({
+            name: ofStudent.shortName,
+            start: dateRange.start.slice(0, 10),
+            end: dateRange.end.slice(0, 10),
+          })),
         ]),
       );
 
@@ -287,7 +294,7 @@ export const readViews = Effect.fn("Truth.readViews")(function* (
             hidden: new Set([...(earlier?.hidden ?? []), ...hidden]),
             classes: [
               ...(earlier?.classes ?? []),
-              ...(type === "STUDENT" ? [{ start, end, names: classesOf.get(resource) ?? [] }] : []),
+              ...(type === "STUDENT" ? (classesOf.get(resource) ?? []) : []),
             ],
           });
         }

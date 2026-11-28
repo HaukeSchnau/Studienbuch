@@ -573,11 +573,13 @@ export const observe = Effect.fn("Calibrate.observe")(function* (
           classesOn(view.id, entry.date).some((name) => entry.classes.includes(name)),
       );
 
-      if (ofClasses.length === 0 || seen.size * 10 < ofClasses.length * 9) continue;
+      const attended = ofClasses.filter((view) => seen.has(view.id));
+
+      if (ofClasses.length === 0 || attended.length * 10 < ofClasses.length * 9) continue;
 
       pitfalls.events.count += 1;
 
-      for (const id of seen) pitfalls.events.people.add(id);
+      for (const view of attended) pitfalls.events.people.add(view.id);
     }
   }
 

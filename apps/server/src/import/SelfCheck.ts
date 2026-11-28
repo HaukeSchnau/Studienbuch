@@ -144,10 +144,12 @@ export const score = (input: Input) => {
   const within = (some: ReadonlyArray<Week>) => (date: string) =>
     some.some(({ dates }) => dates.has(date));
 
-  // The courses a student's class joins them to are never kept: they come from the night's
-  // offerings, so an event course created after the Kurswahl still counts.
+  const firstOf = (week: Week) => [...week.dates][0] ?? "";
+
+  // The courses a student's classes join them to come from each night's offerings, so an event
+  // course created after the Kurswahl was kept still counts.
   const joined = (student: Truth.View, week: Week) =>
-    Students.joined(input.offered, input.classify, student, [...week.dates][0] ?? "");
+    Students.joined(input.offered, input.classify, student, firstOf(week));
 
   let chosen = 0;
 
