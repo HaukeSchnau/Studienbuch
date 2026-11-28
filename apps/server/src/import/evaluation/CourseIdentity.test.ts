@@ -21,6 +21,7 @@ const entry = (
   teachers: [],
   rooms: [],
   previousTeachers: [],
+  plannedTeachers: [],
   previousRooms: [],
   subjects: [subject],
   classes: ["12"],

@@ -593,22 +593,22 @@ const build = Effect.fnUntraced(function* (calibration: Calibration.Calibration,
     used.add(first.id).add(second.id);
   }
 
-  // A course of which the whole cohort sees an entry every week at lunchtime, under its code.
+  // A course of which the whole cohort sees an entry every week at lunchtime, under its code. A
+  // grade's such entries share one slot, as la1's and sn1's did in corpus v1, so its students see
+  // two at once and the harness can tell they attend one.
   const shared: Array<Draft> = [];
 
   for (let n = 0; n < perTerm(pitfalls.sharedEntries?.count ?? 0, terms); n++) {
-    const [group] = yield* Random.shuffle(
+    const free = yield* Random.shuffle(
       drafts.filter((d) => d.kopplung !== undefined && !used.has(d.id)),
     );
 
+    const group = free.find((d) => shared.some((each) => each.grade === d.grade)) ?? free[0];
+
     if (group === undefined) break;
 
-    const weekday = weekdays.find(
-      (day) =>
-        !shared.some(
-          (each) => each.grade === group.grade && each.meetings.some((m) => m.weekday === day),
-        ),
-    );
+    const weekday =
+      shared.find((each) => each.grade === group.grade)?.meetings[0]?.weekday ?? weekdays[0];
 
     if (weekday === undefined) break;
 
@@ -1327,7 +1327,7 @@ const encode = Effect.fnUntraced(function* (school: {
     })),
     ...[...school.sharedOf].map(([wide, group], n) => ({
       id: `shared-${n + 1}`,
-      same: false,
+      same: true,
       entries: [...ref(firstIn(wide, inOpening)), ...ref(firstIn(group, inOpening))],
     })),
     ...school.moves
@@ -1371,7 +1371,14 @@ const encode = Effect.fnUntraced(function* (school: {
   return {
     corpus,
     courseOf: new Map(
-      occurrences.map((each) => [`${each.date} ${each.ids.join("+")}`, each.course.id] as const),
+      // A shared entry is its group's lesson, which WebUntis shows to the whole cohort.
+      occurrences.map(
+        (each) =>
+          [
+            `${each.date} ${each.ids.join("+")}`,
+            school.sharedOf.get(each.course.id) ?? each.course.id,
+          ] as const,
+      ),
     ),
   };
 });

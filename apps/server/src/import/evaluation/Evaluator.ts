@@ -264,7 +264,12 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
   const ours = Metrics.lessonsOf(final);
   const index = Metrics.byEntry(ours);
   const termOfWeek = (week: string) => termOf(truth.days.find(inWeek(week)) ?? "");
-  const students = truth.views.filter((view) => view.type === "STUDENT");
+
+  // A lesson WebUntis shows beyond its group isn't the other students'.
+  const students = Students.attended(
+    truth.views.filter((view) => view.type === "STUDENT"),
+    termOf,
+  );
 
   // What a student chose from: the store after the last run of the term's opening weeks. Later
   // runs never choose for them, so a course split or renamed after it shows as missing lessons.
@@ -323,9 +328,8 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
 
   // A teacher's or room's week with no upper-school entry and none of our lessons measures nothing.
   const viewWeeks = (type: Truth.ViewType) =>
-    truth.views
-      .filter((view) => view.type === type)
-      .flatMap((view) =>
+    (type === "STUDENT" ? students : truth.views.filter((view) => view.type === type)).flatMap(
+      (view) =>
         weeks
           .filter(
             (week) =>
@@ -363,7 +367,7 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
               ? []
               : [{ view, week, score: Metrics.scoreView(entries, mine) }];
           }),
-      );
+    );
 
   const studentWeeks = viewWeeks("STUDENT");
   const heldTerms = [...new Set(weeks.filter(held).map(termOfWeek))];

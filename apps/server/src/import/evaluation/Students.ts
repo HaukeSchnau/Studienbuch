@@ -4,12 +4,106 @@
  * courses nobody chose. A course the import splits or renames after the Kurswahl then shows as
  * missing lessons, not as a new choice. Only entries and our lessons go in, never a corpus.
  */
+import { CivilTime } from "@stu/core";
+import * as Option from "effect/Option";
+import * as Schema from "effect/Schema";
 import { Metrics } from "./Metrics.ts";
+import type { Truth } from "./Truth.ts";
 
 export * as Students from "./Students.ts";
 
 const regular = <A extends { readonly status: string }>(rows: ReadonlyArray<A>) =>
   rows.filter(({ status }) => status !== "Added");
+
+const decodeDate = Schema.decodeOption(CivilTime.PlainDate);
+
+/** A teaching group in a term: its subjects, classes and the teachers the plan gives it. */
+const groupOf = (entry: Metrics.TruthEntry, term: string | undefined) =>
+  [
+    term,
+    entry.subjects.join("+"),
+    entry.classes.join("+"),
+    [...entry.plannedTeachers].sort((a, b) => a - b).join("+"),
+  ].join("\n");
+
+/** The weekly slot an entry meets in: its weekday, start and end. */
+const slotOf = (entry: Metrics.TruthEntry) =>
+  Option.map(
+    decodeDate(entry.date),
+    (date) => `${CivilTime.dayOfWeek(date)} ${entry.start} ${entry.end}`,
+  );
+
+/** A lesson of the plan that takes place: neither cancelled nor added. */
+const planned = (entry: Metrics.TruthEntry) =>
+  entry.status === "Regular" || entry.status === "Changed";
+
+const overlap = (a: Metrics.TruthEntry, b: Metrics.TruthEntry) =>
+  a.date === b.date && a.start < b.end && b.start < a.end;
+
+/**
+ * The views without the entries WebUntis shows beyond their group, such as a lesson without a
+ * student group, which every student of its classes sees: an entry at the same time as a lesson
+ * that takes place, of a group that met in other weekly slots while the student's view was shown,
+ * none of which the student sees (m2-import-corpus.md, section 6).
+ */
+export const attended = (
+  views: ReadonlyArray<Truth.View>,
+  termOf: (date: string) => string | undefined,
+): ReadonlyArray<Truth.View> => {
+  const judged = (entry: Metrics.TruthEntry) =>
+    entry.status !== "Added" && entry.subjects.length > 0;
+
+  // Each group's slots, with the dates any student saw them on.
+  const slots = new Map<string, Map<string, Set<string>>>();
+
+  for (const entry of views.flatMap((view) => view.entries).filter(judged)) {
+    const group = groupOf(entry, termOf(entry.date));
+
+    for (const slot of Option.toArray(slotOf(entry))) {
+      const ofGroup = slots.get(group) ?? new Map<string, Set<string>>();
+
+      ofGroup.set(slot, (ofGroup.get(slot) ?? new Set<string>()).add(entry.date));
+      slots.set(group, ofGroup);
+    }
+  }
+
+  return views.map((view) => {
+    const seen = new Map<string, Set<string>>();
+
+    for (const entry of view.entries.filter(judged)) {
+      const group = groupOf(entry, termOf(entry.date));
+
+      for (const slot of Option.toArray(slotOf(entry))) {
+        seen.set(group, (seen.get(group) ?? new Set<string>()).add(slot));
+      }
+    }
+
+    const shown = (date: string) =>
+      !view.hidden.has(date) &&
+      Option.exists(decodeDate(date), (each) => view.weeks.has(CivilTime.isoWeek(each)));
+
+    const beyond = (entry: Metrics.TruthEntry) => {
+      const group = groupOf(entry, termOf(entry.date));
+      const ofGroup = slots.get(group) ?? new Map<string, Set<string>>();
+
+      const elsewhere = (slot: string) => (each: string) =>
+        each !== slot && (ofGroup.get(each)?.size ?? 0) >= 2;
+
+      return Option.match(slotOf(entry), {
+        onNone: () => false,
+        onSome: (slot) =>
+          judged(entry) &&
+          view.entries.some(
+            (other) => other !== entry && planned(other) && overlap(entry, other),
+          ) &&
+          [...ofGroup].some(([each, dates]) => elsewhere(slot)(each) && [...dates].some(shown)) &&
+          ![...(seen.get(group) ?? [])].some(elsewhere(slot)),
+      });
+    };
+
+    return { ...view, entries: view.entries.filter((entry) => !beyond(entry)) };
+  });
+};
 
 /** The courses a student chooses: those whose lessons in `index` cover their entries, added ones aside. */
 export const kurswahl = (
