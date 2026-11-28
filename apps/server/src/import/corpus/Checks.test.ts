@@ -1,13 +1,17 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { assert, layer } from "@effect/vitest";
+import { CivilTime } from "@stu/core";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Path from "effect/Path";
+import * as Schema from "effect/Schema";
 import * as Stream from "effect/Stream";
 import { Checks } from "./Checks.ts";
 import { Corpus } from "./Corpus.ts";
 import { NamedSchoolTesting } from "./NamedSchoolTesting.ts";
 import { Pseudonymizer } from "./Pseudonymizer.ts";
+
+const decodeTimeZone = Schema.decodeEffect(CivilTime.TimeZone);
 
 const { object, list, firstEntry, planted } = NamedSchoolTesting;
 
@@ -156,6 +160,34 @@ layer(NodeServices.layer)("Checks", (it) => {
       const keyed = new Map([...dictionary.names, ["end", "teacher shortName"]]);
 
       yield* Checks.scan({ dictionary: { ...dictionary, names: keyed }, ...inputOf(corpus) });
+
+      // The key's literal and a listed zone name nobody, though `per` and `berlin` can be name words.
+      const own = new Map([
+        ...dictionary.names,
+        ["per", "teacher displayName"],
+        ["berlin", "teacher longName"],
+      ]);
+
+      const exported = { ...corpus, manifest: { ...corpus.manifest, key: "per-export" as const } };
+
+      yield* Checks.scan({ dictionary: { ...dictionary, names: own }, ...inputOf(exported) });
+
+      // A raw archive brings its own id and time zone, and either can name someone.
+      const timeZone = yield* decodeTimeZone("2026-11-28T00:00[Europe/Berlin][foo=sibylla]");
+
+      const manifestOf = { ...corpus.manifest, id: "capture-sibylla", timeZone };
+
+      const named = yield* Effect.flip(
+        Checks.scan({ dictionary, ...inputOf({ ...corpus, manifest: manifestOf }) }),
+      );
+
+      assert.deepStrictEqual(
+        named.hits.map(({ read, path }) => ({ read, path })),
+        [
+          { read: "manifest", path: "id" },
+          { read: "manifest", path: "timeZone" },
+        ],
+      );
 
       const broken = planted(corpus, classView, (body) => {
         firstEntry(body).color = "Grüße an qam";

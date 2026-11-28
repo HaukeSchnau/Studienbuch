@@ -48,6 +48,9 @@ export class GrammarFailed extends Schema.TaggedError<
 }
 
 const encodeManifest = Schema.encodeEffect(Schema.toCodecJson(Corpus.Manifest));
+
+/** The zone ids the runtime knows, such as `Europe/Berlin`. */
+const zones: ReadonlySet<string> = new Set(Intl.supportedValuesOf("timeZone"));
 const encodeCases = Schema.encodeEffect(Schema.toCodecJson(Corpus.Cases));
 
 type Reads<E, R> = Stream.Stream<readonly [string, RecordedWebUntis.Read], E, R>;
@@ -114,8 +117,19 @@ export const scan = Effect.fn("Checks.scan")(function* <E, R>(input: {
       }),
     );
 
-  // A manifest and cases that decoded encode again; a failure would be a defect.
-  look("manifest", yield* Effect.orDie(encodeManifest(input.manifest)));
+  // A manifest and cases that decoded encode again; a failure would be a defect. The key's literal and
+  // a zone of the runtime's list carry no data but can spell a name word, as `per-export` did a first
+  // name. Any other zone value, such as one with annotations, is scanned.
+  const { key: _literal, ...manifest } = input.manifest;
+  const encoded = yield* Effect.orDie(encodeManifest(manifest));
+  const listed = zones.has(input.manifest.timeZone);
+
+  look(
+    "manifest",
+    listed && Policy.isObject(encoded)
+      ? Object.fromEntries(Object.entries(encoded).filter(([field]) => field !== "timeZone"))
+      : encoded,
+  );
   look("cases", yield* Effect.orDie(encodeCases(input.cases)));
 
   for (const id of input.dictionary.ids) {
