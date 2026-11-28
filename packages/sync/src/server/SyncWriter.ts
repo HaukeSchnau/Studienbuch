@@ -129,10 +129,14 @@ export const make = Effect.gen(function* () {
       Effect.gen(function* () {
         const tx = yield* Tx.Service;
 
-        const stored = yield* sql<{ readonly id: string; readonly data: string }>`
-          select id, data::text as data from sync_row
-          where space_id = ${space} and tbl = ${table.name} and data is not null
-        `;
+        // A delete-only call compares nothing, so only `covers` below reads the table.
+        const stored =
+          rows.length === 0
+            ? []
+            : yield* sql<{ readonly id: string; readonly data: string }>`
+                select id, data::text as data from sync_row
+                where space_id = ${space} and tbl = ${table.name} and data is not null
+              `;
 
         // Rows another build wrote compare as different, so the desired rows replace them.
         const current = new Map(
