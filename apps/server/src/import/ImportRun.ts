@@ -840,6 +840,8 @@ const checkSelf = Effect.fn("ImportRun.checkSelf")(function* (input: {
             links: projection.state.links,
           }),
           terms: projection.state.terms,
+          offered: projection.state,
+          classify: profile.classify,
           days: { start: input.today, end: last },
           kept,
         });

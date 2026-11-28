@@ -31,6 +31,8 @@ const night = Effect.gen(function* () {
     students: [...views.values()],
     lessons: Metrics.lessonsOf(state),
     terms: state.terms,
+    offered: state,
+    classify: TinySchool.profile.classify,
     days,
     kept: [],
   } satisfies SelfCheck.Input;
@@ -78,6 +80,62 @@ describe("SelfCheck", () => {
         },
       );
     }),
+  );
+
+  // The same lessons as above, now of a course the import offers to 11.1 as required, as it does
+  // a project week that turns up mid-term.
+  it.effect(
+    "gives a student the course their class joins them to, created after the Kurswahl",
+    () =>
+      Effect.gen(function* () {
+        const input = yield* night;
+        const first = SelfCheck.score(input);
+        const de = ImportIds.course(TinySchool.profile.id, "DE/11.1");
+        const event = Course.Id.make("event-11.1");
+
+        const moved = input.lessons.filter(
+          ({ courseId, date }) => courseId === de && date >= "2026-11-16",
+        );
+
+        const ofClass = input.offered.classes.flatMap(({ id, name }) =>
+          name === "11.1" ? [id] : [],
+        );
+
+        const later = SelfCheck.score({
+          ...input,
+          lessons: input.lessons.map((lesson) =>
+            moved.includes(lesson) ? { ...lesson, courseId: event } : lesson,
+          ),
+          offered: {
+            ...input.offered,
+            offerings: [
+              ...input.offered.offerings,
+              ...input.offered.terms.map((term) => ({
+                id: `${event}@${term.id}`,
+                courseId: event,
+                termId: term.id,
+                gradeLevels: [11],
+                classIds: ofClass,
+              })),
+            ],
+          },
+          kept: first.kept,
+        });
+
+        assert.isAbove(moved.length, 0);
+        assert.isAbove(ofClass.length, 0);
+
+        assert.deepStrictEqual(
+          {
+            recall: later.measured.studentWeeks.recall,
+            ghostCourses: later.measured.ghostCourses,
+          },
+          {
+            recall: first.measured.studentWeeks.recall,
+            ghostCourses: first.measured.ghostCourses,
+          },
+        );
+      }),
   );
 
   it.effect("takes no Kurswahl while WebUntis hides one of its opening days", () =>

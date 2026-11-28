@@ -267,9 +267,15 @@ const union =
     Arr.sort(Arr.dedupe([...a, ...b]), order);
 
 /**
+ * The elective group of a course a student may take or leave, alone in its group: the app shows
+ * it as a box to tick.
+ */
+export const ownGroup = (courseId: Course.Id) => courseId;
+
+/**
  * An offering as it stands once `incoming` lands on what was published. Grade levels and classes
- * only grow, no classes stays every class, and the elective group stays the one it had, so a
- * choice `enrollment.set` accepted stays one it accepts for the whole term.
+ * only grow, no classes stays every class, and the elective group stays, so an accepted choice
+ * stays accepted. A required course may still become a choice of its own, which breaks no choice.
  */
 export const widen = (
   kept: ImportedOffering | undefined,
@@ -277,7 +283,7 @@ export const widen = (
 ): ImportedOffering => {
   if (kept === undefined) return incoming;
 
-  const { groupKey: _, ...rest } = incoming;
+  const { groupKey, ...rest } = incoming;
 
   const widened = {
     ...rest,
@@ -288,7 +294,10 @@ export const widen = (
         : union<SchoolClass.Id>(Order.String)(kept.classIds, incoming.classIds),
   };
 
-  return kept.groupKey === undefined ? widened : { ...widened, groupKey: kept.groupKey };
+  const own = groupKey === ownGroup(incoming.courseId) ? groupKey : undefined;
+  const group = kept.groupKey ?? own;
+
+  return group === undefined ? widened : { ...widened, groupKey: group };
 };
 
 /**

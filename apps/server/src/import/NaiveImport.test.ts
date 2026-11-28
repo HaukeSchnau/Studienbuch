@@ -224,32 +224,47 @@ describe("NaiveImport", () => {
     }),
   );
 
+  // A course its students choose is offered as a choice of its own, one their classes join as
+  // required: IGS's events, entries without a subject under no teacher or several.
+  const joint = { classes: [111, 112], gradeLevels: [11, 12], lasting: false, joined: false };
+
   it.effect.each([
     {
       name: "makes a Kopplung's entry, which each class's view shows, one lesson of one course",
       shownBy112: true,
       subject: true,
-      courses: {
-        "INF/11.1+12": { classes: [111, 112], gradeLevels: [11, 12], lasting: false },
-      },
+      teachers: ["LF"],
+      courses: { "INF/11.1+12": joint },
     },
     {
       name: "reads and offers a Kopplung for each of its classes, whichever views show it",
       shownBy112: false,
       subject: true,
-      courses: {
-        "INF/11.1+12": { classes: [111, 112], gradeLevels: [11, 12], lasting: false },
-      },
+      teachers: ["LF"],
+      courses: { "INF/11.1+12": joint },
     },
     {
-      name: "makes an entry without a subject, which each class's view shows, one lesson",
+      name: "makes an event, which each class's view shows, one lesson its classes join",
       shownBy112: true,
       subject: false,
-      courses: {
-        "?/11.1+12": { classes: [111, 112], gradeLevels: [11, 12], lasting: false },
-      },
+      teachers: ["LF", "LE"],
+      courses: { "?/11.1+12": { ...joint, joined: true } },
     },
-  ])("$name", ({ shownBy112, subject, courses }) =>
+    {
+      name: "makes an event without a teacher one lesson its classes join",
+      shownBy112: true,
+      subject: false,
+      teachers: [],
+      courses: { "?/11.1+12": { ...joint, joined: true } },
+    },
+    {
+      name: "makes an entry without a subject under one teacher, an outing, a course of its own",
+      shownBy112: true,
+      subject: false,
+      teachers: ["LF"],
+      courses: { "?/11.1+12/LF": joint },
+    },
+  ])("$name", ({ shownBy112, subject, teachers, courses }) =>
     Effect.gen(function* () {
       // As WebUntis shows the joint `INF` lesson: each class's view lists the other class only.
       const kopplung = [
@@ -269,6 +284,16 @@ describe("NaiveImport", () => {
             );
 
             if (!subject) inf.position2 = null;
+
+            const [lf] = list(inf.position1);
+
+            inf.position1 = teachers.map((shortName) => {
+              const each = object(structuredClone(lf ?? null));
+
+              object(each.current).shortName = shortName;
+
+              return each;
+            });
 
             // In no week, so only the other class's view names this class.
             const isInf = (each: Policy.Json) =>
@@ -299,14 +324,18 @@ describe("NaiveImport", () => {
             classes: linksOf(id).map((ref) => (ref._tag === "Resource" ? ref.id : 0)),
             offerings: result.offerings
               .filter(({ courseId }) => courseId === id)
-              .map(({ gradeLevels, classIds }) => ({ gradeLevels, classIds })),
+              .map(({ gradeLevels, classIds, groupKey }) => ({ gradeLevels, classIds, groupKey })),
           };
         }),
-        Object.values(courses).map(({ classes, gradeLevels, lasting }) => ({
+        Object.entries(courses).map(([key, { classes, gradeLevels, lasting, joined }]) => ({
           lessons: [[[1212, 1213]]],
           classes,
           offerings: [
-            { gradeLevels, classIds: lasting ? [ImportIds.schoolClass(year, "11.1")] : [] },
+            {
+              gradeLevels,
+              classIds: lasting ? [ImportIds.schoolClass(year, "11.1")] : [],
+              groupKey: joined ? undefined : SchoolImport.ownGroup(course(key)),
+            },
           ],
         })),
       );

@@ -296,17 +296,54 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
 
   const inOpening = (term: string | undefined) => (date: string) => opening(term).has(weekOf(date));
 
+  const chooseIn = (student: Truth.View, term: string | undefined) => {
+    const state = openingStates.get(term) ?? SchoolImport.empty;
+
+    return Students.choose(student, inOpening(term), openingStore(term), {
+      required: Students.required(state, truth.days.find(inOpening(term)) ?? ""),
+      joinedOn: (date) => Students.joined(state, options.profile.classify, student, date),
+    });
+  };
+
   const enrollments = new Map<string, ReadonlySet<string>>();
 
   const enrollmentOf = (student: Truth.View, term: string | undefined) => {
     const key = `${student.id} ${term}`;
-
-    const courses =
-      enrollments.get(key) ?? Students.choose(student, inOpening(term), openingStore(term)).courses;
+    const courses = enrollments.get(key) ?? chooseIn(student, term).courses;
 
     enrollments.set(key, courses);
 
     return courses;
+  };
+
+  const byDay = new Map<string, ReadonlySet<string>>();
+
+  // A student's courses on `day`: their Kurswahl, held from the term's opening weeks, and those
+  // their classes join them to in the last store, so an event course created later still counts.
+  const coursesOn = (student: Truth.View, day: string) => {
+    const key = `${student.id} ${day}`;
+
+    const known =
+      byDay.get(key) ??
+      new Set([
+        ...enrollmentOf(student, termOf(day)),
+        ...Students.joined(final, options.profile.classify, student, day),
+      ]);
+
+    byDay.set(key, known);
+
+    return known;
+  };
+
+  const taken = new Map<string, ReadonlySet<string>>();
+
+  // The courses some student takes on `day`.
+  const takenOn = (day: string) => {
+    const known = taken.get(day) ?? new Set(students.flatMap((each) => [...coursesOn(each, day)]));
+
+    taken.set(day, known);
+
+    return known;
   };
 
   const lessonsIn = new Map<string, Array<Metrics.Lesson>>();
@@ -343,12 +380,7 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
                 {
                   view,
                   week,
-                  score: Students.week(
-                    view,
-                    inWeek(week),
-                    lessons,
-                    enrollmentOf(view, termOfWeek(week)),
-                  ),
+                  score: Students.week(view, inWeek(week), lessons, (day) => coursesOn(view, day)),
                 },
               ];
             }
@@ -381,7 +413,7 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
           [...opening(term)].every((week) => student.weeks.has(week)) &&
           truth.days.some((day) => inOpening(term)(day) && !student.hidden.has(day)),
       )
-      .map((student) => Students.choose(student, inOpening(term), openingStore(term)).exact),
+      .map((student) => chooseIn(student, term).exact),
   );
 
   const ghostCourses = Students.ghosts(
@@ -389,7 +421,7 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
       lessons: ours.filter(
         ({ date }) => measured.has(weekOf(date)) && held(weekOf(date)) && termOf(date) === term,
       ),
-      kurswahls: students.map((student) => enrollmentOf(student, term)),
+      takenOn,
     })),
   );
 
@@ -514,7 +546,12 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
       final.exams
         .filter((exam) => measuredDays.has(exam.date) && termOf(exam.date) === term)
         .map((exam) => ({ ...exam, examIds: examRefs.get(exam.id) ?? [] })),
-      new Map(students.map((student) => [student.id, enrollmentOf(student, term)])),
+      new Map(
+        students.map((student) => [
+          student.id,
+          coursesOn(student, truth.days.find((day) => termOf(day) === term) ?? ""),
+        ]),
+      ),
       courseTeachers,
       courseSubjects,
       sees,

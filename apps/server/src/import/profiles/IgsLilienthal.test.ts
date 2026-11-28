@@ -48,6 +48,18 @@ describe("IgsLilienthal", () => {
     );
   });
 
+  // In corpus v1 every event under one teacher was one of that teacher's courses on an outing,
+  // and all but one of the others were seen by nearly every student of their classes.
+  it.each([
+    { name: "a lesson", subject: Option.some("MA"), teachers: ["LB"], joined: false },
+    { name: "a lesson without a teacher", subject: Option.some("MA"), teachers: [], joined: false },
+    { name: "a day for the whole school", subject: Option.none(), teachers: [], joined: true },
+    { name: "a project week", subject: Option.none(), teachers: ["LB", "LC"], joined: true },
+    { name: "one teacher's outing", subject: Option.none(), teachers: ["LB"], joined: false },
+  ])("joins $name by class: $joined", ({ subject, teachers, joined }) => {
+    assert.strictEqual(IgsLilienthal.profile.joinedByClass({ subject, teachers }), joined);
+  });
+
   // The phrase comes out in the profile's spelling, so the row never holds what WebUntis sent.
   it.each([
     { text: "Vertretung", phrase: Option.some("Vertretung") },

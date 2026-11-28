@@ -48,6 +48,18 @@ export interface Course {
   readonly lower: boolean;
 }
 
+/**
+ * A day a cohort's classes spend together, such as a project day: one entry without a subject,
+ * under several teachers, which every student of the classes sees. Students take it by their
+ * class, never by choosing it.
+ */
+export interface Event {
+  readonly id: string;
+  readonly date: string;
+  readonly classes: ReadonlyArray<Resource>;
+  readonly teachers: ReadonlyArray<Resource>;
+}
+
 /** A student in a course from `from` to `until`, both inclusive. */
 export interface Membership {
   readonly course: string;
@@ -68,6 +80,7 @@ export interface School {
   readonly corpus: Corpus.Corpus;
   readonly courses: ReadonlyArray<Course>;
   readonly memberships: ReadonlyArray<Membership>;
+  readonly events: ReadonlyArray<Event>;
   readonly students: ReadonlyArray<Student>;
   /** Students who switch or join a course, and from which day. */
   readonly moves: ReadonlyArray<Move>;
@@ -360,6 +373,7 @@ const build = Effect.fnUntraced(function* (calibration: Calibration.Calibration,
   const students: Array<Student> = [];
   const drafts: Array<Draft> = [];
   const studentsOfGrade = new Map<number, Array<number>>();
+  const classesOfGrade = new Map<number, ReadonlyArray<Resource>>();
   const kopplungen: Array<{ grade: number; courses: Array<Draft> }> = [];
 
   /** Free half-slots of each class resource, by key. */
@@ -428,6 +442,7 @@ const build = Effect.fnUntraced(function* (calibration: Calibration.Calibration,
         : [resource(40_000 + id(), `${grade}`, `Jahrgang ${grade}`)];
 
     classes.push(...ofCohort);
+    classesOfGrade.set(grade, ofCohort);
 
     const members: Array<number> = [];
 
@@ -908,6 +923,24 @@ const build = Effect.fnUntraced(function* (calibration: Calibration.Calibration,
   for (const each of moves)
     memberships.push({ course: each.to, student: each.student, from: each.date, until: range.end });
 
+  // Events spread over the school days after the opening weeks, a cohort each in turn. They draw
+  // nothing at random, so the rest of the school stays as it was without them.
+  const later = schoolDays.filter((day) => !opening.has(day.week));
+  const cohorts = [...classesOfGrade];
+  const eventCount = perTerm(pitfalls.events?.count ?? 0, terms);
+
+  const events: ReadonlyArray<Event> = Array.from({ length: eventCount }, (_, n) => {
+    const [grade, of] = cohorts[n % Math.max(cohorts.length, 1)] ?? [0, []];
+    const date = later[Math.floor(((n + 1) * later.length) / (eventCount + 1))]?.date ?? range.end;
+
+    return {
+      id: `${grade} event ${date}`,
+      date,
+      classes: of,
+      teachers: [0, 1].flatMap((offset) => teachers[(2 * n + offset) % teachers.length] ?? []),
+    };
+  });
+
   const everyone = students.map((student) => ({
     ...student,
     hiddenFrom: hiddenFrom.get(student.id),
@@ -918,6 +951,7 @@ const build = Effect.fnUntraced(function* (calibration: Calibration.Calibration,
     calibration,
     courses,
     memberships,
+    events,
     students: everyone,
     classes,
     teachers,
@@ -927,7 +961,15 @@ const build = Effect.fnUntraced(function* (calibration: Calibration.Calibration,
     moves,
   });
 
-  return { corpus, courses, memberships, students: everyone, moves, courseOf } satisfies School;
+  return {
+    corpus,
+    courses,
+    memberships,
+    events,
+    students: everyone,
+    moves,
+    courseOf,
+  } satisfies School;
 });
 
 const previousDay = (date: string) => {
@@ -951,6 +993,8 @@ interface Occurrence {
   readonly course: Course;
   readonly change: Change | undefined;
   readonly added: boolean;
+  /** An event's, which lasts the school day and names no subject. */
+  readonly event: boolean;
 }
 
 /** The school's corpus: every view, the directories, exams and labelled cases. */
@@ -959,6 +1003,7 @@ const encode = Effect.fnUntraced(function* (school: {
   readonly calibration: Calibration.Calibration;
   readonly courses: ReadonlyArray<Course>;
   readonly memberships: ReadonlyArray<Membership>;
+  readonly events: ReadonlyArray<Event>;
   readonly students: ReadonlyArray<Student>;
   readonly classes: ReadonlyArray<Resource>;
   readonly teachers: ReadonlyArray<Resource>;
@@ -1058,6 +1103,7 @@ const encode = Effect.fnUntraced(function* (school: {
             course,
             change,
             added: false,
+            event: false,
           };
 
           occurrences.push(occurrence);
@@ -1084,7 +1130,47 @@ const encode = Effect.fnUntraced(function* (school: {
     }
   }
 
+  // After every course's, so the rolls for changes stay as they were without events.
+  const eventCourses = school.events.map((each, n) => {
+    const course: Course = {
+      id: each.id,
+      grade: 0,
+      subject: resource(0, ""),
+      classes: each.classes,
+      teachers: each.teachers,
+      room: undefined,
+      meetings: [],
+      lower: false,
+    };
+
+    occurrences.push({
+      ids: [4_000_000 + 3 * n],
+      date: each.date,
+      block: 0,
+      course,
+      change: undefined,
+      added: false,
+      event: true,
+    });
+
+    return course;
+  });
+
   const membersOf = new Map<string, Array<Membership>>();
+
+  // Every student of an event's classes attends it.
+  for (const course of eventCourses) {
+    const ofClasses = new Set(course.classes.map(({ id: each }) => each));
+
+    membersOf.set(
+      course.id,
+      school.students.flatMap((student) =>
+        ofClasses.has(student.schoolClass.id)
+          ? [{ course: course.id, student: student.id, from: range.start, until: range.end }]
+          : [],
+      ),
+    );
+  }
 
   for (const each of memberships)
     membersOf.set(each.course, [...(membersOf.get(each.course) ?? []), each]);
@@ -1100,8 +1186,8 @@ const encode = Effect.fnUntraced(function* (school: {
   type View = { readonly type: WebUntisBodies.ViewType; readonly resource: Resource };
 
   const entry = (view: View) => (occurrence: Occurrence) => {
-    const { ids, date, block, course, change, added } = occurrence;
-    const [start, end] = timesOf(block);
+    const { ids, date, block, course, change, added, event } = occurrence;
+    const [start, end] = event ? (["08:00", "16:35"] as const) : timesOf(block);
     const ownTeacher = view.type === "TEACHER" && change?.teachers === undefined;
     const ownRoom = view.type === "ROOM" && change?.room === undefined;
     const planned = course.teachers.filter((each) => !(ownTeacher && each === view.resource));
@@ -1119,7 +1205,7 @@ const encode = Effect.fnUntraced(function* (school: {
       ids,
       duration: { start: `${date}T${start}`, end: `${date}T${end}` },
       type: "NORMAL_TEACHING_PERIOD",
-      status: added ? "ADDITIONAL" : (change?.status ?? "REGULAR"),
+      status: added ? "ADDITIONAL" : event ? "CHANGED" : (change?.status ?? "REGULAR"),
       statusDetail: null,
       name: null,
       layoutStartPosition: 0,
@@ -1130,7 +1216,9 @@ const encode = Effect.fnUntraced(function* (school: {
       icons: [],
       position1:
         planned.length === 0 && now.length === 0 ? null : positions("TEACHER", now, planned),
-      position2: [{ current: position("SUBJECT", "REGULAR", course.subject), removed: null }],
+      position2: event
+        ? null
+        : [{ current: position("SUBJECT", "REGULAR", course.subject), removed: null }],
       position3:
         plannedRoom.length === 0 && roomNowList.length === 0
           ? null

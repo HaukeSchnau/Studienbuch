@@ -34,7 +34,23 @@ export interface View {
   readonly weeks: ReadonlySet<string>;
   /** Days WebUntis hid from the capture's account. They hold no entries and aren't measured. */
   readonly hidden: ReadonlySet<string>;
+  /** A student's classes, as the student directory of each school year read dates them. */
+  readonly classes: ReadonlyArray<ClassAssignment>;
 }
+
+/** A student in a class, by its short name, from `start` to `end`, both inclusive. */
+export interface ClassAssignment {
+  readonly name: string;
+  readonly start: string;
+  readonly end: string;
+}
+
+/** A student's classes on `date`. */
+export const classesOn = (view: Pick<View, "classes">, date: string) => [
+  ...new Set(
+    view.classes.flatMap(({ name, start, end }) => (start <= date && date <= end ? [name] : [])),
+  ),
+];
 
 export interface Truth {
   /** Monday to Friday of every captured range, within a school year. */
@@ -168,9 +184,22 @@ export const readViews = Effect.fn("Truth.readViews")(function* (
           .getFilter({ resourceType, start, end })
           .pipe(Effect.mapError(incomplete(`${resourceType} directory ${year.id}`)));
 
-      const students = types.includes("STUDENT")
-        ? (yield* directory("STUDENT")).students.filter(reads).map((each) => each.student)
+      const ofStudents = types.includes("STUDENT")
+        ? (yield* directory("STUDENT")).students.filter(reads)
         : [];
+
+      const students = ofStudents.map((each) => each.student);
+
+      const classesOf = new Map(
+        ofStudents.map((each) => [
+          each.student.id,
+          each.classes.map(({ class: ofStudent, dateRange }): ClassAssignment => ({
+            name: ofStudent.shortName,
+            start: dateRange.start.slice(0, 10),
+            end: dateRange.end.slice(0, 10),
+          })),
+        ]),
+      );
 
       const teachers = (yield* directory("TEACHER")).teachers.map((each) => each.teacher);
       const rooms = (yield* directory("ROOM")).rooms.map((each) => each.room);
@@ -263,6 +292,10 @@ export const readViews = Effect.fn("Truth.readViews")(function* (
             ],
             weeks: new Set([...(earlier?.weeks ?? []), ...weeks]),
             hidden: new Set([...(earlier?.hidden ?? []), ...hidden]),
+            classes: [
+              ...(earlier?.classes ?? []),
+              ...(type === "STUDENT" ? (classesOf.get(resource) ?? []) : []),
+            ],
           });
         }
       }
