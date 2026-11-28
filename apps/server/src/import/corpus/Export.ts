@@ -82,10 +82,22 @@ export const Pushed = Schema.Struct({
 
 export type Pushed = typeof Pushed.Type;
 
-/** Why an export pushed nothing: a failure's tag, and how many problems it named. */
+/** What a check found, as its error lists it: never a value. */
+export const Found = Schema.Struct({
+  read: Schema.String,
+  path: Schema.String,
+  problem: Schema.String,
+  count: Schema.Int,
+});
+
+/**
+ * Why an export pushed nothing: a failure's tag, and what its checks found. The server's logs keep
+ * a failure's tag alone, so this is where an operator reads why.
+ */
 export const Failure = Schema.Struct({
   failure: Schema.String,
   problems: Schema.optional(Schema.Int),
+  found: Schema.optional(Schema.Array(Found)),
 });
 
 export type Failure = typeof Failure.Type;
@@ -265,22 +277,34 @@ const Reported = Schema.Struct({
   _tag: Schema.String,
   /** The tag a reduced failure had. */
   kind: Schema.optional(Schema.String),
-  problems: Schema.optional(Schema.Array(Schema.Unknown)),
-  hits: Schema.optional(Schema.Array(Schema.Unknown)),
 });
 
 const decodeReported = Schema.decodeUnknownOption(Reported);
 
-const failureOf = (cause: Cause.Cause<unknown>): Failure =>
-  Option.match(decodeReported(Cause.squash(cause)), {
-    onNone: () => ({ failure: "a defect" }),
-    onSome: (error) => {
-      const failure = error._tag === "Corpus.Failed" ? (error.kind ?? error._tag) : error._tag;
-      const listed = error.problems ?? error.hits;
+/** The checks whose errors list where and what kind they found, never a value. */
+const isListed = Schema.is(
+  Schema.Union([Checks.LeakFound, Checks.GrammarFailed, Pseudonymizer.PolicyFailed]),
+);
 
-      return listed === undefined ? { failure } : { failure, problems: listed.length };
-    },
+/**
+ * A failure by its tag, or a reduced one by the tag it had, and what its checks found. Only a
+ * typed failure of a check lists anything; a defect stays a tag, whatever fields it carries.
+ */
+export const failureOf = (cause: Cause.Cause<unknown>): Failure => {
+  const failure = Option.match(decodeReported(Cause.squash(cause)), {
+    onNone: () => "a defect",
+    onSome: (error) => (error._tag === "Corpus.Failed" ? (error.kind ?? error._tag) : error._tag),
   });
+
+  const listed = Option.flatMap(Cause.findErrorOption(cause), (error) =>
+    isListed(error) ? Option.some("hits" in error ? error.hits : error.problems) : Option.none(),
+  );
+
+  return Option.match(listed, {
+    onNone: () => ({ failure }),
+    onSome: (found) => ({ failure, problems: found.length, found }),
+  });
+};
 
 interface Recorded {
   readonly outcome: string;

@@ -126,14 +126,7 @@ export const status = Effect.gen(function* () {
       ? ["self-check  none yet"]
       : selfCheckLines(iso(checked.startedAt), yield* decodeSelfCheck(checked.selfCheck));
 
-  const [exported] = yield* sql<{
-    readonly startedAt: Date;
-    readonly outcome: string | null;
-    readonly report: unknown;
-  }>`
-    select started_at as "startedAt", outcome, report from import_export
-    where school_id = ${profile.id} order by started_at desc limit 1
-  `;
+  const exported = yield* latestExport;
 
   const leased =
     state?.leaseUntil !== undefined &&
@@ -171,6 +164,22 @@ export const status = Effect.gen(function* () {
 
 const decodeExport = Schema.decodeUnknownOption(Schema.Union([Export.Pushed, Export.Failure]));
 
+/** The school's newest export row, which `import status` shows. */
+const latestExport = Effect.gen(function* () {
+  const sql = yield* SqlClient.SqlClient;
+
+  const [row] = yield* sql<{
+    readonly startedAt: Date;
+    readonly outcome: string | null;
+    readonly report: unknown;
+  }>`
+    select started_at as "startedAt", outcome, report from import_export
+    where school_id = ${profile.id} order by started_at desc limit 1
+  `;
+
+  return row;
+});
+
 /** What an export pushed: the archive, its size, hash and commit, its counts and its checks. */
 const pushedLines = (pushed: Export.Pushed) => {
   const days = pushed.counts.ranges.map(({ start, end }) => `${start} to ${end}`).join(", ");
@@ -201,24 +210,35 @@ const lastExport = (
     return [`last export ${at} pushed`, ...pushedLines(report.value)];
   }
 
-  const problems =
-    Option.isSome(report) && "problems" in report.value && report.value.problems !== undefined
-      ? `, ${report.value.problems} problems`
-      : "";
+  return failedLines(
+    `last export ${at}`,
+    Option.isSome(report) && "failure" in report.value ? report.value : { failure: row.outcome },
+  );
+};
 
-  if (row.outcome === "Export.Forgotten") {
+/** Why an export pushed nothing, after `heading`, and where and what its checks found. */
+const failedLines = (heading: string, failure: Export.Failure) => {
+  if (failure.failure === "Export.Forgotten") {
     return [
-      `last export ${at} pushed nothing: it ran too late, and the source store may have pruned what its week showed at its start`,
+      `${heading} pushed nothing: it ran too late, and the source store may have pruned what its week showed at its start`,
     ];
   }
 
-  if (row.outcome === "Gitea.CommitUnconfirmed") {
+  if (failure.failure === "Gitea.CommitUnconfirmed") {
     return [
-      `last export ${at} unconfirmed: Gitea didn't confirm the commit, so the corpus repository may hold it`,
+      `${heading} unconfirmed: Gitea didn't confirm the commit, so the corpus repository may hold it`,
     ];
   }
 
-  return [`last export ${at} pushed nothing: ${row.outcome}${problems}`];
+  const problems = failure.problems === undefined ? "" : `, ${failure.problems} problems`;
+
+  return [
+    `${heading} pushed nothing: ${failure.failure}${problems}`,
+    ...(failure.found ?? []).map(
+      ({ read, path, problem, count }) =>
+        `  ${read}${path === "" ? "" : ` ${path}`}: ${problem} (${count}×)`,
+    ),
+  ];
 };
 
 const by = Flag.String("by").pipe(
@@ -264,7 +284,13 @@ export const command = Command.make("import").pipe(
           profile,
           until: yield* DateTime.now,
           recipients: Export.recipients,
-        }).pipe(Effect.provide(ImportJob.corpusRepository(token.value)));
+        }).pipe(
+          Effect.provide(ImportJob.corpusRepository(token.value)),
+          // The failure reaches the log as its tag alone, so say here what the checks found.
+          Effect.tapCause((cause) =>
+            Console.log(failedLines("The export", Export.failureOf(cause)).join("\n")),
+          ),
+        );
 
         yield* Console.log(["Pushed", ...pushedLines(pushed)].join("\n"));
       }),
