@@ -39,7 +39,7 @@ export const familyOf = (
 };
 
 /** One parallel group of a family, by the teachers the plan gives it. */
-const group = (familyKey: string, teachers: Iterable<string>) =>
+export const group = (familyKey: string, teachers: Iterable<string>) =>
   `${familyKey}/${sorted(teachers).join("+")}`;
 
 /** An entry as parallel groups show in it. */

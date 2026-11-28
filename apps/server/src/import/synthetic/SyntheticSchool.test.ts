@@ -99,8 +99,23 @@ describe("SyntheticSchool", () => {
           ),
         );
 
+        // A student takes their class's events without choosing them.
+        const eventsOf = (view: Truth.View) =>
+          new Set(
+            school.events.flatMap((event) =>
+              event.classes.some(({ shortName }) =>
+                Truth.classesOn(view, event.date).includes(shortName),
+              )
+                ? [event.id]
+                : [],
+            ),
+          );
+
         const wrong = attending.flatMap((view) => {
-          const { courses, exact } = Students.choose(view, inOpening, store);
+          const joined = eventsOf(view);
+          const chosen = Students.choose(view, inOpening, store, joined);
+          const { exact } = chosen;
+          const courses = new Set([...chosen.courses, ...joined]);
 
           const weeksWrong = weeks.filter(
             (week) =>
@@ -139,6 +154,7 @@ describe("SyntheticSchool", () => {
 
         assert.isAbove(movers.size, 0);
         assert.isAbove(joinedOn.size, 0);
+        assert.isAbove(school.events.length, 0);
       }),
   );
 

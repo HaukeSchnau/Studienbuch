@@ -4,11 +4,13 @@
  * courses nobody chose. A course the import splits or renames after the Kurswahl then shows as
  * missing lessons, not as a new choice. Only entries and our lessons go in, never a corpus.
  */
-import { CivilTime } from "@stu/core";
+import { CivilTime, Enrollment } from "@stu/core";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
+import type { SchoolProfile } from "../profiles/SchoolProfile.ts";
+import type { SchoolImport } from "../SchoolImport.ts";
 import { Metrics } from "./Metrics.ts";
-import type { Truth } from "./Truth.ts";
+import { Truth } from "./Truth.ts";
 
 export * as Students from "./Students.ts";
 
@@ -105,6 +107,44 @@ export const attended = (
   });
 };
 
+/** What a store offers: the terms, classes and offerings a Kurswahl is made from. */
+export type Offered = Pick<SchoolImport.ImportResult, "terms" | "classes" | "offerings">;
+
+/**
+ * The courses a student takes on `date` without choosing them, by being in their classes: those
+ * `Enrollment.courses` gives every student the term's offerings are for, such as a project week.
+ */
+export const joined = (
+  offered: Offered,
+  classify: SchoolProfile.SchoolProfile["classify"],
+  student: Pick<Truth.View, "classes">,
+  date: string,
+): ReadonlySet<string> => {
+  const term = offered.terms.find(({ start, end }) => start <= date && date <= end);
+
+  if (term === undefined) return new Set();
+
+  return new Set(
+    Truth.classesOn(student, date).flatMap((name) => {
+      const classification = classify(name);
+
+      if (classification._tag === "Collection") return [];
+
+      const { gradeLevel } = classification;
+
+      const classId = offered.classes.find(
+        (each) => each.schoolYearId === term.schoolYearId && each.name === name,
+      )?.id;
+
+      return Enrollment.courses(
+        offered.offerings,
+        { termId: term.id, gradeLevel, classId },
+        new Set(),
+      );
+    }),
+  );
+};
+
 /** The courses a student chooses: those whose lessons in `index` cover their entries, added ones aside. */
 export const kurswahl = (
   entries: ReadonlyArray<Metrics.TruthEntry>,
@@ -150,7 +190,8 @@ export interface View {
 
 /**
  * A student's Kurswahl from their entries of the opening days, and whether those courses' lessons
- * on the opening days are exactly those entries.
+ * on the opening days, with those of the courses their class `joined` them to, are exactly those
+ * entries.
  */
 export const choose = (
   student: View,
@@ -159,6 +200,7 @@ export const choose = (
     readonly lessons: ReadonlyArray<Metrics.Lesson>;
     readonly index: ReadonlyMap<string, ReadonlyArray<Metrics.Lesson>>;
   },
+  joined: ReadonlySet<string>,
 ) => {
   const entries = student.entries.filter((entry) => opening(entry.date));
   const courses = kurswahl(entries, store.index);
@@ -167,7 +209,7 @@ export const choose = (
     (lesson) => opening(lesson.date) && !student.hidden.has(lesson.date),
   );
 
-  return { courses, exact: isExact(entries, lessons, courses) };
+  return { courses, exact: isExact(entries, lessons, new Set([...courses, ...joined])) };
 };
 
 /** A student's week: their entries of it against the lessons their Kurswahl gives them, hidden days aside. */

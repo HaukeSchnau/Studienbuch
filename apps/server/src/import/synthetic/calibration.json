@@ -660,6 +660,10 @@
     "lateJoins": {
       "count": 19,
       "people": 17
+    },
+    "events": {
+      "count": 12,
+      "people": 146
     }
   }
 }

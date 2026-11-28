@@ -1,6 +1,7 @@
 /** IGS Lilienthal, the first school: its upper school is grades 11 to 13. */
 import { School } from "@stu/core";
 import * as Cron from "effect/Cron";
+import * as Option from "effect/Option";
 import { SchoolProfile } from "./SchoolProfile.ts";
 
 export * as IgsLilienthal from "./IgsLilienthal.ts";
@@ -55,6 +56,9 @@ export const profile: SchoolProfile.SchoolProfile = {
     "Aufsicht",
     "Exkursion",
   ],
+  // An entry without a subject is an event, such as grade 11's project week or a day for the
+  // whole school, which every student of its classes sees.
+  joinedByClass: ({ subject, teachers }) => Option.isNone(subject) && teachers.length !== 1,
   // Go 2 (m2-import-path.md, "What needs Hauke") turns it on, in a reviewed pull request.
   publish: false,
   // What a student needs before seeing the import: about one wrong lesson in two weeks of 30, no

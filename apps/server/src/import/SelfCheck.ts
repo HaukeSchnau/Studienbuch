@@ -5,6 +5,7 @@
  */
 import { CivilTime, Course, Term } from "@stu/core";
 import * as Arr from "effect/Array";
+import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import { CourseIdentity } from "./evaluation/CourseIdentity.ts";
 import { Metrics } from "./evaluation/Metrics.ts";
@@ -65,6 +66,9 @@ export interface Input {
   /** The lessons the projection publishes, in the harness's terms. */
   readonly lessons: ReadonlyArray<Metrics.Lesson>;
   readonly terms: SchoolImport.ImportResult["terms"];
+  /** What the projection offers, for the courses a student's class joins them to. */
+  readonly offered: Students.Offered;
+  readonly classify: SchoolProfile.SchoolProfile["classify"];
   /** Today to the last day the run read. */
   readonly days: CivilTime.DateRange;
   readonly kept: ReadonlyArray<Kept>;
@@ -140,6 +144,11 @@ export const score = (input: Input) => {
   const within = (some: ReadonlyArray<Week>) => (date: string) =>
     some.some(({ dates }) => dates.has(date));
 
+  // The courses a student's class joins them to are never kept: they come from the night's
+  // offerings, so an event course created after the Kurswahl still counts.
+  const joined = (student: Truth.View, week: Week) =>
+    Students.joined(input.offered, input.classify, student, [...week.dates][0] ?? "");
+
   let chosen = 0;
 
   for (const student of students) {
@@ -158,7 +167,17 @@ export const score = (input: Input) => {
         continue;
       }
 
-      const { courses, exact } = Students.choose(student, within(openingWeeks), store);
+      const { courses, exact } = Students.choose(
+        student,
+        within(openingWeeks),
+        store,
+        Arr.head(openingWeeks).pipe(
+          Option.match({
+            onNone: () => new Set<string>(),
+            onSome: (week) => joined(student, week),
+          }),
+        ),
+      );
 
       kept.set(keyOf(student.id, term), {
         student: student.id,
@@ -193,7 +212,7 @@ export const score = (input: Input) => {
             student,
             (date) => week.dates.has(date),
             lessonsIn.get(week.week) ?? [],
-            new Set(choice.courses),
+            new Set([...choice.courses, ...joined(student, week)]),
           ),
         },
       ];
@@ -213,9 +232,15 @@ export const score = (input: Input) => {
       lessons: weeks
         .filter((week) => week.term === term && scoredWeeks.has(week.week))
         .flatMap((week) => lessonsIn.get(week.week) ?? []),
-      kurswahls: [...kept.values()].flatMap((each) =>
-        each.term === term ? [new Set<string>(each.courses)] : [],
-      ),
+      kurswahls: [
+        ...[...kept.values()].flatMap((each) =>
+          each.term === term ? [new Set<string>(each.courses)] : [],
+        ),
+        ...weeks
+          .filter((week) => week.term === term)
+          .slice(0, 1)
+          .flatMap((week) => students.map((student) => joined(student, week))),
+      ],
     })),
   );
 

@@ -296,13 +296,30 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
 
   const inOpening = (term: string | undefined) => (date: string) => opening(term).has(weekOf(date));
 
+  const firstDay = (term: string | undefined) => truth.days.find((day) => termOf(day) === term);
+
+  // The courses a student's class joins them to, as the term's offerings in `state` say.
+  const joinedIn = (state: Students.Offered, student: Truth.View, term: string | undefined) =>
+    Students.joined(state, options.profile.classify, student, firstDay(term) ?? "");
+
+  const chooseIn = (student: Truth.View, term: string | undefined) =>
+    Students.choose(
+      student,
+      inOpening(term),
+      openingStore(term),
+      joinedIn(openingStates.get(term) ?? SchoolImport.empty, student, term),
+    );
+
   const enrollments = new Map<string, ReadonlySet<string>>();
 
+  // A student's courses in a term: those they chose, held from its opening weeks, and those their
+  // class joins them to, from the last store, so an event course created later still counts.
   const enrollmentOf = (student: Truth.View, term: string | undefined) => {
     const key = `${student.id} ${term}`;
 
     const courses =
-      enrollments.get(key) ?? Students.choose(student, inOpening(term), openingStore(term)).courses;
+      enrollments.get(key) ??
+      new Set([...chooseIn(student, term).courses, ...joinedIn(final, student, term)]);
 
     enrollments.set(key, courses);
 
@@ -381,7 +398,7 @@ export const evaluate = Effect.fn("Evaluator.evaluate")(function* (options: Opti
           [...opening(term)].every((week) => student.weeks.has(week)) &&
           truth.days.some((day) => inOpening(term)(day) && !student.hidden.has(day)),
       )
-      .map((student) => Students.choose(student, inOpening(term), openingStore(term)).exact),
+      .map((student) => chooseIn(student, term).exact),
   );
 
   const ghostCourses = Students.ghosts(

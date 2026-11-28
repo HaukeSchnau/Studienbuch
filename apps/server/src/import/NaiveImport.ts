@@ -115,6 +115,8 @@ interface Seen {
   readonly family: string;
   /** Whether its family may have parallel groups, which an entry without a subject hasn't. */
   readonly grouped: boolean;
+  /** Whether its students take its course by their class, as the profile says. */
+  readonly joined: boolean;
   readonly teachers: ReadonlyArray<string>;
 }
 
@@ -251,13 +253,14 @@ export const layer = Layer.effect(SchoolImport.Service)(
       /**
        * The course of `key` for an entry of a class's view, or none when only the nightly run may
        * create it, or when the entry names a subject the directory lacks, whose name could be
-       * anything.
+       * anything. A course its classes join is required for them; any other is a choice of its own.
        */
       const courseOf = (
         date: string,
         subject: Option.Option<string>,
         key: string,
         taughtTo: ReadonlyArray<string>,
+        joined: boolean,
       ) => {
         const subjectId = Option.isSome(subject) ? subjectIds.get(subject.value) : undefined;
 
@@ -300,15 +303,20 @@ export const layer = Layer.effect(SchoolImport.Service)(
           for (const { group, gradeLevel } of read) {
             const lasting = profile.classify(group)._tag === "Lasting";
 
+            const offering = {
+              id: offeringId,
+              courseId: id,
+              termId: term.id,
+              gradeLevels: [gradeLevel],
+              classIds: lasting ? [ImportIds.schoolClass(yearId, group)] : [],
+            };
+
             offerings.set(
               offeringId,
-              SchoolImport.widen(offerings.get(offeringId), {
-                id: offeringId,
-                courseId: id,
-                termId: term.id,
-                gradeLevels: [gradeLevel],
-                classIds: lasting ? [ImportIds.schoolClass(yearId, group)] : [],
-              }),
+              SchoolImport.widen(
+                offerings.get(offeringId),
+                joined ? offering : { ...offering, groupKey: SchoolImport.ownGroup(id) },
+              ),
             );
           }
         }
@@ -355,6 +363,8 @@ export const layer = Layer.effect(SchoolImport.Service)(
           if (!copies.has(copy)) {
             copies.add(copy);
 
+            const teachers = WebUntisEntry.names(entry, "TEACHER").planned;
+
             seen.push({
               entry,
               date,
@@ -363,7 +373,8 @@ export const layer = Layer.effect(SchoolImport.Service)(
               end: end.value,
               subject,
               ...ofFamily,
-              teachers: WebUntisEntry.names(entry, "TEACHER").planned,
+              teachers,
+              joined: profile.joinedByClass({ subject, teachers }),
             });
           }
         }
@@ -373,11 +384,30 @@ export const layer = Layer.effect(SchoolImport.Service)(
 
       /** Adds the row of an entry `seen` holds to the lesson of its course in its slot. */
       const addRow = (
-        { entry, date, ids, start, end, subject, taughtTo, family, grouped, teachers }: Seen,
+        {
+          entry,
+          date,
+          ids,
+          start,
+          end,
+          subject,
+          taughtTo,
+          family,
+          grouped,
+          teachers,
+          joined,
+        }: Seen,
         courseKey: (family: string, teachers: ReadonlyArray<string>) => string,
       ) => {
-        const key = grouped ? courseKey(family, teachers) : family;
-        const course = courseOf(date, subject, key, taughtTo);
+        // An entry without a subject that its classes don't join is its teachers' group's, such as
+        // one course's outing.
+        const key = grouped
+          ? courseKey(family, teachers)
+          : joined
+            ? family
+            : CourseKey.group(family, teachers);
+
+        const course = courseOf(date, subject, key, taughtTo, joined);
 
         if (Option.isNone(course)) return unattributedEntry(date, ids);
 

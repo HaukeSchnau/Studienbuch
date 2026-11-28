@@ -252,6 +252,7 @@ export const observe = Effect.fn("Calibrate.observe")(function* (
     sharedEntries: { count: 0, people: new Set<number>() },
     rosterChanges: { count: 0, people: new Set<number>() },
     lateJoins: { count: 0, people: new Set<number>() },
+    events: { count: 0, people: new Set<number>() },
   };
 
   let measuredTerms = 0;
@@ -547,6 +548,36 @@ export const observe = Effect.fn("Calibrate.observe")(function* (
         pitfalls.lateJoins.count += joined.length;
         pitfalls.lateJoins.people.add(view.id);
       }
+    }
+
+    // Events: entries without a subject that nine in ten students of their classes see, of
+    // those WebUntis showed the day.
+    const events = new Map<string, { entry: Metrics.TruthEntry; students: Set<number> }>();
+
+    for (const view of students) {
+      for (const entry of view.entries) {
+        if (entry.subjects.length > 0 || termOf(entry.date) !== term) continue;
+
+        const known = events.get(keyOf(entry)) ?? { entry, students: new Set<number>() };
+
+        known.students.add(view.id);
+        events.set(keyOf(entry), known);
+      }
+    }
+
+    for (const { entry, students: seen } of events.values()) {
+      const ofClasses = students.filter(
+        (view) =>
+          view.weeks.has(weekOf(entry.date)) &&
+          !view.hidden.has(entry.date) &&
+          classesOn(view.id, entry.date).some((name) => entry.classes.includes(name)),
+      );
+
+      if (ofClasses.length === 0 || seen.size * 10 < ofClasses.length * 9) continue;
+
+      pitfalls.events.count += 1;
+
+      for (const id of seen) pitfalls.events.people.add(id);
     }
   }
 

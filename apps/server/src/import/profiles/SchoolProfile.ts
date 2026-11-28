@@ -10,6 +10,14 @@ import * as Option from "effect/Option";
 
 export * as SchoolProfile from "./SchoolProfile.ts";
 
+/** An entry of a class view, as a convention judges it. */
+export interface Entry {
+  /** The subject's short name, if the entry names one. */
+  readonly subject: Option.Option<string>;
+  /** The planned teachers' short names. */
+  readonly teachers: ReadonlyArray<string>;
+}
+
 /** What a WebUntis class resource stands for at the school. */
 export type Classification = Data.TaggedEnum<{
   /** A class such as `11.2` that its students keep all year: a `SchoolClass` row. */
@@ -34,6 +42,13 @@ export interface SchoolProfile {
    * space's readers chose the course themselves and free text can name a student.
    */
   readonly stockPhrases: ReadonlyArray<string>;
+  /**
+   * Whether students take an entry's course by being in the classes it lists, such as a project
+   * week, rather than by choosing it. Such a course's offering has no elective group, so
+   * `Enrollment.courses` gives it to every student it is for. All entries of one course must get
+   * the same answer.
+   */
+  readonly joinedByClass: (entry: Entry) => boolean;
   /**
    * Whether a run writes the school's rows. Without it a run reads, stores and imports, and keeps
    * its checkpoint, so the first publish starts from ids and removals that have held for weeks.

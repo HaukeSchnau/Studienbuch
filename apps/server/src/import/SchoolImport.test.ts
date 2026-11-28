@@ -131,6 +131,13 @@ describe("SchoolImport.apply", () => {
       incoming: offering([], [12], "nw"),
       after: offering([], [12]),
     },
+    {
+      // A group of one course never holds two chosen ones.
+      name: "a required course may become a choice of its own",
+      kept: offering([], [12]),
+      incoming: offering([], [12], SchoolImport.ownGroup(Course.Id.make("ma"))),
+      after: offering([], [12], "ma"),
+    },
   ])("widens an offering: $name", ({ kept, incoming, after }) => {
     const state = SchoolImport.apply(
       { ...SchoolImport.empty, offerings: [kept] },

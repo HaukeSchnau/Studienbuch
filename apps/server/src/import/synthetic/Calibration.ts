@@ -126,6 +126,11 @@ export const Distributions = Schema.Struct({
      * people are the students who join.
      */
     lateJoins: Schema.optionalKey(Counted),
+    /**
+     * Events a cohort's classes attend together, such as a project week: entries without a subject
+     * that nearly every student of their classes sees. Its people are those students.
+     */
+    events: Schema.optionalKey(Counted),
   }),
 });
 

@@ -1,4 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
+import { Course, SchoolClass, SchoolYear, Term } from "@stu/core";
+import { IgsLilienthal } from "../profiles/IgsLilienthal.ts";
+import { SchoolImport } from "../SchoolImport.ts";
 import type { Metrics } from "./Metrics.ts";
 import { Students } from "./Students.ts";
 import type { Truth } from "./Truth.ts";
@@ -62,6 +65,67 @@ describe("Students.isExact", () => {
   });
 });
 
+describe("Students.joined", () => {
+  const year = SchoolYear.Id.make("2026");
+  const term = Term.Id.make("2026-1");
+
+  const offering = (course: string, classIds: ReadonlyArray<string>, chosen: boolean) => {
+    const courseId = Course.Id.make(course);
+
+    const row = {
+      id: `${course}@${term}`,
+      courseId,
+      termId: term,
+      gradeLevels: [11, 12],
+      classIds: classIds.map((id) => SchoolClass.Id.make(id)),
+    };
+
+    return chosen ? { ...row, groupKey: SchoolImport.ownGroup(courseId) } : row;
+  };
+
+  const offered: Students.Offered = {
+    terms: [
+      { id: term, schoolYearId: year, name: "1. Halbjahr", start: "2026-08-13", end: "2027-01-29" },
+    ],
+    classes: [
+      { id: SchoolClass.Id.make("c-11.1"), schoolYearId: year, name: "11.1", gradeLevel: 11 },
+      { id: SchoolClass.Id.make("c-11.2"), schoolYearId: year, name: "11.2", gradeLevel: 11 },
+    ],
+    offerings: [
+      offering("project-week-11.1", ["c-11.1"], false),
+      offering("project-week-11.2", ["c-11.2"], false),
+      offering("ma-11.1", ["c-11.1"], true),
+      offering("school-day", [], false),
+    ],
+  };
+
+  const student = (names: ReadonlyArray<string>) => ({
+    classes: [{ start: "2026-08-13", end: "2027-07-07", names }],
+  });
+
+  it.each([
+    {
+      name: "a class's required courses, and the whole grade's",
+      classes: ["11.1"],
+      date: "2026-11-02",
+      joined: ["project-week-11.1", "school-day"],
+    },
+    {
+      name: "a cohort without classes",
+      classes: ["12"],
+      date: "2026-11-02",
+      joined: ["school-day"],
+    },
+    { name: "a day outside every term", classes: ["11.1"], date: "2027-03-01", joined: [] },
+    { name: "a resource that is no class", classes: ["8"], date: "2026-11-02", joined: [] },
+  ])("$name", ({ classes, date, joined }) => {
+    assert.deepStrictEqual(
+      [...Students.joined(offered, IgsLilienthal.classify, student(classes), date)].sort(),
+      joined,
+    );
+  });
+});
+
 describe("Students.ghosts", () => {
   it("counts a course nobody chose in a term, even when someone chose it in another", () => {
     assert.strictEqual(
@@ -107,6 +171,7 @@ describe("Students.attended", () => {
     entries,
     weeks: new Set(["2026-W45", "2026-W46"]),
     hidden: new Set(hidden),
+    classes: [],
   });
 
   // Latin meets on Tuesdays for its students, and WebUntis shows its Thursday lunch slot to the
