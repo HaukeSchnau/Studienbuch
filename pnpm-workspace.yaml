@@ -6,7 +6,7 @@ catalogMode: strict
 pmOnFail: error
 
 catalog:
-  "@effect/tsgo": 0.73.4
+  "@effect/tsgo": 0.74.1
   # Exactly the oxlint that Vite+ bundles, which loads the local plugins in tools/oxlint.
   "@oxlint/plugins": 1.94.0
   knip: 6.43.0
